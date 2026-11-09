@@ -42,7 +42,7 @@ const REPO = 'https://github.com/shashi/sbtel/blob/main/';
   const viewer = read(join(repo, 'viewer/dist/index.html'));
   const vp = /<meta name="viewport"[^>]*>\n/;
   if (!vp.test(viewer)) { console.error('build.mjs: the viewer has no viewport meta to insert the home link after'); process.exit(1); }
-  write('play/index.html', viewer.includes('name="sbtel-home"') ? viewer : viewer.replace(vp, m => m + '<meta name="sbtel-home" content="../">\n'));
+  write('play/index.html', /<meta name="sbtel-home"/.test(viewer.slice(0, viewer.indexOf('</head>'))) ? viewer : viewer.replace(vp, m => m + '<meta name="sbtel-home" content="../">\n'));
 }
 
 // ---------- inline ----------
