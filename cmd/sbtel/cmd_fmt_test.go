@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -29,7 +30,8 @@ func TestFmtMigratePorts(t *testing.T) {
 	if !strings.Contains(out, ":4:3: (port chord in KeyChord …) -> (port :in KeyChord :as chord …)\n") || !strings.HasSuffix(out, ": rewrote 2 ports\n") {
 		t.Errorf("rewrite report: %q", out)
 	}
-	if info, _ := os.Stat(p); info.Mode().Perm() != 0o600 {
+	// Windows has no Unix permission bits (files report 0666), so only check the mode elsewhere.
+	if info, _ := os.Stat(p); runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Errorf("mode changed to %v", info.Mode().Perm())
 	}
 	// Idempotent: nothing left to rewrite, and the result lints clean.
