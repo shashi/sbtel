@@ -58,7 +58,12 @@
         (sketch "Both sides of a diff, as GET diff.json returns them."))
       ; It reassigns app functions (render, edit, fit, menuItems...) to make the app a read-only diff
       ; view, and wraps the measurer's tw and wrap so that cards have room for the change marks.
-      (sketch "Diff mode: draws two versions of a spec as one picture with ghosts and a change list.")))
+      (sketch "Diff mode: draws two versions of a spec as one picture with ghosts and a change list."))
+    (block Viewer.Play
+      (port mode out ModeHandler)
+      ; Reads #src, #example, ?embed and &theme (§6.9). In embed mode it reassigns app functions
+      ; (openComposer, menuItems, renderStrip; with readonly, edit, pressStart...), as the other modes do.
+      (sketch "The standalone page: the sample, or a spec from the URL with its own storage keys; embed mode for docs pages; the home link.")))
   (level
     (block Viewer.Review
       (port review out Review)

@@ -121,7 +121,9 @@
         (block Sbtel.Viewer.ServerMode
           (sketch "server.js: loads the session's spec, saves it, and listens for versions and replies."))
         (block Sbtel.Viewer.DiffMode
-          (sketch "diff.js: draws the changes between two specs on the newer one.")))
+          (sketch "diff.js: draws the changes between two specs on the newer one."))
+        (block Sbtel.Viewer.Play
+          (sketch "play.js: the standalone playground, a spec from the URL, and embed mode for docs pages.")))
       (level
         (block Sbtel.Viewer.Review
           (sketch "review.js: the draft review, kept in the browser and sent as one review; and the change list it shares with the diff view.")))

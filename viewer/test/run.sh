@@ -9,7 +9,7 @@ set -u
 T=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$T/../.." && pwd)
 PAGE=$(realpath "${1:-$ROOT/viewer/dist/index.html}")
 OUT=$(mktemp -d "${TMPDIR:-/tmp}/sbtel-accept.XXXXXX")
-SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7 accept8"}
+SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7 accept8 accept9 accept10"}
 
 # Chrome --dump-dom suites: the test is appended to a copy of the page and reports through console.log.
 virtual() { # name test.js WxH budget timeout
@@ -32,16 +32,20 @@ run_suite() {
     redo)     virtual redo accept2_redo.js 1600,1100 90000 180 ;;
     # Real time (Playwright): accept4 checks CSS transitions, which --virtual-time-budget freezes.
     accept4)  cp "$PAGE" "$OUT/accept4.html"; timeout 180 python3 "$T/suites/pw.py" "$OUT/accept4.html" "$T/suites/accept4.js" 2>&1 | grep -o 'RESULT {.*}\|PAGEERRORS.*' | head -5 ;;
-    # Real touch input via CDP under iPhone 13 emulation; the published page has a device-width viewport.
-    accept5)  { echo '<meta name="viewport" content="width=device-width, initial-scale=1">'; cat "$PAGE"; } > "$OUT/accept5.html"
+    # Real touch input via CDP under iPhone 13 emulation; the page carries its own device-width viewport.
+    accept5)  cp "$PAGE" "$OUT/accept5.html"
               timeout 240 python3 "$T/suites/accept5.py" "$OUT/accept5.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     # v0.2 callouts, editors, level labels and carried types: real mouse, then real touch (iPhone 13).
-    accept6)  { echo '<meta name="viewport" content="width=device-width, initial-scale=1">'; cat "$PAGE"; } > "$OUT/accept6.html"
+    accept6)  cp "$PAGE" "$OUT/accept6.html"
               timeout 300 python3 "$T/suites/accept6.py" "$OUT/accept6.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     # v0.2.1 persistent undo: a browser profile on disk, closed and started again (Playwright).
     accept7)  cp "$PAGE" "$OUT/accept7.html"; timeout 200 python3 "$T/suites/accept7.py" "$OUT/accept7.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     # v0.2.2 behaviors with a block's grammar: pills on behavior and message cards, the implementers outline.
     accept8)  cp "$PAGE" "$OUT/accept8.html"; timeout 200 python3 "$T/suites/accept8.py" "$OUT/accept8.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
+    # v0.2.3 a spec from the URL (#src, #example), embed mode and the home link, served over HTTP.
+    accept9)  cp "$PAGE" "$OUT/accept9.html"; timeout 200 python3 "$T/suites/accept9.py" "$OUT/accept9.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
+    # v0.2.3 a docs page with three embedded viewers: separate histories, no scroll trapping, no errors.
+    accept10) cp "$PAGE" "$OUT/accept10.html"; timeout 200 python3 "$T/suites/accept10.py" "$OUT/accept10.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     *) echo "unknown suite $1"; return 1 ;;
   esac
 }

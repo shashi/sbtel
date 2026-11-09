@@ -7,7 +7,9 @@ says MUST, the conformance tests, the acceptance suites or a reviewer will hold 
 find something wrong or missing, fix this document in the same change as the code. Never let the two
 disagree silently.
 
-Status: v0.2.2 (§11, entries 78-96): behaviors are read with a block's grammar (`:type`, ports,
+Status: v0.2.3 (§11, entries 97-103): the viewer is a proper HTML document with a device-width
+viewport, the playground's "sbtel" links to the project's home page, and a standalone page loads a spec
+from its URL (`#src=`, `#example=`) and embeds in docs pages (`?embed`; §6.9). Before that, v0.2.2 (§11, entries 78-96): behaviors are read with a block's grammar (`:type`, ports,
 sketch, `implements`), a behavior may implement (extend) others, message types take `:type`, and
 `sbtel check` allows a binding to a behavior in the caller's scope (`abstraction`): calls through an
 interface are checkable; the recover skill's helpers map interfaces to behaviors. Before that, v0.2.1 (§11, entries 61-77): levels are numbered from the bottom (level 1 is the lowest), the
@@ -97,10 +99,11 @@ Data flow for the agent loop:
 | `viewer/src/review.js` | the draft review and the shared change list, both modes (§6.7) | B and C |
 | `viewer/src/server.js` | server-mode module | B |
 | `viewer/src/diff.js` | diff-mode module | C |
+| `viewer/src/play.js` | the standalone page: a spec from the URL, embed mode, the home link (§6.9) | release owner |
 | `viewer/build.mjs` | assembles `viewer/dist/index.html`; inlines `viewer/fonts/*.woff2` as data: URLs | frozen |
 | `viewer/fonts/` | the page's fonts (Hanken Grotesk, JetBrains Mono; OFL, from @fontsource-variable 5.3.0) and their licenses | release owner |
 | `viewer/dist/index.html` | built page, committed (go:embed needs it) | generated |
-| `viewer/test/` | acceptance suites and `run.sh`; accept6 (v0.2) covers callouts, editors, level labels and carried types; accept7 (v0.2.1) the standalone undo history across a browser restart; accept8 (v0.2.2) behavior and message pills, the implementers outline and a behavior's Edit dialog | frozen (add suites, don't edit; §11 entry 51) |
+| `viewer/test/` | acceptance suites and `run.sh`; accept6 (v0.2) covers callouts, editors, level labels and carried types; accept7 (v0.2.1) the standalone undo history across a browser restart; accept8 (v0.2.2) behavior and message pills, the implementers outline and a behavior's Edit dialog; accept9 (v0.2.3) `#src`, `#example`, `?embed` and the home link; accept10 (v0.2.3) three embedded viewers in one docs page | frozen (add suites, don't edit; §11 entry 51) |
 | `conformance/` | specs, cases, expected records, node runner | shared, see §2.9 |
 | `examples/*.sbtel` | sample specs; `viewer.sbtel` is the viewer's own spec, with `viewer.edges.txt`, and `sbtel.sbtel` the system's, its Go blocks checked against the Go code with `sbtel.edges.txt` (§8) | D |
 | `tools/docs/snippets.mjs` | dev-only: checks every spec and output in the docs against the binary (`make docs-check`) | release owner |
@@ -856,11 +859,16 @@ It is `diff` for exactly `/s/<32 hex>/diff`, and for `/s/<32 hex>/?compare=<key>
 tab of that session opened (the Review panel's full diff, or "View their changes"), with `session` and
 `base` null and the pair read from the opener's `window.sbtelCompares[key]` (§6.7). Everything else is `standalone`: file://, the published
 playground, and any other path. At Boot, the page calls `SBTEL.modes[SBTEL.mode].boot()` if that is
-registered. Otherwise it calls `setSource(SAMPLE)`, which is exactly the original playground.
+registered. Otherwise it calls `setSource(SAMPLE)`, which is exactly the original playground. Since
+v0.2.3 play.js registers `standalone` (§6.9); without URL parameters its `boot()` does exactly that,
+and adds the home link.
 
 ### 6.2 Standalone
 
-This is the playground as published, titled "sbtel Playground". The comment Send button copies a text
+This is the playground as published, titled "sbtel Playground". "sbtel" in the brand chip links to the
+project's home page: the `content` of `<meta name="sbtel-home">` when the page has one (the website's
+copy at /sbtel/play/ has `content="../"`), else `https://shashi.biz/sbtel/`; in a frame (a published
+artifact) it opens a new tab. Server and diff mode have no home link. The comment Send button copies a text
 payload to paste into an agent conversation; there is no Review button. Settings and comments persist
 in localStorage under `sbtel-play`, `sbtel-comments` and `sbtel-help-seen`; on first read it falls back
 to the old `marquee-*` keys. The undo history persists under `sbtel-hist` (§6.7).
@@ -1142,6 +1150,66 @@ App features (index.html), in every mode; §11 entries 89-91 record the choices.
 - **Edit.** The Edit dialog has a Type field for blocks, behaviors and message types, and a behavior's
   dialog lists the behaviors it may extend (in scope where it is declared), with the inherited ports;
   a choice that would make a cycle is refused with "B already implements A: A cannot implement it too."
+
+### 6.9 The standalone page's URL, embed mode and the home link (v0.2.3)
+
+viewer/src/play.js, block `Viewer.Play`, registers `SBTEL.modes.standalone`; §11 entries 97-103 record
+the choices. The page itself is a full document: `<!doctype html>`, `<html lang="en">`, `<meta
+charset="utf-8">` and `<meta name="viewport" content="width=device-width, initial-scale=1">`, after
+the `@sbtel file App.Page` comment (a comment before the doctype keeps standards mode).
+
+| URL part | Meaning |
+|---|---|
+| `#src=<base64url>` | the spec: base64url (RFC 4648 §5, padding optional; the standard alphabet is accepted too) of its UTF-8 text, instead of the sample |
+| `#example=<name>` | fetch `examples/<name>.sbtel` relative to the page (`[\w-]+`, with `/` between folders), so long specs stay out of URLs; `#src` wins over it |
+| `?embed` | embed mode, interactive |
+| `?embed=readonly` | embed mode, nothing edits |
+| `&theme=light`, `&theme=dark` (or `?theme=`) | a fixed theme; otherwise the system's (embed mode ignores a stored setting) |
+
+The query and the hash combine: `play/?embed=readonly&theme=dark#example=shell`. A change of the hash
+reloads the page. `?diff` (§6.4) still wins: diff.js switches the mode before Boot.
+
+**Storage.** A spec from the URL, and any embed (the sample too), keeps its settings, comments and undo
+history under keys with a 64-bit hash of its initial text (`SBTEL.modes.standalone.digest`):
+`sbtel-hist:spec-<hash>` and `sbtel-play:spec-<hash>`, `sbtel-comments:spec-<hash>` for a page
+with `#src` or `#example`, `…:embed-<hash>` in embed mode, so no two demos, a demo and the same spec in
+the playground, or a demo and the playground share anything. The keys start from the defaults, not
+from the playground's settings (`loadPrefs`, App.Document). A read-only embed keeps no history. The
+playground without a hash keeps its keys (`sbtel-hist`, `sbtel-play`, `sbtel-comments`). After an
+error the key is the hash of the URL part. `sbtel-help-seen` stays global.
+
+**Errors.** Text that is not base64url UTF-8, an example that does not load or a spec that does not
+parse shows the usual parse-error UI: the source sheet opens with the text and the message in red, over
+an empty diagram (the empty spec is set first, so the app always has a model); fixing the text draws it.
+In embed mode, which has no source sheet, a card says "This spec cannot be drawn" with the message.
+
+**Embed mode** is for docs pages that show the real viewer in an iframe, one demo per concept.
+
+- No brand chip, help, sheets, Messages, Source, checks, Send or settings. The dock keeps undo, redo,
+  zoom out, the zoom level, zoom in, Fit and **Open in playground ↗**, a link in a new tab to this page
+  without the query: the same hash, or `#src=` with the edited text once the demo was edited. Below
+  480 px the link shows only ↗.
+- Comments, the message table and the source sheet are the playground's: their menu items and strip
+  buttons are left out, and anything else that would open them says so in a toast.
+- The diagram fits the frame on load and on resize (`fitPad` leaves room for the dock only), and the
+  layout width follows the frame (1.25 × its width, from 560 to 1180), so a small frame wraps rows.
+- Without `&theme` the background is transparent (the dot grid stays), so the frame sits on the
+  page's card; with a fixed theme it is the theme's canvas colour, so it reads on any card. The theme
+  follows `prefers-color-scheme` as the frame sees it.
+- Interactive by default: hover callouts, selection, drag, link, the Edit dialog, click-to-edit ports,
+  undo. `?embed=readonly` reassigns what edits, as diff mode does (§6.5): `readOnly()` is true, and
+  `edit`, `undo`, `redo`, `pressStart`, `startLink`, `openEdit` and the deletes do nothing; the menu
+  has Open or Close and Code, the strip only Code, and callouts are read-only.
+- **Not in the reader's way.** Nothing takes focus on load and there is no `beforeunload`. Until the
+  frame is clicked, tapped or focused it is not live: a capturing wheel listener on the frame's window
+  stops the canvas's handler, so the browser scrolls the outer page, and on touch the canvas allows
+  `pan-x pan-y`, so a swipe scrolls the page. A small "Click to interact" pill shows on the first
+  hover, and again when a wheel is ignored. The frame stops being live when its window loses focus. A
+  page opened directly (not in a frame) is live from the start.
+
+accept9 checks the parameters, the errors, embed mode, read-only and the home link over HTTP; accept10
+loads a docs page with three embedded viewers and checks that their histories stay apart, that the
+page scrolls over an idle frame and a clicked one takes the wheel, and that nothing logs an error.
 
 ---
 
@@ -2080,3 +2148,36 @@ A, B, C and D run in parallel. When they merge:
     (it may need its own explanation) or a changed note is stale; line numbers and "(+N more)" are not,
     and a note says to refresh them. *Red team*: an edge whose only location moved to a different
     function in the same file passes unseen; the edge itself, and whether it is allowed, did not change.
+97. **The viewer is a full HTML document** (v0.2.3, coordinator). viewer/src/index.html starts with the
+    `@sbtel file App.Page` comment, then `<!doctype html>`, `<html lang="en">`, `<meta charset>` and a
+    device-width viewport. Before, the page ran in quirks mode and phones laid it out 980 px wide unless
+    the host (the claude.ai artifact) added a viewport; accept5, accept6 and the diff viewer test
+    prepended one. They now load the page as it is, and every suite passes unchanged, so nothing relied
+    on quirks mode. The comment stays first because sbtel_owners.py would count a doctype above it as
+    code in no block; a comment before the doctype does not trigger quirks mode (`document.compatMode`
+    is `CSS1Compat`, which accept9 checks). The stray `// @sbtel begin Viewer.Boot` above `<script>`,
+    which the page drew as text under the canvas, is now an HTML comment: the transparent embed showed it.
+98. **A home link in the playground only** (v0.2.3, user decision). "sbtel" in the brand chip is a link,
+    underlined with a small ↗ on hover (always shown at 70% on touch), at `<meta name="sbtel-home">` or
+    `https://shashi.biz/sbtel/`. Server and diff mode are a local tool and keep the plain word.
+99. **Viewer.Play, a mode module for the standalone page** (v0.2.3). Boot already runs
+    `SBTEL.modes[SBTEL.mode].boot()`; registering `standalone` keeps the URL parameters, embed mode and
+    the home link in one file beside server.js and diff.js, with Boot's fallback unchanged. New block
+    `Viewer.Play` in "Page modes" (examples/viewer.sbtel) and `Sbtel.Viewer.Play` (examples/sbtel.sbtel);
+    14 new edges, all downward (186 bindings, 10 explained violations as before).
+100. **Two small hooks in the app** (v0.2.3). `loadPrefs(key)` (App.Document) reads settings and
+    comments under a key suffix, from the defaults, and `persist`/`saveComments` write under it;
+    `fitPad` (App.Camera) holds the room `fit` leaves for the chrome. These are edits to index.html
+    beyond Viewer.Mode (§6.5's rule is for the mode modules); standalone keys and margins are unchanged.
+101. **Keys by the hash of the initial text** (v0.2.3, user decision). Two demos of different specs,
+    a demo and the playground, and an embed and the same spec opened in the playground ("Open in
+    playground ↗") each get their own history, settings and comments. The hash is 64 bits (cyrb53's
+    mixing, both halves), not App.Kit's 32-bit `hash`, since many demos share one origin. *Red team*:
+    two pages with the same spec in embed mode share a history; that is the same demo.
+102. **Wheel only once the frame is live** (v0.2.3, user decision). A frame that zooms on the wheel traps
+    a reader scrolling past it. The frame goes live on a click, a tap or focus, and idle again on blur;
+    until then the wheel goes to the page (Chrome chains it out of a frame that does not scroll) and a
+    hint says how to start. Touch: a swipe on an idle frame scrolls the page.
+103. **Embed backgrounds** (v0.2.3). Transparent when the theme follows the system, so the demo sits on
+    the docs page's card; the theme's canvas colour when `&theme` fixes it, since a forced dark demo on a
+    light card would otherwise draw light text on light paper.

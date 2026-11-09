@@ -1,4 +1,8 @@
 <!-- @sbtel file App.Page -->
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sbtel Playground</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -517,7 +521,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
   <label class="chk"><input type="checkbox" id="anim"> Animate changes</label>
 </template>
 
-// @sbtel begin Viewer.Boot
+<!-- @sbtel begin Viewer.Boot -->
 <script>
 /*@@include core/core.js@@*/
 
@@ -736,12 +740,20 @@ const histCodec = {
 };
 // @sbtel end App.History
 // @sbtel begin App.Document
-Object.assign(state.opts, store.get('sbtel-play', store.get('marquee-play', {})).opts || {}); state.opts.allDetails = false;
-state.comments = store.get('sbtel-comments', store.get('marquee-comments', []));
-function persist() { store.set('sbtel-play', { opts: state.opts }); }
+// Settings and comments live under 'sbtel-play' and 'sbtel-comments' plus prefs.key: '' for the
+// playground and server mode, ':spec-<hash>' or ':embed-<hash>' for a spec loaded from the URL
+// (Viewer.Play, §6.9), which reads them again with loadPrefs, from the defaults.
+const prefs = { key:'', defaults:{ ...state.opts } };
+function loadPrefs(key) {
+  prefs.key = key;
+  Object.assign(state.opts, prefs.defaults, (key ? store.get('sbtel-play' + key, {}) : store.get('sbtel-play', store.get('marquee-play', {}))).opts || {}); state.opts.allDetails = false;
+  state.comments = key ? store.get('sbtel-comments' + key, []) : store.get('sbtel-comments', store.get('marquee-comments', []));
+}
+loadPrefs('');
+function persist() { store.set('sbtel-play' + prefs.key, { opts: state.opts }); }
 // @sbtel end App.Document
 // @sbtel begin App.Comments
-function saveComments() { store.set('sbtel-comments', state.comments); renderSendBtn(); }
+function saveComments() { store.set('sbtel-comments' + prefs.key, state.comments); renderSendBtn(); }
 // @sbtel end App.Comments
 // @sbtel begin App.Document
 // True where nothing may change (diff mode, a closed session): those modes reassign it (§6.5).
@@ -1041,10 +1053,12 @@ function zoomAt(f, cx, cy) {
   state.cam.x = cx - (cx - state.cam.x) * r; state.cam.y = cy - (cy - state.cam.y) * r; state.cam.k = k; applyCam();
 }
 function animCam() { $('world').classList.add('anim'); setTimeout(() => { $('world').classList.remove('anim'); placeStrip(); }, 340); }
+// The room fit leaves for the floating chrome: the brand chip above, the dock below (embed mode has less).
+const fitPad = { top:70, bottom:80, side:48 };
 function fit(animate) {
   if (!state.lay) return;
-  const W = innerWidth, H = innerHeight, top = 70, bottom = 80;
-  const k = Math.min(1.1, (W - 48) / state.lay.size.w, (H - top - bottom) / (state.lay.size.h + 40));
+  const W = innerWidth, H = innerHeight, { top, bottom, side } = fitPad;
+  const k = Math.min(1.1, (W - side) / state.lay.size.w, (H - top - bottom) / (state.lay.size.h + 40));
   state.cam = { k, x:(W - state.lay.size.w * k) / 2, y: top + Math.max(0, (H - top - bottom - state.lay.size.h * k) / 2) };
   if (animate) animCam();
   applyCam();
@@ -2468,7 +2482,8 @@ addEventListener('resize', () => placeStrip());
 // @sbtel begin Viewer.Mode
 // How this page was opened. Anything not served by `sbtel open` at /s/<32 hex>/ is the standalone
 // playground (file://, the published page, any other path). viewer/src/server.js and diff.js are
-// inlined below (after session.js, which they share); they register { boot } handlers in SBTEL.modes and Boot runs the one for SBTEL.mode.
+// inlined below (after session.js, which they share), and play.js after them (the standalone page's URL
+// parameters, embed mode and home link); they register { boot } handlers in SBTEL.modes and Boot runs the one for SBTEL.mode.
 // A spec session's page with ?compare=<key> is a comparison opened from another tab of it (the Review
 // panel's full diff, or a save conflict's "View their changes"): diff mode, with the pair from the opener
 // and no session of its own (§6.4).
@@ -2483,6 +2498,7 @@ const SBTEL = (() => {
 /*@@include viewer/src/review.js@@*/
 /*@@include viewer/src/server.js@@*/
 /*@@include viewer/src/diff.js@@*/
+/*@@include viewer/src/play.js@@*/
 
 // @sbtel begin Viewer.Boot
 (async () => {

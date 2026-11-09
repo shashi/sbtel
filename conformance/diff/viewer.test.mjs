@@ -8,7 +8,7 @@
 //      comment route, so boot(), the version toast, Reload and comment posting run without B's server.
 // Screenshots (deviceScaleFactor 1, light and dark, desktop and phone) go to --shots (default: a temp dir).
 import { createRequire } from 'node:module';
-import { readFileSync, writeFileSync, mkdirSync, mkdtempSync } from 'node:fs';
+import { readFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
@@ -211,9 +211,8 @@ async function shot(p, name, focus, k = 1) {
   ok(p.errors.length === 0, 'no page errors (dark)', p.errors);
   await p.context().close();
 }
-// The published page has a device-width viewport (as in viewer/test accept5): a copy with that meta tag.
-const phonePage = join(mkdtempSync(join(tmpdir(), 'sbtel-diff-')), 'phone.html');
-writeFileSync(phonePage, '<meta name="viewport" content="width=device-width, initial-scale=1">' + html);
+// The page carries its own device-width viewport (v0.2.3), so the phone runs load it as it is.
+const phonePage = page;
 for (const scheme of ['light', 'dark']) {
   const p = await newPage({ scheme, viewport: { width: 390, height: 844 }, touch: true });
   await p.goto('file://' + phonePage + '?diff'); await p.waitForTimeout(1200);

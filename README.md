@@ -155,6 +155,31 @@ contract (flags, formats, the server, the state directory) is in [docs/DESIGN.md
   `@sbtel` annotations and the edges in agreement.
 - [CHANGELOG.md](CHANGELOG.md): what changed in each release.
 
+## Embedding the viewer
+
+The viewer is one HTML file (`viewer/dist/index.html`). Opened from a file or any web server, it is
+the playground, and its URL can pick the spec and the presentation:
+
+| URL part | What it does |
+|---|---|
+| `#src=<base64url>` | shows that spec: base64url of its UTF-8 text |
+| `#example=<name>` | fetches `examples/<name>.sbtel` next to the page (served over HTTP), for long specs |
+| `?embed` | for an iframe: no side panels, a small toolbar (undo, zoom, fit, **Open in playground ↗**), fitted to the frame, transparent background |
+| `?embed=readonly` | the same, with nothing editable |
+| `&theme=light` or `&theme=dark` | a fixed theme instead of the system's |
+
+```html
+<iframe src="/sbtel/play/?embed=readonly#example=shell" width="100%" height="360"
+        style="border:0" title="sbtel demo"></iframe>
+```
+
+In JavaScript, `btoa(String.fromCharCode(...new TextEncoder().encode(spec))).replace(/\+/g, '-')
+.replace(/\//g, '_').replace(/=+$/, '')` makes the `#src` value. An embedded viewer scrolls with the
+page until it is clicked, and each spec keeps its own undo history and settings in the browser, apart
+from other demos and from the playground. A spec that cannot be read shows its error in place.
+[docs/DESIGN.md §6.9](docs/DESIGN.md) has the details. A copy of the page with `<meta name="sbtel-home"
+content="…">` points the playground's "sbtel" link at that address.
+
 ## Claude Code plugin
 
 The repo is a Claude Code plugin marketplace. The `sbtel` plugin adds three skills:

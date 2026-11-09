@@ -64,7 +64,7 @@ test-e2e: check-viewer          ## the session loop end to end: binary, server, 
 # in GO_SRC and examples/sbtel.edges.txt; every violation must be explained.
 # An edges file is stale only when its edges or comments (VIOLATION notes) change: line numbers that
 # drift with an ordinary edit do not fail selfcheck (tools/selfcheck/stale.mjs); `make edges` refreshes them.
-VIEWER_SRC = core/core.js viewer/src/index.html viewer/src/session.js viewer/src/review.js viewer/src/server.js viewer/src/diff.js
+VIEWER_SRC = core/core.js viewer/src/index.html viewer/src/session.js viewer/src/review.js viewer/src/server.js viewer/src/diff.js viewer/src/play.js
 GO_SRC = $(filter-out %_test.go,$(wildcard assets.go cmd/sbtel/*.go internal/*/*.go))
 
 tools/selfcheck/node_modules/.package-lock.json: tools/selfcheck/package.json tools/selfcheck/package-lock.json

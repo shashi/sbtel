@@ -3,6 +3,47 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
+## 0.2.3 (2026-11-08)
+
+The viewer embeds in docs pages, loads a spec from its URL, and links home.
+
+### Added
+
+- **A spec from the URL**: `#src=<base64url of the UTF-8 text>` or `#example=<name>` (fetches
+  `examples/<name>.sbtel` beside the page) instead of the sample. Each such spec keeps its undo
+  history, settings and comments under keys with a hash of its initial text, apart from other specs
+  and from the playground. Text that cannot be decoded or loaded, or a spec that does not parse, shows
+  the parse-error UI (the source sheet with the message), never a blank page.
+- **Embed mode** for docs pages: `?embed` hides the brand chip, help and side panels, keeps a small
+  toolbar (undo, redo, zoom, Fit, **Open in playground ↗**), fits the diagram to the frame on load and
+  resize, and draws on a transparent background. `?embed=readonly` makes it view-only; `&theme=light`
+  or `&theme=dark` fixes the theme. The wheel zooms and pans only after the frame is clicked or focused,
+  so the page scrolls over it, with a "Click to interact" hint; nothing takes focus or asks before
+  unload.
+- **Home link**: in the playground, "sbtel" in the top-left chip links to the project's home page
+  (`<meta name="sbtel-home" content="…">`, else https://shashi.biz/sbtel/), with a small ↗ on hover.
+  Server and diff mode are unchanged.
+- viewer/test: accept9 (URL parameters, embed mode, the home link) and accept10 (a page with three
+  embedded viewers: separate histories, no scroll trapping, no console errors).
+
+### Changed
+
+- viewer/dist/index.html is a full document: `<!doctype html>`, `<html lang="en">`, `<meta
+  charset="utf-8">` and a device-width viewport, so phones lay it out at their width without help from
+  the host. accept5, accept6 and the diff viewer test no longer prepend a viewport tag.
+- The viewer's spec has a new block, Viewer.Play (viewer/src/play.js), in "Page modes";
+  examples/sbtel.sbtel has Sbtel.Viewer.Play.
+
+### Fixed
+
+- The page no longer draws the text `// @sbtel begin Viewer.Boot` under the canvas: the annotation above
+  `<script>` is an HTML comment now.
+
+### Docs
+
+- README: "Embedding the viewer". DESIGN.md: §6.9 (the URL, embed mode, the home link) and §11
+  entries 97-103.
+
 ## 0.2.2 (2026-11-08)
 
 Behaviors read like blocks, and code that calls through an interface is checkable.
