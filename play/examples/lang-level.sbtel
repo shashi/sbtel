@@ -1,0 +1,8 @@
+(block Notes
+  (level :name "Notes as text"
+    (block Editor)
+    (block Preview))
+  (level :name "Stored notes"
+    (~ Nothing here knows about editing. ~)
+    (block Store)
+    (block Markdown)))

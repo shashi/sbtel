@@ -1,0 +1,3 @@
+edges.txt:15: Recalc -> Grid: upward: Sheet (level 3 "Documents" of Suite) binds upward to Spreadsheet (level 4 "Apps")  (src/sheet/recalc.ts:58   repaints the grid after recalculating)
+edges.txt:21: Functions -> SortTool: upward: Formulas (level 2 "Formulas" of Suite) binds upward to Spreadsheet (level 4 "Apps")  (src/formula/functions.ts:212   SORTBY reuses the toolbar's sort)
+sheet.sbtel: 21 bindings, 2 not allowed, 0 explained

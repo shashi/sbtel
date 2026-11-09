@@ -1,0 +1,10 @@
+(block Notes
+  (message Note :type "struct" (~ A title and a body. ~))
+  (message Edit (carries Note) (~ A change to one note. ~))
+  (message RemoteEdit (refines Edit) (~ An edit made on another device. ~))
+  (message NoteSaved (carries Note) (~ A note reached the disk. ~))
+  (level :name "Notes as text"
+    (block Editor (port :out Edit) (port :in RemoteEdit) (port :in NoteSaved) (~ The text area. ~))
+    (block Sync (port :out RemoteEdit) (port :in NoteSaved) (~ Exchanges edits with the cloud copy. ~)))
+  (level :name "Stored notes"
+    (block Store (port :in Edit) (port :out NoteSaved) (~ Keeps notes on disk. ~))))

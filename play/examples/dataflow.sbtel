@@ -2,8 +2,8 @@
 (message Camera (~ Pan and zoom. ~))
 (message Snapshot (carries Selection Camera) (~ What undo restores. ~))
 (level :name "Snapshots"
-  (block History (port undo in Snapshot))
-  (block Autosave (port save in Snapshot)))
+  (block History (port :in Snapshot :as undo))
+  (block Autosave (port :in Snapshot :as save)))
 (level :name "Drawing"
-  (block Canvas (port view out Camera))
-  (block Picker (port picked out Selection)))
+  (block Canvas (port :out Camera :as view))
+  (block Picker (port :out Selection :as picked)))

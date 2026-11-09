@@ -1,0 +1,5 @@
+(block Notes
+  (level :name "Stored notes"
+    (block Store (~ Keeps notes on disk. ~))
+    (block Markdown (~ Turns text into a document tree. ~))
+    (block Index (~ Maps words to notes. ~))))

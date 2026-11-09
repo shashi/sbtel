@@ -1,8 +1,8 @@
 (message Event :type "struct" (~ One state change. ~))
 (message Image :type "struct" (~ Encoded pixels. ~))
 (behavior (Store T) :type "trait"
-  (port put in T)
-  (port get out T)
+  (port :in T :as put)
+  (port :out T :as get)
   (~ Keeps values of T and returns them on request. ~))
 (behavior Durable :type "trait"
   (implements (Store Event))

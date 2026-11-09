@@ -1,0 +1,4 @@
+Main -> AddIns         # src/main.ts:16   loads the add-ins
+Main -> Functions      # src/main.ts:17   the built-in functions
+Main -> Evaluator      # src/main.ts:18   new Evaluator([...builtins, ...addIns])
+Evaluator -> Function  # src/formula/eval.ts:6   calls functions through the Function interface

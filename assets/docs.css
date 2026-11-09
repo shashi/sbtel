@@ -50,9 +50,9 @@
 }
 .doc h1 code, .doc h2 code, .doc h3 code { background:none; border:0; padding:0; font-size:.9em; }
 
-/* ---------- Guide and Viewer manual ---------- */
-.guide .doc, .manual .doc { max-width:880px; }
-.guide .doc > p, .guide .doc > dl, .manual .doc > p, .manual .doc > ul, .manual .doc > ol, .manual .doc > dl { max-width:68ch; }
+/* ---------- The three documents: Core concepts, The sbtel language, Using sbtel ---------- */
+.guide .doc { max-width:880px; }
+.guide .doc > p, .guide .doc > ul, .guide .doc > ol, .guide .doc > dl { max-width:68ch; }
 .doc h1 + .intro { font-size:19px; line-height:1.55; color:var(--ink-2); max-width:62ch; }
 .nowrap { white-space:nowrap; }
 .ideas { margin:0 0 28px; }
@@ -82,8 +82,18 @@
 .demo.side .spec { margin-top:0; order:2; }
 .demo.side .live { order:1; min-width:0; }
 .cbl { font-size:12.5px; color:var(--muted); margin:0 0 6px 2px; font-family:var(--ff-mono); }
+/* A before and an after, side by side (build.mjs: <div class="demo-pair">); stacked on narrow screens. */
+.demo-pair { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px; align-items:start; margin:20px 0 4px; }
+.demo-pair .demo { margin:0 0 20px; min-width:0; }
+.demo .demo-label { font-family:var(--ff-ui); font-size:13px; font-weight:600; color:var(--ink-2); margin:0 0 8px 2px; }
+.demo-pair + .pair-out { margin-top:0; }
+.out-label { font-size:14.5px; color:var(--muted); margin:0 0 8px; }
 .pair-out { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px; margin:0 0 32px; }
 .pair-out pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+/* A long edges file and its check output: one above the other, the edges at full width. */
+.stack-out { display:grid; gap:14px; margin:0 0 32px; }
+.stack-out .spec { min-width:0; }
+.stack-out pre[data-lang="text"] { white-space:pre-wrap; overflow-wrap:anywhere; }
 .shot { margin:20px 0 32px; }
 .shot img { display:block; max-width:100%; height:auto; border:1.5px solid var(--frame-line); border-radius:14px; }
 .shot figcaption { margin:10px 2px 0; font-size:14.5px; color:var(--muted); max-width:72ch; }
@@ -93,6 +103,7 @@
 .keys dd { color:var(--ink-2); }
 kbd { font-family:var(--ff-mono); font-size:12px; border:1px solid var(--panel-line); border-bottom-width:2px; border-radius:5px; padding:0 5px; background:var(--surface); }
 @media (max-width: 1100px) { .demo.side { grid-template-columns:minmax(0, 1fr); } .demo.side .spec { order:2; } }
+@media (max-width: 900px) { .demo-pair { grid-template-columns:minmax(0, 1fr); gap:0; } }
 @media (max-width: 720px) {
   .forms, .keys { grid-template-columns:minmax(0, 1fr); }
   .forms dt, .keys dt { border-bottom:0; padding-bottom:0; white-space:normal; }
@@ -100,3 +111,22 @@ kbd { font-family:var(--ff-mono); font-size:12px; border:1px solid var(--panel-l
   .demo .embed { height:min(var(--h), 520px); }
   .demo .embed.ar { aspect-ratio:var(--arp, var(--ar)); min-height:203px; max-height:calc(min(560px, var(--nhp, var(--nh))) + 3px); }
 }
+/* An aside (the SICP note), the rule of thumb, the workflow loop, install lines, failing specs. */
+.note { margin:24px 0 8px; padding:14px 18px; border-left:3px solid var(--frame-line); background:var(--appx); border-radius:0 10px 10px 0; max-width:68ch; }
+.note p { margin:0; font-size:15.5px; color:var(--ink-2); }
+.rule { margin:40px 0 8px; padding:18px 22px; border:1.5px solid var(--accent); border-radius:14px; background:var(--accent-soft); max-width:68ch; }
+.rule p { margin:0; font-size:18px; line-height:1.5; color:var(--ink); }
+.loop { counter-reset:step; list-style:none; padding-left:0 !important; }
+.loop li { counter-increment:step; position:relative; padding-left:40px; margin:12px 0; }
+.loop li::before { content:counter(step); position:absolute; left:0; top:1px; width:26px; height:26px; border-radius:50%; border:1.5px solid var(--frame-line);
+  background:var(--surface); color:var(--ink); font:600 13px/23px var(--ff-ui); text-align:center; }
+.install-line { margin:8px 0 20px; max-width:68ch; }
+.install-line pre { font-size:13px; }
+.spec.fails .cbl { color:var(--warn); }
+.spec.fails pre { border-left:3px solid var(--warn); }
+.pair-out .spec { min-width:0; }
+.pair-out .spec pre { height:calc(100% - 26px); }
+.doc > .spec { margin:14px 0 24px; }
+.spec pre[data-lang="text"] { white-space:pre-wrap; overflow-wrap:anywhere; }
+.forms-tbl td:first-child { width:1%; }
+.checks dt code { font-weight:500; }

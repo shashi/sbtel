@@ -1,0 +1,8 @@
+(message Note (~ A title and a body. ~))
+(behavior Repo :type "interface"
+  (port :in Note :as save)
+  (port :out Note :as load)
+  (~ Keeps notes and gives them back. ~))
+(level
+  (block DiskStore (implements Repo) (~ Notes as files. ~))
+  (block MemoryStore (implements Repo) (~ Notes in memory, for tests. ~)))

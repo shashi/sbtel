@@ -1,0 +1,3 @@
+SortTool -> Sorting    # src/toolbar/sort.ts:3
+Functions -> Value     # src/formula/functions.ts:3
+Functions -> Sorting   # src/formula/functions.ts:212   SORTBY sorts with the shared code

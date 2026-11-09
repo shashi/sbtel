@@ -1,0 +1,13 @@
+(block Files :type "module"
+  (message SheetData :type "class" (~ Every sheet's cells, as values. ~))
+  (message FileBytes :type "Uint8Array" (~ The saved file. ~))
+  (behavior FileFormat :type "TypeScript interface"
+    (port :in SheetData)
+    (port :out FileBytes)
+    (~ Turns a workbook into one file. ~))
+  (level :name "Formats"
+    (block XlsxFormat :type "class" (implements FileFormat) (~ An Excel workbook. ~))
+    (block CsvFormat :type "class" (implements FileFormat) (~ One sheet as comma-separated text. ~)))
+  (level :name "Shared file code"
+    (block FormatKit :type "class"
+      (~ What the abstract class used to hold: file names, escaping, number formats. ~))))

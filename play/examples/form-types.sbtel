@@ -5,11 +5,11 @@
 (message Camera (~ Pan and zoom. ~))
 (message Snapshot (carries Selection Camera) (~ What undo restores. ~))
 (level :name "Reacting"
-  (block History (port undo in Snapshot) (port seen in Event))
-  (block Autosave (port save in Snapshot))
-  (block Menu (port open in Click))
-  (block Shortcuts (port key in Key)))
+  (block History (port :in Snapshot :as undo) (port :in Event :as seen))
+  (block Autosave (port :in Snapshot :as save))
+  (block Menu (port :in Click :as open))
+  (block Shortcuts (port :in Key)))
 (level :name "Input"
-  (block Mouse (port click out Click) (port view out Camera))
-  (block Keyboard (port key out Key))
-  (block Picker (port picked out Selection)))
+  (block Mouse (port :out Click) (port :out Camera :as view))
+  (block Keyboard (port :out Key))
+  (block Picker (port :out Selection :as picked)))

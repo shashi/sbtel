@@ -1,0 +1,15 @@
+; The Notes app in three levels. Each level is written in the vocabulary of the ones below it.
+(block Notes :type "app"
+  (~ Write notes, see them rendered, keep them on disk. ~)
+  (level :name "The app"
+    (block Shell (~ Opens the window and wires the parts together. ~)))
+  (level :name "Notes as text"
+    (block Editor (~ The text area. ~))
+    (block Preview (~ Renders the note beside the editor. ~))
+    (block Sync (~ Exchanges edits with the cloud copy. ~))
+    (block Search (~ Finds notes by their words. ~)))
+  (level :name "Stored notes"
+    (~ Notes as values on disk. Nothing here knows about editing. ~)
+    (block Store (~ Keeps notes on disk. ~))
+    (block Markdown (~ Turns text into a document tree. ~))
+    (block Index (~ Maps words to notes. ~))))

@@ -1,0 +1,13 @@
+(block Notes :type "app"
+  (message Note :type "struct" (~ A title and a body. ~))
+  (behavior Repo :type "TypeScript interface"
+    (port :in Note :as save)
+    (port :out Note :as load)
+    (~ Keeps notes and gives them back. ~))
+  (level :name "The app"
+    (block Shell :type "module" (~ Makes a store and hands it to the editor. ~)))
+  (level :name "Notes as text"
+    (block Editor :type "module" (~ Saves through the Repo it is given. ~)))
+  (level :name "Stored notes"
+    (block DiskStore :type "module" (implements Repo) (~ Notes as files. ~))
+    (block MemoryStore :type "module" (implements Repo) (~ Notes in memory, for tests. ~))))

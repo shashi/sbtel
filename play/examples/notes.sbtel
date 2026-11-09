@@ -7,10 +7,10 @@
     (block Shell :type "module" (~ Wires the parts to each other. ~)))
   (level :name "Notes as text"
     (adjacent (~ The preview scrolls with the editor. ~)
-      (block Editor :type "module" (port edit out Edit) (~ The text area. ~))
-      (block Preview :type "module" (port changed in Changed) (~ Renders the note beside the editor. ~)))
-    (block Sync :type "module" (port changed in Changed) (port remote out Edit) (~ Exchanges edits with the cloud copy. ~)))
+      (block Editor :type "module" (port :out Edit) (~ The text area. ~))
+      (block Preview :type "module" (port :in Changed) (~ Renders the note beside the editor. ~)))
+    (block Sync :type "module" (port :in Changed) (port :out Edit :as remote) (~ Exchanges edits with the cloud copy. ~)))
   (level :name "Stored notes"
     (~ Knows nothing of editing. ~)
-    (block Store :type "module" (port edit in Edit) (port changed out Changed) (~ Keeps notes on disk. ~))
+    (block Store :type "module" (port :in Edit) (port :out Changed) (~ Keeps notes on disk. ~))
     (block Markdown :type "module" (~ Turns text into a document tree. ~))))

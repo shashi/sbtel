@@ -20,9 +20,9 @@
     sbtel
   </a>
   <nav aria-label="Site">
-    <a href="docs/">Guide</a>
-    <a href="docs/viewer/">Viewer</a>
-    <a href="docs/reference/">Reference</a>
+    <a href="docs/">Docs</a>
+    <a href="docs/language/">Language</a>
+    <a href="docs/using/">Using sbtel</a>
     <a href="play/">Playground</a>
     <a href="https://github.com/shashi/sbtel">GitHub</a>
   </nav>
@@ -58,7 +58,7 @@
         document.getElementById('pane-go').hidden = true; document.getElementById('pane-cc').hidden = false; } } catch (e) {}</script>
       <div class="ctas">
         <a class="btn primary" href="play/">Open the playground</a>
-        <a class="btn" href="docs/">Read the guide</a>
+        <a class="btn" href="docs/">Read the core concepts</a>
       </div>
     </div>
   </div>
@@ -120,12 +120,12 @@ notes.sbtel: 9 bindings, <span class="hl-ok">0 not allowed</span></pre>
 <span class="del">-    (block Editor)</span>
 <span class="del">-    (block Preview)</span>
 <span class="add">+    (adjacent (~ The preview scrolls with the editor. ~)</span>
-<span class="add">+      (block Editor (port saved in NoteSaved))</span>
+<span class="add">+      (block Editor (port :in NoteSaved))</span>
 <span class="add">+      (block Preview))</span>
 <span class="ctx">     (block Sync) (block Search))</span>
 <span class="ctx">   (level :name "Stored notes"</span>
 <span class="del">-    (block Store)</span>
-<span class="add">+    (block Store (port saved out NoteSaved))</span>
+<span class="add">+    (block Store (port :out NoteSaved))</span>
 <span class="ctx">     (block Markdown) (block Index)))</span></pre>
         <details>
           <summary>The spec before the fix</summary>
@@ -276,16 +276,16 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
       <p><code>refines</code> declares a subtype: a port that takes <code>Event</code> also takes a <code>Click</code>. A <code>behavior</code> is shared vocabulary, like a trait: a set of ports that many blocks promise.</p>
 <pre class="code" data-lang="sbtel">(message KeyChord (~ A normalized key combination. ~))
 (level :name "Surfaces"
-  (block Palette (port chord in KeyChord)))
+  (block Palette (port :in KeyChord)))
 (level :name "Services"
-  (block Keymap (port chord out KeyChord)))</pre>
+  (block Keymap (port :out KeyChord)))</pre>
     </div>
     <figure class="fig">
       <div class="frame dgm" id="msg">
         <div class="lvl"><div class="lname"><span>Surfaces</span></div>
-          <div class="row"><div class="blk" data-id="Palette"><span class="ear top"><span class="pdot" style="background:var(--m4)" title="in chord: KeyChord"></span></span>Palette</div></div></div>
+          <div class="row"><div class="blk" data-id="Palette"><span class="ear top"><span class="pdot" style="background:var(--m4)" title="in keyChord: KeyChord"></span></span>Palette</div></div></div>
         <div class="lvl"><div class="lname"><span>Services</span></div>
-          <div class="row"><div class="blk" data-id="Keymap">Keymap<span class="ear bot"><span class="pdot" style="background:var(--m4)" title="out chord: KeyChord"></span></span></div></div></div>
+          <div class="row"><div class="blk" data-id="Keymap">Keymap<span class="ear bot"><span class="pdot" style="background:var(--m4)" title="out keyChord: KeyChord"></span></span></div></div></div>
         <span class="portlab" id="msg-in">in KeyChord</span>
         <span class="portlab" id="msg-out">out KeyChord</span>
         <svg class="edges" aria-hidden="true"></svg>
@@ -309,11 +309,11 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
 (message Camera (~ Pan and zoom. ~))
 (message Snapshot (carries Selection Camera) (~ What undo restores. ~))
 (level :name "Snapshots"
-  (block History (port undo in Snapshot))
-  (block Autosave (port save in Snapshot)))
+  (block History (port :in Snapshot :as undo))
+  (block Autosave (port :in Snapshot :as save)))
 (level :name "Drawing"
-  (block Canvas (port view out Camera))
-  (block Picker (port picked out Selection)))</pre>
+  (block Canvas (port :out Camera :as view))
+  (block Picker (port :out Selection :as picked)))</pre>
     </div>
     <figure class="fig">
       <div class="frame dgm" id="car">
@@ -398,11 +398,12 @@ notes.sbtel: 2 bindings, <span class="hl-warn">1 not allowed</span>, 0 explained
   <div class="cols">
     <a class="mark" href="./" aria-label="sbtel home"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M2 12a4 4 0 0 1 4-4h3V5.5A3.5 3.5 0 0 1 12.5 2h1A3.5 3.5 0 0 1 17 5.5V8h3a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z" fill="var(--leaf)" stroke="var(--frame-line)" stroke-width="1.5"/><circle cx="11.2" cy="5.6" r="1.35" fill="var(--m3)"/><circle cx="14.8" cy="5.6" r="1.35" fill="var(--m6)"/><path d="M6.5 16h13" stroke="var(--frame-line)" stroke-width="1.2" opacity=".7"/></svg>sbtel</a>
     <nav class="links" aria-label="Footer">
-      <a href="https://github.com/shashi/sbtel">GitHub</a>
-      <a href="docs/">Guide</a>
-      <a href="docs/viewer/">Viewer</a>
-      <a href="docs/reference/">Reference</a>
+      <a href="docs/">Core concepts</a>
+      <a href="docs/language/">Language</a>
+      <a href="docs/using/">Using sbtel</a>
       <a href="play/">Playground</a>
+      <a href="docs/reference/">Reference</a>
+      <a href="https://github.com/shashi/sbtel">GitHub</a>
       <a href="https://github.com/shashi/sbtel/blob/main/CHANGELOG.md">Changelog</a>
     </nav>
   </div>

@@ -1,0 +1,12 @@
+(block Export :type "package"
+  (message Note :type "class" (~ A title and a body. ~))
+  (message Document :type "byte[]" (~ The exported file. ~))
+  (behavior Format :type "Java interface"
+    (port :in Note)
+    (port :out Document)
+    (~ Turns one note into one file. ~))
+  (level :name "Formats"
+    (block HtmlFormat :type "class" (implements Format) (~ A standalone web page. ~))
+    (block PdfFormat :type "class" (implements Format) (~ A printable file. ~)))
+  (level :name "Shared export code"
+    (block ExportKit :type "class" (~ What the abstract class used to hold: file names, escaping, headers. ~))))

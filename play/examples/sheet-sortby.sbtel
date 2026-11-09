@@ -1,0 +1,9 @@
+; SORTBY, a formula function, reuses the sort behind the toolbar's Sort button.
+(level :name "Apps"
+  (block Spreadsheet :type "app"
+    (block SortTool :type "module" (~ The Sort button: sorts the selected rows. ~))))
+(level :name "Formulas"
+  (block Formulas :type "folder"
+    (block Functions :type "module" (~ SUM, VLOOKUP, SORTBY and the rest. ~))))
+(level :name "Values"
+  (block Value :type "module" (~ A number, text, date or error, and arithmetic on them. ~)))

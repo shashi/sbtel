@@ -1,0 +1,2 @@
+edges.txt:3: Functions -> SortTool: upward: Formulas (level 2 "Formulas" of the file) binds upward to Spreadsheet (level 3 "Apps")  (src/formula/functions.ts:212   SORTBY reuses the toolbar's sort)
+sheet.sbtel: 3 bindings, 1 not allowed, 0 explained

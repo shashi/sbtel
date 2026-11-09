@@ -1,0 +1,10 @@
+Shell -> Editor        # src/shell.ts:12
+Shell -> Preview       # src/shell.ts:13
+Shell -> Sync          # src/shell.ts:14
+Shell -> Search        # src/shell.ts:15
+Editor -> Store        # src/editor.ts:40
+Preview -> Markdown    # src/preview.ts:9
+Preview -> Editor      # src/preview.ts:31
+Sync -> Store          # src/sync.ts:22
+Search -> Index        # src/search.ts:7
+Store -> Editor        # src/store.ts:58

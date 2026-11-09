@@ -1,0 +1,19 @@
+; One block expanded twice: Store is a module, the module is files, and a file is functions.
+(block Notes :type "app"
+  (~ Write notes, see them rendered, keep them on disk. ~)
+  (level :name "Notes as text"
+    (block Editor :type "module" (~ The text area. ~))
+    (block Sync :type "service" (~ Exchanges edits with the cloud copy. ~)))
+  (level :name "Stored notes"
+    (block Store :type "module"
+      (~ Keeps notes on disk. ~)
+      (level :name "Saving and loading"
+        (block store.ts :type "file"
+          (~ The module's API. ~)
+          (level
+            (block save :type "function" (~ Writes a note, then its index entry. ~))
+            (block load :type "function" (~ Reads a note back. ~)))
+          (level
+            (block encode :type "function" (~ A note as bytes, and back. ~)))))
+      (level :name "Files on disk"
+        (block atomic.ts :type "file" (~ Writes a temporary file, then renames it, so a crash never leaves half a note. ~))))))

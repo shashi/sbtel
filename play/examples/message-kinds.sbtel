@@ -8,12 +8,12 @@
   (message ExportText :type "stdout" (carries Body) (~ What `notes export` prints. ~))
   (message NoteRow :type "database row" (carries Body) (~ One row of the notes table. ~))
   (level :name "Clients"
-    (block Browser :type "app" (port save out SaveRequest) (port saved in NoteSaved))
-    (block CLI :type "binary" (port progress in Progress) (port stdout out ExportText))
-    (block Backup :type "shell script" (port stdin in ExportText)))
+    (block Browser :type "app" (port :out SaveRequest :as save) (port :in NoteSaved :as saved))
+    (block CLI :type "binary" (port :in Progress) (port :out ExportText :as stdout))
+    (block Backup :type "shell script" (port :in ExportText :as stdin)))
   (level :name "Services"
-    (block API :type "service" (port save in SaveRequest) (port saved out NoteSaved) (port job out IndexJob))
-    (block Indexer :type "worker" (port job in IndexJob))
-    (block Exporter :type "library" (port progress out Progress) (port row in NoteRow)))
+    (block API :type "service" (port :in SaveRequest :as save) (port :out NoteSaved :as saved) (port :out IndexJob :as job))
+    (block Indexer :type "worker" (port :in IndexJob :as job))
+    (block Exporter :type "library" (port :out Progress) (port :in NoteRow :as row)))
   (level :name "Storage"
-    (block Database :type "Postgres" (port row out NoteRow))))
+    (block Database :type "Postgres" (port :out NoteRow :as row))))

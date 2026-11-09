@@ -1,0 +1,5 @@
+Clock.Application -> Clock.Counter   # lib/clock/application.ex:6
+Clock.Application -> Clock.Ticker    # lib/clock/application.ex:7
+Clock.Counter -> gen_server          # lib/clock/counter.ex:4  GenServer.start_link
+Clock.Ticker -> gen_server           # lib/clock/ticker.ex:4
+gen_server -> GenServer              # the OTP loop calls handle_info/2

@@ -6,9 +6,9 @@
     (block index.html :type "file" (~ Loads the app and the styles. ~))
     (block app.js :type "file" (~ Starts the router and mounts the views. ~)))
   (level :name "Views"
-    (block router.js :type "file" (port route out Route) (~ Maps the URL to a view. ~))
-    (block views/list.js :type "file" (port route in Route) (~ The list of notes. ~))
-    (block views/note.js :type "file" (port route in Route) (~ One note, editable. ~)))
+    (block router.js :type "file" (port :out Route) (~ Maps the URL to a view. ~))
+    (block views/list.js :type "file" (port :in Route) (~ The list of notes. ~))
+    (block views/note.js :type "file" (port :in Route) (~ One note, editable. ~)))
   (level :name "Data"
     (block api.js :type "file" (~ Fetches and saves notes over HTTP. ~))
     (block styles.css :type "file" (~ The look. ~))))

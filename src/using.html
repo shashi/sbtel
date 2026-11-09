@@ -1,0 +1,104 @@
+<!-- title: Using sbtel -->
+<!-- description: Using sbtel: install the CLI, set up your coding agent, read and review a design on the sbtel canvas, and export a diagram as one HTML file. -->
+<h1>Using sbtel</h1>
+<p class="intro"><code>sbtel</code> is one static binary. It checks specs, serves the canvas where you and your coding agent look at the same design, and exports a diagram as a file you can send to anyone. This page covers the workflow, setup, the canvas and exporting.</p>
+
+<h2 id="workflow">The workflow</h2>
+<p>You design with your agent the way you would review a pull request with a colleague. The agent writes the spec; you read it as a picture, comment and edit; the agent revises.</p>
+<ol class="loop">
+  <li><strong>The agent opens a spec.</strong> It writes <code>notes.sbtel</code>, lints it, and runs <code>sbtel open notes.sbtel</code>. A browser tab shows the canvas.</li>
+  <li><strong>You read it on the canvas, comment and review.</strong> Comments and edits gather in a draft review, and you send them together.</li>
+  <li><strong>The agent reads <code>sbtel inbox</code> and pushes a revision.</strong> It applies your edits and answers your comments, then runs <code>sbtel open notes.sbtel --session &lt;id&gt;</code>. The same tab offers to reload.</li>
+  <li><strong><code>sbtel check</code> keeps the code honest.</strong> Once there is code, the agent lists who names whom in it and checks those edges against the levels.</li>
+</ol>
+<p>This is what the agent sees after you send a review:</p>
+<sbtel-code file="src/out/inbox.txt" label="sbtel inbox $id --wait"></sbtel-code>
+
+<h2 id="install">Install the CLI</h2>
+<p>On macOS, Linux, and Git Bash or MSYS on Windows:</p>
+<div class="install-line"><pre class="code wrapline">curl -fsSL https://raw.githubusercontent.com/shashi/sbtel/main/install.sh | sh</pre></div>
+<p>In Windows PowerShell:</p>
+<div class="install-line"><pre class="code wrapline">irm https://raw.githubusercontent.com/shashi/sbtel/main/install.ps1 | iex</pre></div>
+<p>Each installer downloads the release binary for your platform, verifies its SHA-256 checksum and puts it in <code>~/.local/bin</code>, or <code>%LOCALAPPDATA%\Programs\sbtel</code> on Windows. Set <code>SBTEL_INSTALL_DIR</code> to choose another directory, or <code>SBTEL_VERSION</code> to pick a release. The binary has no runtime dependencies. Check that it works:</p>
+<sbtel-code file="src/out/version.txt" label="output"></sbtel-code>
+<p><code>sbtel</code> keeps its sessions in <code>~/.sbtel</code> (<code>%USERPROFILE%\.sbtel</code> on Windows), or in <code>$SBTEL_HOME</code> when that is set. <code>sbtel open</code> opens a browser tab; on a machine without one, pass <code>--no-browser</code> or set <code>SBTEL_NO_BROWSER=1</code> and it prints the address instead.</p>
+
+<h2 id="agent">Set up your coding agent</h2>
+<p>In Claude Code, the sbtel repository is a plugin marketplace. Add it and install the plugin:</p>
+<div class="install-line"><pre class="code">/plugin marketplace add shashi/sbtel
+/plugin install sbtel@sbtel</pre></div>
+<p>The plugin has three skills. They drive the <code>sbtel</code> binary, so install that too.</p>
+<dl class="keys">
+  <dt>sbtel-design</dt><dd>Designing or restructuring a system as a spec, with you in the loop: levels of language, one strand per block, and a red-team pass over the result. It also critiques an existing spec.</dd>
+  <dt>sbtel-recover</dt><dd>Recovering a spec from an existing codebase: finding its levels, annotating the code with <code>@sbtel</code> comments, extracting the edges and running <code>sbtel check</code>. Its helper scripts resolve references in JavaScript, TypeScript and Go.</dd>
+  <dt>sbtel-language</dt><dd>Reading, writing and fixing specs, the <code>lint</code>, <code>query</code> and <code>check</code> commands, and the review loop with you.</dd>
+</dl>
+<p>Other agents need two things: the CLI on their path, and the text of the language skill, <a href="https://github.com/shashi/sbtel/blob/main/plugin/skills/sbtel-language/SKILL.md">plugin/skills/sbtel-language/SKILL.md</a>, in their instructions or context. That file teaches the syntax and the loop; its <a href="https://github.com/shashi/sbtel/blob/main/plugin/skills/sbtel-language/reference.md">reference.md</a> has every rule. Tell the agent to run <code>sbtel lint</code> after every edit, and to wait for your review with <code>sbtel inbox --wait</code> instead of asking you in chat.</p>
+
+<h2 id="canvas">The sbtel canvas</h2>
+<p>The canvas is the picture of a spec. <code>sbtel open</code> shows it in a session with your agent, the <a href="../../play/">playground</a> edits a spec in your browser, and every diagram on this site is the same viewer.</p>
+
+<h3 id="reading">Reading the picture</h3>
+<dl class="keys">
+  <dt>Cards</dt><dd>A card is a block. A pill shows its <code>:type</code>, and the text under its name is its sketch. A card that holds levels has a triangle that opens and closes it.</dd>
+  <dt>Levels</dt><dd>Each level&rsquo;s name sits on the line above it, at the left. The top level is the highest.</dd>
+  <dt>Adjacency lines</dt><dd>A line between two cards in one level means they are adjacent: they may name each other.</dd>
+  <dt>Ears</dt><dd>Dots on a card&rsquo;s top ear are its inputs, and dots on its bottom ear its outputs. A dot&rsquo;s colour is its message type.</dd>
+  <dt>Drawers</dt><dd>Click an ear to open its drawer: one row per port, with its name and type.</dd>
+  <dt>Callouts</dt><dd>Point at a block, a port, a level&rsquo;s name or an adjacency line, and its sketch appears beside it.</dd>
+  <dt>Partners</dt><dd>Point at a port and every block it can exchange values with is outlined in the type&rsquo;s colour.</dd>
+  <dt>Data flow</dt><dd>Point at a message type, in the band at the bottom or on a port, and every type that carries it is outlined, along with every block that sends or takes one.</dd>
+  <dt>Behaviors</dt><dd>Point at a behavior and its implementers are outlined.</dd>
+</dl>
+<sbtel-demo example="notes-tour" mode="readonly" spec="hide">A read-only view of the Notes app. Point at a level&rsquo;s name and at the line between Editor and Preview. Open Store&rsquo;s lower ear and point at <code>noteSaved</code>.</sbtel-demo>
+<sbtel-demo example="notes-data" mode="readonly" spec="hide">Data flow: point at <code>Note</code> in the band at the bottom. Then point at <code>RemoteEdit</code>: Store takes it, because a <code>RemoteEdit</code> is an <code>Edit</code>.</sbtel-demo>
+
+<h3 id="editing">Editing</h3>
+<p>The picture is the spec: every edit rewrites the text. Click a port&rsquo;s row, a level&rsquo;s name or an adjacency line to edit it in place. Select a card and choose Edit for its name, type, sketch, ports and behaviors. Drag a block to move it; every place it may go lights up as a drop zone, and a drop that would break the scope rules bounces back with a note that says why. <kbd>Delete</kbd> removes what is selected, and <kbd>&#8984;Z</kbd> undoes. On a phone, tap to select, drag to move, and long-press for the menu.</p>
+
+<h3 id="comments">Comments</h3>
+<p>In a session, select a block and press Comment, or <kbd>&#8984;</kbd>-click it (<kbd>Ctrl</kbd>-click on Windows and Linux). <strong>Add to review</strong> keeps the comment in your draft. <strong>Send now</strong> sends it to the agent on its own, straight away, for a quick question.</p>
+<figure class="shot"><picture><source srcset="shots/comment-dark.png" media="(prefers-color-scheme: dark)"><img src="shots/comment-light.png" alt="The comment box on the Store block, with the buttons Cancel, Send now and Add to review." loading="lazy" width="780" height="300"></picture></figure>
+
+<h3 id="review">The review</h3>
+<p><strong>Review</strong> in the toolbar counts your pending comments and edits. The panel lists your edits as a change list, your comments, and a box for an overall message. <strong>Send review</strong> sends all of it as one. It never writes the spec file: your edits reach the agent as a proposed spec, and stay in the tab, marked as proposed, until the agent pushes a version. When it does, the tab offers to reload, and the agent&rsquo;s replies appear on your comments.</p>
+<figure class="shot"><picture><source srcset="shots/review-dark.png" media="(prefers-color-scheme: dark)"><img src="shots/review-light.png" alt="The Review panel: one edit in the change list, one pending comment on Store, and an overall message, with Send review." loading="lazy" width="1100" height="640"></picture></figure>
+
+<h3 id="save">Saving, and conflicts</h3>
+<p><strong>Save</strong> (<kbd>&#8984;S</kbd>) skips the review and writes your text to the file directly. If the agent has pushed a version since you started editing, the canvas asks before overwriting it, and can show you their changes first. It never overwrites silently.</p>
+<figure class="shot"><picture><source srcset="shots/conflict-dark.png" media="(prefers-color-scheme: dark)"><img src="shots/conflict-light.png" alt="A dialog saying the spec changed since you started, asking whether to overwrite it, with Overwrite, View their changes and Cancel." loading="lazy" width="610" height="300"></picture></figure>
+
+<h3 id="diff">The diff view</h3>
+<p><code>sbtel open-diff a.sbtel b.sbtel</code> shows what changed between two versions in one picture. Added parts are green, removed parts are dashed red ghosts in their old place, moved parts are blue with a faint ghost, and changed parts get an amber dot. The change list on the right takes you to each one. <strong>Before</strong> and <strong>After</strong>, or the <kbd>B</kbd> and <kbd>A</kbd> keys, switch between the two versions. <code>sbtel diff</code> prints the same changes as text.</p>
+<figure class="shot"><picture><source srcset="shots/diff-after-dark.png" media="(prefers-color-scheme: dark)"><img src="shots/diff-after-light.png" alt="A diff in the After view: a new Backup block in green, Markdown as a dashed red ghost, two changed sketches, and the change list." loading="lazy" width="1100" height="640"></picture><figcaption>After: the new version, with ghosts where things were.</figcaption></figure>
+<figure class="shot"><picture><source srcset="shots/diff-before-dark.png" media="(prefers-color-scheme: dark)"><img src="shots/diff-before-light.png" alt="The same diff in the Before view: the old version, laid out in the same frame." loading="lazy" width="1100" height="640"></picture><figcaption>Before: the old version, in the same frame.</figcaption></figure>
+
+<h2 id="export">Exporting</h2>
+<p><code>sbtel export</code> writes the canvas as one self-contained HTML file with the spec inside it, for people who do not have sbtel. It opens from disk, makes no network request, and stays interactive. Email it, commit it, or host it anywhere; edits, undo and comments stay in the reader&rsquo;s browser.</p>
+<sbtel-code file="src/out/export.txt" label="output"></sbtel-code>
+<dl class="keys">
+  <dt><code>-o file</code></dt><dd>Where to write. The default is the spec&rsquo;s name with <code>.html</code>; <code>-o -</code> writes to standard output.</dd>
+  <dt><code>--readonly</code></dt><dd>Turns editing off. Reading, highlights and comments still work.</dd>
+  <dt><code>--embed</code></dt><dd>The compact layout, for an iframe in your own docs. Its <strong>Open full view</strong> opens the same file with every panel.</dd>
+  <dt><code>--bindings edges.txt</code></dt><dd>Shows the edges&rsquo; violations in the checks, as <code>sbtel check</code> would report them.</dd>
+  <dt><code>--title text</code></dt><dd>The page title. The default is the top block&rsquo;s name.</dd>
+</dl>
+<p>The spec is linted first. Warnings and violations go to standard error and the file is still written; a spec that does not parse writes nothing.</p>
+
+<h2 id="commands">All commands</h2>
+<div class="tbl"><table>
+<thead><tr><th>Command</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>sbtel lint spec.sbtel</code></td><td>Reports problems in a spec. Run it after every edit.</td></tr>
+<tr><td><code>sbtel query spec.sbtel Id [--with-deps]</code></td><td>Prints a slice of a large spec that lints on its own; <code>--with-deps</code> adds what the slice may use.</td></tr>
+<tr><td><code>sbtel check spec.sbtel --bindings edges.txt</code></td><td>Checks the code&rsquo;s edges against the levels.</td></tr>
+<tr><td><code>sbtel diff a.sbtel b.sbtel</code></td><td>Prints what changed between two versions.</td></tr>
+<tr><td><code>sbtel open spec.sbtel [--session id]</code></td><td>Opens the canvas, or pushes a new version to an open one.</td></tr>
+<tr><td><code>sbtel open-diff a.sbtel b.sbtel</code></td><td>Opens the diff view.</td></tr>
+<tr><td><code>sbtel inbox id [--wait]</code></td><td>Prints what you sent: reviews, comments and saves.</td></tr>
+<tr><td><code>sbtel reply id c2.1 "text"</code></td><td>Answers a comment or a review in the open tab.</td></tr>
+<tr><td><code>sbtel export spec.sbtel</code></td><td>Writes the diagram as one HTML file.</td></tr>
+<tr><td><code>sbtel sessions</code>, <code>sbtel close id</code></td><td>Lists or ends sessions.</td></tr>
+<tr><td><code>sbtel version</code></td><td>Prints the version.</td></tr>
+</tbody></table></div>
+<p><code>sbtel &lt;command&gt; --help</code> describes each command and its flags, and the commands that print results accept <code>--json</code>.</p>

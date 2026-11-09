@@ -1,0 +1,14 @@
+$ cat edges.txt
+Shell -> Editor        # src/shell.ts:12
+Shell -> Preview       # src/shell.ts:13
+Shell -> Sync          # src/shell.ts:14
+Shell -> Search        # src/shell.ts:15
+Editor -> Store        # src/editor.ts:40
+Preview -> Markdown    # src/preview.ts:9
+Preview -> Editor      # src/preview.ts:31
+Sync -> Store          # src/sync.ts:22
+Search -> Index        # src/search.ts:7
+$ sbtel lint notes.sbtel
+notes.sbtel: ok (9 blocks, 0 behaviors, 1 message type)
+$ sbtel check notes.sbtel --bindings edges.txt
+notes.sbtel: 9 bindings, 0 not allowed

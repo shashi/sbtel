@@ -1,5 +1,5 @@
 (message KeyChord (~ A normalized key combination, like Ctrl-K. ~))
 (level :name "Surfaces"
-  (block Palette (port chord in KeyChord (~ Opens the palette. ~)) (~ Fuzzy search over commands. ~)))
+  (block Palette (port :in KeyChord :as chord (~ Opens the palette. ~)) (~ Fuzzy search over commands. ~)))
 (level :name "Services"
-  (block Keymap (port chord out KeyChord) (~ Turns raw key events into chords. ~)))
+  (block Keymap (port :out KeyChord :as chord) (~ Turns raw key events into chords. ~)))

@@ -1,0 +1,10 @@
+r2 review of version 1 by user, 2026-11-09T05:54:11Z: a message, 1 comment, proposed edits
+  > Looks right. Markdown belongs in Preview; one question on Store.
+  edits against version 1 (sbtel diff):
+    - block Markdown (was in Notes)
+    1 change (0 added, 1 removed, 0 moved, 0 renamed, 0 changed), 0 affected ports
+  proposed spec: ~/.sbtel/sessions/$id/proposals/2.sbtel
+  c2.1 comment on block Store
+    > Keep a backup of the last version, so a bad save can be undone.
+    source:
+      (block Store :type "module" (port :in Edit) (port :out NoteSaved) (~ Keeps notes on disk. ~))

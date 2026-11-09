@@ -1,0 +1,61 @@
+; The spreadsheet suite after a new requirement: Writer, the word processor, embeds live sheets too.
+; The sheet stops reaching out: it takes commands and hands back what to draw.
+(block Suite :type "suite"
+  (behavior Function :type "interface")
+  (message Range)
+  (message Text)
+  (message SheetCommand (carries Range Text))
+  (message RenderedSheet (carries Range))
+  (message CellsChanged (carries Range))
+
+  (level :name "Apps"
+    (block Spreadsheet :type "app"
+      (message Edit (carries Range Text))
+      (message SelectionChanged (carries Range))
+      (level (block Main :type "module" (~ Starts everything and wires the parts together. ~)))
+      (level
+        (block Toolbar :type "module"
+          (port :in SelectionChanged)
+          (block SortTool :type "module")
+          (block ChartTool :type "module"))
+        (block AddIns :type "module" (implements Function)))
+      (level
+        (adjacent (~ They show the same selection, so each reads the other's. ~)
+          (block Grid :type "module"
+            (port :in CellsChanged) (port :out Edit) (port :out SelectionChanged)
+            (~ Draws the cells and turns typing into edits. ~))
+          (block FormulaBar :type "module"
+            (port :in SelectionChanged) (port :out Edit)
+            (~ Shows and edits the selected cell's formula. ~))))
+      (level :name "Document"
+        (block Document :type "folder"
+          (port :out SheetCommand) (port :in RenderedSheet)
+          (level (block Workbook :type "module" (port :in Edit) (~ Turns each edit into a command for the right sheet. ~)))
+          (level
+            (block Undo :type "module")
+            (block Files :type "module")))))
+    (block Writer :type "app"
+      (port :out SheetCommand) (port :in RenderedSheet)
+      (~ A word processor that can embed a live sheet. ~)))
+
+  (level :name "Sheet"
+    (~ A sheet takes commands and hands back what to draw. It knows nothing about who holds it. ~)
+    (block Sheet :type "folder"
+      (port :in SheetCommand) (port :out RenderedSheet)
+      (level (block Recalc :type "module" (port :out CellsChanged) (~ Recomputes what an edit affected, in order. ~)))
+      (level
+        (adjacent (~ A cell and the graph of who reads it must never disagree. ~)
+          (block Cells :type "module")
+          (block Dependencies :type "module")))))
+
+  (level :name "Formulas"
+    (adjacent (~ =INDIRECT("B"&A1) computes an address from a formula. ~)
+      (block Formulas :type "folder"
+        (level (block Evaluator :type "module" (~ Computes a formula's value, calling functions by name. ~)))
+        (level
+          (block Parser :type "module")
+          (block Functions :type "module" (implements Function))))
+      (block Addresses :type "module")))
+
+  (level :name "Values"
+    (block Value :type "module")))

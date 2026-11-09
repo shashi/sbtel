@@ -1,0 +1,11 @@
+$ sbtel diff sheet.sbtel sheet-embed.sbtel
+~ block Suite: drawer in +RenderedSheet +SheetCommand out +SheetCommand +RenderedSheet; level 3 name "Documents" -> "Sheet"; level 3 sketch {+A sheet takes commands and hands back what to draw. It knows nothing about who holds it.+}
++ message SheetCommand (in Suite)
++ message RenderedSheet (in Suite)
+~ block Spreadsheet: drawer in +RenderedSheet +Edit out +SheetCommand
+~ message Edit: moved from Suite to Spreadsheet
+~ block Document: moved from Suite level 3 to Spreadsheet level 1; ports +out sheetCommand: SheetCommand +in renderedSheet: RenderedSheet; drawer in +RenderedSheet out +SheetCommand; adjacency -Sheet
+~ block Workbook: sketch [-Applies-] {+Turns+} [-to-] {+into a command for+}
++ block Writer (in Suite)
+~ block Sheet: ports +in sheetCommand: SheetCommand +out renderedSheet: RenderedSheet; drawer in +SheetCommand out +RenderedSheet; adjacency -Document
+9 changes (3 added, 0 removed, 2 moved, 0 renamed, 5 changed), 0 affected ports

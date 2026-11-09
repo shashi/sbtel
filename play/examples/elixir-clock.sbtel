@@ -1,0 +1,13 @@
+; An Elixir app: a GenServer, and two processes that message each other.
+(block Clock :type "Mix project"
+  (~ Counts ticks. ~)
+  (message Tick :type "process message" (~ :tick, sent once a second. ~))
+  (behavior GenServer :type "Elixir behaviour"
+    (~ init/1, handle_call/3, handle_info/2: what the OTP loop calls back. ~))
+  (level :name "The app"
+    (block Clock.Application :type "module" (~ Starts both processes and tells the ticker where to send. ~)))
+  (level :name "Processes"
+    (block Clock.Counter :type "module" (implements GenServer) (port :in Tick) (~ Keeps the count. ~))
+    (block Clock.Ticker :type "module" (implements GenServer) (port :out Tick) (~ Sends a tick every second to the process it was given. ~)))
+  (level :name "OTP"
+    (block gen_server :type "Erlang module" (~ Receives messages and calls your callbacks. ~))))

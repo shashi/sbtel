@@ -1,0 +1,3 @@
+SortTool -> Value      # src/toolbar/sort.ts:3
+Functions -> Value     # src/formula/functions.ts:3
+Functions -> SortTool  # src/formula/functions.ts:212   SORTBY reuses the toolbar's sort

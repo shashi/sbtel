@@ -1,0 +1,19 @@
+; One block expanded twice: Formulas is a folder, the folder is modules, and a module is functions.
+(level :name "Apps"
+  (block Spreadsheet :type "app"))
+(level :name "Formulas"
+  (adjacent (~ =INDIRECT("B"&A1) computes an address from a formula. ~)
+    (block Formulas :type "folder"
+      (~ The formula language: =SUM(A1:A9) and friends. ~)
+      (level
+        (block Evaluator :type "module" (~ Computes a formula's value, calling functions by name. ~)))
+      (level
+        (block Parser :type "module" (~ Turns formula text into a tree. ~))
+        (block Functions :type "module"
+          (~ The functions a formula can call. ~)
+          (block SUM :type "function" (~ Adds up a range. ~))
+          (block VLOOKUP :type "function" (~ Finds a row by the value in its first column. ~))
+          (block SORTBY :type "function" (~ Sorts a range by the values in another. ~)))))
+    (block Addresses :type "module" (~ Reads, computes and compares references like A1:C9. ~))))
+(level :name "Values"
+  (block Value :type "module" (~ A number, text, date or error, and arithmetic on them. ~)))

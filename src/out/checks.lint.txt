@@ -1,0 +1,5 @@
+spec.sbtel:5:33: warning: block Sync has two ports named note; tell them apart with :as
+spec.sbtel:4:40: warning: unknown form (skecth) in block Editor
+spec.sbtel: Every port uses a declared message type: Editor.noteSaved: NoteSaved
+spec.sbtel: Message types are used only inside the block that declares them: Search.words uses Words, declared in Store
+spec.sbtel: 4 problems (5 blocks, 0 behaviors, 2 message types)

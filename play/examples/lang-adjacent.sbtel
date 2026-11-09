@@ -1,0 +1,5 @@
+(level :name "Notes as text"
+  (adjacent (~ The preview scrolls with the editor. ~)
+    (block Editor)
+    (block Preview))
+  (block Sync))

@@ -1,0 +1,17 @@
+; Recalc announces new values and Grid listens; Grid sends edits down to Workbook.
+(message Edit (~ Someone typed into a cell. ~))
+(message CellsChanged (~ These cells have new values. ~))
+(level :name "Apps"
+  (block Spreadsheet :type "app"
+    (block Grid :type "module"
+      (port :in CellsChanged) (port :out Edit)
+      (~ Draws the cells and turns typing into edits. ~))))
+(level :name "Documents"
+  (block Document :type "folder"
+    (block Workbook :type "module"
+      (port :in Edit)
+      (~ Applies each edit to the right sheet. ~)))
+  (block Sheet :type "folder"
+    (block Recalc :type "module"
+      (port :out CellsChanged)
+      (~ Recomputes what an edit affected, in order. ~))))

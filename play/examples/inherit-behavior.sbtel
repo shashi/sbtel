@@ -1,12 +1,12 @@
 (message Frame (~ A rendered view-model. ~))
 (message Intent (~ A command id and its arguments. ~))
 (behavior Surface :type "interface"
-  (port frame in Frame)
-  (port intent out Intent)
+  (port :in Frame)
+  (port :out Intent)
   (~ Draws frames and reports what the user asked for. ~))
 (level :name "Surfaces"
   (block Sidebar (implements Surface) (~ Recent notes. ~))
-  (block Canvas (implements Surface) (port zoom in Frame) (~ The open note. ~)))
+  (block Canvas (implements Surface) (port :in Frame :as zoom) (~ The open note. ~)))
 (level :name "Services"
-  (block Router (port intent in Intent) (~ Maps intents to handlers. ~))
-  (block Renderer (port frame out Frame) (~ Turns state into frames. ~)))
+  (block Router (port :in Intent) (~ Maps intents to handlers. ~))
+  (block Renderer (port :out Frame) (~ Turns state into frames. ~)))

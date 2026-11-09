@@ -1,0 +1,3 @@
+edges.txt:7: Preview -> Editor: same-level: Preview and Editor share level 2 "Notes as text" of Notes but are not adjacent  (src/preview.ts:31)
+edges.txt:10: Store -> Editor: upward: Store (level 1 "Stored notes" of Notes) binds upward to Editor (level 2 "Notes as text")  (src/store.ts:58)
+notes.sbtel: 10 bindings, 2 not allowed, 0 explained

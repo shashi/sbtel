@@ -1,0 +1,10 @@
+(block Notes
+  (message Note (~ A title and a body. ~))
+  (level
+    (block Editor (port :in NoteSaved) (skecth "The text area."))
+    (block Sync (port :in Note) (port :out Note))
+    (block Search (port :in Words)))
+  (level
+    (block Store
+      (message Words (~ The words of one note. ~))
+      (port :out Note))))

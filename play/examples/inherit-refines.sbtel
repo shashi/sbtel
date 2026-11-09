@@ -3,10 +3,10 @@
 (message DoubleClick (refines Click) (~ Two clicks close together. ~))
 (message Key (refines Event) (~ A key pressed. ~))
 (level :name "Listeners"
-  (block Log (port any in Event) (~ Records every event. ~))
-  (block Menu (port open in Click) (~ Opens on any click. ~))
-  (block Zoom (port reset in DoubleClick) (~ Resets on a double click. ~))
-  (block Shortcuts (port key in Key) (~ Runs commands from keys. ~)))
+  (block Log (port :in Event :as any) (~ Records every event. ~))
+  (block Menu (port :in Click :as open) (~ Opens on any click. ~))
+  (block Zoom (port :in DoubleClick :as reset) (~ Resets on a double click. ~))
+  (block Shortcuts (port :in Key) (~ Runs commands from keys. ~)))
 (level :name "Sources"
-  (block Mouse (port click out Click) (port dbl out DoubleClick))
-  (block Keyboard (port key out Key)))
+  (block Mouse (port :out Click) (port :out DoubleClick :as dbl))
+  (block Keyboard (port :out Key)))

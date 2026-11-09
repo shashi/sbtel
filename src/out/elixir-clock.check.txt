@@ -1,0 +1,1 @@
+clock.sbtel: 5 bindings, 0 not allowed

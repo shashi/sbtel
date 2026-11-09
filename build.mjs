@@ -7,16 +7,20 @@
 //    meta: <meta name="sbtel-home" content="../">, so the playground's "sbtel" chip links to this site's
 //    home (README "Embedding the viewer", DESIGN 6.9). Nothing else in the viewer changes.
 // 2. docs/reference/index.html: docs/LANGUAGE.md rendered, so the reference stays single-sourced.
-// 3. docs/index.html (the Guide) and docs/viewer/index.html (the Viewer manual), from src/guide.html and
-//    src/viewer.html. In those, <sbtel-demo example="name" height="360" [mode="readonly"] [layout="side"]
-//    [spec="hide"]>hint</sbtel-demo> becomes a live embed of play/examples/name.sbtel, and
+// 3. The three documents, from src/: docs/index.html (Core concepts, src/concepts.html), docs/language/
+//    (The sbtel language, src/language.html) and docs/using/ (Using sbtel, src/using.html). In those, <sbtel-demo example="name" height="360" [mode="readonly"] [layout="side"]
+//    [spec="hide"] [label="Before"]>hint</sbtel-demo> becomes a live embed of play/examples/name.sbtel, and
 //    <sbtel-spec example="name"></sbtel-spec> its text, so a shown spec is always the embedded one.
-//    <sbtel-code file="path">…</sbtel-code> shows a site file verbatim (edges files, outputs).
+//    <sbtel-code file="path" [label="…"] [lang="edges|sbtel|text"] [fails="1"]></sbtel-code> shows a site file
+//    verbatim: edges files, failing specs and command outputs (src/out/; they are real outputs of the binary).
 //    Each embed starts at the aspect ratio of its diagram, measured here by running the repository's core
 //    layout (core/core.js, contentBox) in node with an approximate text measurer, so the page hardly moves
 //    when the viewer reports its real size (sbtel:size; assets/docs.js sets the height). height="…" is the
-//    fallback when the core cannot be run. focus="Block" adds &focus=Block (the viewer fits that block).
-//    The pages take their <title> ("Guide · sbtel") and meta description from the source's
+//    fallback when the core cannot be run. View parameters pass through to the viewer's URL (VIEW, below):
+//    focus="Block" adds &focus=Block (the viewer fits that block and opens its parents). label="…" puts a
+//    small label over the frame. A <div class="demo-pair"> holding two demos sets them side by side (a
+//    before and an after), stacked on narrow screens; their starting size is measured at the half width.
+//    The pages take their <title> ("Core concepts · sbtel") and meta description from the source's
 //    <!-- title: … --> and <!-- description: … --> comments.
 //
 // Node 18 or later; no dependencies. The markdown reader covers what LANGUAGE.md uses: headings, paragraphs,
@@ -42,7 +46,7 @@ const REPO = 'https://github.com/shashi/sbtel/blob/main/';
   const viewer = read(join(repo, 'viewer/dist/index.html'));
   const vp = /<meta name="viewport"[^>]*>\n/;
   if (!vp.test(viewer)) { console.error('build.mjs: the viewer has no viewport meta to insert the home link after'); process.exit(1); }
-  write('play/index.html', /<meta name="sbtel-home"/.test(viewer.slice(0, viewer.indexOf('</head>'))) ? viewer : viewer.replace(vp, m => m + '<meta name="sbtel-home" content="../">\n'));
+  write('play/index.html', /^<meta name="sbtel-home"/m.test(viewer) ? viewer : viewer.replace(vp, m => m + '<meta name="sbtel-home" content="../">\n'));
 }
 
 // ---------- inline ----------
@@ -72,17 +76,16 @@ function slug(t) {
 
 // ---------- code ----------
 const FORMS = 'block|level|adjacent|port|message|refines|carries|behavior|implements|sketch';
-const TOK = new RegExp('(;[^\\n]*)|("(?:\\\\.|[^"\\\\])*")|\\((~+)([\\s\\S]*?)\\3\\)|\\((' + FORMS + ')(?=[\\s()])|(:[^\\s()"]+)|\\b(in|out)\\b', 'g');
+const TOK = new RegExp('(;[^\\n]*)|("(?:\\\\.|[^"\\\\])*")|\\((~+)([\\s\\S]*?)\\3\\)|\\((' + FORMS + ')(?=[\\s()])|(:[^\\s()"]+)', 'g');
 function hlSbtel(src) {
   let out = '', last = 0;
-  src.replace(TOK, (m, com, str, tl, tx, form, kw, dir, at) => {
+  src.replace(TOK, (m, com, str, tl, tx, form, kw, at) => {
     out += esc(src.slice(last, at)); last = at + m.length;
     if (com) out += `<span class="hl-com">${esc(com)}</span>`;
     else if (str) out += `<span class="hl-str">${esc(str)}</span>`;
     else if (tl) out += `(<span class="hl-kw">${tl}</span><span class="hl-str">${esc(tx)}</span><span class="hl-kw">${tl}</span>)`;
     else if (form) out += `(<span class="hl-kw">${form}</span>`;
     else if (kw) out += `<span class="hl-key">${esc(kw)}</span>`;
-    else if (dir) out += `<span class="hl-key">${dir}</span>`;
     return m;
   });
   return out + esc(src.slice(last));
@@ -96,6 +99,7 @@ const hlSlash = src => src.split('\n').map(l => {
   return i < 0 ? esc(l) : esc(l.slice(0, i)) + `<span class="hl-com">${esc(l.slice(i))}</span>`;
 }).join('\n');
 const hlText = src => esc(src)
+  .replace(/^\$ /gm, '<span class="hl-prompt">$ </span>')
   .replace(/\b(error|warning)(?=:)/g, '<span class="hl-warn">$1</span>')
   .replace(/\b(info)(?=:)/g, '<span class="hl-com">$1</span>')
   .replace(/: (upward|same-level|ancestor|unknown)(?=:)/g, ': <span class="hl-warn">$1</span>')
@@ -173,7 +177,8 @@ function markdown(md) {
 
 // ---------- the page frame ----------
 const MARK = `<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M2 12a4 4 0 0 1 4-4h3V5.5A3.5 3.5 0 0 1 12.5 2h1A3.5 3.5 0 0 1 17 5.5V8h3a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z" fill="var(--leaf)" stroke="var(--frame-line)" stroke-width="1.5"/><circle cx="11.2" cy="5.6" r="1.35" fill="var(--m3)"/><circle cx="14.8" cy="5.6" r="1.35" fill="var(--m6)"/><path d="M6.5 16h13" stroke="var(--frame-line)" stroke-width="1.2" opacity=".7"/></svg>`;
-const NAV = [['Guide', 'docs/'], ['Viewer', 'docs/viewer/'], ['Reference', 'docs/reference/'], ['Playground', 'play/']];
+// The reference is generated and complete, but it is not one of the three documents: it is linked from the footer.
+const NAV = [['Docs', 'docs/'], ['Language', 'docs/language/'], ['Using sbtel', 'docs/using/'], ['Playground', 'play/']];
 function page({ path, title, desc, toc, body, source, kind }) {
   const up = '../'.repeat(path.split('/').length - 1);
   const here = path.replace(/index\.html$/, '');
@@ -216,11 +221,12 @@ ${body}
   <div class="cols">
     <a class="mark" href="${up}" aria-label="sbtel home">${MARK}sbtel</a>
     <nav class="links" aria-label="Footer">
-      <a href="https://github.com/shashi/sbtel">GitHub</a>
-      <a href="${up}docs/">Guide</a>
-      <a href="${up}docs/viewer/">Viewer</a>
-      <a href="${up}docs/reference/">Reference</a>
+      <a href="${up}docs/">Core concepts</a>
+      <a href="${up}docs/language/">Language</a>
+      <a href="${up}docs/using/">Using sbtel</a>
       <a href="${up}play/">Playground</a>
+      <a href="${up}docs/reference/">Reference</a>
+      <a href="https://github.com/shashi/sbtel">GitHub</a>
       <a href="https://github.com/shashi/sbtel/blob/main/CHANGELOG.md">Changelog</a>
     </nav>
   </div>
@@ -237,7 +243,7 @@ ${body}
 // ---------- 2. the reference ----------
 {
   const r = markdown(read(join(repo, 'docs/LANGUAGE.md')));
-  const body = r.html + `\n    <p class="src">This page is generated from <a href="${REPO}docs/LANGUAGE.md">docs/LANGUAGE.md</a>. For the ideas, with live examples, read <a href="../">the Guide</a>.</p>`;
+  const body = r.html + `\n    <p class="src">This page is generated from <a href="${REPO}docs/LANGUAGE.md">docs/LANGUAGE.md</a>. For the ideas, with live examples, read <a href="../">Core concepts</a>; for a shorter tour of the forms, <a href="../language/">The sbtel language</a>.</p>`;
   write('docs/reference/index.html', page({ path: 'docs/reference/index.html', title: 'Language reference', kind: 'ref',
     desc: 'The sbtel language reference: every form, every rule and every lint and check message.', toc: r.toc, body, source: 'docs/LANGUAGE.md' }));
 }
@@ -280,7 +286,12 @@ function naturalSize(text, { readonly, focus }, width) {
   } catch (e) { console.error('build.mjs: could not lay out an example (' + e.message + ')'); return null; }
 }
 
-// ---------- 3. the Guide and the Viewer manual ----------
+// ---------- 3. the three documents ----------
+// The viewer's framing parameters that a demo may set, as attributes of the same name: each becomes
+// &name=value on the embed's URL (comma lists stay as written). v0.3.0 has focus; add the framing
+// parameters of a later viewer here (several blocks to focus, a highlight to dim the rest, blocks to open
+// or close, collapsed declaration bands) and the pages can use them at once.
+const VIEW = ['focus'];
 function manual(srcFile, path, kind) {
   let src = read(join(here, 'src', srcFile));
   const metas = Object.fromEntries(['title', 'description'].map(k => [k, (src.match(new RegExp(`<!-- ${k}: (.*?) -->`)) || [])[1] || '']));
@@ -293,13 +304,19 @@ function manual(srcFile, path, kind) {
   src = src.replace(/<sbtel-spec ([^>]*)><\/sbtel-spec>/g, (_, a) => specHTML(attrs(a).example));
   src = src.replace(/<sbtel-code ([^>]*)><\/sbtel-code>/g, (_, a) => {
     const o = attrs(a), text = read(join(here, o.file)).replace(/\n+$/, '');
-    return `<div class="spec"><div class="cbl">${esc(o.label || basename(o.file))}</div><pre class="code" data-lang="${esc(o.lang || 'text')}">${o.lang === 'edges' ? hlHash(text) : hlText(text)}</pre></div>`;
+    const h = o.lang === 'edges' ? hlHash(text) : o.lang === 'sbtel' ? hlSbtel(text) : hlText(text);
+    return `<div class="spec${o.fails ? ' fails' : ''}"><div class="cbl">${esc(o.label || basename(o.file))}</div><pre class="code" data-lang="${esc(o.lang || 'text')}">${h}</pre></div>`;
   });
+  // Demos inside a <div class="demo-pair"> are half as wide on a desktop: mark them before they are expanded.
+  src = src.replace(/<div class="demo-pair">([\s\S]*?)<\/div>/g, (m, inner) => m.replace(/<sbtel-demo /g, '<sbtel-demo half="1" '));
+  const ids = new Map(); // one figure id per demo: demo-name, then demo-name-2 for a second demo of it
   src = src.replace(/<sbtel-demo ([^>]*)>([\s\S]*?)<\/sbtel-demo>/g, (_, a, hint) => {
     const o = attrs(a), name = o.example, h = +(o.height || 360);
     const how = { readonly: o.mode === 'readonly', focus: o.focus };
-    const nat = naturalSize(ex(name), how, 980), natp = nat && naturalSize(ex(name), how, 560);
-    const q = (o.mode === 'readonly' ? '?embed=readonly' : '?embed') + (o.focus ? '&focus=' + encodeURIComponent(o.focus) : '');
+    // The viewer's layout width is 1.25 x its frame (viewer/src/play.js), 560 at least: a desktop column
+    // (about 780 px) gives 980, half of it (a demo in a pair) 560, as a phone does.
+    const nat = naturalSize(ex(name), how, o.half ? 560 : 980), natp = nat && naturalSize(ex(name), how, 560);
+    const q = (o.mode === 'readonly' ? '?embed=readonly' : '?embed') + VIEW.filter(k => o[k]).map(k => '&' + k + '=' + encodeURIComponent(o[k])).join('');
     const url = `${up}play/${q}#example=${name}`, open = `${up}play/#example=${name}`;
     // Same rule as assets/docs.js, without the window: room for 60% zoom up to 820 px, else 720 px at most.
     const hmax = nat && Math.max(720, Math.min(820, Math.round(.6 * (nat.h - 64) + 64)));
@@ -309,9 +326,11 @@ function manual(srcFile, path, kind) {
       <noscript><a class="poster" href="${open}">Open ${esc(name)}.sbtel in the playground</a></noscript>
     </div>`;
     const cap = hint.trim() ? `<figcaption>${hint.trim()}</figcaption>` : '';
+    const label = o.label ? `<div class="cbl demo-label">${esc(o.label)}</div>` : '';
     const spec = o.spec === 'hide' ? '' : specHTML(name);
-    return `<figure class="demo${o.layout === 'side' ? ' side' : ''}" id="demo-${name}">
-    ${o.layout === 'side' ? spec + '<div class="live">' + embed + cap + '</div>' : embed + cap + spec}
+    const k = (ids.get(name) || 0) + 1; ids.set(name, k);
+    return `<figure class="demo${o.layout === 'side' ? ' side' : ''}" id="demo-${name}${k > 1 ? '-' + k : ''}">
+    ${o.layout === 'side' ? spec + '<div class="live">' + label + embed + cap + '</div>' : label + embed + cap + spec}
   </figure>`;
   });
   const toc = [...src.matchAll(/<h([23]) id="([^"]+)">([\s\S]*?)<\/h\1>/g)].map(m => ({ n: +m[1], id: m[2], html: m[3].replace(/<a [^>]*>|<\/a>/g, '') }));
@@ -319,5 +338,6 @@ function manual(srcFile, path, kind) {
   src = src.replace(/<!-- (title|description): .*? -->\n?/g, '');
   write(path, page({ path, title: meta('title'), desc: meta('description'), toc, body: src.trim(), source: 'src/' + srcFile, kind }));
 }
-manual('guide.html', 'docs/index.html', 'guide');
-manual('viewer.html', 'docs/viewer/index.html', 'manual');
+manual('concepts.html', 'docs/index.html', 'guide concepts');
+manual('language.html', 'docs/language/index.html', 'guide language');
+manual('using.html', 'docs/using/index.html', 'guide using');

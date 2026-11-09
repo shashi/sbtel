@@ -1,0 +1,22 @@
+# What the agent finds when it reads the code: who names whom.
+Main -> Workbook               # src/main.ts:12
+Main -> Grid                   # src/main.ts:14
+Main -> Toolbar                # src/main.ts:15
+Main -> AddIns                 # src/main.ts:16
+SortTool -> Workbook           # src/toolbar/sort.ts:8
+ChartTool -> Cells             # src/toolbar/chart.ts:21
+Grid -> FormulaBar             # src/grid/grid.ts:33
+Workbook -> Cells              # src/workbook.ts:40
+Workbook -> Undo               # src/workbook.ts:41
+Files -> Cells                 # src/files/xlsx.ts:77
+Recalc -> Cells                # src/sheet/recalc.ts:9
+Recalc -> Dependencies         # src/sheet/recalc.ts:10
+Recalc -> Evaluator            # src/sheet/recalc.ts:31
+Recalc -> Grid                 # src/sheet/recalc.ts:58   repaints the grid after recalculating
+Evaluator -> Parser            # src/formula/eval.ts:5
+Evaluator -> Function         # src/formula/eval.ts:6   calls functions through the Function interface
+Evaluator -> Addresses         # src/formula/eval.ts:9
+Addresses -> Evaluator         # src/addresses.ts:44   INDIRECT evaluates its argument
+Functions -> Value             # src/formula/functions.ts:3
+Functions -> SortTool          # src/formula/functions.ts:212   SORTBY reuses the toolbar's sort
+Cells -> Value                 # src/sheet/cells.ts:2

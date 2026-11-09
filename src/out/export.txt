@@ -1,0 +1,5 @@
+$ sbtel export notes.sbtel --bindings edges.txt
+notes.sbtel: 9 bindings, 0 not allowed
+sbtel export: wrote notes.html (606760 bytes, 593 KiB)
+$ sbtel export notes.sbtel --readonly -o notes-readonly.html
+sbtel export: wrote notes-readonly.html (606331 bytes, 593 KiB)

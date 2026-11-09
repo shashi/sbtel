@@ -1,0 +1,10 @@
+; Sorting moved down into Values: the Sort button and SORTBY are both written in terms of it.
+(level :name "Apps"
+  (block Spreadsheet :type "app"
+    (block SortTool :type "module" (~ The Sort button: sorts the selected rows. ~))))
+(level :name "Formulas"
+  (block Formulas :type "folder"
+    (block Functions :type "module" (~ SUM, VLOOKUP, SORTBY and the rest. ~))))
+(level :name "Values"
+  (block Value :type "module" (~ A number, text, date or error, and arithmetic on them. ~))
+  (block Sorting :type "module" (~ Sorts rows by one or more keys, with the comparison it is given. ~)))
