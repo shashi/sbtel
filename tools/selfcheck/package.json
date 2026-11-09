@@ -1,0 +1,9 @@
+{
+  "name": "sbtel-selfcheck",
+  "private": true,
+  "description": "Dev-only: the TypeScript checker that tools/selfcheck/edges.mjs uses to extract the viewer's bindings (make selfcheck). Not used by the binary or the page.",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}

@@ -1,0 +1,6 @@
+Calc -> Rat
+Rat -> Calc
+Pair -> Print
+Shell.Router -> Shell.Toast
+Shell.Toast -> Shell.Router
+Shell.Keys -> Shell.Router

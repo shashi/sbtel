@@ -1,0 +1,3 @@
+; Two levels, for the # VIOLATION: note cases of check (conformance/specs/check-notes.bindings.txt).
+(level (block A))
+(level (block B))

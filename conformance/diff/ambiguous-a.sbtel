@@ -1,0 +1,5 @@
+; One removed block, two added look-alikes with equal scores: the first in side b wins.
+(block Root
+  (level
+    (block Worker (sketch "Processes jobs from the queue."))
+    (block Queue (sketch "Holds jobs."))))

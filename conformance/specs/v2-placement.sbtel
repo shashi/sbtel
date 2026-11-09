@@ -1,0 +1,20 @@
+; Placement notes: vocabulary at the lowest common ancestor of its users.
+(message Wide (sketch "Used in two top-level blocks: its home is the top level."))
+(message Deep (sketch "Carried by Note, declared at the top: Deep must stay where Note can see it."))
+(message Note (carries Deep))
+(message Base (sketch "Refined by Leaf, which only Shell.View uses."))
+(message Leaf (refines Base))
+(message Unused)
+(behavior Idle)
+(block Shell
+  (message Selection (sketch "Over-exposed: only Shell.View uses it."))
+  (behavior Durable)
+  (level
+    (block Shell.View
+      (port sel in Selection)
+      (port leaf in Leaf)
+      (block Shell.Store (implements Durable))))
+  (level (block Shell.Log (port w in Wide))))
+(block Other
+  (port w out Wide)
+  (port n out Note))

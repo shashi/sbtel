@@ -1,0 +1,13 @@
+; Formatting only, with different comments.
+; Nothing structural changed: the diff must be empty.
+(block Svc
+    :type "Service"      ; same type
+    (message Ping
+        (sketch "Are   you
+                 there?"))
+    (port ping in Ping)
+    (sketch "Answers pings.")
+    (level
+        (block Clock (sketch "Ticks once a second."))   ; a clock
+        (block Log
+            (sketch "Appends lines."))))

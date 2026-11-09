@@ -1,0 +1,102 @@
+# Tests on Linux, macOS and Windows (RELEASING.md). The browser tests (make accept, test-viewer-diff,
+# test-e2e) need Chrome and Playwright and are run locally before a release, not here.
+#
+# Actions are pinned to full commit SHAs (the tag is in the comment); versions checked 2026-11-08:
+#   actions/checkout v7.0.1, actions/setup-go v7.0.0, actions/setup-node v7.1.0 (all node24, which
+#   needs Actions Runner v2.327.1 or later; GitHub-hosted runners have it).
+# Go is 1.24.x, the go.mod version; the pinned goja (v0.0.0-20260603125802-cfe4039cb6d7) needs Go
+# 1.20 or later. RELEASING.md says how to move to a newer Go and goja.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      # The repo's build settings (DESIGN.md §1, Build): modules come straight from their origin and
+      # go.sum is the check. golang.org/x/text is vendored under third_party/ (go.mod replace).
+      GOPROXY: direct
+      GOSUMDB: "off"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.24.x"
+          cache-dependency-path: go.sum
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          package-manager-cache: false # node runs the build and test scripts; tools/selfcheck installs its one dev package with npm ci
+
+      - name: viewer page is up to date
+        run: node viewer/build.mjs --check
+
+      # The license texts the binary embeds and `sbtel licenses` prints (scripts/third-party-notices.sh).
+      - name: third-party notices are up to date
+        if: runner.os == 'Linux'
+        run: scripts/third-party-notices.sh --check
+
+      - name: node conformance
+        run: node conformance/run-node.mjs
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test -race
+        if: runner.os != 'Windows'
+        run: go test -race ./...
+
+      # -race needs cgo and a C toolchain; plain go test on Windows keeps the job self-contained.
+      - name: go test
+        if: runner.os == 'Windows'
+        run: go test ./...
+
+      - name: annotation helper tests
+        run: |
+          py=$(command -v python3 || command -v python)
+          "$py" -I plugin/skills/sbtel-recover/scripts/test_sbtel_owners.py
+
+      # The recover skill's Go reference helper: a standalone module (standard library only).
+      - name: Go reference helper tests
+        run: go -C plugin/skills/sbtel-recover/scripts/sbtel_refs_go vet . && go -C plugin/skills/sbtel-recover/scripts/sbtel_refs_go test .
+
+      - name: build
+        run: go build -o bin/sbtel ./cmd/sbtel && bin/sbtel version
+
+      # The viewer's and the Go code's specs, annotations and edges agree, and every violation is explained
+      # (Makefile `selfcheck`, docs/DESIGN.md §8). Needs npm once for the dev-only TypeScript checker
+      # in tools/selfcheck; once is enough, so it runs on Linux only.
+      - name: selfcheck
+        if: runner.os == 'Linux'
+        run: make selfcheck
+
+      # Every spec, lint output, query and check output in the docs (README, docs/, plugin/) is what
+      # the binary prints (tools/docs/snippets.mjs, Makefile `docs-check`).
+      - name: docs snippets
+        if: runner.os == 'Linux'
+        run: make docs-check

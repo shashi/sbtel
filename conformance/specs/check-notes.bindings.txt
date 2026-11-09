@@ -1,0 +1,14 @@
+# Notes: explained, unexplained, misplaced and dangling.
+# VIOLATION: stale note on an allowed edge
+A -> B  # x.go:1
+# VIOLATION: replaced by the next note
+# VIOLATION: B calls back into A
+#   to refresh it.
+B -> A  # x.go:2
+B -> A  # x.go:3
+# VIOLATION: dropped by the blank line
+
+B -> A
+# VIOLATION: before a line that is not an edge
+not an edge
+# VIOLATION: dangling at the end of the file

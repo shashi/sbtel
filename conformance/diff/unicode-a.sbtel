@@ -1,0 +1,14 @@
+; Unicode names: CJK, accents, emoji (astral), and a rename of each kind.
+(block Système
+  (message Café (sketch "Une tasse."))
+  (message 消息 (sketch "一条消息。"))
+  (behavior Ünïcode (port x in 消息) (sketch "Parle toutes les langues."))
+  (level
+    (block 服务器
+      (implements Ünïcode)
+      (port 入口 in 消息)
+      (sketch "处理所有请求。"))
+    (block Ñandú
+      (port café out Café)
+      (sketch "Corre rápido por la pampa."))
+    (block 🚀Launch (sketch "Ships the build to orbit."))))

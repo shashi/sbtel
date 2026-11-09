@@ -1,0 +1,21 @@
+; v0.2: (carries …) is has-a between message types. A subtype carries what its supertype carries;
+; recursion and cycles are allowed; accepts ignores it.
+(message Selection (sketch "Selected ids."))
+(message Camera)
+(message Source)
+(message Snapshot (carries Selection Camera Source)
+  (~ What undo restores. ~))
+(message Named (refines Snapshot))
+(message History (carries Named))
+(message Turn (carries Turn Text))
+(message Text)
+(message Ping (carries Pong))
+(message Pong (carries Ping))
+(behavior Saves (port h out History))
+(block Undo
+  (implements Saves)
+  (port keep in History)
+  (port snap in Snapshot))
+(block Talk (port turn out Turn))
+(block Net (port p in Ping) (port q out Pong))
+(block Pane (port cam in Camera))

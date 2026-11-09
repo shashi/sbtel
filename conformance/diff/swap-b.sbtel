@@ -1,0 +1,17 @@
+; Two blocks swap names; their contents stay put.
+(block App
+  (message Req (sketch "A request."))
+  (message Row (sketch "A stored row."))
+  (level
+    (block Back
+      (port req out Req)
+      (sketch "Draws pages and sends requests to the back end.")
+      (level
+        (block Pages (sketch "One component per route."))
+        (block Forms (sketch "Validated input forms."))))
+    (block Front
+      (port req in Req)
+      (port row out Row)
+      (sketch "Answers requests from a database.")
+      (level
+        (block Db (sketch "Tables and indexes."))))))

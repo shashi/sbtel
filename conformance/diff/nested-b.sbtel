@@ -1,0 +1,14 @@
+; A parent moves to another block, and one of its children moves to another level inside it.
+(block Root
+  (level
+    (block Left (sketch "Holds the editor for now."))
+    (block Right
+      (sketch "Will hold the editor.")
+      (level
+        (block Editor
+          (sketch "Edits documents.")
+          (level
+            (block Toolbar (sketch "Buttons.")))
+          (level
+            (block Canvas (sketch "Where you type."))
+            (block Undo (sketch "History stack."))))))))

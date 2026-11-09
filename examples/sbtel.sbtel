@@ -1,0 +1,148 @@
+; sbtel's own architecture: the Go binary in detail, the viewer page and the JS core in outline.
+; The Go blocks are recovered from the code (cmd/, internal/, assets.go) with the sbtel-recover skill and
+; checked against it by `make selfcheck`: the Go sources carry `@sbtel` annotations for these blocks, and
+; examples/sbtel.edges.txt holds their bindings (scripts/sbtel_refs_go: go/types, every GOOS). The viewer
+; is examples/viewer.sbtel in detail, checked the same way against its own code.
+; Bindings that no Go code makes, so no edge shows them:
+; - the server and the page never name each other's code: they exchange messages over HTTP and SSE,
+;   and the server gets the page's bytes as Options.ViewerHTML, from the CLI;
+; - the engine runs api.js through goja by name (`__api.cli`), a string, not a Go reference;
+; - assets.go embeds files (go:embed), the built page and the JS sources; it names files, not code.
+(block Sbtel
+  :type "System"
+  (sketch "One static binary and one web page that share a single implementation of the language.")
+  ; The kinds of Event stay beside it, though lint finds some used lower or not at all: the server
+  ; takes every one of them as an Event.
+  (message Event (sketch "One line of a session's events.jsonl, with a sequence number and a time."))
+  (message Comment (refines Event) (sketch "A human's note on one element, with that element's source."))
+  (message Save (refines Event) (sketch "The human saved an edited spec from the tab."))
+  (message Version (refines Event) (sketch "A new version of the spec, from the agent, the tab or the disk."))
+  (message Reply (refines Event) (sketch "An agent's answer to one comment, or to a review."))
+  (message Review (refines Event)
+    (sketch "The human's draft, sent as one: a message, comments and, with edits, a proposed spec that the server stores and never writes to the spec file."))
+  (behavior Pure
+    (sketch "Same input, same output: no IO, no clock, no DOM, nothing global."))
+
+  (level
+    (block Sbtel.Cli
+      :type "Process"
+      (port spec in SpecText)
+      (sketch "cmd/sbtel: turns argv into one command's run and its exit code.")
+      (message SpecText (sketch "The text of an sbtel spec: the single source of truth."))
+      (level
+        (block Sbtel.Cli.Dispatch
+          (sketch "The command table, main() and help: looks up argv[0] and runs that command; also holds the two engine-free commands, version and licenses (main.go).")
+          ; braided: dispatch plus two tiny commands that the file happens to hold.
+          ))
+      (level :name "Commands"
+        (block Sbtel.Cli.SpecCommands
+          (sketch "lint, check, query and diff: read the spec inputs and hand them to the JS core (cmd_lint.go, cmd_a.go).")
+          ; the command logic and the output formats live in core/api.js; these parse flags and read files.
+          )
+        (block Sbtel.Cli.SessionCommands
+          (sketch "open, open-diff, inbox, reply, sessions, close and serve: the session loop, driving the shared server and reading its state directory (cmd_b.go).")
+          ; inbox reads events.jsonl and writes cursor.json directly (state's single-writer rule allows it).
+          ))
+      (level
+        (block Sbtel.Cli.Kit
+          ; VIOLATION (examples/sbtel.edges.txt): usageErr looks up the usage line in Dispatch's command
+          ; table; main.go's own comment names the knot ("commands use usageErr").
+          (sketch "What every command is written in: its environment (env), the one flag syntax, input reading, usage errors, and runCLI into a fresh engine (args.go, errors.go, env in main.go).")))))
+
+  (level
+    (block Sbtel.Server
+      :type "Process"
+      (sketch "internal/server: the shared localhost server for the tabs, and the CLI's means to reach and start it.")
+      (message ControlCall
+        (sketch "A token-authenticated HTTP request to /control/* (create a session, push a version, reply, close, status, stop) and its JSON answer."))
+      (level
+        (block Sbtel.Server.Daemon
+          (sketch "The server process: one Server value that serves the page and the APIs and keeps the sessions in memory.")
+          (level
+            (block Sbtel.Server.Routes
+              (port control in ControlCall)
+              (port posted in Event)
+              (sketch "The HTTP handler: host, origin and token checks, then the browser and control APIs, routed to session operations (http.go).")
+              ; net/http calls ServeHTTP because Lifecycle passes the Server as the Handler, an interface,
+              ; so Lifecycle never names Routes.
+              ))
+          (level
+            (block Sbtel.Server.Lifecycle
+              (sketch "Binds the port, wins or loses the start race, writes server.json and runs the tick loop until shutdown (server.go, from ErrAnotherServer on).")))
+          (level
+            (adjacent (~ A session holds its tabs' subscriptions, which Fanout walks. ~)
+              (block Sbtel.Server.Sessions
+                (sketch "The in-memory sessions: load from disk, new versions, saves, comments, reviews (with their proposed specs), replies and disk polling, each appended to the session's event log (sessions.go).")
+                ; sessions call broadcast. The declarations form no cycle, but the two files name each
+                ; other's types both ways.
+                )
+              (block Sbtel.Server.Fanout
+                (port events out Event)
+                (sketch "The tabs' event streams: subscribes a tab to its session, replays from Last-Event-ID and broadcasts to the session's subscribers (sse.go).")
+                ; VIOLATION (examples/sbtel.edges.txt): the SSE handler calls notFound() from http.go.
+                )))
+          (level
+            (block Sbtel.Server.Core
+              ; VIOLATION (examples/sbtel.edges.txt): the Server struct holds map[string]*session, so it
+              ; names the type of Sessions above it.
+              (sketch "The Server value itself: its options, its lock, the session map, logging and the stop signal (server.go, up to touch).")))))
+      (level
+        (block Sbtel.Server.Client
+          (port control out ControlCall)
+          (sketch "The CLI side: probes server.json's server, starts a detached one when needed, sends control requests, stops it (client.go).")
+          ; Lifecycle also uses its probe for the start race.
+          )
+        (block Sbtel.Server.Launch
+          (sketch "Opens a URL in the user's browser, detached, with $SBTEL_BROWSER or the platform's opener (browser.go).")))
+      (level
+        (block Sbtel.Server.Detach
+          (sketch "The OS-specific process attributes that let a child outlive the CLI (detach_unix.go, detach_windows.go)."))))
+    (block Sbtel.Viewer
+      :type "Page"
+      (port events in Event)
+      (port comment out Comment)
+      (port save out Save)
+      (port review out Review)
+      (sketch "viewer/dist/index.html: the diagram, its editor and its comment threads, in one self-contained page.")
+      ; beside the Server, not below it: no Go code names the page. examples/viewer.sbtel is this block
+      ; in detail, recovered from the code and checked against it (make selfcheck). Its Core is the
+      ; page's inlined copy of Sbtel.Core.
+      (level
+        (block Sbtel.Viewer.Boot
+          (sketch "Starts the page and runs the mode the URL asks for, or the standalone playground.")))
+      (level :name "Page modes"
+        (block Sbtel.Viewer.ServerMode
+          (sketch "server.js: loads the session's spec, saves it, and listens for versions and replies."))
+        (block Sbtel.Viewer.DiffMode
+          (sketch "diff.js: draws the changes between two specs on the newer one.")))
+      (level
+        (block Sbtel.Viewer.Review
+          (sketch "review.js: the draft review, kept in the browser and sent as one review; and the change list it shares with the diff view.")))
+      (level
+        (block Sbtel.Viewer.Session
+          (sketch "session.js: comments in a session, posted to the server and threaded with the agent's replies.")))
+      (level
+        (block Sbtel.Viewer.App
+          (sketch "The playground: drawing, selection, editing with an undo history that persists, and comments, plus the mode registry and the sample spec."))))
+    (block Sbtel.Engine
+      (sketch "internal/engine: a goja runtime that loads the embedded core.js and api.js and returns what __api.cli prints.")))
+
+  (level
+    (block Sbtel.State
+      :type "Store"
+      (sketch "internal/state: the $SBTEL_HOME directory, written atomically: paths, server.json, session meta, the events log and read cursors.")
+      ; braided by section (server.json, meta, events, cursor) over one shared Paths value; kept as one
+      ; leaf: the sections never call each other except through Paths and the write helpers.
+      )
+    (block Sbtel.Assets
+      (sketch "assets.go, the module root: the files embedded at build time (the JS core, the built page, VERSION, the license texts).")))
+
+  (level
+    (block Sbtel.Api
+      (implements Pure)
+      (sketch "core/api.js: stable entry points, canonical JSON and the CLI's text formats.")))
+
+  (level
+    (block Sbtel.Core
+      (implements Pure)
+      (sketch "core/core.js: reader, model, checks, layout, source edits and the binding rule. DOM-free plain script."))))

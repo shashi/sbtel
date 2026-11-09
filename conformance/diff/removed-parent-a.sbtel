@@ -1,0 +1,10 @@
+; A removed block whose children are removed with it, next to a kept block.
+(block Root
+  (level
+    (block Legacy
+      (sketch "The old importer.")
+      (level
+        (block CsvReader (sketch "Reads CSV."))
+        (block XmlReader (sketch "Reads XML.")
+          (level (block Sax (sketch "Streaming parser."))))))
+    (block Importer (sketch "The new importer."))))

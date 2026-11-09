@@ -1,0 +1,11 @@
+; A new level of only added blocks, above existing levels: nothing moves.
+(block App
+  (level
+    (block Shell (sketch "Window chrome."))
+    (block Menu (sketch "The menu bar.")))
+  (level
+    (block Ui (sketch "Screens.")))
+  (level
+    (block Core (sketch "Rules.")))
+  (level
+    (block Disk (sketch "Files."))))

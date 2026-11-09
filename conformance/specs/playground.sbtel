@@ -1,0 +1,241 @@
+; The sbtel layout playground, described as it is (index.html, version 16).
+; Derived from the page script's call graph: every block below is a group of
+; top-level functions or statements, and every binding between blocks is a real
+; call or variable reference found in the code. Levels and adjacent groups were
+; chosen so that each of those bindings is allowed, and no wider than needed.
+
+(block SbtelPlayground
+  :type "App"
+  (sketch "A single self-contained HTML page: markup and CSS, then one inline script with no libraries. The script opens with a pure core between CORE-START and CORE-END markers that never touches the DOM, followed by the browser app that owns all state and drawing.")
+
+  ; ---------- Data that crosses the system ----------
+  (message SourceText
+    (sketch "An sbtel source string. The single source of truth: every canvas edit produces a new SourceText, which is re-parsed and redrawn."))
+  (message Tokens
+    (sketch "Flat list of parens, strings and symbols, each with start and end offsets into the source."))
+  (message SExpr
+    (sketch "Nested lists of tokens, each list carrying its start and end offsets so edits can splice the original text."))
+  (message Model
+    (sketch "Parsed spec: root block, maps of blocks, behaviors and message types by id, warnings, the source, and a node(id) lookup that understands the β: and μ: prefixes. Block nodes carry derived fields: levels (explicit and implicit runs of units), ownPorts, impl, behaviorDecls, messageDecls, sketch, parent."))
+  (message LayoutOptions
+    (sketch "Wrap rule (keep groups or break anywhere), wrapped-line rule (same group, previous in chain, nearest above), open-block width (fit or fill), whether child ports count, canvas width, the set of open blocks, the map of open drawers, and an unused details set."))
+  (message Geometry
+    (sketch "Layout result: positioned blocks (cards and frames, with metrics), adjacency connectors (each with a cut action), level dividers, level gutters, plus buttons with their edit actions, per-level item boxes for checking, a loc map from block id to its level, unit and index, the overall size, and the layout check results."))
+  (message CheckResults
+    (sketch "List of checks, each a key, a human label and a list of failures. Empty failures means the check passes."))
+  (message MessageRows
+    (sketch "One row per declared message type: name, declaring block, sketch, refines, the ports that use it and the types that refine it."))
+  (message EditAction (sketch "One of the edits below; each refines it."))
+  (message SplitGroup (refines EditAction) (sketch "Level, unit index and position to cut an adjacent group in two."))
+  (message ConnectBlocks (refines EditAction) (sketch "Level, source unit and index, and target unit; the target's unit joins the source's group beside the source block."))
+  (message AppendBlock (refines EditAction) (sketch "Level to append a new NewBlockN to."))
+  (message InsertLevel (refines EditAction) (sketch "Block and position at which to insert a new level holding one new block."))
+  (message AddDeclaration (refines EditAction) (sketch "Block and form (behavior or message) for a new NewBehaviorN or NewMessageN declaration."))
+  (message DeleteNode (refines EditAction) (sketch "Node to remove, plus its level location when it is a block."))
+  (message EditResult
+    (sketch "New SourceText, plus the name of a block to flash and whether a linked block had to move."))
+  (message TextRun (sketch "A string and a CSS font to measure."))
+  (message Pixels (sketch "A width in pixels, or a number of wrapped lines."))
+  (message UserInput (sketch "A DOM pointer, wheel, click, double-click or keyboard event."))
+  (message CommentRecord
+    (sketch "id, target key (block:, beh:, msg: or line:), text, status saved or sent, spec version stamp and time."))
+  (message AgentPayload
+    (sketch "Plain text: spec name and version, then each comment with its target and that target's current source."))
+  (message StoredValue (sketch "A JSON value kept in this browser's localStorage."))
+
+  ; ---------- Shared behaviors ----------
+  (behavior Pure
+    (sketch "Same inputs give the same output. Never reads the DOM, the clock, randomness or global state."))
+  (behavior MeasuresText
+    (port run in TextRun)
+    (port width out Pixels)
+    (sketch "Answers tw(text, font) with a pixel width and wrap(text, font, width) with a line count."))
+
+  (level
+    (block Browser
+      :type "Module"
+      (port input in UserInput)
+      (sketch "Everything after the core: owns the global state object, the DOM, and every interaction. Ten feature blocks form one mutually dependent group because they call each other through render. render calls applySelection, placeStrip, applyTalk, commentCounts, renderMsgTable, applyCam and edit (from + buttons); edit and the source sheet call setSource, which calls render; applyCam calls placeStrip; the selection bar calls askDelete, openComposer, openMessages and edit; the message table calls goTo, and goTo calls render, centerOn, select and closeSheetsOnPhone.")
+
+      (level
+        (block CanvasInput
+          (port events in UserInput)
+          (sketch "Pointer handling on the canvas. Tracks active pointers to pan with one finger or pinch-zoom with two, retaking a snapshot whenever the finger count changes. A move of 5px or more turns a press into a pan and suppresses the click. Click delegation, in order: comment bubble, open/close arrow, message-type owner link (no longer rendered anywhere), drawer go-to-card arrow, drawer row (toggle talk highlight), message chip or dot, drawer minimize button, drawer ear, behavior badge, connector line, then block selection; Cmd or Ctrl opens a comment. Double-click toggles both drawers. Hovering a chip or badge with a mouse shows its definition after 280ms. Also starts handle drags and blocks Safari's page-zoom gesture events."))
+        (block Keyboard
+          (port keys in UserInput)
+          (sketch "Window keydown. Escape closes, in order: popovers, the modal, then (when not typing) the message sheet, the source sheet, the talk highlight, open drawers, and finally the selection. Cmd/Ctrl+Z undoes, Shift+Cmd+Z or Ctrl+Y redoes. Delete or Backspace cuts a selected line or asks to delete a selected block. Ignores keys while typing or while a modal is open.")))
+
+      (level
+        (block Drawers
+          (sketch "setDrawer opens or closes a block's top or bottom drawer, ignoring sides with no ports, then re-renders so rows make room. Before re-rendering it measures each ear and dot, and afterwards flies every dot from its old place to its new one and unrolls the drawer with a clip-path, unless reduced motion is on. Also drawersOpen and closeAllDrawers."))
+        (block OpenClose
+          (sketch "toggle opens or closes a block and re-renders, anchored on that block so it stays put on screen. toggleDetails is still defined but nothing calls it."))
+        (block Linking
+          (sketch "Drag from a selection handle to link two blocks. linkReason allows only blocks in the same level of the same parent, not already in one group. While dragging, valid targets get a dashed outline, invalid ones a red one, and a rubber-band line follows the pointer in the overlay SVG. On release it dispatches a connect edit and reports whether the target had to move."))
+        (block InfoPopoverActions
+          (sketch "Document click listener for the buttons inside a pinned definition popover: open the message table at a type, or go to a behavior's card."))
+        (block Toolbar
+          (sketch "Bindings for the floating dock: undo, redo, zoom in and out about the screen centre, fit, open all, close all, send saved comments, and the help bubble, which records that it has been seen."))
+        (block SettingsDialog
+          (sketch "Opens a modal from the settings template. Its radios and controls write the wrap rule, wrapped-line rule, open-block width, child ports, canvas width (redrawn without animation while dragging), theme and animation flag into state.opts, persist them, then re-render or re-theme."))
+        (block Boot
+          (sketch "Waits for every font in FONT to load so canvas measurements match the page, loads the sample source, fits it to the screen, syncs the Send and Undo buttons, and shows the help bubble the first time.")))
+
+      (level
+        (adjacent
+          (block Canvas
+            (port source in SourceText)
+            (sketch "setSource stores the text, re-parses it (keeping the last good drawing and showing the error if parsing fails), opens the root, updates the name chip, re-renders and refreshes an open message table. render lays out the model with the injected text measure, runs spec checks, adjusts the camera to keep an anchor block in place, then reconciles one DOM element per block (reused by id so CSS transitions animate moves), redraws dividers and connectors in one SVG, recreates + buttons and comment bubbles, updates the checks pill, and reapplies selection and the talk highlight. fillBlock redraws a single block's contents and raises it above neighbours while a drawer is open."))
+          (block History
+            (port action in EditAction)
+            (sketch "edit applies an EditAction to the source, pushes the previous text on an undo stack capped at 200, clears redo, and loads the result with its flash target. undo and redo swap whole source strings."))
+          (block Camera
+            (sketch "Owns the viewport element and the pan and zoom transform. applyCam writes the transform and zoom label and repositions the selection bar. zoomAt keeps the point under the cursor fixed and clamps zoom between 12% and 250%. fit centres the whole drawing between the top chip and the dock. centerOn pans to a block, shrinking zoom if the block is too tall, and flashes it."))
+          (block Selection
+            (sketch "Holds the selected block or line. applySelection outlines the block, adds four link handles (pushed past open ears) when the block sits in a level, highlights the selected line and rebuilds the floating action bar: Table for message cards, Code, Comment and Delete for blocks (no Delete on the root), Cut link and Comment for lines. placeStrip keeps that bar beside the selection and inside the screen, and repositions an open comment composer. cutSelected splits the group at the selected line. clampRect is defined but unused."))
+          (block Comments
+            (port comment out CommentRecord)
+            (port send out AgentPayload)
+            (sketch "Composer and thread popovers anchored to a block, behavior, line or message row. Saving stores the comment with the current version stamp in localStorage and shows a count bubble on its target; Send opens a modal with the agent payload, and Copy marks the comments sent. The toolbar Send button appears while saved comments exist."))
+          (block DeleteDialog
+            (sketch "askDelete refuses the root and blocks whose parent is closed, then asks for confirmation in a modal that says what goes with the node: inner blocks for a block, implementers for a behavior, using ports for a message type. On confirm it clears that node's selection, drawers and highlight and dispatches a delete edit."))
+          (block MessageTable
+            (port rows in MessageRows)
+            (sketch "Right-hand sheet listing every declared message type. Search matches name, sketch, declaring block and using blocks; sort is by name or by number of using ports. An owner filter still exists, but nothing on the page sets it any more. A row opens in place, read-only, showing the sketch, refined-by and either-member links, every using port as a go-to button, Show on canvas, and comment actions."))
+          (block Navigation
+            (sketch "goTo opens every enclosing block of a block, behavior or message card, closes sheets on narrow screens, re-renders, then centres on the card and selects it."))
+          (block SourceSheet
+            (sketch "Left-hand sheet with the source textarea. Typing re-parses after 250ms; Tab inserts two spaces. Load sample and Random spec replace the source and fit the view."))
+          (block TalkHighlight
+            (sketch "Clicking a type in a drawer outlines every block that can talk to this one with it: from an input drawer, blocks with an output the type accepts; from an output drawer, blocks with an input that accepts it. Collapsed blocks count their children's ports, open blocks only their own, behavior cards never match, and the source block gets a dashed outline. Outlines use the type's colour and are reapplied after every render."))
+          )
+        (block InfoCards
+          (sketch "Builds the definition popover for a message type (sketch, refines, either, using port count, declaring block) or a behavior (sketch, ports, declaring block, implementer count). Hover versions are non-interactive; pinned versions carry a button.")))
+
+      (level
+        (block CardMarkup
+          (sketch "Pure string builders for block HTML from the model and state: ears with plain dots, or open drawers with a minimize row, one row per port, a go-to arrow for declared types and the active talk row; the type pill and behavior badges row; title with badge or colour dot; clamped sketch; footer with the open arrow and counts; frame header and appendix band labels. dotsHTML is defined but unused, and the Input and Output chip rows only appear in a details mode that nothing turns on."))
+        (block CodeOverlay
+          (sketch "Shows a node's exact source text, re-indented to column 0 and syntax highlighted, in a dialog about 90 characters wide and 50 to 90% of the screen tall. It grows out of the block's rectangle and shrinks back on close; Escape closes it and Copy falls back to selecting the text."))
+        (block ChecksPill
+          (port results in CheckResults)
+          (sketch "Toolbar pill showing how many layout and spec checks fail, and a popover listing both groups with the first three failures of each."))
+        (block Theme
+          (sketch "Applies state.opts.theme by setting or removing data-theme on the root element, and follows the system setting while on Follow system. isDark is defined but unused.")))
+
+      (level
+        (block AppState
+          (sketch "The single mutable state object: source, model and last layout, open blocks, unused details set, rules and options, camera, block elements by id, flash target, selection, drawers, talk highlight, comments and message-table view state. On load it merges saved options (forcing details off) and saved comments. persist saves options; version is a 7-digit hash of the source."))
+        (block Modal
+          (sketch "One modal at a time: a scrim and a dialog with a title, close button and caller-supplied body.")))
+
+      (level
+        (block Dom (sketch "$: document.getElementById."))
+        (block TextMeasure
+          (implements MeasuresText)
+          (sketch "Measures with an offscreen canvas 2D context; wrap counts lines by greedy word wrapping."))
+        (block Escape (sketch "esc: escapes & < > and double quotes for HTML."))
+        (block Palette
+          (sketch "hash and msgColor pick one of six colour tokens per message type; six behavior glyphs and colours; inline SVG icons."))
+        (block Keys
+          (sketch "connectorKey, targetKey (block:, beh:, msg:) and midOf, the middle point of a connector."))
+        (block LocalStore
+          (port value out StoredValue)
+          (sketch "get and set JSON in localStorage, wrapped so a blocked store just returns the default."))
+        (block Popover
+          (sketch "Named popovers that close by kind, place themselves below or above an anchor and stay on screen. A capturing pointerdown listener closes threads, empty composers, the checks list and pinned info when clicking elsewhere."))
+        (block Toast (sketch "One status line above the dock that hides after 4.2 seconds."))
+        (block SampleSpec
+          (port sample out SourceText)
+          (sketch "The Shell example: 23 blocks in 4 levels, two root behaviors, one behavior and one message type scoped to Shell.SessionView.")))
+
+      (level
+        (block PageMarkup
+          (sketch "Static HTML and CSS: the viewport with a world level holding the connector SVG and the link overlay SVG, the brand chip and help bubble, the dock, the message and source sheets, and the settings template. CSS defines every colour as a token with light and dark values, the ear and drawer shapes, and reduced-motion overrides.")))))
+
+  (level
+    (block Core
+      :type "Module"
+      (sketch "Pure functions with no DOM access. Text measurement comes in as a parameter, so layout never names the browser's measurer.")
+
+      (level
+        (block ModelBuilder
+          (implements Pure)
+          (port text in SourceText)
+          (port model out Model)
+          (sketch "Converts each list by its head form, records parents and owners, gives duplicate block names a #n suffix, and assigns β: and μ: ids to behaviors and messages. Then derives levels (explicit levels, and runs of bare blocks as implicit levels), flattened adjacent units, ports, implemented behaviors and declarations. Warns on duplicates, short adjacent groups, empty levels, bad port directions and extra top-level blocks."))
+        (block SpecChecks
+          (implements Pure)
+          (port model in Model)
+          (port results out CheckResults)
+          (sketch "Five language checks: every implemented behavior is declared; behaviors are used only inside the block that declares them or its descendants; every port uses a declared type, except behavior type parameters; message types are used only inside their declaring block; refines and either name declared types."))
+        (block LayoutEngine
+          (implements Pure)
+          (port model in Model)
+          (port options in LayoutOptions)
+          (port measure out TextRun)
+          (port width in Pixels)
+          (port geometry out Geometry)
+          (sketch "layout(model, opts, M): a two-pass layout where widths flow down and heights flow up, emitting absolute geometry into one output collector, then running the layout checks on it.")
+          (level
+            (block Layout.Driver
+              (sketch "Lays out the root at the canvas width, emits it at the origin, records the size and attaches the check results.")))
+          (level
+            (adjacent
+              (block Layout.BlockLayout
+                (sketch "A closed block becomes a card. An open block takes the canvas width or its natural width (at least 320), stacks its header, its levels with dividers, then its behaviors and message types bands in a tinted appendix; it emits the frame, a gutter for inserting levels at either end, dividers between levels, and a + after each band."))
+              (block Layout.LevelLayout
+                (sketch "Lays out each block of a level at the level's inner width (recursing into open blocks), packs them into rows, and emits each block's location. Draws adjacency lines: a horizontal line between neighbours on a row; when a group wraps, an elbow from the chosen block above (by the wrapped-line rule) to the first block of the new row, from drawer edge to drawer edge. Ends the level with a + button."))))
+          (level
+            (block Layout.BandLayout
+              (sketch "Lays out a block's behaviors or message types as cards in rows that wrap freely. Message cards reserve no room for ears.")))
+          (level
+            (block Layout.CardPlacement
+              (sketch "Measures one card and emits it at the position its row chooses.")))
+          (level
+            (block Layout.Metrics
+              (sketch "Card size: width from the title, type pill and badges, between 220 and 340; height from the top row, title, up to two sketch lines and the footer. Header size for open blocks, with up to four sketch lines. Natural width of an open block, memoised per layout.")))
+          (level
+            (block Layout.Predicates
+              (sketch "Whether a block is open; how far its ears or open drawers stick out above and below, using the drawer height formula and the number of ports on that side."))
+            (block Layout.ChipWidths
+              (sketch "Width and row-count helpers for the chip rows of the details mode."))
+            (block Layout.RowPacker
+              (sketch "Greedy row filling with a gap between items. Under the keep rule a whole group moves to the next row when it fits there but not here. Each row's top margin is its tallest top ear or drawer; a top drawer may first borrow all but 12px of the gap above it, except on a level's first row."))
+            (block Layout.Output
+              (sketch "The collector every step pushes into: blocks, connectors, dividers, gutters, plus buttons, per-level item boxes and the location map."))))
+        (block EditActions
+          (implements Pure)
+          (port action in EditAction)
+          (port result out EditResult)
+          (sketch "Applies an edit by splicing the original text at the nodes' recorded offsets, so formatting and comments elsewhere survive. Split, connect and delete rebuild only the affected units, re-indenting moved blocks; a group left with one block is unwrapped; deleting a level's last block removes the level. New blocks, levels, behaviors and messages get the first free NewBlockN, NewBehaviorN or NewMessageN name.")))
+
+      (level
+        (block Constants
+          (sketch "K: layout spacing (padding 22, gaps 56 by 30, ear 20, level gap 44, card widths 220 to 340). FONT: the CSS fonts used for measuring. FORMS: the ten head forms the parser recognises; anything else becomes a raw node."))
+        (block Reader
+          (implements Pure)
+          (port text in SourceText)
+          (port tokens out Tokens)
+          (port tree out SExpr)
+          (sketch "Tokenizes, skipping whitespace and ; comments and unescaping strings, then reads nested lists. Errors name the line and column of an unclosed string or a missing or unexpected paren."))
+        (block ModelQueries
+          (implements Pure)
+          (sketch "Questions about a parsed model: a block's ports including those from implemented behaviors; its ports plus its children's for ears and drawers; child blocks and nested block counts; whether it has anything inside; ancestors; port labels; open drawer height (32 + 23 per row); and accepts, which decides whether an input of one type accepts an output of another: same type, a refinement chain, an either alternative, or every alternative of an either."))
+        (block MessageIndex
+          (implements Pure)
+          (port model in Model)
+          (port rows out MessageRows)
+          (sketch "Indexes every message type with the block and behavior ports that use it, the types that refine it and the either types that include it."))
+        (block LayoutChecks
+          (implements Pure)
+          (port geometry in Geometry)
+          (port results out CheckResults)
+          (sketch "Six layout invariants: source order kept within every level and band; levels stacked top to bottom; no two item boxes overlap within a parent; every item inside its parent; each adjacent group one connected chain; no line between blocks that are not in the same group. Marks offending connectors as bad."))
+        (block SourceSplicing
+          (implements Pure)
+          (sketch "Text helpers for edits: line start, column, indentation before a node, re-indenting a multi-line slice, slicing a node at a new column, writing an adjacent group, the span of a level's units, and the first free NewBlockN name."))
+        (block RandomSpec
+          (implements Pure)
+          (port spec out SourceText)
+          (sketch "Generates a seeded random system up to three levels below the root, with five message types, two behaviors, random ports, fills, types, groups and sketches."))))))

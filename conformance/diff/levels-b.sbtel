@@ -1,0 +1,6 @@
+; v0.2: top-level level names and sketches, a group sketch and a port sketch (the file is the holder).
+(message M)
+(level :name "Upper" (~ the top
+
+new para ~) (block A (port p in M (~ new words here ~))))
+(level :name "Low" (adjacent (~ group two ~) (block B) (block C)))

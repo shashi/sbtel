@@ -1,0 +1,17 @@
+; Ports keep their kinds, but refines changes what they accept.
+(block Net
+  (message Msg (sketch "Any message."))
+  (message Ping (sketch "A liveness probe."))
+  (message Data (refines Wire) (sketch "A payload."))
+  (message Wire (sketch "What travels on the wire."))
+  (message Ack (sketch "An acknowledgement."))
+  (level
+    (block Sender
+      (port probe out Ping)
+      (port ack out Ack)
+      (port data out Data)
+      (sketch "Sends things."))
+    (block Receiver
+      (port wire in Wire)
+      (port any in Msg)
+      (sketch "Receives things."))))

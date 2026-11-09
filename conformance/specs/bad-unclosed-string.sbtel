@@ -1,0 +1,94 @@
+; The Shell from the sketch: 23 blocks in 4 levels.
+(block Shell
+  :type "Module"
+  (sketch "The UI shell user interacts via.)
+  (message Intent (sketch "A command id plus its arguments."))
+  (message Frame (sketch "A rendered view-model for one surface."))
+  (message SessionEvent (sketch "A turn was added, edited or removed."))
+  (message Notice (sketch "A short message for the user, with a severity."))
+  (message KeyChord (sketch "A normalized key combination."))
+  (behavior Surface
+    (port frame in Frame)
+    (port intent out Intent)
+    (sketch "A behavior shared by surfaces."))
+  (behavior Durable
+    (port event in SessionEvent)
+    (sketch "Retains every accepted event until it is acknowledged."))
+
+  (level
+    (adjacent
+      (block Shell.Notification
+        :type "Process"
+        (implements Surface)
+        (port notice in Notice)
+        (sketch "Shows transient notices above the session.")
+        (level
+          (adjacent
+            (block Shell.Toast (sketch "One notice with an auto-dismiss timer."))
+            (block Shell.Banner (sketch "A persistent notice pinned to the top."))))
+        (level
+          (block Shell.NoticeQueue
+            (implements Durable)
+            (sketch "Orders notices by severity, then arrival."))))
+      (block Shell.SessionView
+        :type "Process"
+        (implements Surface)
+        (port events in SessionEvent)
+        (sketch "View of the Session")
+        (message TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
+        (behavior Scrollable
+          (port position out Frame)
+          (sketch "Keeps a scroll position and reports what is visible."))
+        (level
+          (adjacent
+            (block Shell.Transcript
+              (implements Scrollable)
+              (sketch "Scrollable list of turns.")
+              (level
+                (block Shell.TurnList (sketch "Virtualized list; only visible turns mount.")))
+              (level
+                (adjacent
+                  (block Shell.Turn
+                    (port added in TurnAdded)
+                    (sketch "One user or agent turn.")
+                    (level
+                      (adjacent
+                        (block Shell.Markdown (sketch "Renders prose with inline code."))
+                        (block Shell.CodeBlock (sketch "Highlighted code with a copy action."))
+                        (block Shell.ToolCall (sketch "Collapsible tool invocation and its result.")))))
+                  (block Shell.TurnActions (sketch "Copy, retry and edit controls.")))))
+            (block Shell.Composer
+              (port submit out Intent)
+              (sketch "Multiline input with attachments and slash commands."))))
+        (level
+          (block Shell.ScrollAnchor
+            (sketch "Keeps the reading position when content above grows."))))
+      (block Shell.Sidebar
+        (implements Surface)
+        (sketch "Recent sessions and the project switcher.")))
+    (block Shell.CommandPalette
+      (port chord in KeyChord)
+      (port run out Intent)
+      (sketch "Fuzzy search over every command.")))
+
+  (level
+    (block Shell.Theme (sketch "Resolves design tokens for light and dark."))
+    (adjacent
+      (block Shell.Router
+        (port intent in Intent)
+        (sketch "Maps intents to handlers; unknown intents become notices."))
+      (block Shell.Keymap
+        (port chord out KeyChord)
+        (sketch "Turns raw key events into chords."))
+      (block Shell.Clipboard (sketch "Copy and paste with rich formats."))))
+
+  (level
+    (block Shell.LowLevelThing (sketch "Low level module thing."))
+    (block Shell.SurfaceKit
+      (implements Surface)
+      (sketch "Primitives every surface is drawn with."))
+    (block Shell.SessionStore
+      :type "Store"
+      (implements Durable)
+      (port events out SessionEvent)
+      (sketch "Keeps session events on disk and replays them on launch."))))

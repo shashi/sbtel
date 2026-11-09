@@ -1,0 +1,6 @@
+; A new level of only added blocks, above existing levels: nothing moves.
+(block App
+  (level
+    (block Ui (sketch "Screens.")))
+  (level
+    (block Core (sketch "Rules."))))

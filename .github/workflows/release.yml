@@ -1,0 +1,96 @@
+# Release on a version tag (RELEASING.md): run the tests, build the six binaries plus checksums.txt
+# and THIRD_PARTY_NOTICES with scripts/release.sh, and upload those eight files to the GitHub release for the tag (created
+# here if it does not exist yet). install.sh and install.ps1 download from that release.
+#
+# Actions are pinned to full commit SHAs (the tag is in the comment); versions checked 2026-11-08:
+#   actions/checkout v7.0.1, actions/setup-go v7.0.0, actions/setup-node v7.1.0.
+# The upload uses the GitHub CLI (`gh release create` / `gh release upload --clobber`), which is
+# preinstalled on GitHub-hosted runners and authenticates with GH_TOKEN.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GOPROXY: direct
+  GOSUMDB: "off"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.24.x"
+          cache-dependency-path: go.sum
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: the tag matches VERSION
+        run: |
+          want="v$(tr -d '[:space:]' < VERSION)"
+          if [ "$GITHUB_REF_NAME" != "$want" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match VERSION ($want)"; exit 1
+          fi
+      - run: node viewer/build.mjs --check
+      - run: scripts/third-party-notices.sh --check
+      - run: node conformance/run-node.mjs
+      - run: go vet ./...
+      - run: go test -race ./...
+      - run: python3 -I plugin/skills/sbtel-recover/scripts/test_sbtel_owners.py
+      - run: go -C plugin/skills/sbtel-recover/scripts/sbtel_refs_go test .
+      - run: make selfcheck
+      - run: make docs-check
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # create the release and upload its assets
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.24.x"
+          cache-dependency-path: go.sum
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: build the six targets, THIRD_PARTY_NOTICES and checksums.txt
+        run: |
+          scripts/release.sh
+          ls -l dist
+          test "$(ls dist | wc -l)" -eq 8
+          test -s dist/THIRD_PARTY_NOTICES
+          (cd dist && sha256sum -c checksums.txt)
+
+      - name: upload to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          case "$TAG" in *-*) pre=--prerelease ;; *) pre= ;; esac
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --title "sbtel $TAG" --generate-notes $pre
+          fi
+          gh release upload "$TAG" dist/sbtel_* dist/THIRD_PARTY_NOTICES dist/checksums.txt --clobber

@@ -1,0 +1,24 @@
+; Workstream A: everything the model builder accepts silently and lint now warns about.
+stray
+(blok Typo)
+()
+((nested) head)
+(port p in Ping)
+(message Ping (refines) (sketch "a") (sketch "b"))
+(message Wire (either))
+(behavior)
+(behavior (Box T) (implements Ping) (port a in T) (port a out T))
+(block)
+(block A :type
+  (sketch (not a string))
+  (prot x in Ping)
+  (port y in)
+  (port z out Ping extra)
+  (implements)
+  (implements Box Box)
+  "a loose string"
+  :fill "late"
+  (level (port q in Ping) (sketch "no"))
+  (adjacent (block B) (block C) (level (block D)))
+  (message M (block InMessage))
+  (refines Ping))

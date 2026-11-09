@@ -1,0 +1,14 @@
+{
+  "name": "sbtel",
+  "displayName": "sbtel",
+  "version": "0.2.1",
+  "description": "sbtel is a language to design, understand, and collaborate on a system's architecture with AI.",
+  "author": {
+    "name": "Shashi Gowda",
+    "url": "https://github.com/shashi"
+  },
+  "homepage": "https://github.com/shashi/sbtel",
+  "repository": "https://github.com/shashi/sbtel",
+  "license": "MIT",
+  "keywords": ["architecture", "design", "sbtel", "levels", "diagram", "specification"]
+}

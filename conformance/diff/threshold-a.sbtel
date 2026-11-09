@@ -1,0 +1,12 @@
+; Above: Cache -> Store keeps enough to pair (renamed). Below: Mailer -> Notifier keeps too little (removed + added).
+(block Sys
+  (message Key (sketch "A lookup key."))
+  (message Mail (sketch "An outgoing email."))
+  (level
+    (block Cache
+      :type "Store"
+      (port get in Key)
+      (sketch "Keeps the latest value per key in memory."))
+    (block Mailer
+      (port send in Mail)
+      (sketch "Sends email through the relay."))))

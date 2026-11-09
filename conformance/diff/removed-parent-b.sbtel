@@ -1,0 +1,4 @@
+; A removed block whose children are removed with it, next to a kept block.
+(block Root
+  (level
+    (block Importer (sketch "The new importer."))))

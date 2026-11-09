@@ -1,0 +1,28 @@
+; Every Fields key (level names and sketches, port and group sketches too), plus renamed and moved behaviors and message types.
+(block Kit
+  (message Data (sketch "Bytes."))
+  (message Text (sketch "Characters."))
+  (message Num (sketch "A number."))
+  (message Any (sketch "Text or a number."))
+  (message Event (sketch "Something happened."))
+  (message Click (refines Event) (sketch "A pointer press."))
+  (behavior Loggable (port log out Text) (sketch "Writes log lines."))
+  (behavior (Box T) (port item in T) (sketch "Holds one value."))
+  (level
+    (block Panel
+      :type "View"
+      (implements Loggable)
+      (port data in Data)
+      (port size in Num)
+      (port mode in Text (~ Read once. ~))
+      (sketch "Shows one thing at a time.")
+      (behavior Focusable (port focus in Event) (sketch "Takes keyboard focus."))
+      (level :name "Chrome"
+        (adjacent (~ Share a grid. ~)
+          (block Header (sketch "Title row."))
+          (block Body (sketch "Content area.")))
+        (block Footer (sketch "Status row."))))
+    (block Sidebar
+      (implements Loggable)
+      (message Hint (sketch "A tip for the user."))
+      (sketch "Lists things."))))

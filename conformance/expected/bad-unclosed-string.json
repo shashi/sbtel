@@ -1,0 +1,1 @@
+{"check":[],"lint":{"checks":[],"counts":null,"error":{"col":80,"line":62,"message":"Unexpected \")\""},"info":[],"ok":false,"problems":1,"warnings":[]},"lintText":"spec.sbtel:62:80: error: Unexpected \")\"\u000a","parse":{"error":{"col":80,"line":62,"message":"Unexpected \")\""},"model":null},"query":[]}

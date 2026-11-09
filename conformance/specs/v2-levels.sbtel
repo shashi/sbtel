@@ -1,0 +1,19 @@
+; v0.2: level names, sketches on levels, ports and adjacent groups, and the (~ … ~) sugar.
+(message Ratio (sketch "A numerator and a denominator."))
+(behavior Arith
+  (port sum out Ratio (~ Reduced to lowest terms. ~))
+  (sketch "Adds and multiplies rationals."))
+(level :name "Programs that use rationals"
+  (block Calc
+    (implements Arith)
+    (port in in Ratio (sketch "Any two integers; zero denominators are refused."))))
+(level :name "Rational numbers as pairs"
+  (~ The level above sees make-rat, numer and denom; never the pair. ~)
+  (block Rat (port out out Ratio))
+  (adjacent (~~ Printing needs ~) the raw pair. ~~)
+    (block Pair)
+    (block Print)))
+(block Shell
+  (level :name "Feedback" (block Shell.Toast))
+  (level :name "Routing" (block Shell.Router))
+  (block Shell.Keys))

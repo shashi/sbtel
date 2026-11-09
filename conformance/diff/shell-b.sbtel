@@ -1,0 +1,100 @@
+; The Shell, revised: renames, moves, removals and new blocks.
+(block Shell
+  :type "Module"
+  (sketch "The UI shell user interacts via.")
+  (message Intent (sketch "A command id plus its arguments."))
+  (message Frame (sketch "A rendered view-model for one surface."))
+  (message SessionEvent (sketch "A turn was added, edited or removed."))
+  ; Notice, TurnAdded and Scrollable sit above their one user on purpose: the playground shows
+  ; attaching across blocks and refusing it out of scope. sbtel lint says where each could live.
+  (message Alert (sketch "A short message for the user, with a severity."))
+  (message KeyChord (refines Intent) (sketch "A normalized key combination."))
+  (behavior Surface
+    (port frame in Frame)
+    (port intent out Intent (~ What the user asked for. ~))
+    (sketch "A behavior shared by surfaces."))
+  (behavior Durable
+    (port event in SessionEvent)
+    (sketch "Retains every accepted event until it is acknowledged."))
+
+  (level :name "Surfaces"
+    (adjacent
+      (block Shell.Notification
+        :type "Process"
+        (implements Surface)
+        (port notice in Alert)
+        (sketch "Shows transient notices above the session.")
+        (level
+          (adjacent
+            (block Shell.Toast
+              (port notice in Alert)
+              (sketch "One notice with an auto-dismiss timer."))
+            (block Shell.PinnedBanner (sketch "A persistent notice pinned to the top."))))
+        (level
+          (block Shell.NoticeQueue
+            (implements Durable)
+            (sketch "Orders notices by severity, then arrival."))))
+      (block Shell.SessionView
+        :type "Process"
+        (implements Surface)
+        (port events in SessionEvent)
+        (sketch "View of the Session")
+        (message TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
+        (behavior Scrollable
+          (port position out Frame)
+          (sketch "Keeps a scroll position and reports what is visible."))
+        (level
+          (adjacent
+            (block Shell.Transcript
+              (implements Scrollable)
+              (sketch "Scrollable list of turns.")
+              (level
+                (block Shell.TurnList (sketch "Virtualized list; only visible turns mount.")))
+              (level
+                (adjacent
+                  (block Shell.Turn
+                    (port added in TurnAdded)
+                    (sketch "One user or agent turn.")
+                    (level
+                      (adjacent
+                        (block Shell.Markdown (sketch "Renders prose with inline code."))
+                        (block Shell.CodeBlock (sketch "Highlighted code with a copy action."))
+                        (block Shell.ToolCall (sketch "Collapsible tool invocation and its result.")))))
+                  (block Shell.TurnActions (sketch "Copy, retry and edit controls."))))
+              (level
+                (block Shell.ScrollAnchor
+                  (sketch "Keeps the reading position when content above grows."))))
+            (block Shell.Composer
+              (port submit out Intent)
+              (sketch "Multiline input with attachments, mentions and slash commands."))))
+        )
+      (block Shell.Sidebar
+        (implements Surface)
+        (sketch "Recent sessions and the project switcher.")))
+    (block Shell.CommandPalette
+      (port run out Intent)
+      (sketch "Fuzzy search over every command.")))
+
+  (level :name "Routing"
+    (block Shell.Theme (sketch "Resolves design tokens for light and dark."))
+    (adjacent (~ Keymap and search shortcuts route as intents. ~)
+      (block Shell.Router
+        :type "Service"
+        (port intent in Intent)
+        (sketch "Maps intents to handlers; unknown intents become notices."))
+      (block Shell.Keymap
+        (implements Durable)
+        (port chord out KeyChord)
+        (sketch "Turns raw key events into chords."))
+      (block Shell.Search (sketch "Full-text search across sessions and files."))))
+
+  (level :name "Foundation"
+    (~ Knows nothing of the levels above. ~)
+    (block Shell.SurfaceKit
+      (implements Surface)
+      (sketch "Primitives every surface is drawn with."))
+    (block Shell.SessionStore
+      :type "Database"
+      (implements Durable)
+      (port events out SessionEvent)
+      (sketch "Keeps session events on disk and replays them on launch."))))

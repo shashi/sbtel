@@ -1,0 +1,17 @@
+(block Pipeline
+  (message Text (sketch "Raw input."))
+  (message Ast (sketch "A syntax tree."))
+  (message Ir (sketch "Checked program."))
+  (level
+    (adjacent
+      (block Parser
+        (port src in Text)
+        (port tree out Ast)
+        (sketch "Parses the source."))
+      (block Checker
+        (port tree in Ast)
+        (port ir out Ir)
+        (sketch "Checks the types of every expression.")))
+    (block Backend
+      (port ir in Ir)
+      (sketch "Emits machine code."))))

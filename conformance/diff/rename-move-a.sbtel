@@ -1,0 +1,14 @@
+(block Sys
+  (message Job (sketch "A unit of work."))
+  (level
+    (block Api
+      (sketch "Public HTTP surface.")
+      (level
+        (block Handlers (sketch "One handler per route."))
+        (block Limiter
+          (port job in Job)
+          (sketch "Token bucket per client, refilled every second."))))
+    (block Worker
+      (sketch "Runs jobs in the background.")
+      (level
+        (block Pool (sketch "Fixed set of threads."))))))

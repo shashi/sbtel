@@ -1,0 +1,126 @@
+{
+  "specs": {
+    "sample.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Shell.Turn"
+          ]
+        },
+        {
+          "ids": [
+            "Shell.Turn"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "Shell.Notification",
+            "beh:Durable",
+            "μ:TurnAdded",
+            "msg:Intent",
+            "Nope",
+            "Shell.Turn",
+            "Shell.Turn"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "Surface",
+            "Frame"
+          ]
+        }
+      ],
+      "check": [
+        {
+          "name": "sample.bindings.txt"
+        }
+      ]
+    },
+    "bad-unknown-type.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Shell.Toast"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "μ:KeyChord"
+          ],
+          "withDeps": true
+        }
+      ],
+      "check": [
+        {
+          "name": "sample.bindings.txt"
+        }
+      ]
+    },
+    "bad-dupes.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Shell.Toast",
+            "Shell.Toast#2"
+          ],
+          "withDeps": true
+        }
+      ]
+    },
+    "bad-missing-paren.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Shell"
+          ]
+        }
+      ],
+      "check": [
+        {
+          "name": "sample.bindings.txt"
+        }
+      ]
+    },
+    "unicode-ws.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Shell.SessionView"
+          ],
+          "withDeps": true
+        }
+      ]
+    },
+    "playground.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Reader",
+            "LayoutEngine"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "SbtelPlayground"
+          ]
+        }
+      ]
+    }
+  },
+  "random": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ]
+}

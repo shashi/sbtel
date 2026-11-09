@@ -1,0 +1,282 @@
+# Changelog
+
+All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
+(RELEASING.md).
+
+## 0.2.1 (2026-11-08)
+
+Reviews, as on GitHub, and an undo history that survives the browser. **Level numbers now count from
+the bottom**: see "Changed" first.
+
+### Changed
+
+- **Levels are numbered from the bottom.** Level 1 is the lowest level of a holder, so a lower level has
+  a lower number, as in "low-level": `Store (level 1 of App) binds upward to Orders (level 2)`. Levels
+  are still written top to bottom. This changes every level number: `sbtel check` and the viewer's
+  binding texts, `sbtel diff` text, the diff JSON's `Place.level` and `Fields.levels[].level` (now
+  the same 1-based numbers as the text, and `Place.level` is the block's own level), the viewer's level
+  editor, callouts and change list, the docs, and the recover skill's `sbtel_sccs.py`. `apiVersion`
+  stays 2.
+- **Save is a secondary action, and never overwrites silently.** It still writes the tab's text to the
+  spec file (and records a `save` event), but when the spec changed since the tab's base it asks "The
+  spec changed since you started (agent pushed a new version). Overwrite it with yours?", with
+  Overwrite, View their changes (a diff of your base and their version, in a new tab) and Cancel. An
+  overwrite is marked in the event (`force: true`) and in `sbtel inbox` ("which the user overwrote
+  without merging").
+- The standalone page's title is "sbtel Playground".
+
+### Added
+
+- **Reviews.** In a session, the comment composer's primary action is **Add to review** (**Send now**
+  still sends one comment at once). Pending comments show on the canvas with a "pending" badge and stay
+  editable and deletable. **Review (N)** in the toolbar (N: pending comments plus edits) opens the
+  Review panel: the edits since the version you started from, as the diff view's change list, with
+  **Open the full diff**; the pending comments; an optional overall message; and **Send review**. A
+  review is one `review` event: the message, the comments with their anchors (ids `c<seq>.<k>`) and,
+  with edits, the whole proposed spec, stored in `sessions/<id>/proposals/<seq>.sbtel` with its base and
+  its `sbtel diff` text. A review never writes the spec file; the proposed edits stay in the tab,
+  marked "proposed, awaiting agent", until the agent pushes a version. Editing after a review starts a
+  new draft on top of the proposal, which replaces it when sent. A diff session's review has comments
+  and a message.
+- **`sbtel inbox` prints a review as one unit**: header, message, the diff, the proposed spec's path,
+  then the comments; `--json` has all of it. `inbox --wait` wakes only on what was sent, never on a
+  draft. **`sbtel reply`** answers a review's comment (`c7.1`) or the review as a whole (`r7`).
+- **The draft persists**: pending comments, the message and the edited text are kept in localStorage per
+  session, survive a reload, and leaving the page with a non-empty draft asks first.
+- **Undo and redo persist** in localStorage, per session (and one history for the standalone
+  playground), as patches between steps, under about 2 MB per history (oldest steps go first). After
+  closing the browser, ⌘/Ctrl-Z continues back through earlier edits, past versions the agent pushed:
+  a new version, a disk change and "Discard my edits and reload" are ordinary steps, and undoing them
+  is only a draft. A full or blocked localStorage never breaks editing: the page stops writing and logs
+  once. `sbtel close` clears what the page kept, and so does loading a session that no longer exists;
+  keys of other sessions the server does not know are pruned.
+- Server routes `POST /s/<id>/review` and `GET /s/<id>/versions/<n>`, and `force` on `save` (DESIGN
+  §5.2); the 409 says who made the newer version.
+- Tests: e2e checks for the review flow (inbox prints one review, the file is unchanged, the proposal
+  file, replies, a second review that replaces the first, the agent's push), `inbox --wait` staying
+  asleep while a draft grows, every choice of the overwrite prompt, the draft across a reload, undo
+  across a closed and reopened browser context past two agent pushes, a localStorage that throws on
+  every write, and a review in a diff session; accept7 (standalone undo across a browser restart);
+  Go tests for the review event, proposals, forced saves, `versions/<n>` and inbox formatting.
+
+### Docs
+
+- The README tour sends a review and shows its inbox; DESIGN §6.7 describes reviews, drafts and the
+  history on disk, §3.9 the review's shape, §11 entries 61-77 the decisions. The sbtel-language and
+  sbtel-design skills describe the loop: open, `inbox --wait`, read the review, apply or merge the
+  proposed spec with your own changes, `open --session`, reply. LANGUAGE.md says "Levels are numbered
+  from the bottom: level 1 is the lowest."
+- examples/viewer.sbtel gains App.History, Viewer.Review and Viewer.Changes; examples/sbtel.sbtel the
+  Review event and Sbtel.Viewer.Review.
+
+## 0.2.0 (2026-11-08)
+
+The language pass. **This release breaks specs written for 0.1**: see "Breaking" first.
+
+### Breaking
+
+- **`(layer …)` is now `(level …)`**, with no alias, after SICP's "levels of language": a level is a
+  vocabulary built from the levels below it. A spec that still says `layer` loses those blocks and gets
+  `unknown form (layer) in … (did you mean level?)` from lint and in the viewer. The rename is
+  everywhere: the binding rules are `lower-level` and `same-level`, messages say `level 2 of Shell`,
+  the viewer's menus say "Insert a level above" and "Add a block to this level", and `sbtel diff
+  --json` moves are `Place.level`.
+- **`(either A B …)` is removed.** A union is a supertype that each alternative refines;
+  `accepts(U, T)` is now U = T or T refines U. A spec that uses `either` gets `either was removed in
+  0.2; declare each alternative with (refines Union) instead`.
+- **`:fill` and free `:key value` keywords are removed.** A block's one keyword is `:type`, the kind of
+  code artifact it maps to, shown as a pill; any other keyword is `unknown keyword :k in block X; a
+  block takes only :type`. The viewer picks its own colours.
+- **The JSON API is `apiVersion` 2.** `sbtel query --json` Elements have `levels` (each with `name`,
+  `sketch` and units with their `sketch` and `blocks`) instead of `layers`, ports have `sketch`, and
+  `fill`, `keywords` and `either` are gone (message types have `carries` and `carriers`). `sbtel diff
+  --json` Fields lose `fill` and `either` and gain `levels` and `carries`, and a change may have
+  `element: "file"`. Lint results gain `info`.
+
+### Added
+
+- **Level names**: `(level :name "Rational numbers as pairs" …)`, a label (never referenced, spaces
+  allowed, not unique). The viewer draws it at the left of the level's separator line, `sbtel check`
+  quotes it (`Shell.Toast (level 2 "Feedback" of Shell) binds upward to Shell.Router (level 1
+  "Routing")`), `sbtel query` keeps it, and `sbtel diff` reports a rename as a change of the holder.
+- **Sketches on levels, ports and adjacent groups**: `(level :name "…" (sketch "…") …)`, `(port chord in
+  KeyChord (sketch "…"))`, `(adjacent (sketch "…") (block A) (block B))`. A behavior's port sketches
+  go to the blocks that implement it. `sbtel diff` word-diffs them.
+- **`(~ … ~)`** is `(sketch "…")` with nothing special inside: quotes, `;`, `#`, backslashes and
+  unbalanced parens are text, and `(~~ … ~~)` takes a `~)`. Blank lines are paragraph breaks. Both
+  forms stay; the viewer keeps whichever a sketch is written in, and writes new sketches as `(~ … ~)`.
+- **`(carries T1 T2 …)`** in a message type: has-a, beside `refines` (is-a). A subtype carries what its
+  supertype carries; cycles are fine; it never changes what a port accepts. `sbtel query` prints what
+  carries a type, and the core's `carriers()` (also `__api.carriers`) says which types, ports and blocks
+  hold it.
+- **Placement notes**: lint notes a message type or behavior declared above the lowest block that holds
+  all its users (`Selection is declared in Shell but only used within Shell.SessionView; it could live
+  there.`) or used by nothing (`X is never used.`). They are information (`info:` lines, `severity:
+  "info"` in `--json`) and never change the exit code. The viewer lists them, muted, with "Move to …".
+- **The viewer shows sketches where they belong.** Hovering a port in a drawer shows its sketch beside
+  the drawer, at once, and outlines the blocks it can talk to (that took a click before). Clicking the
+  port edits it in place: name, direction, type, sketch, or Delete, as one undo step, with a name clash
+  or an out-of-scope type shown as you type. A level's name and an adjacency line show their sketches
+  on hover and edit on click; an unnamed level offers "Name this level". Inherited ports open read-only
+  with a way to their behavior. On a touch screen a tap shows the callout, with an Edit button. Message
+  cards show the types they carry as dots, and hovering a type outlines everything that carries it.
+  The Edit dialog's port rows have a sketch field. The diff view marks renamed levels and changed
+  port, level and group sketches, and shows their word diffs.
+- Lint warnings for the new forms: a level's `:name` (not a string, empty, twice, misplaced, or another
+  keyword), a second sketch on a level, port or group, a sketch on a nested adjacent group, `carries`
+  with no name or a name twice, and an unterminated `(~` (a parse error at the opener).
+- Tests: conformance in node and goja for all of it, including viewer edits that round-trip through
+  a parse (`~)`, `~~)`, quotes, backslashes, unbalanced parens, unicode, empty and multi-line text);
+  accept6, a browser suite for callouts, editors, level labels and carried types with real mouse and
+  real touch input.
+
+### Changed
+
+- A collapsed card says how many blocks it holds, at any depth ("23 blocks"), without the nesting
+  depth; so do `sbtel query --with-deps` stubs.
+- The sample spec and examples name their levels and use `(~ … ~)`; the repo's own specs moved four
+  declarations to where lint's placement notes said they belong.
+- The design skill speaks of levels of language, asks to name each level for the vocabulary it offers
+  upward, and to say no more than the spec needs; the recover skill records level names, sketches and
+  `carries` only where the code makes them evident.
+- sbtel_owners.py reads `(~ … ~)` sketches.
+
+## 0.1.2 (2026-11-08)
+
+### Fixed
+
+- **The viewer no longer calls Google Fonts.** The page loaded Hanken Grotesk and JetBrains Mono from
+  fonts.googleapis.com on every open, a request to a third party from a localhost tool, and fell back
+  to a wider system font offline or behind a proxy. The same font files (the variable woff2 subsets,
+  119 KB, SIL OFL 1.1, from @fontsource-variable 5.3.0) are now in `viewer/fonts` and inlined into the
+  page, so standalone, server and diff mode look exactly as before and make no request outside the
+  sbtel server. `THIRD_PARTY_NOTICES` (and `sbtel licenses`) include the fonts' licenses; the e2e test
+  fails on any request to a host other than 127.0.0.1, and the viewer build refuses remote resources.
+- **`--help` and `-h` on every command** print that command's usage, what it does and its flags, and
+  exit 0 (they were rejected as unknown flags with exit 2). `sbtel help <command>` does the same.
+- **Singular counts.** The comment bubble's label says "1 comment", and the page's block count, checks
+  pill and code panel say "1 block", "1 check" and "1 line". So do the selfcheck tools and
+  `sbtel_sccs.py`.
+- **`sbtel check` shows the `# VIOLATION:` explanations.** Each explained violation is followed by
+  `  VIOLATION: <reason>`, `--json` gives every violation its `note`, and the summary says
+  `N not allowed, N explained`. A note on an allowed edge, or one that explains no edge (a blank line,
+  another note, a non-edge line or the end of the file comes first), is a warning; warnings do not
+  change the exit code. So "every violation is explained" can be checked without the browser.
+  `parseBindings` returns the unattached notes as `orphans`.
+- **sbtel_owners.py** no longer ends a declaration at a raw string's line in column 0 (Go backtick
+  strings, Python triple-quoted strings), no longer reads `@sbtel` inside a string literal as an
+  annotation, and reports two `@sbtel Name` lines before one declaration, or two `@sbtel file` lines
+  in one file, as errors instead of silently keeping the last.
+- `sbtel sessions` shows a diff session's two absolute paths (`/abs/a.sbtel -> /abs/b.sbtel`, or
+  `stdin` for a side read from stdin), as it does for spec sessions, instead of the bare file names.
+
+### Changed
+
+- A collapsed card's count line, and the stub comments of `sbtel query --with-deps`, say "3 blocks" or
+  "9 blocks, 3 deep" instead of "3 blocks in 1 level": depth is nesting, and the language has no
+  levels.
+- DESIGN.md and LANGUAGE.md open with the README's first sentence: "sbtel is a language to design,
+  understand, and collaborate on a system's architecture with AI."
+- The README says which commands accept `--json` (not every one does) and points to `--help`.
+- **examples/sbtel.sbtel** now holds the Go binary in detail, recovered from the code (CLI, server,
+  engine, state and assets.go, 27 blocks), with the viewer beside the server rather than below it (no
+  Go code names the page) and assets.go as `Sbtel.Assets`. The Go sources carry comment-only `@sbtel`
+  annotations, and `examples/sbtel.edges.txt` holds their bindings: 39 edges, 3 explained violations.
+- `install.sh` prints the PATH hint on stderr, with its other messages.
+- Recover skill: Go guidance (a Go package is a no-imports namespace; take file-level SCCs inside each
+  package, since Go forbids import cycles; load every GOOS and tag set; `callgraph` misses type and
+  field references; gopls may not install behind a proxy), where `@sbtel file` goes in a Go file, one
+  line each on Rust, Python and Java, what to do with no human in the loop, and a strip recipe that
+  leaves no `.bak` files.
+
+### Added
+
+- **`sbtel_refs_go`**, a Go reference helper for the recover skill
+  (`plugin/skills/sbtel-recover/scripts/sbtel_refs_go/`, a standalone module on the standard library:
+  `go -C <dir> run . --dir "$PWD" ./...`). It loads every GOOS (and `--tags` set), resolves every
+  identifier with go/types, and prints calls, type, field, method, constant and variable references in
+  `sbtel_refs.mjs`'s format, or the declaration graph with `--units`. Tested in `make test-owners` and CI.
+- `make selfcheck` also checks the Go code against `examples/sbtel.sbtel`: annotations, regenerated
+  edges against the committed file, and `sbtel check` with every violation explained and no warning.
+- `make docs-check` (`tools/docs/snippets.mjs`): every spec in the docs must lint as marked, and every
+  lint, query and check output shown, and the README tour's `sbtel lint` and `sbtel check`
+  transcripts, must be exactly what `bin/sbtel` prints. It runs in `make test-all`, CI (Linux) and the
+  release workflow; `--fill` rewrites the outputs after an intended change.
+
+## 0.1.1 (2026-11-08)
+
+### Fixed
+
+- **Comments in diff sessions.** In a tab opened by `sbtel open-diff`, a sent comment now keeps its
+  bubble and its thread, also after a reload, and an agent's reply (`sbtel reply`) appears in the
+  comment's thread as well as in a toast, exactly as in a spec session. Server and diff mode now share
+  one implementation, `viewer/src/session.js`. Covered by the diff viewer test and the e2e test.
+
+### Added
+
+- The checks popover (`sbtel open --bindings`) lists every binding violation with its rule, its
+  location and its explanation from the bindings file, a `# VIOLATION: reason` comment directly above
+  the edge, or says that it has none. `parseBindings` (core.js, `__api.parseBindings`) returns that
+  explanation as each edge's `note`; `sbtel check`'s output is unchanged.
+- `examples/viewer.sbtel`: the viewer's own spec, recovered from its code with the sbtel-recover skill
+  (33 blocks; the language core as `Pure` blocks, the text measurer as a real port, and 9 explained
+  violations). It replaces `examples/playground.sbtel`, which was stale and chose its layering so that
+  every binding passed. The code's `@sbtel` annotations now match it, and
+  `examples/viewer.edges.txt` holds its bindings.
+- `make selfcheck` (also in CI and the release workflow): lints the viewer's spec and
+  `examples/sbtel.sbtel`, checks the annotations with `sbtel_owners.py`, regenerates the edges and
+  fails if they differ from the committed file, and runs `sbtel check`, failing on any violation
+  without a `# VIOLATION:` explanation. `make edges` regenerates the file and keeps the explanations.
+  The extractor (`tools/selfcheck/`) uses a pinned TypeScript checker installed with npm; it is
+  dev-only and never used by the binary.
+- sbtel-recover skill: find the strongly connected components of the reference graph before choosing
+  blocks, with guidance on granularity (`granularity.md`); recipes for code without imports, compiler
+  or language-server references first and ctags plus scoped search only as a flagged fallback
+  (`extracting-bindings.md`); what to do with existing annotations, and when moving one is a fix rather
+  than gaming `sbtel check` (`annotations.md`). New optional helpers `scripts/sbtel_refs.mjs`
+  (JS and TS references through the TypeScript checker) and `scripts/sbtel_sccs.py` (SCCs and the
+  condensed layering).
+
+### Changed
+
+- **License: MIT** (`Copyright (c) 2026 Shashi Gowda`), replacing the WTFPL; the plugin and
+  marketplace manifests say so.
+- **Third-party notices.** `THIRD_PARTY_NOTICES` holds the full license text of every module the
+  binary links (goja, regexp2, sourcemap, pprof, golang.org/x/text) and of the Go standard library,
+  copied from the module sources by `scripts/third-party-notices.sh`. The binary embeds it, the new
+  `sbtel licenses` command prints sbtel's license and the notices, and every release ships the file
+  beside the binaries (eight assets; `checksums.txt` covers it). CI and release.sh fail when it is
+  stale.
+- **The repository is `shashi/sbtel`.** The install URLs, the plugin manifests and the docs name it,
+  replacing the placeholder owner of 0.1.0. The Go module path is `github.com/shashi/sbtel`.
+- The README opens with a new introduction (what sbtel is for, and why), and the plugin manifests and
+  the viewer's help panel use its first sentence: "sbtel is a language to design, understand, and
+  collaborate on a system's architecture with AI."
+
+### Docs
+
+- README: `SBTEL_BASE_URL`, `SBTEL_HOME`, `--no-browser` and `SBTEL_NO_BROWSER`; the tour now says to
+  press Comment after selecting a block.
+- LANGUAGE.md: the HTML annotation example names a leaf block; the `# VIOLATION:` explanation syntax;
+  extraction points to the sbtel-recover skill; query ids are printed as `β:`/`μ:`.
+- sbtel-design principles.md: the worked example's sketches now match its own "no and" claim.
+- sbtel-language skill: query headers print `β:Name` and `μ:Name`; both spellings are accepted.
+
+## 0.1.0 (2026-11-08)
+
+The first release.
+
+- The language: nested blocks in ordered layers, adjacent groups, ports, message types (with
+  `refines` and `either`), behaviors (with parameters), sketches and keywords, with one implementation
+  in `core/core.js` that the binary (in goja) and the viewer (in the browser) share, proven identical
+  by node and goja conformance.
+- The `sbtel` binary for Linux, macOS and Windows (amd64 and arm64): `lint`, `query` (fragments that
+  lint clean on their own, `--with-deps`), `check` (code bindings against the layering), `diff`,
+  `open` and `open-diff` (a shared localhost server with sessions), `inbox` (`--wait`, `--peek`),
+  `reply`, `sessions`, `close`, `serve --status`/`--stop` and `version`; `--json` everywhere.
+- The viewer: one self-contained page with a standalone playground, server mode (comments, saves,
+  versions with a Reload toast, bindings in the checks popover) and diff mode (ghosts, marks, a change
+  list, Before and After).
+- `install.sh` and `install.ps1` with SHA-256 verification; the CI and release workflows.
+- The Claude Code plugin with the sbtel-language, sbtel-design and sbtel-recover skills, and the
+  `sbtel_owners.py` annotation helper.

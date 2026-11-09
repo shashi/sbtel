@@ -1,0 +1,8 @@
+(message A (carries A B A) (carries C))
+(message C (carries))
+(block Inner
+  (message Secret)
+  (port s in Secret))
+(message Leak (carries Secret Nope))
+(message Old (either A C))
+(block D (port a in A) (port l in Leak) (port o in Old))

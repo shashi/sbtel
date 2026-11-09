@@ -1,0 +1,94 @@
+{
+  "diff": [
+    {
+      "name": "sample-vs-bad-scope",
+      "a": "specs/sample.sbtel",
+      "b": "specs/bad-scope.sbtel"
+    },
+    {
+      "name": "parse-error-b",
+      "a": "specs/sample.sbtel",
+      "b": "specs/bad-extra-paren.sbtel"
+    },
+    {
+      "name": "shell",
+      "a": "diff/shell-a.sbtel",
+      "b": "diff/shell-b.sbtel"
+    },
+    {
+      "name": "swap",
+      "a": "diff/swap-a.sbtel",
+      "b": "diff/swap-b.sbtel"
+    },
+    {
+      "name": "rename-move",
+      "a": "diff/rename-move-a.sbtel",
+      "b": "diff/rename-move-b.sbtel"
+    },
+    {
+      "name": "split",
+      "a": "diff/split-a.sbtel",
+      "b": "diff/split-b.sbtel"
+    },
+    {
+      "name": "reorder",
+      "a": "diff/reorder-a.sbtel",
+      "b": "diff/reorder-b.sbtel"
+    },
+    {
+      "name": "whitespace",
+      "a": "diff/whitespace-a.sbtel",
+      "b": "diff/whitespace-b.sbtel"
+    },
+    {
+      "name": "unicode",
+      "a": "diff/unicode-a.sbtel",
+      "b": "diff/unicode-b.sbtel"
+    },
+    {
+      "name": "threshold",
+      "a": "diff/threshold-a.sbtel",
+      "b": "diff/threshold-b.sbtel"
+    },
+    {
+      "name": "newlevel",
+      "a": "diff/newlevel-a.sbtel",
+      "b": "diff/newlevel-b.sbtel"
+    },
+    {
+      "name": "fields",
+      "a": "diff/fields-a.sbtel",
+      "b": "diff/fields-b.sbtel"
+    },
+    {
+      "name": "affected",
+      "a": "diff/affected-a.sbtel",
+      "b": "diff/affected-b.sbtel"
+    },
+    {
+      "name": "nested",
+      "a": "diff/nested-a.sbtel",
+      "b": "diff/nested-b.sbtel"
+    },
+    {
+      "name": "removed-parent",
+      "a": "diff/removed-parent-a.sbtel",
+      "b": "diff/removed-parent-b.sbtel"
+    },
+    {
+      "name": "ambiguous",
+      "a": "diff/ambiguous-a.sbtel",
+      "b": "diff/ambiguous-b.sbtel"
+    },
+    {
+      "name": "big",
+      "a": "diff/big-a.sbtel",
+      "b": "diff/big-b.sbtel"
+    },
+    {
+      "name": "levels",
+      "a": "diff/levels-a.sbtel",
+      "b": "diff/levels-b.sbtel"
+    }
+  ]
+}

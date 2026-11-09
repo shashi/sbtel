@@ -1,0 +1,16 @@
+# Bindings for sample.sbtel: one edge per line, `Caller -> Callee  # optional location`.
+
+Shell.Composer -> Shell.Router        # src/composer.ts:12  lower level: allowed
+Shell.Router -> Shell.Keymap          # same adjacent group: allowed
+Shell.SessionView -> Shell.Transcript # descendant: allowed
+Shell.Turn -> Shell                   # ancestor: not allowed (a part binding its whole)
+Shell.Toast->Shell.Toast              # same block, no spaces: allowed
+Shell.Router -> Shell.Composer        # src/router.ts:40  upward
+Shell.Theme -> Shell.Router           # same level, not adjacent
+Shell.Markdown -> Shell.TurnActions   # inner: Turn and TurnActions are adjacent: allowed
+Shell.TurnList -> Shell.Turn          # Transcript's level 1 -> level 2: allowed
+Shell.Turn -> Shell.TurnList          # upward inside Transcript
+Shell.Toast -> Nope                   # unknown callee
+  # an indented comment
+this line is not an edge
+A -> B -> C

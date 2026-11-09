@@ -1,0 +1,115 @@
+{
+  "specs": {
+    "a-rules.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Ui"
+          ]
+        },
+        {
+          "ids": [
+            "Ui"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "Core.Queue"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "Ui.Button",
+            "Core.Queue"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "Top",
+            "Ui",
+            "Core"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "Relay",
+            "beh:Durable",
+            "\u03b2:Durable",
+            "msg:Wire",
+            "\u03bc:Job",
+            "Dup#2"
+          ]
+        },
+        {
+          "ids": [
+            "Dup",
+            "Tools"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "Ui.Buton",
+            "beh:Durabel",
+            "Turn",
+            "Nope",
+            "Nope"
+          ]
+        }
+      ],
+      "check": [
+        {
+          "name": "a-rules.bindings.txt"
+        }
+      ]
+    },
+    "a-forms.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "A"
+          ],
+          "withDeps": true
+        }
+      ]
+    },
+    "sample.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Shell.Turn",
+            "Shell.Router"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "Shell.Toast"
+          ],
+          "withDeps": true
+        }
+      ]
+    },
+    "playground.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Reader"
+          ],
+          "withDeps": true
+        }
+      ]
+    },
+    "check-notes.sbtel": {
+      "check": [
+        {
+          "name": "check-notes.bindings.txt"
+        }
+      ]
+    }
+  }
+}

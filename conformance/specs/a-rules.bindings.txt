@@ -1,0 +1,25 @@
+﻿# CRLF line endings, tabs, comments, BOM.
+Ui -> Ui # same
+Ui	->	Ui.Button	# descendant
+Ui.Button -> Ui # ancestor
+Ui -> Core # lower-level, location with -> inside: a.ts:1 x->y
+Ui->Cli#nospace-is-part-of-the-name
+Ui -> Cli   #   adjacent  # second hash
+Cli -> Admin # same-level
+Core -> Ui # upward
+Core -> Ui # upward (duplicate line)
+Ui.Theme -> Ui.Button # upward inside Ui
+Ui.Button -> Ui.Menu # same-level inside Ui
+Core.Queue -> Dup#2 # lower-level from a nested block
+Dup -> Dup#2 # same-level between duplicates
+Orphan -> Core.Queue # unknown: not in a level
+Ui -> Durable # unknown: a behavior
+Ui -> Ui.Buton # unknown: typo
+Shell.Item -> Top # unknown: renamed away
+Top -> Tools # same-level at file level
+   # indented comment
+	
+Ui -> 
+-> Ui
+Ui -> Cli -> Admin
+Ui CliUi.Menu -> Ui.Theme # lone CR line end

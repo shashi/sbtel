@@ -1,0 +1,154 @@
+{
+  "specs": {
+    "v2-levels.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "Rat"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "Pair"
+          ]
+        },
+        {
+          "ids": [
+            "Calc",
+            "beh:Arith"
+          ]
+        }
+      ],
+      "check": [
+        {
+          "name": "v2-levels.bindings.txt"
+        }
+      ],
+      "edits": [
+        {
+          "on": "level:|0",
+          "name": "Programs",
+          "sketch": ""
+        },
+        {
+          "on": "level:|1",
+          "sketch": "Only make-rat, numer and denom cross this line."
+        },
+        {
+          "on": "level:Shell|2",
+          "name": "Input",
+          "sketch": "Keys only."
+        },
+        {
+          "on": "group:|1|1",
+          "sketch": "Printing needs the pair; ~) and ~~) too."
+        },
+        {
+          "on": "port:Calc.in",
+          "sketch": "Any two integers."
+        },
+        {
+          "on": "port:β:Arith.sum",
+          "sketch": ""
+        },
+        {
+          "on": "block:Rat",
+          "sketch": "New sketch with \"quotes\" and \\ backslash."
+        }
+      ]
+    },
+    "v2-sugar.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "A",
+            "msg:R"
+          ]
+        }
+      ],
+      "edits": [
+        {
+          "on": "msg:M",
+          "sketch": "ends with ~)"
+        },
+        {
+          "on": "msg:N",
+          "sketch": "~~) and ~) and ~~~)"
+        },
+        {
+          "on": "msg:O",
+          "sketch": "unbalanced (( \"quote\" \\ ; # ✓"
+        },
+        {
+          "on": "msg:P",
+          "sketch": "now filled"
+        },
+        {
+          "on": "msg:Q",
+          "sketch": ""
+        },
+        {
+          "on": "msg:R",
+          "sketch": "One.\n\n\n  Two,\n  still two."
+        },
+        {
+          "on": "msg:S",
+          "sketch": "String form stays.\n\nNo paragraphs here."
+        },
+        {
+          "on": "port:A.p",
+          "sketch": "Multi\nline\n\nport sketch"
+        },
+        {
+          "on": "group:A|0|0",
+          "sketch": "  "
+        },
+        {
+          "on": "level:A|1",
+          "name": "Low",
+          "sketch": "Wrapped from (level …) with ~) inside."
+        }
+      ]
+    },
+    "v2-carries.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "msg:Camera"
+          ]
+        },
+        {
+          "ids": [
+            "Pane"
+          ],
+          "withDeps": true
+        },
+        {
+          "ids": [
+            "msg:Ping"
+          ]
+        }
+      ],
+      "carriers": [
+        "Camera",
+        "Selection",
+        "Named",
+        "Turn",
+        "Ping",
+        "Text",
+        "Nothing"
+      ],
+      "edits": []
+    },
+    "v2-placement.sbtel": {
+      "query": [
+        {
+          "ids": [
+            "msg:Selection"
+          ]
+        }
+      ]
+    }
+  }
+}
