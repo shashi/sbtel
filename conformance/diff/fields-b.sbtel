@@ -7,17 +7,17 @@
   (message Event (sketch "Something happened."))
   (message Click (refines Data) (sketch "A pointer press."))
   (message Hint (sketch "A tip for the user."))
-  (behavior Logging (port log out Text) (sketch "Writes log lines."))
-  (behavior (Box T K) (port item in T) (sketch "Holds one value."))
+  (behavior Logging (port :out Text :as log) (sketch "Writes log lines."))
+  (behavior (Box T K) (port :in T :as item) (sketch "Holds one value."))
   (level
     (block Panel
       :type "Card"
       (implements Logging)
       (implements Box)
-      (port data in Data (~ Raw bytes, never parsed here. ~))
-      (port size out Num)
-      (port label in Text)
-      (port mode2 in Text)
+      (port :in Data (~ Raw bytes, never parsed here. ~))
+      (port :out Num :as size)
+      (port :in Text :as label)
+      (port :in Text :as mode2)
       (sketch "Shows one thing at a time, with a header.")
       (level :name "Frame" (~ Panel draws it; content never does. ~)
         (adjacent (~ Share one grid. ~)
@@ -25,5 +25,5 @@
           (block Body (sketch "Content area."))
           (block Footer (sketch "Status row.")))))
     (block Sidebar
-      (behavior Focusable (port focus in Event) (sketch "Takes keyboard focus."))
+      (behavior Focusable (port :in Event :as focus) (sketch "Takes keyboard focus."))
       (sketch "Lists things."))))

@@ -216,7 +216,7 @@ var __api = (function () {
     var isName = function (x) { return isSym(x) && x.v.charAt(0) !== ':'; };
     // nested: an adjacent group inside another, whose sketch the outer group's replaces.
     function kids(ctx, where, items, nested) {
-      var seen = {}, ports = {};
+      var seen = {};
       for (var i = 0; i < items.length; i++) {
         var x = items[i];
         if (!x.list) {
@@ -234,7 +234,6 @@ var __api = (function () {
         if ((h.v === 'sketch' || h.v === 'refines' || h.v === 'carries') && seen[h.v]) warn(where + ' has more than one (' + h.v + '); only the first counts', x.s);
         else if (h.v === 'sketch' && nested) warn('a nested adjacent group has no sketch of its own; put it in the outer (adjacent)', x.s);
         seen[h.v] = true;
-        if (h.v === 'port' && isName(x.list[1])) { if (ports[x.list[1].v]) warn(where + ' has two ports named ' + x.list[1].v, x.s); ports[x.list[1].v] = true; }
         form(h.v, x, ctx === 'adjacent');
       }
     }
@@ -272,11 +271,23 @@ var __api = (function () {
       }
       if (h === 'adjacent') return kids('adjacent', 'an adjacent group', it, inAdjacent);
       if (h === 'port') {
-        if (it.length < 3 || !it.slice(0, 3).every(isName)) { warn('port needs a name, a direction and a message type: (port name in|out Type)', x.s); return; }
-        // After the type, only a sketch: (port chord in KeyChord (sketch "…")) or (~ … ~).
-        var extra = it.slice(3), bad = extra.filter(function (y) { return !(y.list && isSym(y.list[0]) && y.list[0].v === 'sketch'); });
-        kids('port', 'port ' + nm.v, extra.filter(function (y) { return bad.indexOf(y) < 0; }));
-        if (bad.length) warn('port ' + nm.v + ' has extra items after its message type', bad[0].s);
+        // (port :in|:out Type [:as name] [sketch]). The core reports the 0.2 form, a bad direction and two
+        // ports with one name.
+        var pp = portParts(it);
+        if (pp.legacy || (pp.dir !== 'in' && pp.dir !== 'out')) return;
+        if (!isName(it[1])) { warn('port needs a message type after :' + pp.dir + ': (port :' + pp.dir + ' Type [:as name])', x.s); return; }
+        var pn = 'port ' + pp.name, j = 2, named = false;
+        for (; j < it.length && isSym(it[j]) && it[j].v.charAt(0) === ':'; j += 2) {
+          var av = it[j + 1];
+          if (it[j].v !== ':as') warn('unknown keyword ' + it[j].v + ' in a port; a port takes only :as name', it[j].s);
+          else if (named) warn(pn + ' has more than one :as; only the first counts', it[j].s);
+          if (!isName(av)) { warn('keyword ' + it[j].v + ' of a port needs a name', it[j].s); if (!av || av.list || isSym(av)) j--; }
+          else if (it[j].v === ':as') named = true;
+        }
+        // After the type and :as, only a sketch: (port :in KeyChord (sketch "…")) or (~ … ~).
+        var extra = it.slice(j), bad = extra.filter(function (y) { return !(y.list && isSym(y.list[0]) && y.list[0].v === 'sketch'); });
+        kids('port', pn, extra.filter(function (y) { return bad.indexOf(y) < 0; }));
+        if (bad.length) warn(pn + ' has extra items after its message type' + (isSym(bad[0]) && !named && j === 2 && extra.length === 1 ? ' (to name it, write :as ' + bad[0].v + ')' : ''), bad[0].s);
         return;
       }
       // (implements Name), or (implements (Name Arg ...)) for a behavior with parameters.
@@ -566,6 +577,36 @@ var __api = (function () {
     return J({ exit: exit, stdout: out, stderr: err });
   }
 
+  // ---------- fmt --migrate-ports: 0.2 ports rewritten in the 0.3 form (docs/DESIGN.md §3.15) ----------
+  // Every (port name in|out Type …) becomes (port :in|:out Type [:as name] …): :as only when name is not
+  // the type's default name. Only the head of each port changes; its sketch, comments, spacing and the
+  // rest of the file stay byte for byte. Works on the reader's output, so it needs a file that reads
+  // (balanced parentheses, closed strings) but not one that lints. Returns { error, src, ports: [{ line,
+  // col, from, to }] }.
+  function migratePorts(src) {
+    var forms;
+    try { forms = readAll(src); } catch (e) { return { error: errorOf(e), src: src, ports: [] }; }
+    var reps = [], starts = lineStarts(src);
+    (function walk(xs) {
+      xs.forEach(function (x) {
+        if (!x.list) return;
+        var it = x.list, h = it[0];
+        if (h && h.t === 'sym' && h.v === 'port' && !x.tilde) {
+          var p = portParts(it.slice(1));
+          if (p.legacy && it[3]) {
+            var head = ':' + p.dir + ' ' + src.slice(it[3].s, it[3].e) + (p.name !== defaultPortName(p.kind) ? ' :as ' + p.name : '');
+            var more = it.length > 4 ? ' …)' : ')', at = posOf(starts, x.s);
+            reps.push({ s: it[1].s, e: it[3].e, t: head, line: at.line, col: at.col, from: '(port ' + src.slice(it[1].s, it[3].e).replace(/\s+/g, ' ') + more, to: '(port ' + head + more });
+          }
+        }
+        walk(it);
+      });
+    })(forms);
+    var out = src;
+    reps.slice().sort(function (a, b) { return b.s - a.s; }).forEach(function (r) { out = out.slice(0, r.s) + r.t + out.slice(r.e); });
+    return { error: null, src: out, ports: reps.map(function (r) { return { line: r.line, col: r.col, from: r.from, to: r.to }; }) };
+  }
+
   // ---------- Conformance: viewer edits round-trip (tests only) ----------
   // One sketch (or level name) edit, as the viewer makes it, then a fresh parse of the result. c.on names
   // what to edit: block:Id, beh:Name, msg:Name, port:Owner.port (Owner a block id or β:Name), level:Id|i
@@ -574,12 +615,25 @@ var __api = (function () {
   function editCase(src, c) {
     var m = parse(src), on = String(c.on), k = on.indexOf(':'), kind = on.slice(0, k), id = on.slice(k + 1), act, read, want;
     var holder = function (x) { return x ? m.blocks.get(x) : m.root; };
+    var portsNow = null;
     if (kind === 'port') {
-      var dot = id.lastIndexOf('.'), owner = m.node(id.slice(0, dot)), pn = id.slice(dot + 1);
+      // A port edit as the port editor makes it: c.sketch, and (v0.3) c.name, c.dir, c.kind, or c.delete.
+      // The record adds the owner's own ports read back (ports), so renames round-trip too.
+      var dot = id.lastIndexOf('.'), oid = id.slice(0, dot), owner = m.node(oid), pn = id.slice(dot + 1);
       var own = owner.children.filter(function (x) { return x.form === 'port'; }), node = own.filter(function (x) { return x.name === pn; })[0];
-      act = { t: 'props', node: owner, ports: own.map(function (x) { return { node: x, name: x.name, dir: x.dir, kind: x.kind, sketch: x === node ? c.sketch : undefined }; }) };
-      want = sketchNorm(c.sketch, node.children.filter(function (x) { return x.form === 'sketch'; })[0]);
-      read = function (m2) { return portsOf(m2.node(id.slice(0, dot))).filter(function (p) { return p.name === pn; })[0].sketch; };
+      var nn = c.name != null ? c.name : pn;
+      act = { t: 'props', node: owner, ports: own.filter(function (x) { return !(c['delete'] && x === node); }).map(function (x) {
+        return x === node ? { node: x, name: nn, dir: c.dir || x.dir, kind: c.kind || x.kind, sketch: c.sketch }
+          : { node: x, name: x.name, dir: x.dir, kind: x.kind }; }) };
+      want = c['delete'] ? null : c.sketch == null ? node.sketch : sketchNorm(c.sketch, node.children.filter(function (x) { return x.form === 'sketch'; })[0]);
+      read = function (m2) { var q = portsOf(m2.node(oid)).filter(function (p) { return p.name === nn && !p.via; })[0]; return c['delete'] ? (q ? 'still there' : null) : q.sketch; };
+      portsNow = function (m2) { return m2.node(oid).children.filter(function (x) { return x.form === 'port'; }).map(function (x) { return { name: x.name, as: x.as, dir: x.dir, kind: x.kind }; }); };
+    } else if (kind === 'attach') {
+      // Shift-attach of a message type to a block: a new port named by freePortName (attachCandidates).
+      var B = m.blocks.get(id), cand = attachCandidates(m, 'μ:' + c.kind, new Set([id])).filter(function (a) { return a.block === B && a.dir === c.dir; })[0];
+      act = cand; want = '';
+      read = function (m2) { var q = m2.blocks.get(id).children.filter(function (x) { return x.form === 'port'; }).pop(); return q.name === cand.name && q.kind === c.kind ? q.sketch : 'wrong port ' + q.name; };
+      portsNow = function (m2) { return m2.blocks.get(id).children.filter(function (x) { return x.form === 'port'; }).map(function (x) { return { name: x.name, as: x.as, dir: x.dir, kind: x.kind }; }); };
     } else if (kind === 'level' || kind === 'group') {
       var parts = id.split('|'), H = holder(parts[0]), at = +parts[1], L = H.levels[at];
       if (kind === 'level') { act = { t: 'levelProps', block: H, at: at, name: c.name == null ? (L.name || '') : c.name, sketch: c.sketch }; want = tildeText(c.sketch); }
@@ -587,12 +641,17 @@ var __api = (function () {
       read = function (m2) { var L2 = (parts[0] ? m2.blocks.get(parts[0]) : m2.root).levels[at]; if (kind === 'level' && c.name != null && (L2.name || '') !== c.name.trim()) throw new Error('name read back as ' + L2.name); return kind === 'level' ? L2.sketch : L2.units[+parts[2]].sketch; };
     } else {
       var n = m.node(kind === 'beh' ? 'β:' + id : kind === 'msg' ? 'μ:' + id : id);
-      act = { t: 'props', node: n, sketch: c.sketch }; want = sketchNorm(c.sketch, n.children.filter(function (x) { return x.form === 'sketch'; })[0]);
-      read = function (m2) { return m2.node(n.id).sketch; };
+      // c.name (v0.3) renames the element too: a message type's rename rewrites the ports typed with it.
+      act = { t: 'props', node: n, sketch: c.sketch }; if (c.name != null) act.name = c.name;
+      want = c.sketch == null ? n.sketch : sketchNorm(c.sketch, n.children.filter(function (x) { return x.form === 'sketch'; })[0]);
+      var nid = c.name == null ? n.id : n.id.replace(/[^:]*$/, c.name);
+      read = function (m2) { return m2.node(nid).sketch; };
     }
-    var out = applyEdit(src, m, act).src, back = null, err = null;
-    try { back = read(parse(out)); } catch (e) { err = String(e.message); }
-    return { on: on, src: out, sketch: back, want: want, same: err === null && back === want, error: err };
+    var out = applyEdit(src, m, act).src, back = null, err = null, ports;
+    try { var m2 = parse(out); back = read(m2); if (portsNow) ports = portsNow(m2); } catch (e) { err = String(e.message); }
+    var r = { on: on, src: out, sketch: back, want: want, same: err === null && back === want, error: err };
+    if (portsNow) r.ports = ports || null;
+    return r;
   }
 
   // ---------- Conformance: one record per spec, compared byte for byte in node and goja ----------
@@ -620,6 +679,7 @@ var __api = (function () {
     diffText: function (d) { return diffText(typeof d === 'string' ? JSON.parse(d) : d); },
     // The file's top-level blocks, in source order (v0.2.5): `sbtel export` titles a page with the first.
     topBlocks: function (src) { var L = load(src); return J({ error: L.error, blocks: L.model ? topBlocks(L.model).map(function (b) { return { id: b.id, name: b.name }; }) : [] }); },
+    migratePorts: function (src) { return J(migratePorts(String(src))); },
     carriers: function (src, name) { var L = load(src); return J(L.error ? { error: L.error } : carriers(L.model, String(name).replace(/^(μ|msg):/, ''))); },
     cli: cli,
     conformance: conformance,

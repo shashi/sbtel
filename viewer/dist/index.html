@@ -275,6 +275,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .zv { font-family:var(--ff-mono); font-size:12px; color:var(--muted); min-width:40px; text-align:center; font-variant-numeric:tabular-nums; flex:none; }
 .chkpill.ok { color:var(--ok); }
 .chkpill.bad { color:var(--warn); background:var(--warn-soft); }
+.chkpill.expl { color:var(--ink); }
 .tb.danger { color:var(--warn); }
 .tb.danger:hover { background:var(--warn-soft); }
 .btn.danger-solid { background:var(--warn); border-color:var(--warn); color:#fff; }
@@ -406,6 +407,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .chklist .st { font-weight:700; }
 .chklist li.ok .st { color:var(--ok); }
 .chklist li.bad .st { color:var(--warn); }
+.chklist li.expl .st { color:var(--muted); }
 .chklist .n { font-family:var(--ff-mono); font-size:11px; color:var(--muted); }
 .chkpill .chkinfo { color:var(--muted); margin-left:6px; font-weight:400; }
 .chklist.info li { grid-template-columns:16px 1fr; color:var(--muted); }
@@ -599,6 +601,39 @@ function declHead(node, items) {
   }
   return i;
 }
+// A port's name when it has no :as: the type's name with its first letter lowercased (NoteSaved ->
+// noteSaved, URL -> uRL). A qualified type gives its last component (shell.Intent and pkg::Intent ->
+// intent); type arguments are dropped first (List<Item> and Map[K,V] -> list, map). A behavior's port
+// typed with a parameter takes the parameter's name (T -> t), whatever the implementer passes.
+function defaultPortName(kind) {
+  if (!kind) return '';
+  let t = String(kind); const g = t.search(/[<\[]/); if (g > 0) t = t.slice(0, g);
+  const parts = t.split(/[.:]+/).filter(Boolean); t = parts.length ? parts[parts.length - 1] : String(kind);
+  const c = String.fromCodePoint(t.codePointAt(0)); return c.toLowerCase() + t.slice(c.length);
+}
+// The source text of a port: :as only when the name is not the default one.
+function portForm(name, dir, kind) { return `(port :${dir} ${kind}${name && name !== defaultPortName(kind) ? ' :as ' + name : ''})`; }
+// A (port …) form's reader items (after `port`): { dir, kind, as, name, legacy, body (index of the
+// first item after the head) }. The 0.2 form (port name in|out Type) is recognised as legacy.
+function portParts(items) {
+  const sym = x => x && x.t === 'sym' ? x.v : null, kw = x => { const v = sym(x); return v !== null && v.startsWith(':'); };
+  const a = sym(items[0]), b = sym(items[1]);
+  if (a !== null && !kw(items[0]) && (b === 'in' || b === 'out')) {
+    const kind = items[2] && items[2].list ? sym(items[2].list[0]) : sym(items[2]);
+    return { dir:b, kind, as:a, name:a, legacy:true, body:3 };
+  }
+  const dir = a === ':in' || a === ':out' ? a.slice(1) : null;
+  const kind = items[1] && !kw(items[1]) ? (items[1].list ? sym(items[1].list[0]) : sym(items[1])) : null;
+  let i = kind !== null || (items[1] && !kw(items[1])) ? 2 : 1, as = null;
+  for (; i < items.length && kw(items[i]); ) {
+    const v = items[i + 1], ok = v && v.t === 'sym' && !kw(v);
+    if (items[i].v === ':as' && as === null && ok) as = v.v;
+    i += ok || (v && v.t === 'str') ? 2 : 1;
+  }
+  return { dir, kind, as, name: as || defaultPortName(kind) || null, legacy:false, body:i };
+}
+// How lint quotes a 0.2 port: (port chord in KeyChord), with … when it has more after the type.
+function legacyPortText(p, more) { return `(port ${p.as} ${p.dir}${p.kind ? ' ' + p.kind : ''}${more ? ' …' : ''})`; }
 function parse(src) {
   const forms = readAll(src);
   const ctx = { warnings:[], behaviors:new Map(), messages:new Map(), blocks:new Map(), behaviorOrder:[] };
@@ -640,11 +675,24 @@ function parse(src) {
         if (h === 'level' && !node.children.some(c => c.form === 'block' || c.form === 'adjacent')) ctx.warnings.push('level needs at least one block' + at);
         break;
       }
-      case 'port':
-        node.name = symOf(items[0]); node.dir = symOf(items[1]); node.kind = symOf(items[2]);
-        node.children = items.slice(3).map(x => conv(x, owner, 'port ' + node.name)).filter(Boolean); node.sketch = sketchOf(node);
-        if (node.dir !== 'in' && node.dir !== 'out') ctx.warnings.push('port direction must be in or out' + at);
+      case 'port': {
+        // (port :in Type [:as name] [sketch]): the direction keyword, the message type, an optional name, a
+        // sketch last. Without :as the name is defaultPortName(Type). node.as is the name as written (or
+        // null); node.name is the effective name, the one everything else uses.
+        const p = portParts(items);
+        node.dir = p.dir; node.kind = p.kind; node.as = p.as; node.name = p.name;
+        if (p.legacy) {
+          // The 0.2 form (port name in Type): read as it was meant, so the diagram still draws, and reported.
+          node.legacy = true;
+          const more = items.length > 3, fix = portForm(p.name, p.dir, p.kind || 'Type');
+          ctx.warnings.push(`${legacyPortText(p, more)} is the 0.2 form; write ${more ? fix.slice(0, -1) + ' …)' : fix}` + at);
+        } else if (p.dir !== 'in' && p.dir !== 'out') {
+          const bare = items[0] && items[0].t === 'sym' && (items[0].v === 'in' || items[0].v === 'out') ? items[0].v : null;
+          ctx.warnings.push('port direction must be :in or :out' + (bare ? ` (write :${bare}, not ${bare})` : '') + at);
+        }
+        node.children = items.slice(p.body).map(x => conv(x, owner, 'port ' + (node.name || '?'))).filter(Boolean); node.sketch = sketchOf(node);
         break;
+      }
       case 'message':
         node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(declHead(node, items)).map(x => conv(x, owner, 'message ' + node.name)).filter(Boolean);
         if (ctx.messages.has(node.name)) ctx.warnings.push('Duplicate message ' + node.name + at);
@@ -690,9 +738,31 @@ function parse(src) {
     if (bh && c.args.length !== bh.params.length) ctx.warnings.push(`(implements (${c.name} ${c.args.map(x => x || '?').join(' ')})) passes ${c.args.length} argument${c.args.length === 1 ? '' : 's'}, but ${c.name} takes ${bh.params.length || 'none'} (line ${lineCol(src, c.s)})`);
   });
   [...ctx.blocks.values(), ...ctx.behaviors.values()].sort((p, q) => p.s - q.s).forEach(arity);
+  [...ctx.blocks.values(), ...ctx.behaviors.values()].sort((p, q) => p.s - q.s).forEach(n => portClashes(n, src, ctx));
   const model = { root, ...ctx, src }; ctx.root = root;
   model.node = id => !id ? null : id.startsWith('β:') ? ctx.behaviors.get(id.slice(2)) : id.startsWith('μ:') ? ctx.messages.get(id.slice(2)) : ctx.blocks.get(id);
   return model;
+}
+// Two ports of one block or behavior with the same (effective) name, its own or from the behaviors it
+// implements (a port without a name or a direction is reported already, and left out). Each clash is
+// reported where it first appears: a clash inside a behavior is reported on the behavior, not again on
+// every block that implements it.
+function portClashes(n, src, ctx) {
+  const what = (n.form === 'block' ? 'block ' : 'behavior ') + n.name, at = pos => ' (line ' + lineCol(src, pos) + ')';
+  const ok = p => p.name && (p.dir === 'in' || p.dir === 'out'), own = n.children.filter(c => c.form === 'port' && ok(c)), seen = new Map();
+  own.forEach(c => { if (seen.has(c.name)) ctx.warnings.push(`${what} has two ports named ${c.name}; tell them apart with :as` + at(c.s)); else seen.set(c.name, c); });
+  const closure = name => { const out = new Set([name]), walk = x => (x ? x.impl : []).forEach(y => { if (!out.has(y)) { out.add(y); walk(ctx.behaviors.get(y)); } }); walk(ctx.behaviors.get(name)); return out; };
+  const groups = new Map();
+  inheritedVia(ctx, n).forEach(p => { if (!ok(p)) return; if (!groups.has(p.name)) groups.set(p.name, []); groups.get(p.name).push(p.via); });
+  const list = vs => { const u = [...new Set(vs)]; return (u.length > 1 ? 'behaviors ' : 'behavior ') + (u.length > 1 ? u.slice(0, -1).join(', ') + ' and ' + u[u.length - 1] : u[0]); };
+  groups.forEach((vias, name) => {
+    if (seen.has(name)) { ctx.warnings.push(`${what} has two ports named ${name}: its own and one from ${list(vias)}; tell them apart with :as` + at(seen.get(name).s)); return; }
+    if (vias.length < 2) return;
+    // Already a clash inside one behavior that n implements directly: reported there.
+    if (n.impl.some(d => ctx.behaviors.has(d) && vias.every(v => closure(d).has(v)))) return;
+    const last = vias[vias.length - 1], imp = n.children.find(c => c.form === 'implements' && c.name && closure(c.name).has(last));
+    ctx.warnings.push(`${what} has two ports named ${name}, from ${list(vias)}; tell them apart with :as` + at(imp ? imp.s : n.s));
+  });
 }
 function flatAdj(a) { return a.children.flatMap(x => x.form === 'block' ? [x] : x.form === 'adjacent' ? flatAdj(x) : []); }
 // An adjacent group's sketch is its outermost (adjacent …)'s; lint reports one on a nested group.
@@ -806,7 +876,7 @@ function carriers(model, T) {
   [...model.blocks.values()].sort((a, b) => a.s - b.s).forEach(b => { const ps = portsOf(b).filter(p => hit.has(p.kind)); ps.forEach(p => { if (!p.via) ports.push({ owner:b.id, port:p.name }); }); if (ps.length) blocks.push(b.id); });
   return { messages:msgs.map(m => m.name), ports, blocks };
 }
-function portLabel(p) { return p.name && p.kind && p.name.toLowerCase() !== p.kind.toLowerCase() ? p.name + ': ' + p.kind : (p.kind || p.name || '?'); }
+function portLabel(p) { return p.name && p.kind && p.name.toLowerCase() !== p.kind.toLowerCase() && p.name !== defaultPortName(p.kind) ? p.name + ': ' + p.kind : (p.kind || p.name || '?'); }
 // The behavior badges of a card: a block's behaviors, or a behavior's (the ones it extends); direct ones only.
 function behsOf(n) { return n.form === 'message' ? [] : n.impl.filter(x => n._ctx.behaviors.has(x)); }
 // The count line in a collapsed card's footer (pure; layout measures it).
@@ -1407,7 +1477,7 @@ function applyEdit(src, model, act) {
   }
   if (act.t === 'port') {
     const b = act.block, p = childInsert(src, b, ['port', 'implements']);
-    return { src: src.slice(0, p.pos) + p.pre + `(port ${act.name} ${act.dir} ${act.kind})` + p.post + src.slice(p.pos), name:b.name };
+    return { src: src.slice(0, p.pos) + p.pre + portForm(act.name, act.dir, act.kind) + p.post + src.slice(p.pos), name:b.name };
   }
   if (act.t === 'props') {
     // One splice set: name token, :type, sketch, and (for behaviors and message types) every reference.
@@ -1450,9 +1520,11 @@ function applyEdit(src, model, act) {
         if (q.sketch == null || (cur && sketchNorm(q.sketch, cur) === cur.text)) return cur ? ' ' + src.slice(cur.s, cur.e) : '';
         const t = sketchNorm(q.sketch, cur); return t ? ' ' + sketchForm(t, cur, lineIndent(src, q.node ? q.node.s : n.s)) : '';
       };
-      const portText = q => `(port ${q.name} ${q.dir} ${q.kind}${portSk(q)})`;
+      // The 0.3 form, with :as only when the name is not the type's default one (so a rename back to the
+      // default drops it). A 0.2 port the edit touches is rewritten in the 0.3 form.
+      const portText = q => portForm(q.name, q.dir, q.kind).slice(0, -1) + portSk(q) + ')';
       const skChanged = q => q.sketch != null && sketchNorm(q.sketch, q.node.children.find(c => c.form === 'sketch')) !== (q.node.sketch || '');
-      act.ports.forEach(q => { if (q.node && (q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
+      act.ports.forEach(q => { if (q.node && (q.node.legacy || q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
       insert(['port', 'implements'], act.ports.filter(q => !q.node).map(portText));
     }
     [...gone].filter(c => c.form !== 'sketch').forEach(c => cuts.push(cutRep(c)));
@@ -1462,7 +1534,7 @@ function applyEdit(src, model, act) {
       const visit = c => {
         if (c.form === 'implements' && n.form === 'behavior' && c.name === old) sym(itemsOf(src, c)[1]);
         else if (c.form === 'implements' && n.form === 'message' && (c.args || []).includes(old)) { const arg = itemsOf(src, c)[1]; arg.list.slice(1).forEach(sym); }
-        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[3]);
+        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[c.legacy ? 3 : 2]);
         else if ((c.form === 'refines' || c.form === 'carries') && (c.names || []).includes(old)) itemsOf(src, c).slice(1).forEach(sym);
         c.children.forEach(visit);
       };
@@ -1673,7 +1745,8 @@ function typesInScope(model, n) {
 // Ports a block (or behavior) gets from the behaviors in impl, through the behaviors they implement too,
 // with the arguments its (implements …) forms pass (portsOf's rule). `self` is a behavior's own name.
 function inheritedPorts(model, impl, args, self) { return inheritedVia(model, { form: self ? 'behavior' : 'block', name:self, impl, implArgs: args || Object.create(null) }); }
-function portNameFor(kind, taken) { const base = kind.charAt(0).toLowerCase() + kind.slice(1); if (!taken.has(base)) return base; let i = 2; while (taken.has(base + i)) i++; return base + i; }
+// A free name for a new port of type kind: the default one (defaultPortName), or that with a number.
+function portNameFor(kind, taken) { const base = defaultPortName(kind); if (!taken.has(base)) return base; let i = 2; while (taken.has(base + i)) i++; return base + i; }
 // The first problem with a node's port rows (with impl as its behaviors, for a block), or '' when fine.
 function portsProblem(model, node, ports, impl) {
   const types = new Set(typesInScope(model, node)), from = new Map();
@@ -1716,8 +1789,9 @@ function randomSpec(seed) {
     total++;
     const name = nm(); let t = '(block ' + name;
     if (rnd() < .25) t += ' :type "' + pick(['Process','Store','Feature','Service']) + '"';
-    if (rnd() < .5) t += '\n' + ind + '  (port ' + pick(['in','req','evt']) + ' in ' + pick(kinds) + ')';
-    if (rnd() < .4) t += '\n' + ind + '  (port ' + pick(['out','emit','done']) + ' out ' + pick(kinds) + ')';
+    const port = (dir, names) => { const pn = pick(names), k = pick(kinds); return '\n' + ind + '  ' + portForm(pn || defaultPortName(k), dir, k); };
+    if (rnd() < .5) t += port('in', ['', 'req', 'evt']);
+    if (rnd() < .4) t += port('out', ['', 'emit', 'done']);
     if (rnd() < .3) t += '\n' + ind + '  (implements ' + pick(['Durable','Observable']) + ')';
     t += '\n' + ind + '  (sketch "' + pick(sk) + '")';
     if (depth < 3 && total < 60 && rnd() < (depth === 0 ? 1 : .35)) {
@@ -1736,8 +1810,8 @@ function randomSpec(seed) {
   }
   const head = '(block System\n  :type "Module"\n  (sketch "A randomly generated system for testing layout rules.")\n' +
     kinds.map(m => '  (message ' + m + ' (sketch "A ' + m.toLowerCase() + '."))').join('\n') +
-    '\n  (behavior Durable (port keep in Event) (sketch "Retains events until acknowledged."))' +
-    '\n  (behavior Observable (port metric out Snapshot) (sketch "Reports its own health."))';
+    '\n  (behavior Durable (port :in Event :as keep) (sketch "Retains events until acknowledged."))' +
+    '\n  (behavior Observable (port :out Snapshot :as metric) (sketch "Reports its own health."))';
   total = 0; let body = '';
   const nl = 2 + Math.floor(rnd() * 2);
   for (let l = 0; l < nl; l++) body += '\n  ' + level(1, '  ');
@@ -1993,11 +2067,11 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
   (message Notice (sketch "A short message for the user, with a severity."))
   (message KeyChord (sketch "A normalized key combination."))
   (behavior Surface
-    (port frame in Frame)
-    (port intent out Intent)
+    (port :in Frame)
+    (port :out Intent)
     (sketch "A behavior shared by surfaces."))
   (behavior Durable
-    (port event in SessionEvent)
+    (port :in SessionEvent :as event)
     (sketch "Retains every accepted event until it is acknowledged."))
 
   (level :name "Surfaces"
@@ -2005,7 +2079,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
       (block Shell.Notification
         :type "Process"
         (implements Surface)
-        (port notice in Notice)
+        (port :in Notice)
         (sketch "Shows transient notices above the session.")
         (level
           (adjacent
@@ -2018,11 +2092,11 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
       (block Shell.SessionView
         :type "Process"
         (implements Surface)
-        (port events in SessionEvent)
+        (port :in SessionEvent :as events)
         (sketch "View of the Session")
         (message TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
         (behavior Scrollable
-          (port position out Frame)
+          (port :out Frame :as position)
           (sketch "Keeps a scroll position and reports what is visible."))
         (level
           (adjacent
@@ -2034,7 +2108,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
               (level
                 (adjacent
                   (block Shell.Turn
-                    (port added in TurnAdded)
+                    (port :in TurnAdded :as added)
                     (sketch "One user or agent turn.")
                     (level
                       (adjacent
@@ -2043,7 +2117,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
                         (block Shell.ToolCall (sketch "Collapsible tool invocation and its result.")))))
                   (block Shell.TurnActions (sketch "Copy, retry and edit controls.")))))
             (block Shell.Composer
-              (port submit out Intent)
+              (port :out Intent :as submit)
               (sketch "Multiline input with attachments and slash commands."))))
         (level
           (block Shell.ScrollAnchor
@@ -2052,18 +2126,18 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
         (implements Surface)
         (sketch "Recent sessions and the project switcher.")))
     (block Shell.CommandPalette
-      (port chord in KeyChord (~ Opens the palette. ~))
-      (port run out Intent)
+      (port :in KeyChord :as chord (~ Opens the palette. ~))
+      (port :out Intent :as run)
       (sketch "Fuzzy search over every command.")))
 
   (level :name "Services"
     (block Shell.Theme (sketch "Resolves design tokens for light and dark."))
     (adjacent (~ Clipboard and keymap shortcuts route as intents. ~)
       (block Shell.Router
-        (port intent in Intent)
+        (port :in Intent)
         (sketch "Maps intents to handlers; unknown intents become notices."))
       (block Shell.Keymap
-        (port chord out KeyChord)
+        (port :out KeyChord :as chord)
         (sketch "Turns raw key events into chords."))
       (block Shell.Clipboard (sketch "Copy and paste with rich formats."))))
 
@@ -2076,7 +2150,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
     (block Shell.SessionStore
       :type "Store"
       (implements Durable)
-      (port events out SessionEvent)
+      (port :out SessionEvent :as events)
       (sketch "Keeps session events on disk and replays them on launch."))))
 `;
 
@@ -3124,6 +3198,17 @@ addEventListener('keydown', e => { if (drag && e.key === 'Escape') { e.preventDe
 // @sbtel end App.Input
 // @sbtel begin App.EditDialog
 // ---------- Edit in place ----------
+// A port's name field follows its type field while the name is the type's default one (the port has no
+// :as), so changing the type keeps the port implicit; a name typed by hand stays. The edit writes :as only
+// when the name differs from the default (core.js portForm).
+function followKind(nameEl, kindEl, ev) {
+  let prev = kindEl.value.trim();
+  kindEl.addEventListener(ev, () => {
+    const k = kindEl.value.trim();
+    if (nameEl.value.trim() === defaultPortName(prev) && k) nameEl.value = defaultPortName(k);
+    prev = k;
+  });
+}
 function openEdit(id) {
   const n = state.model.node(id); if (!n) return;
   const isBlk = n.form === 'block', kind = isBlk ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
@@ -3155,6 +3240,7 @@ function openEdit(id) {
     row.dataset.dir = p.dir;
     row.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => { row.dataset.dir = b.dataset.dir; row.querySelectorAll('[data-dir]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
     row.querySelector('.pdel').onclick = () => row.remove();
+    followKind(row.querySelector('.pname'), row.querySelector('.pkind'), 'change');
     rowsEl.appendChild(row); return row;
   };
   const readRows = () => [...rowsEl.children].map(r => ({ node:r.portNode, name:r.querySelector('.pname').value.trim(), dir:r.dataset.dir, kind:r.querySelector('.pkind').value, sketch:r.querySelector('.psk').value }));
@@ -3386,6 +3472,7 @@ function portEditor(at, find) {
     <p class="merr" role="alert" hidden></p>
     <div class="cfoot"><button type="button" class="cdel" data-x="del">Delete port</button><span class="spacer"></span><span>Enter saves · Esc cancels</span></div></form>`, 'edit');
   const f = el.querySelector('form'), err = f.querySelector('.merr');
+  followKind(f.elements.name, f.elements.kind, 'input');
   let dir = node.dir;
   f.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => { dir = b.dataset.dir; f.querySelectorAll('[data-dir]').forEach(x => x.setAttribute('aria-pressed', x === b)); check(); });
   const rows = drop => own.filter(c => !(drop && c === node)).map(c => c === node ? { node:c, name:f.elements.name.value.trim(), dir, kind:f.elements.kind.value.trim(), sketch:f.elements.sketch.value } : { node:c, name:c.name, dir:c.dir, kind:c.kind });
@@ -3734,10 +3821,13 @@ $('setBtn').onclick = () => {
 // @sbtel end App.Modals
 // @sbtel begin App.Checks
 // ---------- Checks pill ----------
-// The pill: failing checks turn it red; placement notes (information) only add a muted count.
-function pillHTML(all) {
+// The pill: failing checks turn it red; placement notes (information) only add a muted count. Explained
+// binding violations (`ex`, bindings.js) fail nothing: with no failing check the pill reads "N explained"
+// in a neutral style, and beside a failing one they add a muted count.
+function pillHTML(all, ex) {
   const bad = all.filter(c => c.f.length).length, n = (state.lay.info || []).length;
-  return (bad ? `✕ <span>${bad} failing</span>` : `✓ <span class="lbl">${all.length} check${all.length === 1 ? '' : 's'}</span>`) + (n ? `<span class="chkinfo">· ${n} note${n === 1 ? '' : 's'}</span>` : '');
+  const head = bad ? `✕ <span>${bad} failing</span>` : ex ? `◦ <span class="lbl">${ex} explained</span>` : `✓ <span class="lbl">${all.length} check${all.length === 1 ? '' : 's'}</span>`;
+  return head + (bad && ex ? `<span class="chkinfo">· ${ex} explained</span>` : '') + (n ? `<span class="chkinfo">· ${n} note${n === 1 ? '' : 's'}</span>` : '');
 }
 function renderChecks() {
   const all = [...state.lay.checks, ...state.lay.spec], bad = all.filter(c => c.f.length).length;
@@ -3756,7 +3846,7 @@ function moveDecl(f) {
   const before = state.src; edit({ t:'move', node:n, dest:{ block:P, at:P.children.filter(c => c.form === n.form).length } });
   if (state.src !== before) toast(`Moved ${n.name} to ${P.virtual ? 'the top level' : P.name}.`);
 }
-function chkList(list) { return `<ul class="chklist">${list.map(c => `<li class="${c.f.length ? 'bad' : 'ok'}"><span class="st">${c.f.length ? '✕' : '✓'}</span><span>${esc(c.label)}</span><span class="n">${c.f.length || ''}</span>${c.f.length ? `<span class="detail">${esc(c.f.slice(0, 3).join(' · '))}${c.f.length > 3 ? ' …' : ''}</span>` : ''}</li>`).join('')}</ul>`; }
+function chkList(list) { return `<ul class="chklist">${list.map(c => `<li class="${c.f.length ? 'bad' : c.explained ? 'expl' : 'ok'}"><span class="st">${c.f.length ? '✕' : c.explained ? '◦' : '✓'}</span><span>${esc(c.label)}</span><span class="n">${c.f.length || ''}</span>${c.f.length ? `<span class="detail">${esc(c.f.slice(0, 3).join(' · '))}${c.f.length > 3 ? ' …' : ''}</span>` : ''}</li>`).join('')}</ul>`; }
 function showChecks() {
   const info = state.lay.info || [];
   const el = pop('checks', $('chkBtn'), `<h5>Layout</h5>${chkList(state.lay.checks)}<h5>Spec</h5>${chkList(state.lay.spec)}` + (info.length ? `<h5>Placement notes</h5>${infoList(info)}` : ''));
@@ -3859,12 +3949,12 @@ $('helpBtn').onclick = () => { const h = $('help'); h.hidden = !h.hidden; $('hel
 // @sbtel begin App.Code
 // ---------- Code overlay ----------
 function highlight(t) {
-  const re = /("(?:\\.|[^"\\])*")|(;[^\n]*)|\((block|level|adjacent|port|message|behavior|implements|sketch|refines)\b|(:[\w-]+)|\b(in|out)\b/g;
+  const re = /("(?:\\.|[^"\\])*")|(;[^\n]*)|\((block|level|adjacent|port|message|behavior|implements|sketch|refines|carries)\b|(:[\w-]+)/g;
   let o = '', last = 0, m;
   while ((m = re.exec(t))) {
     o += esc(t.slice(last, m.index));
     if (m[1]) o += `<span class="hs">${esc(m[1])}</span>`; else if (m[2]) o += `<span class="hc">${esc(m[2])}</span>`;
-    else if (m[3]) o += `(<span class="hk">${m[3]}</span>`; else if (m[4]) o += `<span class="hy">${esc(m[4])}</span>`; else o += `<span class="hy">${m[5]}</span>`;
+    else if (m[3]) o += `(<span class="hk">${m[3]}</span>`; else o += `<span class="hy">${esc(m[4])}</span>`;
     last = re.lastIndex;
   }
   return o + esc(t.slice(last));
@@ -3944,7 +4034,7 @@ addEventListener('resize', () => placeStrip());
 const SBTEL = (() => {
   const m = location.protocol === 'file:' ? null : /^\/s\/([0-9a-f]{32})\/(diff)?$/.exec(location.pathname);
   const cmp = m && !m[2] ? /(?:^\?|&)compare=([\w.-]+)(?:&|$)/.exec(location.search) : null;
-  return { version: '0.2.5', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
+  return { version: '0.3.0', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
     compare: cmp ? cmp[1] : null, compares: {}, modes: {} };
 })();
 // @sbtel end Viewer.Mode
@@ -4067,19 +4157,20 @@ function bindingsView(get) {
 .sb-viol .why.none { color:var(--warn); }`;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   // One more check in the pill, its violations in the popover. A violation explained in the bindings file
-  // (a `# VIOLATION: reason` comment directly above the edge, parseBindings' `note`) is still a violation,
-  // and the popover shows the reason beside it.
+  // (a `# VIOLATION: reason` comment directly above the edge, parseBindings' `note`) is listed with its
+  // reason but does not fail the check (v0.2.6): the check's failures (f) are the unexplained violations
+  // and the invalid lines, and `explained` counts the rest, which the pill shows in a neutral style.
   const bindCheck = () => {
     const B = get();
     if (!B || !B.edges || !state.model) return null;
     const f = [], viol = [];
     B.edges.forEach(e => {
       const v = bindingVerdict(state.model, e.caller, e.callee);
-      if (!v.ok) { f.push(`${e.caller} -> ${e.callee}: ${v.text || v.rule}${e.location ? ' (' + e.location + ')' : ''}`); viol.push({ e, v }); }
+      if (!v.ok) { if (!e.note) f.push(`${e.caller} -> ${e.callee}: ${v.text || v.rule}${e.location ? ' (' + e.location + ')' : ''}`); viol.push({ e, v }); }
     });
     (B.invalid || []).forEach(x => f.push(`line ${x.line}: not an edge: ${x.text.trim()}`));
     const why = viol.filter(x => x.e.note).length, n = B.edges.length;
-    return { label: `Code bindings respect the levels (${n} edge${n === 1 ? '' : 's'}${viol.length ? ', ' + why + ' of ' + viol.length + ' violation' + (viol.length === 1 ? '' : 's') + ' explained' : ''})`, f, viol };
+    return { label: `Code bindings respect the levels (${n} edge${n === 1 ? '' : 's'}${viol.length ? ', ' + why + ' of ' + viol.length + ' violation' + (viol.length === 1 ? '' : 's') + ' explained' : ''})`, f, viol, explained: why };
   };
   // Hovering a behavior also outlines the blocks whose code binds it ("uses"): edges whose callee names
   // the behavior (core.js bindingTarget, the rule check applies), from a block of the spec.
@@ -4096,8 +4187,8 @@ function bindingsView(get) {
     origRender();
     const bc = bindCheck(); if (!bc) return;
     const all = [...state.lay.checks, ...state.lay.spec, bc], bad = all.filter(c => c.f.length).length;
-    const b = $('chkBtn'); b.className = 'tb chkpill ' + (bad ? 'bad' : 'ok');
-    b.innerHTML = pillHTML(all);
+    const b = $('chkBtn'); b.className = 'tb chkpill ' + (bad ? 'bad' : bc.explained ? 'expl' : 'ok');
+    b.innerHTML = pillHTML(all, bc.explained);
   };
   const origShow = showChecks;
   showChecks = () => {
@@ -4828,21 +4919,21 @@ SBTEL.modes.diff = (() => {
   // Side b for the dev hook: the playground sample with the edits of conformance/diff/shell-b.sbtel.
   const DEV_EDITS = [
     ['; The Shell from the sketch: one block holding 23 blocks, in three named levels.', '; The Shell, revised: renames, moves, removals and new blocks.'],
-    ['    (port intent out Intent)\n    (sketch "A behavior shared by surfaces.")', '    (port intent out Intent (~ What the user asked for. ~))\n    (sketch "A behavior shared by surfaces.")'],
+    ['    (port :out Intent)\n    (sketch "A behavior shared by surfaces.")', '    (port :out Intent (~ What the user asked for. ~))\n    (sketch "A behavior shared by surfaces.")'],
     ['(level :name "Services"', '(level :name "Routing"'],
     ['(~ Clipboard and keymap shortcuts route as intents. ~)', '(~ Keymap and search shortcuts route as intents. ~)'],
     ['(~ Knows nothing of surfaces. ~)', '(~ Knows nothing of the levels above. ~)'],
     ['(message Notice (sketch "A short message for the user, with a severity."))', '(message Alert (sketch "A short message for the user, with a severity."))'],
-    ['(port notice in Notice)', '(port notice in Alert)'],
+    ['(port :in Notice)', '(port :in Alert :as notice)'],
     ['(message KeyChord (sketch "A normalized key combination."))', '(message KeyChord (refines Intent) (sketch "A normalized key combination."))'],
-    ['(block Shell.Toast (sketch "One notice with an auto-dismiss timer."))', '(block Shell.Toast\n              (port notice in Alert)\n              (sketch "One notice with an auto-dismiss timer."))'],
+    ['(block Shell.Toast (sketch "One notice with an auto-dismiss timer."))', '(block Shell.Toast\n              (port :in Alert :as notice)\n              (sketch "One notice with an auto-dismiss timer."))'],
     ['(block Shell.Banner (sketch "A persistent notice pinned to the top."))', '(block Shell.PinnedBanner (sketch "A persistent notice pinned to the top."))'],
     ['                  (block Shell.TurnActions (sketch "Copy, retry and edit controls.")))))', '                  (block Shell.TurnActions (sketch "Copy, retry and edit controls."))))\n              (level\n                (block Shell.ScrollAnchor\n                  (sketch "Keeps the reading position when content above grows."))))'],
     ['        (level\n          (block Shell.ScrollAnchor\n            (sketch "Keeps the reading position when content above grows."))))\n      (block Shell.Sidebar', '        )\n      (block Shell.Sidebar'],
     ['(sketch "Multiline input with attachments and slash commands.")', '(sketch "Multiline input with attachments, mentions and slash commands.")'],
-    ['    (block Shell.CommandPalette\n      (port chord in KeyChord (~ Opens the palette. ~))\n      (port run out Intent)', '    (block Shell.CommandPalette\n      (port run out Intent)'],
-    ['      (block Shell.Router\n        (port intent in Intent)', '      (block Shell.Router\n        :type "Service"\n        (port intent in Intent)'],
-    ['        (port chord out KeyChord)', '        (implements Durable)\n        (port chord out KeyChord)'],
+    ['    (block Shell.CommandPalette\n      (port :in KeyChord :as chord (~ Opens the palette. ~))\n      (port :out Intent :as run)', '    (block Shell.CommandPalette\n      (port :out Intent :as run)'],
+    ['      (block Shell.Router\n        (port :in Intent)', '      (block Shell.Router\n        :type "Service"\n        (port :in Intent)'],
+    ['        (port :out KeyChord :as chord)', '        (implements Durable)\n        (port :out KeyChord :as chord)'],
     ['      (block Shell.Clipboard (sketch "Copy and paste with rich formats."))))', '      (block Shell.Search (sketch "Full-text search across sessions and files."))))'],
     ['    (block Shell.LowLevelThing (sketch "Low level module thing."))\n', ''],
     [':type "Store"', ':type "Database"'],

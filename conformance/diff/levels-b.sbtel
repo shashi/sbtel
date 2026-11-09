@@ -2,5 +2,5 @@
 (message M)
 (level :name "Upper" (~ the top
 
-new para ~) (block A (port p in M (~ new words here ~))))
+new para ~) (block A (port :in M :as p (~ new words here ~))))
 (level :name "Low" (adjacent (~ group two ~) (block B) (block C)))

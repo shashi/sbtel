@@ -5,8 +5,8 @@
   (level
     (block Cache
       :type "Store"
-      (port get in Key)
+      (port :in Key :as get)
       (sketch "Keeps the latest value per key in memory."))
     (block Mailer
-      (port send in Mail)
+      (port :in Mail :as send)
       (sketch "Sends email through the relay."))))

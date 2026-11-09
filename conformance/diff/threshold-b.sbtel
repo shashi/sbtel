@@ -5,9 +5,9 @@
   (level
     (block Store
       :type "Store"
-      (port get in Key)
+      (port :in Key :as get)
       (sketch "Keeps the latest value per key on disk."))
     (block Notifier
       :type "Service"
-      (port push in Mail)
+      (port :in Mail :as push)
       (sketch "Pushes a notification to every phone."))))

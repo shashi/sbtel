@@ -9,7 +9,7 @@
 (behavior R (implements P))
 (behavior Self (implements Self))
 (behavior Ghostly (implements Ghost))
-(behavior (Box T) (port b in T))
+(behavior (Box T) (port :in T :as b))
 (behavior TooMany (implements (Box M M)))
 (behavior BadArg (implements (Box Nope)))
 (behavior NoParams (implements (Self M)))

@@ -1,7 +1,7 @@
 (block A
   (layer (block B))
   (level :name "Ok" :name "Twice" :kind "x" (sketch "one") (~ two ~) (block C))
-  (level :name Bare (block D (port p in M (~ a ~) (~ b ~) extra)))
+  (level :name Bare (block D (port :in M :as p (~ a ~) (~ b ~) extra)))
   (level :name "" (adjacent (block E) (adjacent (~ nested ~) (block F) (block G))))
   (level (block H) :name "late"))
 (message M)

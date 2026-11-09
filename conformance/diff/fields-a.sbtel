@@ -6,17 +6,17 @@
   (message Any (sketch "Text or a number."))
   (message Event (sketch "Something happened."))
   (message Click (refines Event) (sketch "A pointer press."))
-  (behavior Loggable (port log out Text) (sketch "Writes log lines."))
-  (behavior (Box T) (port item in T) (sketch "Holds one value."))
+  (behavior Loggable (port :out Text :as log) (sketch "Writes log lines."))
+  (behavior (Box T) (port :in T :as item) (sketch "Holds one value."))
   (level
     (block Panel
       :type "View"
       (implements Loggable)
-      (port data in Data)
-      (port size in Num)
-      (port mode in Text (~ Read once. ~))
+      (port :in Data)
+      (port :in Num :as size)
+      (port :in Text :as mode (~ Read once. ~))
       (sketch "Shows one thing at a time.")
-      (behavior Focusable (port focus in Event) (sketch "Takes keyboard focus."))
+      (behavior Focusable (port :in Event :as focus) (sketch "Takes keyboard focus."))
       (level :name "Chrome"
         (adjacent (~ Share a grid. ~)
           (block Header (sketch "Title row."))

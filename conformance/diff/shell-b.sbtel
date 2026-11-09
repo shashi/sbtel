@@ -10,11 +10,11 @@
   (message Alert (sketch "A short message for the user, with a severity."))
   (message KeyChord (refines Intent) (sketch "A normalized key combination."))
   (behavior Surface
-    (port frame in Frame)
-    (port intent out Intent (~ What the user asked for. ~))
+    (port :in Frame)
+    (port :out Intent (~ What the user asked for. ~))
     (sketch "A behavior shared by surfaces."))
   (behavior Durable
-    (port event in SessionEvent)
+    (port :in SessionEvent :as event)
     (sketch "Retains every accepted event until it is acknowledged."))
 
   (level :name "Surfaces"
@@ -22,12 +22,12 @@
       (block Shell.Notification
         :type "Process"
         (implements Surface)
-        (port notice in Alert)
+        (port :in Alert :as notice)
         (sketch "Shows transient notices above the session.")
         (level
           (adjacent
             (block Shell.Toast
-              (port notice in Alert)
+              (port :in Alert :as notice)
               (sketch "One notice with an auto-dismiss timer."))
             (block Shell.PinnedBanner (sketch "A persistent notice pinned to the top."))))
         (level
@@ -37,11 +37,11 @@
       (block Shell.SessionView
         :type "Process"
         (implements Surface)
-        (port events in SessionEvent)
+        (port :in SessionEvent :as events)
         (sketch "View of the Session")
         (message TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
         (behavior Scrollable
-          (port position out Frame)
+          (port :out Frame :as position)
           (sketch "Keeps a scroll position and reports what is visible."))
         (level
           (adjacent
@@ -53,7 +53,7 @@
               (level
                 (adjacent
                   (block Shell.Turn
-                    (port added in TurnAdded)
+                    (port :in TurnAdded :as added)
                     (sketch "One user or agent turn.")
                     (level
                       (adjacent
@@ -65,14 +65,14 @@
                 (block Shell.ScrollAnchor
                   (sketch "Keeps the reading position when content above grows."))))
             (block Shell.Composer
-              (port submit out Intent)
+              (port :out Intent :as submit)
               (sketch "Multiline input with attachments, mentions and slash commands."))))
         )
       (block Shell.Sidebar
         (implements Surface)
         (sketch "Recent sessions and the project switcher.")))
     (block Shell.CommandPalette
-      (port run out Intent)
+      (port :out Intent :as run)
       (sketch "Fuzzy search over every command.")))
 
   (level :name "Routing"
@@ -80,11 +80,11 @@
     (adjacent (~ Keymap and search shortcuts route as intents. ~)
       (block Shell.Router
         :type "Service"
-        (port intent in Intent)
+        (port :in Intent)
         (sketch "Maps intents to handlers; unknown intents become notices."))
       (block Shell.Keymap
         (implements Durable)
-        (port chord out KeyChord)
+        (port :out KeyChord :as chord)
         (sketch "Turns raw key events into chords."))
       (block Shell.Search (sketch "Full-text search across sessions and files."))))
 
@@ -96,5 +96,5 @@
     (block Shell.SessionStore
       :type "Database"
       (implements Durable)
-      (port events out SessionEvent)
+      (port :out SessionEvent :as events)
       (sketch "Keeps session events on disk and replays them on launch."))))

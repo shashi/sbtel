@@ -257,9 +257,16 @@ async function until(fn, ms = 8000, step = 100) {
   check('undo history survives the reload', await page.evaluate(() => { const s0 = state.src; undo(); const ok = state.src.includes('(block Shell.LowLevelThing'); redo(); return ok && state.src === s0; }));
 
   // ---- Save after the agent pushes: the prompt; Overwrite writes; the draft's comments stay pending ----
+  // The agent writes its version to a new file and pushes that (as an agent may move the spec). Writing
+  // the session's own file first raced the server's disk poll (§5.4): when the poll saw the write before
+  // the push, it recorded the version as "the file changed on disk" and the push was a no-op, so the
+  // prompt named the wrong cause (about 1 run in 6). The poll watches the session's current path only, so
+  // it cannot see this file before the push, which switches the path and sets the base under one lock.
+  // From here on the session's file is PUSHED.
+  const PUSHED = path.join(TMP, 'pushed.sbtel');
   const vPush = fs.readFileSync(SPEC, 'utf8') + '\n; agent pushed again\n';
-  fs.writeFileSync(SPEC, vPush);
-  sb(['open', SPEC, '--session', id]);
+  fs.writeFileSync(PUSHED, vPush);
+  sb(['open', PUSHED, '--session', id]);
   await page.waitForSelector('.sb-vt', { timeout: 8000 });
   await page.click('.sb-vt [data-v="later"]');
   await page.click('#sbSave');
@@ -269,14 +276,14 @@ async function until(fn, ms = 8000, step = 100) {
   await page.click('.sb-owm [data-m="overwrite"]');
   await saved(page);
   ib = sb(['inbox', id]);
-  check('Overwrite writes the tab\'s text, and inbox says it overwrote', fs.readFileSync(SPEC, 'utf8') === draftSrc && /^save version \d+ by user \(was \d+, which the user overwrote without merging\)/.test(ib.out) && !ib.out.includes('Keep this comment'), ib.out);
+  check('Overwrite writes the tab\'s text, and inbox says it overwrote', fs.readFileSync(PUSHED, 'utf8') === draftSrc && /^save version \d+ by user \(was \d+, which the user overwrote without merging\)/.test(ib.out) && !ib.out.includes('Keep this comment'), ib.out);
   check('Save sends no pending comment', await page.evaluate(() => state.comments.some(c => c.status === 'pending')));
 
   // ---- bindings ----
   const edges = path.join(TMP, 'edges.txt');
   fs.writeFileSync(edges, '# test edges\nShell.Router -> Shell.Keymap  # src/router.ts:3\n# VIOLATION: the store raises the notification itself\nShell.SessionStore -> Shell.Notification # src/store.ts:9\nnot an edge\n' +
     'Shell.Router -> Surface  # src/router.ts:12 (calls through the Surface interface: the abstraction rule)\n');
-  const ob = sb(['open', SPEC, '--session', id, '--bindings', edges]);
+  const ob = sb(['open', PUSHED, '--session', id, '--bindings', edges]);
   check('open --bindings exits 0', ob.code === 0, ob.err);
   await until(() => page.evaluate(() => SBTEL.modes.server._state.edges && SBTEL.modes.server._state.edges.length === 3));
   check('bindings-only change is adopted without a toast', !(await page.$('.sb-vt')));
@@ -316,9 +323,9 @@ async function until(fn, ms = 8000, step = 100) {
   check('disconnected banner after kill -9', !!bar && (await bar.textContent()).includes('Disconnected'));
   const waitDown = sb(['inbox', id, '--wait', '--timeout', '0.5']);
   check('inbox --wait works while the server is down', waitDown.code === 0 && waitDown.err.includes('nothing new after 0.5s'), waitDown.err);
-  const v5 = fs.readFileSync(SPEC, 'utf8') + '\n; after restart\n';
-  fs.writeFileSync(SPEC, v5);
-  const o5 = sb(['open', SPEC, '--session', id]);
+  const v5 = fs.readFileSync(PUSHED, 'utf8') + '\n; after restart\n';
+  fs.writeFileSync(PUSHED, v5);
+  const o5 = sb(['open', PUSHED, '--session', id]);
   const info2 = JSON.parse(fs.readFileSync(path.join(HOME, 'server.json'), 'utf8'));
   check('open restarts the server (stale server.json) on the same port', o5.code === 0 && info2.pid !== info.pid && info2.port === info.port, o5.err);
   await until(() => page.evaluate(() => !document.querySelector('.sb-bar')), 12000);
@@ -348,7 +355,7 @@ async function until(fn, ms = 8000, step = 100) {
   check('tab shows "session closed"', !!closedBar && (await closedBar.textContent()).includes('closed'));
   await sleep(500);
   check('close clears what the page kept: the draft and the undo history', await page.evaluate(id => !localStorage.getItem('sbtel-draft:' + id) && !localStorage.getItem('sbtel-hist:' + id), id));
-  check('session directory removed, spec file kept', !fs.existsSync(path.join(HOME, 'sessions', id)) && fs.existsSync(SPEC));
+  check('session directory removed, spec file kept', !fs.existsSync(path.join(HOME, 'sessions', id)) && fs.existsSync(PUSHED));
   check('close of an unknown session is exit 2', sb(['close', id]).code === 2);
 
   // ---- open - from stdin, then a save ----

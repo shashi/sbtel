@@ -74,6 +74,39 @@ function declHead(node, items) {
   }
   return i;
 }
+// A port's name when it has no :as: the type's name with its first letter lowercased (NoteSaved ->
+// noteSaved, URL -> uRL). A qualified type gives its last component (shell.Intent and pkg::Intent ->
+// intent); type arguments are dropped first (List<Item> and Map[K,V] -> list, map). A behavior's port
+// typed with a parameter takes the parameter's name (T -> t), whatever the implementer passes.
+function defaultPortName(kind) {
+  if (!kind) return '';
+  let t = String(kind); const g = t.search(/[<\[]/); if (g > 0) t = t.slice(0, g);
+  const parts = t.split(/[.:]+/).filter(Boolean); t = parts.length ? parts[parts.length - 1] : String(kind);
+  const c = String.fromCodePoint(t.codePointAt(0)); return c.toLowerCase() + t.slice(c.length);
+}
+// The source text of a port: :as only when the name is not the default one.
+function portForm(name, dir, kind) { return `(port :${dir} ${kind}${name && name !== defaultPortName(kind) ? ' :as ' + name : ''})`; }
+// A (port …) form's reader items (after `port`): { dir, kind, as, name, legacy, body (index of the
+// first item after the head) }. The 0.2 form (port name in|out Type) is recognised as legacy.
+function portParts(items) {
+  const sym = x => x && x.t === 'sym' ? x.v : null, kw = x => { const v = sym(x); return v !== null && v.startsWith(':'); };
+  const a = sym(items[0]), b = sym(items[1]);
+  if (a !== null && !kw(items[0]) && (b === 'in' || b === 'out')) {
+    const kind = items[2] && items[2].list ? sym(items[2].list[0]) : sym(items[2]);
+    return { dir:b, kind, as:a, name:a, legacy:true, body:3 };
+  }
+  const dir = a === ':in' || a === ':out' ? a.slice(1) : null;
+  const kind = items[1] && !kw(items[1]) ? (items[1].list ? sym(items[1].list[0]) : sym(items[1])) : null;
+  let i = kind !== null || (items[1] && !kw(items[1])) ? 2 : 1, as = null;
+  for (; i < items.length && kw(items[i]); ) {
+    const v = items[i + 1], ok = v && v.t === 'sym' && !kw(v);
+    if (items[i].v === ':as' && as === null && ok) as = v.v;
+    i += ok || (v && v.t === 'str') ? 2 : 1;
+  }
+  return { dir, kind, as, name: as || defaultPortName(kind) || null, legacy:false, body:i };
+}
+// How lint quotes a 0.2 port: (port chord in KeyChord), with … when it has more after the type.
+function legacyPortText(p, more) { return `(port ${p.as} ${p.dir}${p.kind ? ' ' + p.kind : ''}${more ? ' …' : ''})`; }
 function parse(src) {
   const forms = readAll(src);
   const ctx = { warnings:[], behaviors:new Map(), messages:new Map(), blocks:new Map(), behaviorOrder:[] };
@@ -115,11 +148,24 @@ function parse(src) {
         if (h === 'level' && !node.children.some(c => c.form === 'block' || c.form === 'adjacent')) ctx.warnings.push('level needs at least one block' + at);
         break;
       }
-      case 'port':
-        node.name = symOf(items[0]); node.dir = symOf(items[1]); node.kind = symOf(items[2]);
-        node.children = items.slice(3).map(x => conv(x, owner, 'port ' + node.name)).filter(Boolean); node.sketch = sketchOf(node);
-        if (node.dir !== 'in' && node.dir !== 'out') ctx.warnings.push('port direction must be in or out' + at);
+      case 'port': {
+        // (port :in Type [:as name] [sketch]): the direction keyword, the message type, an optional name, a
+        // sketch last. Without :as the name is defaultPortName(Type). node.as is the name as written (or
+        // null); node.name is the effective name, the one everything else uses.
+        const p = portParts(items);
+        node.dir = p.dir; node.kind = p.kind; node.as = p.as; node.name = p.name;
+        if (p.legacy) {
+          // The 0.2 form (port name in Type): read as it was meant, so the diagram still draws, and reported.
+          node.legacy = true;
+          const more = items.length > 3, fix = portForm(p.name, p.dir, p.kind || 'Type');
+          ctx.warnings.push(`${legacyPortText(p, more)} is the 0.2 form; write ${more ? fix.slice(0, -1) + ' …)' : fix}` + at);
+        } else if (p.dir !== 'in' && p.dir !== 'out') {
+          const bare = items[0] && items[0].t === 'sym' && (items[0].v === 'in' || items[0].v === 'out') ? items[0].v : null;
+          ctx.warnings.push('port direction must be :in or :out' + (bare ? ` (write :${bare}, not ${bare})` : '') + at);
+        }
+        node.children = items.slice(p.body).map(x => conv(x, owner, 'port ' + (node.name || '?'))).filter(Boolean); node.sketch = sketchOf(node);
         break;
+      }
       case 'message':
         node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(declHead(node, items)).map(x => conv(x, owner, 'message ' + node.name)).filter(Boolean);
         if (ctx.messages.has(node.name)) ctx.warnings.push('Duplicate message ' + node.name + at);
@@ -165,9 +211,31 @@ function parse(src) {
     if (bh && c.args.length !== bh.params.length) ctx.warnings.push(`(implements (${c.name} ${c.args.map(x => x || '?').join(' ')})) passes ${c.args.length} argument${c.args.length === 1 ? '' : 's'}, but ${c.name} takes ${bh.params.length || 'none'} (line ${lineCol(src, c.s)})`);
   });
   [...ctx.blocks.values(), ...ctx.behaviors.values()].sort((p, q) => p.s - q.s).forEach(arity);
+  [...ctx.blocks.values(), ...ctx.behaviors.values()].sort((p, q) => p.s - q.s).forEach(n => portClashes(n, src, ctx));
   const model = { root, ...ctx, src }; ctx.root = root;
   model.node = id => !id ? null : id.startsWith('β:') ? ctx.behaviors.get(id.slice(2)) : id.startsWith('μ:') ? ctx.messages.get(id.slice(2)) : ctx.blocks.get(id);
   return model;
+}
+// Two ports of one block or behavior with the same (effective) name, its own or from the behaviors it
+// implements (a port without a name or a direction is reported already, and left out). Each clash is
+// reported where it first appears: a clash inside a behavior is reported on the behavior, not again on
+// every block that implements it.
+function portClashes(n, src, ctx) {
+  const what = (n.form === 'block' ? 'block ' : 'behavior ') + n.name, at = pos => ' (line ' + lineCol(src, pos) + ')';
+  const ok = p => p.name && (p.dir === 'in' || p.dir === 'out'), own = n.children.filter(c => c.form === 'port' && ok(c)), seen = new Map();
+  own.forEach(c => { if (seen.has(c.name)) ctx.warnings.push(`${what} has two ports named ${c.name}; tell them apart with :as` + at(c.s)); else seen.set(c.name, c); });
+  const closure = name => { const out = new Set([name]), walk = x => (x ? x.impl : []).forEach(y => { if (!out.has(y)) { out.add(y); walk(ctx.behaviors.get(y)); } }); walk(ctx.behaviors.get(name)); return out; };
+  const groups = new Map();
+  inheritedVia(ctx, n).forEach(p => { if (!ok(p)) return; if (!groups.has(p.name)) groups.set(p.name, []); groups.get(p.name).push(p.via); });
+  const list = vs => { const u = [...new Set(vs)]; return (u.length > 1 ? 'behaviors ' : 'behavior ') + (u.length > 1 ? u.slice(0, -1).join(', ') + ' and ' + u[u.length - 1] : u[0]); };
+  groups.forEach((vias, name) => {
+    if (seen.has(name)) { ctx.warnings.push(`${what} has two ports named ${name}: its own and one from ${list(vias)}; tell them apart with :as` + at(seen.get(name).s)); return; }
+    if (vias.length < 2) return;
+    // Already a clash inside one behavior that n implements directly: reported there.
+    if (n.impl.some(d => ctx.behaviors.has(d) && vias.every(v => closure(d).has(v)))) return;
+    const last = vias[vias.length - 1], imp = n.children.find(c => c.form === 'implements' && c.name && closure(c.name).has(last));
+    ctx.warnings.push(`${what} has two ports named ${name}, from ${list(vias)}; tell them apart with :as` + at(imp ? imp.s : n.s));
+  });
 }
 function flatAdj(a) { return a.children.flatMap(x => x.form === 'block' ? [x] : x.form === 'adjacent' ? flatAdj(x) : []); }
 // An adjacent group's sketch is its outermost (adjacent …)'s; lint reports one on a nested group.
@@ -281,7 +349,7 @@ function carriers(model, T) {
   [...model.blocks.values()].sort((a, b) => a.s - b.s).forEach(b => { const ps = portsOf(b).filter(p => hit.has(p.kind)); ps.forEach(p => { if (!p.via) ports.push({ owner:b.id, port:p.name }); }); if (ps.length) blocks.push(b.id); });
   return { messages:msgs.map(m => m.name), ports, blocks };
 }
-function portLabel(p) { return p.name && p.kind && p.name.toLowerCase() !== p.kind.toLowerCase() ? p.name + ': ' + p.kind : (p.kind || p.name || '?'); }
+function portLabel(p) { return p.name && p.kind && p.name.toLowerCase() !== p.kind.toLowerCase() && p.name !== defaultPortName(p.kind) ? p.name + ': ' + p.kind : (p.kind || p.name || '?'); }
 // The behavior badges of a card: a block's behaviors, or a behavior's (the ones it extends); direct ones only.
 function behsOf(n) { return n.form === 'message' ? [] : n.impl.filter(x => n._ctx.behaviors.has(x)); }
 // The count line in a collapsed card's footer (pure; layout measures it).
@@ -882,7 +950,7 @@ function applyEdit(src, model, act) {
   }
   if (act.t === 'port') {
     const b = act.block, p = childInsert(src, b, ['port', 'implements']);
-    return { src: src.slice(0, p.pos) + p.pre + `(port ${act.name} ${act.dir} ${act.kind})` + p.post + src.slice(p.pos), name:b.name };
+    return { src: src.slice(0, p.pos) + p.pre + portForm(act.name, act.dir, act.kind) + p.post + src.slice(p.pos), name:b.name };
   }
   if (act.t === 'props') {
     // One splice set: name token, :type, sketch, and (for behaviors and message types) every reference.
@@ -925,9 +993,11 @@ function applyEdit(src, model, act) {
         if (q.sketch == null || (cur && sketchNorm(q.sketch, cur) === cur.text)) return cur ? ' ' + src.slice(cur.s, cur.e) : '';
         const t = sketchNorm(q.sketch, cur); return t ? ' ' + sketchForm(t, cur, lineIndent(src, q.node ? q.node.s : n.s)) : '';
       };
-      const portText = q => `(port ${q.name} ${q.dir} ${q.kind}${portSk(q)})`;
+      // The 0.3 form, with :as only when the name is not the type's default one (so a rename back to the
+      // default drops it). A 0.2 port the edit touches is rewritten in the 0.3 form.
+      const portText = q => portForm(q.name, q.dir, q.kind).slice(0, -1) + portSk(q) + ')';
       const skChanged = q => q.sketch != null && sketchNorm(q.sketch, q.node.children.find(c => c.form === 'sketch')) !== (q.node.sketch || '');
-      act.ports.forEach(q => { if (q.node && (q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
+      act.ports.forEach(q => { if (q.node && (q.node.legacy || q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
       insert(['port', 'implements'], act.ports.filter(q => !q.node).map(portText));
     }
     [...gone].filter(c => c.form !== 'sketch').forEach(c => cuts.push(cutRep(c)));
@@ -937,7 +1007,7 @@ function applyEdit(src, model, act) {
       const visit = c => {
         if (c.form === 'implements' && n.form === 'behavior' && c.name === old) sym(itemsOf(src, c)[1]);
         else if (c.form === 'implements' && n.form === 'message' && (c.args || []).includes(old)) { const arg = itemsOf(src, c)[1]; arg.list.slice(1).forEach(sym); }
-        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[3]);
+        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[c.legacy ? 3 : 2]);
         else if ((c.form === 'refines' || c.form === 'carries') && (c.names || []).includes(old)) itemsOf(src, c).slice(1).forEach(sym);
         c.children.forEach(visit);
       };
@@ -1148,7 +1218,8 @@ function typesInScope(model, n) {
 // Ports a block (or behavior) gets from the behaviors in impl, through the behaviors they implement too,
 // with the arguments its (implements …) forms pass (portsOf's rule). `self` is a behavior's own name.
 function inheritedPorts(model, impl, args, self) { return inheritedVia(model, { form: self ? 'behavior' : 'block', name:self, impl, implArgs: args || Object.create(null) }); }
-function portNameFor(kind, taken) { const base = kind.charAt(0).toLowerCase() + kind.slice(1); if (!taken.has(base)) return base; let i = 2; while (taken.has(base + i)) i++; return base + i; }
+// A free name for a new port of type kind: the default one (defaultPortName), or that with a number.
+function portNameFor(kind, taken) { const base = defaultPortName(kind); if (!taken.has(base)) return base; let i = 2; while (taken.has(base + i)) i++; return base + i; }
 // The first problem with a node's port rows (with impl as its behaviors, for a block), or '' when fine.
 function portsProblem(model, node, ports, impl) {
   const types = new Set(typesInScope(model, node)), from = new Map();
@@ -1191,8 +1262,9 @@ function randomSpec(seed) {
     total++;
     const name = nm(); let t = '(block ' + name;
     if (rnd() < .25) t += ' :type "' + pick(['Process','Store','Feature','Service']) + '"';
-    if (rnd() < .5) t += '\n' + ind + '  (port ' + pick(['in','req','evt']) + ' in ' + pick(kinds) + ')';
-    if (rnd() < .4) t += '\n' + ind + '  (port ' + pick(['out','emit','done']) + ' out ' + pick(kinds) + ')';
+    const port = (dir, names) => { const pn = pick(names), k = pick(kinds); return '\n' + ind + '  ' + portForm(pn || defaultPortName(k), dir, k); };
+    if (rnd() < .5) t += port('in', ['', 'req', 'evt']);
+    if (rnd() < .4) t += port('out', ['', 'emit', 'done']);
     if (rnd() < .3) t += '\n' + ind + '  (implements ' + pick(['Durable','Observable']) + ')';
     t += '\n' + ind + '  (sketch "' + pick(sk) + '")';
     if (depth < 3 && total < 60 && rnd() < (depth === 0 ? 1 : .35)) {
@@ -1211,8 +1283,8 @@ function randomSpec(seed) {
   }
   const head = '(block System\n  :type "Module"\n  (sketch "A randomly generated system for testing layout rules.")\n' +
     kinds.map(m => '  (message ' + m + ' (sketch "A ' + m.toLowerCase() + '."))').join('\n') +
-    '\n  (behavior Durable (port keep in Event) (sketch "Retains events until acknowledged."))' +
-    '\n  (behavior Observable (port metric out Snapshot) (sketch "Reports its own health."))';
+    '\n  (behavior Durable (port :in Event :as keep) (sketch "Retains events until acknowledged."))' +
+    '\n  (behavior Observable (port :out Snapshot :as metric) (sketch "Reports its own health."))';
   total = 0; let body = '';
   const nl = 2 + Math.floor(rnd() * 2);
   for (let l = 0; l < nl; l++) body += '\n  ' + level(1, '  ');

@@ -275,6 +275,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .zv { font-family:var(--ff-mono); font-size:12px; color:var(--muted); min-width:40px; text-align:center; font-variant-numeric:tabular-nums; flex:none; }
 .chkpill.ok { color:var(--ok); }
 .chkpill.bad { color:var(--warn); background:var(--warn-soft); }
+.chkpill.expl { color:var(--ink); }
 .tb.danger { color:var(--warn); }
 .tb.danger:hover { background:var(--warn-soft); }
 .btn.danger-solid { background:var(--warn); border-color:var(--warn); color:#fff; }
@@ -406,6 +407,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .chklist .st { font-weight:700; }
 .chklist li.ok .st { color:var(--ok); }
 .chklist li.bad .st { color:var(--warn); }
+.chklist li.expl .st { color:var(--muted); }
 .chklist .n { font-family:var(--ff-mono); font-size:11px; color:var(--muted); }
 .chkpill .chkinfo { color:var(--muted); margin-left:6px; font-weight:400; }
 .chklist.info li { grid-template-columns:16px 1fr; color:var(--muted); }
@@ -539,11 +541,11 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
   (message Notice (sketch "A short message for the user, with a severity."))
   (message KeyChord (sketch "A normalized key combination."))
   (behavior Surface
-    (port frame in Frame)
-    (port intent out Intent)
+    (port :in Frame)
+    (port :out Intent)
     (sketch "A behavior shared by surfaces."))
   (behavior Durable
-    (port event in SessionEvent)
+    (port :in SessionEvent :as event)
     (sketch "Retains every accepted event until it is acknowledged."))
 
   (level :name "Surfaces"
@@ -551,7 +553,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
       (block Shell.Notification
         :type "Process"
         (implements Surface)
-        (port notice in Notice)
+        (port :in Notice)
         (sketch "Shows transient notices above the session.")
         (level
           (adjacent
@@ -564,11 +566,11 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
       (block Shell.SessionView
         :type "Process"
         (implements Surface)
-        (port events in SessionEvent)
+        (port :in SessionEvent :as events)
         (sketch "View of the Session")
         (message TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
         (behavior Scrollable
-          (port position out Frame)
+          (port :out Frame :as position)
           (sketch "Keeps a scroll position and reports what is visible."))
         (level
           (adjacent
@@ -580,7 +582,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
               (level
                 (adjacent
                   (block Shell.Turn
-                    (port added in TurnAdded)
+                    (port :in TurnAdded :as added)
                     (sketch "One user or agent turn.")
                     (level
                       (adjacent
@@ -589,7 +591,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
                         (block Shell.ToolCall (sketch "Collapsible tool invocation and its result.")))))
                   (block Shell.TurnActions (sketch "Copy, retry and edit controls.")))))
             (block Shell.Composer
-              (port submit out Intent)
+              (port :out Intent :as submit)
               (sketch "Multiline input with attachments and slash commands."))))
         (level
           (block Shell.ScrollAnchor
@@ -598,18 +600,18 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
         (implements Surface)
         (sketch "Recent sessions and the project switcher.")))
     (block Shell.CommandPalette
-      (port chord in KeyChord (~ Opens the palette. ~))
-      (port run out Intent)
+      (port :in KeyChord :as chord (~ Opens the palette. ~))
+      (port :out Intent :as run)
       (sketch "Fuzzy search over every command.")))
 
   (level :name "Services"
     (block Shell.Theme (sketch "Resolves design tokens for light and dark."))
     (adjacent (~ Clipboard and keymap shortcuts route as intents. ~)
       (block Shell.Router
-        (port intent in Intent)
+        (port :in Intent)
         (sketch "Maps intents to handlers; unknown intents become notices."))
       (block Shell.Keymap
-        (port chord out KeyChord)
+        (port :out KeyChord :as chord)
         (sketch "Turns raw key events into chords."))
       (block Shell.Clipboard (sketch "Copy and paste with rich formats."))))
 
@@ -622,7 +624,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
     (block Shell.SessionStore
       :type "Store"
       (implements Durable)
-      (port events out SessionEvent)
+      (port :out SessionEvent :as events)
       (sketch "Keeps session events on disk and replays them on launch."))))
 `;
 
@@ -1670,6 +1672,17 @@ addEventListener('keydown', e => { if (drag && e.key === 'Escape') { e.preventDe
 // @sbtel end App.Input
 // @sbtel begin App.EditDialog
 // ---------- Edit in place ----------
+// A port's name field follows its type field while the name is the type's default one (the port has no
+// :as), so changing the type keeps the port implicit; a name typed by hand stays. The edit writes :as only
+// when the name differs from the default (core.js portForm).
+function followKind(nameEl, kindEl, ev) {
+  let prev = kindEl.value.trim();
+  kindEl.addEventListener(ev, () => {
+    const k = kindEl.value.trim();
+    if (nameEl.value.trim() === defaultPortName(prev) && k) nameEl.value = defaultPortName(k);
+    prev = k;
+  });
+}
 function openEdit(id) {
   const n = state.model.node(id); if (!n) return;
   const isBlk = n.form === 'block', kind = isBlk ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
@@ -1701,6 +1714,7 @@ function openEdit(id) {
     row.dataset.dir = p.dir;
     row.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => { row.dataset.dir = b.dataset.dir; row.querySelectorAll('[data-dir]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
     row.querySelector('.pdel').onclick = () => row.remove();
+    followKind(row.querySelector('.pname'), row.querySelector('.pkind'), 'change');
     rowsEl.appendChild(row); return row;
   };
   const readRows = () => [...rowsEl.children].map(r => ({ node:r.portNode, name:r.querySelector('.pname').value.trim(), dir:r.dataset.dir, kind:r.querySelector('.pkind').value, sketch:r.querySelector('.psk').value }));
@@ -1932,6 +1946,7 @@ function portEditor(at, find) {
     <p class="merr" role="alert" hidden></p>
     <div class="cfoot"><button type="button" class="cdel" data-x="del">Delete port</button><span class="spacer"></span><span>Enter saves · Esc cancels</span></div></form>`, 'edit');
   const f = el.querySelector('form'), err = f.querySelector('.merr');
+  followKind(f.elements.name, f.elements.kind, 'input');
   let dir = node.dir;
   f.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => { dir = b.dataset.dir; f.querySelectorAll('[data-dir]').forEach(x => x.setAttribute('aria-pressed', x === b)); check(); });
   const rows = drop => own.filter(c => !(drop && c === node)).map(c => c === node ? { node:c, name:f.elements.name.value.trim(), dir, kind:f.elements.kind.value.trim(), sketch:f.elements.sketch.value } : { node:c, name:c.name, dir:c.dir, kind:c.kind });
@@ -2280,10 +2295,13 @@ $('setBtn').onclick = () => {
 // @sbtel end App.Modals
 // @sbtel begin App.Checks
 // ---------- Checks pill ----------
-// The pill: failing checks turn it red; placement notes (information) only add a muted count.
-function pillHTML(all) {
+// The pill: failing checks turn it red; placement notes (information) only add a muted count. Explained
+// binding violations (`ex`, bindings.js) fail nothing: with no failing check the pill reads "N explained"
+// in a neutral style, and beside a failing one they add a muted count.
+function pillHTML(all, ex) {
   const bad = all.filter(c => c.f.length).length, n = (state.lay.info || []).length;
-  return (bad ? `✕ <span>${bad} failing</span>` : `✓ <span class="lbl">${all.length} check${all.length === 1 ? '' : 's'}</span>`) + (n ? `<span class="chkinfo">· ${n} note${n === 1 ? '' : 's'}</span>` : '');
+  const head = bad ? `✕ <span>${bad} failing</span>` : ex ? `◦ <span class="lbl">${ex} explained</span>` : `✓ <span class="lbl">${all.length} check${all.length === 1 ? '' : 's'}</span>`;
+  return head + (bad && ex ? `<span class="chkinfo">· ${ex} explained</span>` : '') + (n ? `<span class="chkinfo">· ${n} note${n === 1 ? '' : 's'}</span>` : '');
 }
 function renderChecks() {
   const all = [...state.lay.checks, ...state.lay.spec], bad = all.filter(c => c.f.length).length;
@@ -2302,7 +2320,7 @@ function moveDecl(f) {
   const before = state.src; edit({ t:'move', node:n, dest:{ block:P, at:P.children.filter(c => c.form === n.form).length } });
   if (state.src !== before) toast(`Moved ${n.name} to ${P.virtual ? 'the top level' : P.name}.`);
 }
-function chkList(list) { return `<ul class="chklist">${list.map(c => `<li class="${c.f.length ? 'bad' : 'ok'}"><span class="st">${c.f.length ? '✕' : '✓'}</span><span>${esc(c.label)}</span><span class="n">${c.f.length || ''}</span>${c.f.length ? `<span class="detail">${esc(c.f.slice(0, 3).join(' · '))}${c.f.length > 3 ? ' …' : ''}</span>` : ''}</li>`).join('')}</ul>`; }
+function chkList(list) { return `<ul class="chklist">${list.map(c => `<li class="${c.f.length ? 'bad' : c.explained ? 'expl' : 'ok'}"><span class="st">${c.f.length ? '✕' : c.explained ? '◦' : '✓'}</span><span>${esc(c.label)}</span><span class="n">${c.f.length || ''}</span>${c.f.length ? `<span class="detail">${esc(c.f.slice(0, 3).join(' · '))}${c.f.length > 3 ? ' …' : ''}</span>` : ''}</li>`).join('')}</ul>`; }
 function showChecks() {
   const info = state.lay.info || [];
   const el = pop('checks', $('chkBtn'), `<h5>Layout</h5>${chkList(state.lay.checks)}<h5>Spec</h5>${chkList(state.lay.spec)}` + (info.length ? `<h5>Placement notes</h5>${infoList(info)}` : ''));
@@ -2405,12 +2423,12 @@ $('helpBtn').onclick = () => { const h = $('help'); h.hidden = !h.hidden; $('hel
 // @sbtel begin App.Code
 // ---------- Code overlay ----------
 function highlight(t) {
-  const re = /("(?:\\.|[^"\\])*")|(;[^\n]*)|\((block|level|adjacent|port|message|behavior|implements|sketch|refines)\b|(:[\w-]+)|\b(in|out)\b/g;
+  const re = /("(?:\\.|[^"\\])*")|(;[^\n]*)|\((block|level|adjacent|port|message|behavior|implements|sketch|refines|carries)\b|(:[\w-]+)/g;
   let o = '', last = 0, m;
   while ((m = re.exec(t))) {
     o += esc(t.slice(last, m.index));
     if (m[1]) o += `<span class="hs">${esc(m[1])}</span>`; else if (m[2]) o += `<span class="hc">${esc(m[2])}</span>`;
-    else if (m[3]) o += `(<span class="hk">${m[3]}</span>`; else if (m[4]) o += `<span class="hy">${esc(m[4])}</span>`; else o += `<span class="hy">${m[5]}</span>`;
+    else if (m[3]) o += `(<span class="hk">${m[3]}</span>`; else o += `<span class="hy">${esc(m[4])}</span>`;
     last = re.lastIndex;
   }
   return o + esc(t.slice(last));

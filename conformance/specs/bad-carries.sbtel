@@ -2,7 +2,7 @@
 (message C (carries))
 (block Inner
   (message Secret)
-  (port s in Secret))
+  (port :in Secret :as s))
 (message Leak (carries Secret Nope))
 (message Old (either A C))
-(block D (port a in A) (port l in Leak) (port o in Old))
+(block D (port :in A) (port :in Leak :as l) (port :in Old :as o))

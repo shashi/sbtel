@@ -134,7 +134,7 @@ func TestQueryText(t *testing.T) {
 		"  (sketch \"The UI shell user interacts via.\")\n" +
 		"  (message KeyChord (sketch \"A normalized key combination.\"))\n" +
 		"  (block Shell.Keymap\n" +
-		"    (port chord out KeyChord)\n" +
+		"    (port :out KeyChord :as chord)\n" +
 		"    (sketch \"Turns raw key events into chords.\")))\n"
 	wantErr := "sbtel query: no element Shell.Kemap (did you mean Shell.Keymap?)\nsbtel query: no element Clipbord (did you mean Shell.Clipboard?)\n"
 	if c != 2 || out != want || errs != wantErr {
@@ -292,14 +292,14 @@ func TestDiffNotImplemented(t *testing.T) {
 // A generated spec of about 600 blocks: every command stays fast. Timings go to the test log (-v).
 func TestLargeSpec(t *testing.T) {
 	var b strings.Builder
-	b.WriteString("(message Req)\n(message Evt (refines Req))\n(behavior Durable (port keep in Evt))\n(block Sys\n")
+	b.WriteString("(message Req)\n(message Evt (refines Req))\n(behavior Durable (port :in Evt :as keep))\n(block Sys\n")
 	n, names := 1, []string{"Sys"}
 	var block func(depth int, ind string)
 	block = func(depth int, ind string) {
 		name := fmt.Sprintf("B%d", n)
 		n++
 		names = append(names, name)
-		fmt.Fprintf(&b, "%s(block %s (port in%d in Req) (port out%d out Evt) (implements Durable) (sketch \"block %d\")", ind, name, n, n, n)
+		fmt.Fprintf(&b, "%s(block %s (port :in Req :as in%d) (port :out Evt :as out%d) (implements Durable) (sketch \"block %d\")", ind, name, n, n, n)
 		if depth < 3 {
 			for l := 0; l < 2; l++ {
 				fmt.Fprintf(&b, "\n%s  (level (adjacent\n", ind)

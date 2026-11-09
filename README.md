@@ -50,7 +50,8 @@ how to cut a release.
 ## A 60-second tour
 
 **1. Write a spec.** Blocks sit in levels, top to bottom: a level is built from the ones below it, and
-its name is the vocabulary it offers upward. `(~ … ~)` is a sketch, like `(sketch "…")`. Save this
+its name is the vocabulary it offers upward. `(~ … ~)` is a sketch, like `(sketch "…")`, and a
+port is named after its type (`(port :out Edit)` is `edit`; `:as name` names it otherwise). Save this
 as `notes.sbtel`:
 
 ```lisp
@@ -59,10 +60,10 @@ as `notes.sbtel`:
   (message Edit (sketch "A change to one note's text."))
   (level :name "Editing"
     (adjacent (~ The preview follows the editor. ~)
-      (block Notes.Editor (port edit out Edit) (sketch "The text area."))
+      (block Notes.Editor (port :out Edit) (sketch "The text area."))
       (block Notes.Preview (sketch "Renders the note beside the editor."))))
   (level :name "Storage"
-    (block Notes.Store (port edit in Edit) (sketch "Writes notes to disk."))))
+    (block Notes.Store (port :in Edit) (sketch "Writes notes to disk."))))
 ```
 
 **2. Lint it.**
@@ -102,7 +103,7 @@ r2 review of version 1 by user, 2026-11-08T09:30:12Z: a message, 1 comment, prop
   c2.1 comment on block Notes.Store
     > Keep a backup of the last version
     source:
-      (block Notes.Store (port edit in Edit) (sketch "Writes notes to disk."))
+      (block Notes.Store (port :in Edit) (sketch "Writes notes to disk."))
 
 $ cp ~/.sbtel/sessions/$id/proposals/2.sbtel notes.sbtel   # take the proposal, then add Notes.Backup
 $ sbtel open notes.sbtel --session $id      # the tab offers "Reload" for version 2
@@ -128,6 +129,7 @@ notes.sbtel: 1 binding, 1 not allowed, 0 explained
 | `sbtel query <spec> <id>… [--with-deps]` | print elements as a fragment that lints clean on its own; `--with-deps` adds the blocks they may bind to as stubs |
 | `sbtel check <spec> --bindings <edges.txt>` | code bindings that the levels forbid |
 | `sbtel diff <a> <b>` | what changed between two specs |
+| `sbtel fmt --migrate-ports <spec>…` | rewrite 0.2 ports, `(port name in Type)`, in the 0.3 form, `(port :in Type :as name)`, in place (`--check` only reports) |
 | `sbtel open <spec> [--session id]` | open the diagram in the browser, or push a new version to it |
 | `sbtel open-diff <a> <b>` | open a visual diff |
 | `sbtel export <spec> [-o out.html] [--readonly] [--embed] [--bindings f] [--title t]` | one self-contained HTML file of the diagram to share: no server, no network, nothing to install |

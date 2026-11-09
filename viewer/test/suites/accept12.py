@@ -16,29 +16,31 @@ NOTES = ('(block Notes\n'
          '  (behavior Durable (sketch "Keeps what it is given."))\n'
          '  (level :name "Editing"\n'
          '    (adjacent (~ The preview follows the editor. ~)\n'
-         '      (block Notes.Editor (port edit out Edit) (sketch "The text area."))\n'
+         '      (block Notes.Editor (port :out Edit) (sketch "The text area."))\n'
          '      (block Notes.Preview (sketch "Renders the note beside the editor — ünïcode."))))\n'
          '  (level :name "Storage"\n'
-         '    (block Notes.Store (implements Durable) (port edit in Edit) (sketch "Writes notes to disk."))))\n')
+         '    (block Notes.Store (implements Durable) (port :in Edit) (sketch "Writes notes to disk."))))\n')
 OTHER = '(block Other (sketch "Another spec.")\n  (level (block Other.A (sketch "a")) (block Other.B (sketch "b"))))\n'
 EDGES = ('# VIOLATION: the store tells the editor that a write finished.\n'
          'Notes.Store -> Notes.Editor  # store.ts:40\n'
          'Notes.Store -> Notes.Preview  # store.ts:41\n'
          'Notes.Preview -> Notes.Store  # preview.ts:3\n'
          'Notes.Editor -> Durable  # editor.ts:9\n')
+# v0.2.6: every violation explained: the pill fails nothing and says how many are explained.
+EDGES_ALL = EDGES.replace('Notes.Store -> Notes.Preview', '# VIOLATION: the store refreshes the preview.\nNotes.Store -> Notes.Preview')
 
 d = tempfile.mkdtemp(prefix='sbtel-accept12-')
 def w(name, text):
     p = os.path.join(d, name)
     with open(p, 'w', newline='') as f: f.write(text)
     return p
-notes, other, edges = w('notes.sbtel', NOTES), w('other.sbtel', OTHER), w('edges.txt', EDGES)
+notes, other, edges, edges_all = w('notes.sbtel', NOTES), w('other.sbtel', OTHER), w('edges.txt', EDGES), w('edges-all.txt', EDGES_ALL)
 def export(out, *args):
     p = subprocess.run([SBTEL, 'export', notes if not args or args[0] != 'other' else other, '-o', os.path.join(d, out)] + [a for a in args if a != 'other'], capture_output=True, text=True)
     if p.returncode != 0: raise SystemExit('Error: sbtel export %s: %s' % (out, p.stderr))
     return 'file://' + os.path.join(d, out)
 FULL, RO, BIND, EMB = export('notes.html'), export('ro.html', '--readonly'), export('bind.html', '--bindings', edges), export('emb.html', '--embed')
-OTH = export('other.html', 'other')
+OTH, BALL = export('other.html', 'other'), export('bind-all.html', '--bindings', edges_all)
 
 r, errs, net = {}, [], []
 def check(name, ok): r[name] = 'pass' if ok else 'FAIL'
@@ -129,6 +131,7 @@ with sync_playwright() as p:
     # and hovering a behavior outlines the block whose code uses it.
     pg = go(BIND)
     check('bindingsPillFails', E(pg, "document.getElementById('chkBtn').classList.contains('bad')"))
+    check('bindingsPillCountsExplained', E(pg, "document.getElementById('chkBtn').textContent") == '✕ 1 failing· 1 explained· 1 note')
     pg.click('#chkBtn'); pg.wait_for_timeout(400)
     pop = E(pg, "pops.checks ? pops.checks.textContent : ''")
     check('bindingsListed', 'Code bindings respect the levels (4 edges, 1 of 2 violations explained)' in pop
@@ -138,6 +141,13 @@ with sync_playwright() as p:
     hover(pg, 'β:Durable')
     m = E(pg, MARKS)
     check('bindingsUses', m.get('Notes.Editor', '').startswith('uses:') and m.get('Notes.Store', '').startswith('impl:'))
+    pg.close()
+    # Every violation explained: the pill is neutral, "2 explained", and the check is not failing.
+    pg = go(BALL)
+    check('explainedPillNeutral', E(pg, "(b => !b.classList.contains('bad') && b.classList.contains('expl') && b.textContent === '◦ 2 explained· 1 note')(document.getElementById('chkBtn'))"))
+    pg.click('#chkBtn'); pg.wait_for_timeout(400)
+    check('explainedNotFailing', E(pg, "(li => !!li && li.classList.contains('expl') && li.textContent.includes('2 of 2 violations explained'))([...pops.checks.querySelectorAll('.chklist li')].find(li => li.textContent.includes('Code bindings')))")
+          and E(pg, "pops.checks.querySelectorAll('.chklist li.bad').length") == 0 and E(pg, "pops.checks.querySelectorAll('.sb-viol li').length") == 2)
     pg.close()
     pg = go(FULL)
     hover(pg, 'β:Durable')

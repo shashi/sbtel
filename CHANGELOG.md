@@ -3,6 +3,66 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
+## 0.3.0 (2026-11-08)
+
+Ports are named after their type.
+
+### Breaking
+
+- **A new port syntax.** `(port name in Type)` / `(port name out Type)` is now `(port :in Type)` /
+  `(port :out Type)`, with an optional `:as name` and an optional sketch last:
+  `(port :in NoteSaved)`, `(port :in Item :as backlog)`, `(port :in NoteSaved (~ Refresh after a save. ~))`.
+  Without `:as`, the port's name is its type's name with the first letter lowercased (`NoteSaved` →
+  `noteSaved`); a qualified type gives its last component (`shell.Intent` → `intent`), a parameterized
+  one its head (`List<Item>` → `list`), and a behavior parameter `T` gives `t`. LANGUAGE.md §3.5 has
+  the rule; the viewer's Shift-attach and Add port name new ports the same way.
+- **The 0.2 form is a lint warning** with the exact text to write, e.g. `(port chord in KeyChord) is the
+  0.2 form; write (port :in KeyChord :as chord)` (`:as` only when the name is not the default one).
+  Specs in the old form still draw in the viewer, and lint exits 1 on them.
+- **Two ports with one name** on a block or behavior are a lint warning that suggests `:as`, counting
+  the ports it gets from behaviors (own vs own, own vs inherited, two inherited). Before, only two own
+  ports were reported, and only by the CLI; the viewer shows these now too.
+- Anchors (`@sbtel port Block.name`), `sbtel query`, `sbtel diff` and the viewer use the effective name.
+  In a diff, writing the default name out with `:as`, or dropping it, is no change. Renaming a message
+  type renames the ports named after it.
+- Lint messages for malformed ports changed: `port direction must be :in or :out` (with `(write :in, not
+  in)` for a bare direction), `port needs a message type after :in: (port :in Type [:as name])`, `unknown
+  keyword :k in a port; a port takes only :as name`, `keyword :as of a port needs a name`, `port p has
+  more than one :as`, and `has two ports named p; tell them apart with :as`.
+- The parse model's port nodes carry `as` (the name as written, or null) beside `name` (the effective
+  name), and `legacy` for a 0.2 port.
+
+### Added
+
+- **`sbtel fmt --migrate-ports [--check] <spec>|- ...`** rewrites every 0.2 port in the 0.3 form in place,
+  changing only the head of each port (sketches, comments and spacing stay byte for byte); `--check`
+  only reports and exits 1 if a file has one (DESIGN.md §3.15). `__api.migratePorts(src)` in core/api.js.
+- The viewer's port editor and Edit dialog write the 0.3 form, with `:as` only when the name differs from
+  the type's default; renaming a port to its default name drops `:as`, and a name that is the default
+  follows a change of type. Any edit of a block's ports rewrites its 0.2 ports.
+- Conformance: `v3-ports.sbtel` (default names, `:as`, the 0.2 form, clashes, malformed ports) with
+  port edits that round-trip (sketch, rename, rename to the default, type and direction changes,
+  delete, Shift-attach, message renames), and diff cases `ports-implicit` and `ports-same`. accept6 tests
+  the editors' default-name handling; sbtel_owners.py reads the new form (with a test).
+
+### Fixed
+
+- **The checks pill no longer reads "1 failing" when every binding violation is explained.** Explained
+  violations fail nothing: the pill says "◦ N explained" in a neutral style, the check is not failing,
+  and beside a failing check the pill adds "· N explained". The popover still lists each violation with
+  its reason. `sbtel check` still exits 1 for any violation, explained or not. accept12 tests both pills.
+- The e2e test "the overwrite prompt after an agent push" was flaky (about 1 run in 6): it wrote the
+  session's spec file and then pushed it, and when the server's disk poll saw the write first it
+  recorded the version as a disk change and the push as a no-op. The agent now pushes its version from a
+  new file, which the poll cannot see before the push; the test checks the same prompt.
+
+### Changed
+
+- Every spec in the repository (examples, conformance specs and fixtures, docs, skills, tests, the
+  viewer's built-in sample) is in the 0.3 form; `conformance/diff/gen-big.mjs` writes it.
+- The source view highlights `:in`, `:out` and `:as` as keywords, and no longer highlights the words
+  `in` and `out` in sketches.
+
 ## 0.2.5 (2026-11-08)
 
 A diagram you can share as one file.

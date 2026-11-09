@@ -1,0 +1,11 @@
+; v0.3: an implicit name and the same name written with :as are the same port: no change. A new :as
+; renames a port: it is removed and added.
+(message NoteSaved)
+(message Item)
+(message Old)
+(block A
+  (port :in NoteSaved :as noteSaved)
+  (port :out Item)
+  (port :in Item :as backlog)
+  (port :in Old :as legacy)
+  (port :out Item :as stream))

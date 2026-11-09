@@ -1,0 +1,31 @@
+{
+  "specs": {
+    "v3-ports.sbtel": {
+      "query": [
+        { "ids": ["Notes.Editor"] },
+        { "ids": ["Notes.Store"], "withDeps": true }
+      ],
+      "edits": [
+        { "on": "port:Notes.Editor.noteSaved", "sketch": "Refresh the preview after a save." },
+        { "on": "port:Notes.Editor.backlog", "name": "item3" },
+        { "on": "port:Notes.Store.feed", "name": "item" },
+        { "on": "port:Notes.Editor.noteSaved", "name": "saved" },
+        { "on": "port:Notes.Editor.uRL", "kind": "Item", "name": "item4" },
+        { "on": "port:Notes.Editor.intent", "dir": "out" },
+        { "on": "port:Notes.Editor.backlog", "delete": true },
+        { "on": "port:Notes.Store.noteSaved", "sketch": "Written." },
+        { "on": "port:Notes.Legacy.chord", "sketch": "Opens the palette." },
+        { "on": "port:Notes.Legacy.saved", "name": "noteSaved" },
+        { "on": "attach:Notes.Store", "dir": "in", "kind": "Item" },
+        { "on": "attach:Notes.Store", "dir": "out", "kind": "NoteSaved" },
+        { "on": "attach:Notes.Editor", "dir": "in", "kind": "shell.Intent" },
+        { "on": "msg:NoteSaved", "name": "Saved" },
+        { "on": "msg:Item", "name": "Entry" }
+      ]
+    }
+  },
+  "diff": [
+    { "name": "ports-implicit", "a": "diff/ports-implicit-a.sbtel", "b": "diff/ports-implicit-b.sbtel" },
+    { "name": "ports-same", "a": "diff/ports-same-a.sbtel", "b": "diff/ports-same-b.sbtel" }
+  ]
+}

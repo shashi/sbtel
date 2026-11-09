@@ -391,6 +391,9 @@ codes. Go reads the files, passes `args` and prints what comes back. `args.files
 - `__api.topBlocks(src)` (v0.2.5): `{error, blocks: [{id, name}]}`, the file's top-level blocks in source
   order (core.js `topBlocks`); `error` is the parse error (Located) or null. `sbtel export` titles its
   page with the first, as the viewer's chip names it.
+- `__api.migratePorts(src)` (v0.3.0): the rewrite behind `sbtel fmt --migrate-ports` (§3.15),
+  `{error, src, ports: [{line, col, from, to}]}`. core.js `defaultPortName(Type)` is the default-name
+  rule (LANGUAGE.md §3.5) and `portForm(name, dir, Type)` the text the viewer writes for a port.
 - `__api.carriers(src, name)` and core.js `carriers(model, T)`: every message type that carries T,
   transitively (A carries B, B carries T), counting what a subtype inherits from its supertype's
   `carries`; T itself only through a cycle. Then every port typed with one of them (blocks' own,
@@ -700,6 +703,26 @@ of §6.9, with everything §6.9 says of a spec from the URL.
 - **Exit codes**: 0 written (with any warnings or violations); 2 usage or IO error, or a spec that does
   not parse. There is no 1: problems are reported, not fatal, as with `open` (§11 entry 13).
 
+### 3.15 `sbtel fmt --migrate-ports [--check] <spec>|- ...`  (v0.3.0)
+
+Rewrites every port in the 0.2 form, `(port name in|out Type …)`, in the 0.3 form,
+`(port :in|:out Type [:as name] …)`, in place. `:as name` is written only when `name` is not the
+type's default name (LANGUAGE.md §3.5). Only the head of each port changes (the name, direction and
+type tokens); the type is copied as written, and its sketch, comments, spacing and the rest of the file
+stay byte for byte. The rewrite is `__api.migratePorts(src)` → `{ error: Located|null, src, ports: [{
+line, col, from, to }] }`; it works on the reader's output, so a file must read (balanced parentheses,
+closed strings and sketches) but need not lint. A rewritten file is idempotent under a second run.
+
+- `--migrate-ports` is required: `fmt` without it is a usage error (2). It is the only rewrite so far;
+  `fmt` is not a formatter.
+- stdout: one line per rewritten port, `<file>:<line>:<col>: <from> -> <to>` (`…` stands for a sketch
+  or other items after the type), then `<file>: rewrote N ports`. With `-`, the result goes to stdout
+  and the report to stderr.
+- `--check` writes nothing and ends each file with `<file>: N ports in the 0.2 form`.
+- **Exit codes**: 0 done (or, with `--check`, nothing to rewrite); 1 with `--check` when a file has a
+  0.2 port; 2 usage or IO error, or a file that does not read (`<file>:<line>:<col>: error: <msg>`; the
+  other files are still processed).
+
 ---
 
 ## 4. State directory
@@ -977,8 +1000,11 @@ As built (B):
 - Sent comments keep their bubble (server mode counts every comment, not only unsent ones), so a
   thread with an agent reply stays reachable; sent comments lose their Delete button.
 - The bindings show as one extra check, "Code bindings respect the levels (N edges, K of V violations
-  explained)", whose failures are the violating edges (and invalid lines), in a "Bindings" section of
-  the checks popover. Below it, every violation is listed with its rule, its location and its
+  explained)", whose failures are the unexplained violating edges (and invalid lines), in a "Bindings"
+  section of the checks popover. An explained violation fails nothing (v0.3.0): when every violation is
+  explained the check is not failing (a neutral `◦`, class `expl`) and the pill reads "◦ K explained"
+  in a neutral style (class `expl`) instead of "✕ 1 failing"; beside a failing check it adds a muted
+  "· K explained". `make selfcheck` and `sbtel export`'s stderr treat all-explained the same way. Below it, every violation is listed with its rule, its location and its
   `# VIOLATION:` explanation, or "Not explained in the bindings file". The page parses the edge
   syntax with core.js `parseBindings`, the CLI's own parser (§2.5).
 - A tab that finds its session gone (404 on `meta`, or SSE `closed`) shows "This session was closed.
@@ -1357,7 +1383,9 @@ Fields = {
   sketch?:    { from: string, to: string, words: { op: "=" | "+" | "-", text: string }[] },
   implements?:{ added: string[], removed: string[] },          // blocks and behaviors: names, compared after rename mapping
   ports?:     { added: Port[], removed: Port[], changed: { name, from: Port, to: Port, sketch?: Words }[] },
-              // own ports (blocks), ports (behaviors); identity = port name; a port whose sketch alone
+              // own ports (blocks), ports (behaviors); identity = the port's effective name (its :as
+              // name or the default one, v0.3), so adding or dropping an :as that names the default
+              // is no change, and a new :as name is a removed and an added port; a port whose sketch alone
               // changed is `changed`, with `sketch`, and stays stable for §7.4
   drawer?:    { in: { added: string[], removed: string[] }, out: { added: string[], removed: string[] } },
               // the rows of the block's ear drawers: portLabel of dotsOf(block, true), compared as label strings
@@ -1506,7 +1534,7 @@ belong to the declaration that holds them, whatever their indentation.
 | `@sbtel end Name` | the region ends; the name MUST match its `begin` |
 | `@sbtel file Name` | from here to the end of the file |
 | `@sbtel message Name` | anchor: where a message type's shape is defined. It owns no code |
-| `@sbtel port Block.port` | anchor: where a block's port is handled (the block id, a dot, the port name). It owns no code |
+| `@sbtel port Block.port` | anchor: where a block's port is handled (the block id, a dot, the port's effective name: its `:as` name, or the default one from its type, LANGUAGE.md §3.5). It owns no code |
 
 - There is no other form (an earlier draft had a long s-expression form; it is gone). Names use the
   spec's name syntax: no whitespace, no `( ) " ;`, and not starting with `:`.
@@ -2353,3 +2381,32 @@ A, B, C and D run in parallel. When they merge:
     the CLI does not read the unstable `parseSpec` model. Sbtel.Cli.ExportCommand is a new block in
     examples/sbtel.sbtel beside the other commands; it binds Sbtel.Cli.Kit, Sbtel.Engine and Sbtel.Assets
     (all lower) and avoids cmd_b.go's helpers, a peer's.
+114. **Ports are named after their type** (v0.3.0, owner decision; breaking). `(port name in Type)`
+    repeated the type in the name most of the time (`(port edit in Edit)`), so 0.3 writes
+    `(port :in Type)`, named `type` (first letter lowercased), with `:as name` only to tell two ports
+    apart. The rule is `defaultPortName` (core.js): lowercase the first code point of the type's name;
+    for a qualified type the last component after `.` or `:`; for a parameterized one the head before
+    `<` or `[`; a behavior parameter `T` gives `t` at the declaration, not after substitution, so a
+    port's name never depends on its implementer. The viewer's `portNameFor` (Shift-attach, Add port)
+    uses the same function, so a port the viewer adds is written without `:as` whenever it can be. The
+    model keeps `node.as` (as written, or null) and `name` (effective); everything downstream (anchors,
+    query, diff, `dotsOf`, the editors) uses `name`. The 0.2 form is still read, as it meant, with a
+    warning that gives the exact 0.3 text, so an old spec draws and `sbtel fmt --migrate-ports` (§3.15)
+    can rewrite it; the viewer rewrites a 0.2 port whenever an edit touches the block's ports. Clashes
+    (own, own vs inherited, inherited vs inherited) moved from api.js's form walk into the core
+    (`portClashes`), so the viewer shows them and drags that would create one are refused. Renaming a
+    message type renames its implicit ports; that is the rule's point (the name is the type), so the
+    viewer does not add `:as` to keep the old name. `portLabel` shows `name: Type` only when the name is
+    not the default one.
+115. **Explained violations fail nothing in the viewer** (v0.3.0, owner request). A spec whose every
+    binding violation was explained showed "✕ 1 failing", which read as broken. The bindings check's
+    failures are now its unexplained violations and invalid lines; explained ones are counted
+    (`explained`) and the pill says "◦ N explained" in a neutral style (§6.3). `sbtel check`'s exit
+    code is unchanged: 1 for any violation, explained or not (LANGUAGE.md §8).
+116. **A deterministic overwrite-prompt e2e step** (v0.3.0). The step wrote the session's own spec file
+    and then pushed it; the server's disk poll (every 2 s, §5.4) sometimes ran in between, recorded the
+    version as a disk change, and the push became a no-op (same bytes, same path), so the prompt named
+    the wrong cause. The agent now writes its version to a new file and pushes that path: the poll
+    watches only the session's current path, so it cannot see the new bytes before the push switches the
+    path and sets the base under the server's lock. The rest of e2e.js uses the new file. What the step
+    checks is unchanged.

@@ -11,10 +11,10 @@
   (behavior Durable)
   (level
     (block Shell.View
-      (port sel in Selection)
-      (port leaf in Leaf)
+      (port :in Selection :as sel)
+      (port :in Leaf)
       (block Shell.Store (implements Durable))))
-  (level (block Shell.Log (port w in Wide))))
+  (level (block Shell.Log (port :in Wide :as w))))
 (block Other
-  (port w out Wide)
-  (port n out Note))
+  (port :out Wide :as w)
+  (port :out Note :as n))

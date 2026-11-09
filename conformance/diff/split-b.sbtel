@@ -5,13 +5,13 @@
   (level
     (adjacent
       (block Parser
-        (port src in Text)
-        (port tree out Ast)
+        (port :in Text :as src)
+        (port :out Ast :as tree)
         (sketch "Parses the source."))
       (block Checker
-        (port tree in Ast)
-        (port ir out Ir)
+        (port :in Ast :as tree)
+        (port :out Ir)
         (sketch "Checks the types of every expression.")))
     (block Backend
-      (port ir in Ir)
+      (port :in Ir)
       (sketch "Emits machine code."))))

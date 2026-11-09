@@ -11,10 +11,10 @@ NOTES = '''(block Notes
   (message Edit (sketch "A change to one note's text."))
   (level :name "Editing"
     (adjacent (~ The preview follows the editor. ~)
-      (block Notes.Editor (port edit out Edit) (sketch "The text area."))
+      (block Notes.Editor (port :out Edit) (sketch "The text area."))
       (block Notes.Preview (sketch "Renders the note beside the editor — ünïcode."))))
   (level :name "Storage"
-    (block Notes.Store (port edit in Edit) (sketch "Writes notes to disk."))))
+    (block Notes.Store (port :in Edit) (sketch "Writes notes to disk."))))
 '''
 DEMO = '(block Demo (sketch "From examples/demo.sbtel.")\n  (level (block Demo.A (sketch "a")) (block Demo.B (sketch "b"))))\n'
 b64 = lambda s: base64.urlsafe_b64encode(s.encode()).decode().rstrip('=')

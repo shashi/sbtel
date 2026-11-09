@@ -1,0 +1,3 @@
+(message NoteSaved)
+(message Item)
+(block A (port :in NoteSaved) (port :out Item :as item) (port :in Item :as backlog))

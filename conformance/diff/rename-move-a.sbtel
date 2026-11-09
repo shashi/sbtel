@@ -6,7 +6,7 @@
       (level
         (block Handlers (sketch "One handler per route."))
         (block Limiter
-          (port job in Job)
+          (port :in Job)
           (sketch "Token bucket per client, refilled every second."))))
     (block Worker
       (sketch "Runs jobs in the background.")

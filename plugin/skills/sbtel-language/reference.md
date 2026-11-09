@@ -36,7 +36,7 @@ version, with a failing example for every check.
 | `(level [:name "N"] m…)` | file, block | members are blocks and adjacent groups, at least one block, plus one sketch. Levels run **top to bottom** in source order. `:name` is a label: any non-empty string, never referenced |
 | bare blocks and adjacent groups | file, block | consecutive ones form one *implicit level*; an explicit `(level)` ends the run |
 | `(adjacent m…)` | file, block, level, adjacent | at least 2 members, plus one sketch; nested groups flatten into one (their sketch is the outer group's) |
-| `(port name in\|out Type [sketch])` | block, behavior | name, direction, type, then at most a sketch; port names are unique per element; a behavior's port sketches go to its implementers |
+| `(port :in\|:out Type [:as name] [sketch])` | block, behavior | direction, type, an optional `:as name`, then at most a sketch. The name defaults to the type's name with its first letter lowercased (`NoteSaved` → `noteSaved`; a qualified type's last component after `.` or `:`; type arguments `<…>`/`[…]` dropped; a behavior parameter `T` → `t`). Port names are unique per element, inherited ports included; write `:as` only to tell two apart. A behavior's port sketches go to its implementers |
 | `(message Name [:type T] …)` | file, block | `:type` (the data shape in code) is the only keyword; holds `sketch`, `refines`, `carries` |
 | `(refines Super)` | message | is-a; exactly one name |
 | `(carries A B …)` | message | has-a; one or more names, each once, in scope where the message is declared; a subtype carries what its supertype carries; cycles are fine |
@@ -92,8 +92,8 @@ highlight, and the affected ports in `sbtel diff`.
 (message Event)
 (message Click (refines Event))
 (message Key (refines Event))
-(block Source (port out1 out Click))
-(block Sink (port in1 in Event))
+(block Source (port :out Click :as out1))
+(block Sink (port :in Event :as in1))
 ```
 
 Here `Sink.in1` accepts `Source.out1`, because Click refines Event.
@@ -112,7 +112,13 @@ placement notes (`file:L:C: info: …`), then a summary line. A parse error prin
 - `Duplicate block name X`
 - `Duplicate message X`
 - `Duplicate behavior X`
-- `port direction must be in or out`
+- `port direction must be :in or :out` (with ` (write :in, not in)` for a bare `in` or `out`)
+- `(port chord in KeyChord) is the 0.2 form; write (port :in KeyChord :as chord)`: `:as` only when the
+  name is not the default one, `…` before the `)` when the port has a sketch (`sbtel fmt
+  --migrate-ports spec.sbtel` rewrites them all)
+- `block X has two ports named p; tell them apart with :as`, `block X has two ports named p: its own and
+  one from behavior B; tell them apart with :as`, `block X has two ports named p, from behaviors B and C;
+  tell them apart with :as` (likewise `behavior X`; a clash inside a behavior is reported only there)
 - `adjacent needs two or more members`
 - `level needs at least one block`
 - `unknown form (layer) in W (did you mean level?)`
@@ -136,9 +142,11 @@ placement notes (`file:L:C: info: …`), then a summary line. A parse error prin
 - `a nested adjacent group has no sketch of its own; put it in the outer (adjacent)`
 - `carries names one or more message types`, `carries names X twice`
 - `block needs a name`, `message needs a name`, `behavior needs a name, or (Name Param ...)`
-- `port needs a name, a direction and a message type: (port name in|out Type)`
-- `port p has extra items after its message type`
-- `W has two ports named p`
+- `port needs a message type after :in: (port :in Type [:as name])` (likewise `:out`)
+- `port p has extra items after its message type`, plus ` (to name it, write :as w)` when the one extra
+  item is a word
+- `unknown keyword :k in a port; a port takes only :as name`, `keyword :as of a port needs a name`,
+  `port p has more than one :as; only the first counts`
 - `implements names exactly one behavior, as Name or (Name Arg ...)`, `refines names exactly one message type`
 - `sketch takes a "string"`, `W has more than one (sketch); only the first counts` (likewise for
   `refines` and `carries`; W may be `a level`, `an adjacent group` or `port p`)
@@ -200,7 +208,7 @@ These are all the forms, inside any line comment (`//`, `#`, `--`, `;`, `%`, `'`
   must match.
 - `@sbtel file Name`: from here to the end of the file.
 - `@sbtel message Name`: anchor where message type Name's shape is defined. It owns no code.
-- `@sbtel port Block.port`: anchor where a block's port is handled. It owns no code.
+- `@sbtel port Block.port`: anchor where a block's port is handled (its `:as` name, or the default one). It owns no code.
 
 An anchor changes no ownership, and a pending `@sbtel Name` above it still applies to the next
 declaration. Unknown message types and ports in anchors are errors.

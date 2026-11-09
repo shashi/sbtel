@@ -47,22 +47,22 @@
   (behavior Pure
     (sketch "Same inputs give the same output. Never reads the DOM, the clock, randomness or global state."))
   (behavior MeasuresText
-    (port run in TextRun)
-    (port width out Pixels)
+    (port :in TextRun :as run)
+    (port :out Pixels :as width)
     (sketch "Answers tw(text, font) with a pixel width and wrap(text, font, width) with a line count."))
 
   (level
     (block Browser
       :type "Module"
-      (port input in UserInput)
+      (port :in UserInput :as input)
       (sketch "Everything after the core: owns the global state object, the DOM, and every interaction. Ten feature blocks form one mutually dependent group because they call each other through render. render calls applySelection, placeStrip, applyTalk, commentCounts, renderMsgTable, applyCam and edit (from + buttons); edit and the source sheet call setSource, which calls render; applyCam calls placeStrip; the selection bar calls askDelete, openComposer, openMessages and edit; the message table calls goTo, and goTo calls render, centerOn, select and closeSheetsOnPhone.")
 
       (level
         (block CanvasInput
-          (port events in UserInput)
+          (port :in UserInput :as events)
           (sketch "Pointer handling on the canvas. Tracks active pointers to pan with one finger or pinch-zoom with two, retaking a snapshot whenever the finger count changes. A move of 5px or more turns a press into a pan and suppresses the click. Click delegation, in order: comment bubble, open/close arrow, message-type owner link (no longer rendered anywhere), drawer go-to-card arrow, drawer row (toggle talk highlight), message chip or dot, drawer minimize button, drawer ear, behavior badge, connector line, then block selection; Cmd or Ctrl opens a comment. Double-click toggles both drawers. Hovering a chip or badge with a mouse shows its definition after 280ms. Also starts handle drags and blocks Safari's page-zoom gesture events."))
         (block Keyboard
-          (port keys in UserInput)
+          (port :in UserInput :as keys)
           (sketch "Window keydown. Escape closes, in order: popovers, the modal, then (when not typing) the message sheet, the source sheet, the talk highlight, open drawers, and finally the selection. Cmd/Ctrl+Z undoes, Shift+Cmd+Z or Ctrl+Y redoes. Delete or Backspace cuts a selected line or asks to delete a selected block. Ignores keys while typing or while a modal is open.")))
 
       (level
@@ -84,23 +84,23 @@
       (level
         (adjacent
           (block Canvas
-            (port source in SourceText)
+            (port :in SourceText :as source)
             (sketch "setSource stores the text, re-parses it (keeping the last good drawing and showing the error if parsing fails), opens the root, updates the name chip, re-renders and refreshes an open message table. render lays out the model with the injected text measure, runs spec checks, adjusts the camera to keep an anchor block in place, then reconciles one DOM element per block (reused by id so CSS transitions animate moves), redraws dividers and connectors in one SVG, recreates + buttons and comment bubbles, updates the checks pill, and reapplies selection and the talk highlight. fillBlock redraws a single block's contents and raises it above neighbours while a drawer is open."))
           (block History
-            (port action in EditAction)
+            (port :in EditAction :as action)
             (sketch "edit applies an EditAction to the source, pushes the previous text on an undo stack capped at 200, clears redo, and loads the result with its flash target. undo and redo swap whole source strings."))
           (block Camera
             (sketch "Owns the viewport element and the pan and zoom transform. applyCam writes the transform and zoom label and repositions the selection bar. zoomAt keeps the point under the cursor fixed and clamps zoom between 12% and 250%. fit centres the whole drawing between the top chip and the dock. centerOn pans to a block, shrinking zoom if the block is too tall, and flashes it."))
           (block Selection
             (sketch "Holds the selected block or line. applySelection outlines the block, adds four link handles (pushed past open ears) when the block sits in a level, highlights the selected line and rebuilds the floating action bar: Table for message cards, Code, Comment and Delete for blocks (no Delete on the root), Cut link and Comment for lines. placeStrip keeps that bar beside the selection and inside the screen, and repositions an open comment composer. cutSelected splits the group at the selected line. clampRect is defined but unused."))
           (block Comments
-            (port comment out CommentRecord)
-            (port send out AgentPayload)
+            (port :out CommentRecord :as comment)
+            (port :out AgentPayload :as send)
             (sketch "Composer and thread popovers anchored to a block, behavior, line or message row. Saving stores the comment with the current version stamp in localStorage and shows a count bubble on its target; Send opens a modal with the agent payload, and Copy marks the comments sent. The toolbar Send button appears while saved comments exist."))
           (block DeleteDialog
             (sketch "askDelete refuses the root and blocks whose parent is closed, then asks for confirmation in a modal that says what goes with the node: inner blocks for a block, implementers for a behavior, using ports for a message type. On confirm it clears that node's selection, drawers and highlight and dispatches a delete edit."))
           (block MessageTable
-            (port rows in MessageRows)
+            (port :in MessageRows :as rows)
             (sketch "Right-hand sheet listing every declared message type. Search matches name, sketch, declaring block and using blocks; sort is by name or by number of using ports. An owner filter still exists, but nothing on the page sets it any more. A row opens in place, read-only, showing the sketch, refined-by and either-member links, every using port as a go-to button, Show on canvas, and comment actions."))
           (block Navigation
             (sketch "goTo opens every enclosing block of a block, behavior or message card, closes sheets on narrow screens, re-renders, then centres on the card and selects it."))
@@ -118,7 +118,7 @@
         (block CodeOverlay
           (sketch "Shows a node's exact source text, re-indented to column 0 and syntax highlighted, in a dialog about 90 characters wide and 50 to 90% of the screen tall. It grows out of the block's rectangle and shrinks back on close; Escape closes it and Copy falls back to selecting the text."))
         (block ChecksPill
-          (port results in CheckResults)
+          (port :in CheckResults :as results)
           (sketch "Toolbar pill showing how many layout and spec checks fail, and a popover listing both groups with the first three failures of each."))
         (block Theme
           (sketch "Applies state.opts.theme by setting or removing data-theme on the root element, and follows the system setting while on Follow system. isDark is defined but unused.")))
@@ -140,13 +140,13 @@
         (block Keys
           (sketch "connectorKey, targetKey (block:, beh:, msg:) and midOf, the middle point of a connector."))
         (block LocalStore
-          (port value out StoredValue)
+          (port :out StoredValue :as value)
           (sketch "get and set JSON in localStorage, wrapped so a blocked store just returns the default."))
         (block Popover
           (sketch "Named popovers that close by kind, place themselves below or above an anchor and stay on screen. A capturing pointerdown listener closes threads, empty composers, the checks list and pinned info when clicking elsewhere."))
         (block Toast (sketch "One status line above the dock that hides after 4.2 seconds."))
         (block SampleSpec
-          (port sample out SourceText)
+          (port :out SourceText :as sample)
           (sketch "The Shell example: 23 blocks in 4 levels, two root behaviors, one behavior and one message type scoped to Shell.SessionView.")))
 
       (level
@@ -161,21 +161,21 @@
       (level
         (block ModelBuilder
           (implements Pure)
-          (port text in SourceText)
-          (port model out Model)
+          (port :in SourceText :as text)
+          (port :out Model)
           (sketch "Converts each list by its head form, records parents and owners, gives duplicate block names a #n suffix, and assigns β: and μ: ids to behaviors and messages. Then derives levels (explicit levels, and runs of bare blocks as implicit levels), flattened adjacent units, ports, implemented behaviors and declarations. Warns on duplicates, short adjacent groups, empty levels, bad port directions and extra top-level blocks."))
         (block SpecChecks
           (implements Pure)
-          (port model in Model)
-          (port results out CheckResults)
+          (port :in Model)
+          (port :out CheckResults :as results)
           (sketch "Five language checks: every implemented behavior is declared; behaviors are used only inside the block that declares them or its descendants; every port uses a declared type, except behavior type parameters; message types are used only inside their declaring block; refines and either name declared types."))
         (block LayoutEngine
           (implements Pure)
-          (port model in Model)
-          (port options in LayoutOptions)
-          (port measure out TextRun)
-          (port width in Pixels)
-          (port geometry out Geometry)
+          (port :in Model)
+          (port :in LayoutOptions :as options)
+          (port :out TextRun :as measure)
+          (port :in Pixels :as width)
+          (port :out Geometry)
           (sketch "layout(model, opts, M): a two-pass layout where widths flow down and heights flow up, emitting absolute geometry into one output collector, then running the layout checks on it.")
           (level
             (block Layout.Driver
@@ -206,8 +206,8 @@
               (sketch "The collector every step pushes into: blocks, connectors, dividers, gutters, plus buttons, per-level item boxes and the location map."))))
         (block EditActions
           (implements Pure)
-          (port action in EditAction)
-          (port result out EditResult)
+          (port :in EditAction :as action)
+          (port :out EditResult :as result)
           (sketch "Applies an edit by splicing the original text at the nodes' recorded offsets, so formatting and comments elsewhere survive. Split, connect and delete rebuild only the affected units, re-indenting moved blocks; a group left with one block is unwrapped; deleting a level's last block removes the level. New blocks, levels, behaviors and messages get the first free NewBlockN, NewBehaviorN or NewMessageN name.")))
 
       (level
@@ -215,27 +215,27 @@
           (sketch "K: layout spacing (padding 22, gaps 56 by 30, ear 20, level gap 44, card widths 220 to 340). FONT: the CSS fonts used for measuring. FORMS: the ten head forms the parser recognises; anything else becomes a raw node."))
         (block Reader
           (implements Pure)
-          (port text in SourceText)
-          (port tokens out Tokens)
-          (port tree out SExpr)
+          (port :in SourceText :as text)
+          (port :out Tokens)
+          (port :out SExpr :as tree)
           (sketch "Tokenizes, skipping whitespace and ; comments and unescaping strings, then reads nested lists. Errors name the line and column of an unclosed string or a missing or unexpected paren."))
         (block ModelQueries
           (implements Pure)
           (sketch "Questions about a parsed model: a block's ports including those from implemented behaviors; its ports plus its children's for ears and drawers; child blocks and nested block counts; whether it has anything inside; ancestors; port labels; open drawer height (32 + 23 per row); and accepts, which decides whether an input of one type accepts an output of another: same type, a refinement chain, an either alternative, or every alternative of an either."))
         (block MessageIndex
           (implements Pure)
-          (port model in Model)
-          (port rows out MessageRows)
+          (port :in Model)
+          (port :out MessageRows :as rows)
           (sketch "Indexes every message type with the block and behavior ports that use it, the types that refine it and the either types that include it."))
         (block LayoutChecks
           (implements Pure)
-          (port geometry in Geometry)
-          (port results out CheckResults)
+          (port :in Geometry)
+          (port :out CheckResults :as results)
           (sketch "Six layout invariants: source order kept within every level and band; levels stacked top to bottom; no two item boxes overlap within a parent; every item inside its parent; each adjacent group one connected chain; no line between blocks that are not in the same group. Marks offending connectors as bad."))
         (block SourceSplicing
           (implements Pure)
           (sketch "Text helpers for edits: line start, column, indentation before a node, re-indenting a multi-line slice, slicing a node at a new column, writing an adjacent group, the span of a level's units, and the first free NewBlockN name."))
         (block RandomSpec
           (implements Pure)
-          (port spec out SourceText)
+          (port :out SourceText :as spec)
           (sketch "Generates a seeded random system up to three levels below the root, with five message types, two behaviors, random ports, fills, types, groups and sketches."))))))

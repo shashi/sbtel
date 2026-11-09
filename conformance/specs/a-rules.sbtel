@@ -5,16 +5,16 @@
 (message Wire)
 (message Ping2 (refines Wire))
 (behavior (Relay T)
-  (port take in T)
-  (port give out Wire)
+  (port :in T :as take)
+  (port :out Wire :as give)
   (sketch "Passes values through."))
 (block Top
   :type "System" :owner "team-a"
   (sketch "Holds everything.")
-  (behavior Durable (port keep in Ping))
+  (behavior Durable (port :in Ping :as keep))
   (level
     (adjacent
-      (block Ui (port ping out Ping)
+      (block Ui (port :out Ping)
         (level (block Ui.Button) (block Ui.Menu))
         (level (block Ui.Theme)))
       (block Cli (implements Relay)))
@@ -23,8 +23,8 @@
     (block Core
       (implements Durable)
       (message Job (refines Ping))
-      (port jobs in Job)
-      (level (block Core.Queue (port next out Job)))
+      (port :in Job :as jobs)
+      (level (block Core.Queue (port :out Job :as next)))
       (message Stray (block Orphan))))
   (level
     (block Dup (sketch "first"))

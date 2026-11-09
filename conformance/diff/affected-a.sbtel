@@ -7,11 +7,11 @@
   (message Ack (refines Msg) (sketch "An acknowledgement."))
   (level
     (block Sender
-      (port probe out Ping)
-      (port ack out Ack)
-      (port data out Data)
+      (port :out Ping :as probe)
+      (port :out Ack)
+      (port :out Data)
       (sketch "Sends things."))
     (block Receiver
-      (port wire in Wire)
-      (port any in Msg)
+      (port :in Wire)
+      (port :in Msg :as any)
       (sketch "Receives things."))))

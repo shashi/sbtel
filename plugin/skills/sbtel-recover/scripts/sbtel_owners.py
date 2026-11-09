@@ -135,6 +135,18 @@ class Spec:
         return 'beh:' + bare if bare in self.behaviors else None
 
 
+def default_port_name(kind):
+    """A port's name without :as (core.js defaultPortName): the type's name with its first letter
+    lowercased, of its last `.`/`:` component, with type arguments (<...>, [...]) dropped first."""
+    t = kind
+    g = re.search(r'[<\[]', t)
+    if g and g.start() > 0:
+        t = t[:g.start()]
+    parts = [x for x in re.split(r'[.:]+', t) if x]
+    t = parts[-1] if parts else kind
+    return t[0].lower() + t[1:]
+
+
 def read_spec(src):
     # (~ text ~) is a sketch (sbtel 0.2): `(` and k tildes open it, the first k tildes and `)` close it, and
     # nothing inside is special; it is skipped like a comment, since no name lives in a sketch.
@@ -145,6 +157,17 @@ def read_spec(src):
     word = lambda k: toks[k] if k < len(toks) and toks[k] not in '()' else None
     # (behavior (Name P ...) ...) and (implements (Name Arg ...)): the name is the first word of the list.
     named = lambda k: word(k) or (word(k + 1) if k < len(toks) and toks[k] == '(' else None)
+    def port_name(k):
+        # (port :in Type [:as name] ...) (sbtel 0.3): the :as name, or the default one; the 0.2 form
+        # (port name in Type), which lint reports, by its name.
+        if word(k) in (':in', ':out'):
+            j = k + 2
+            while word(j) and word(j).startswith(':'):
+                if word(j) == ':as' and word(j + 1) and not word(j + 1).startswith(':'):
+                    return word(j + 1)
+                j += 2
+            return default_port_name(word(k + 1)) if word(k + 1) and not word(k + 1).startswith(':') else None
+        return word(k)
     for i, t in enumerate(toks):
         if t == '(':
             head = toks[i + 1] if i + 1 < len(toks) else ''
@@ -159,8 +182,8 @@ def read_spec(src):
                 messages.add(name)
             elif head == 'behavior' and name:
                 behaviors.add(name)
-            elif head == 'port' and owner[1] and word(i + 2):
-                (own_ports if owner[0] == 'block' else beh_ports if owner[0] == 'behavior' else {}).setdefault(owner[1], set()).add(word(i + 2))
+            elif head == 'port' and owner[1] and port_name(i + 2):
+                (own_ports if owner[0] == 'block' else beh_ports if owner[0] == 'behavior' else {}).setdefault(owner[1], set()).add(port_name(i + 2))
             elif head == 'implements' and owner[0] in ('block', 'behavior') and named(i + 2):
                 (implements if owner[0] == 'block' else beh_impl).setdefault(owner[1], set()).add(named(i + 2))
             stack.append((head, name))

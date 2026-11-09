@@ -34,7 +34,7 @@ all.forEach(n => {
 function emit(roots, refinesAck) {
   const blk = (n, ind) => {
     let t = `${ind}(block ${n.name}`;
-    n.ports.forEach(p => { t += `\n${ind}  (port ${p[0]} ${p[1]} ${p[2]})`; });
+    n.ports.forEach(p => { t += `\n${ind}  (port :${p[1]} ${p[2]} :as ${p[0]})`; });
     t += `\n${ind}  (sketch "${n.sketch}")`;
     if (n.kids.length) {
       // Two levels: the first half and the second half; pairs flagged adj are grouped.

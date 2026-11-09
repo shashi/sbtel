@@ -156,7 +156,7 @@ let the flow upward from storage be a message:
   (message Edit (sketch "A change to one note's text, with the note's id."))
   (message Changed (sketch "A stored note changed, from whichever side."))
   (behavior Durable
-    (port edit in Edit)
+    (port :in Edit)
     (sketch "Keeps every accepted edit until it is on disk."))
 
   (level :name "The app"
@@ -165,20 +165,20 @@ let the flow upward from storage be a message:
   (level :name "Notes as text"
     (adjacent (~ They scroll together. ~)
       (block Notes.Editor
-        (port edit out Edit)
+        (port :out Edit)
         (sketch "The text area where the user types."))
       (block Notes.Preview
-        (port changed in Changed)
+        (port :in Changed)
         (sketch "Renders the current note beside the editor.")))
     (block Notes.Sync
-      (port changed in Changed)
-      (port remote out Edit)
+      (port :in Changed)
+      (port :out Edit :as remote)
       (sketch "Exchanges edits with the cloud copy.")))
   (level :name "Stored notes"
     (block Notes.Store
       :type "Store"
       (implements Durable)
-      (port changed out Changed)
+      (port :out Changed)
       (sketch "Keeps the notes on disk, so they survive a restart."))
     (block Notes.Markdown
       (sketch "Turns markdown text into a document tree."))))

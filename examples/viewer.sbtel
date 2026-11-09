@@ -34,34 +34,34 @@
   ; declared here, where both can see it; lint notes it could live in App.Kit, its one implementer, since
   ; lint does not read the bindings that show Core.Layout calling through it.
   (behavior MeasuresText :type "JSDoc typedef"
-    (port run in TextRun)
-    (port size out TextSize)
+    (port :in TextRun :as run)
+    (port :out TextSize :as size)
     (sketch "Answers tw(text, font) with a width and wrap(text, font, width) with a line count."))
 
   (level
     (block Viewer.Boot
-      (port mode in ModeHandler)
+      (port :in ModeHandler :as mode)
       (sketch "Starts the page: loads fonts, then runs the registered handler for the current mode, or shows the sample.")))
   (level :name "Page modes"
     (block Viewer.Server
-      (port mode out ModeHandler)
-      (port events in SessionEvent)
-      (port spec in SpecText)
-      (port save out SpecText)
+      (port :out ModeHandler :as mode)
+      (port :in SessionEvent :as events)
+      (port :in SpecText :as spec)
+      (port :out SpecText :as save)
       ; Braided: loading, live updates, saving and the app hooks share one closure (S).
       ; It also reassigns app functions (setSource, edit, renderChecks, showChecks...).
       (sketch "Server mode: keeps the page in step with one sbtel session over HTTP and SSE."))
     (block Viewer.Diff
-      (port mode out ModeHandler)
-      (port events in SessionEvent)
-      (port diff in DiffPair)
+      (port :out ModeHandler :as mode)
+      (port :in SessionEvent :as events)
+      (port :in DiffPair :as diff)
       (message DiffPair (carries SpecText)
         (sketch "Both sides of a diff, as GET diff.json returns them."))
       ; It reassigns app functions (render, edit, fit, menuItems...) to make the app a read-only diff
       ; view, and wraps the measurer's tw and wrap so that cards have room for the change marks.
       (sketch "Diff mode: draws two versions of a spec as one picture with ghosts and a change list."))
     (block Viewer.Play
-      (port mode out ModeHandler)
+      (port :out ModeHandler :as mode)
       ; Reads #src, #example, ?embed, &theme and &focus (§6.9), and the spec, options and bindings an
       ; exported file bakes in (sbtel export, v0.2.5). In embed mode it reassigns app functions
       ; (openComposer, menuItems, renderStrip, fit, render; read-only, in either layout: edit, pressStart...),
@@ -70,7 +70,7 @@
       (sketch "The standalone page: the sample, a spec from the URL or one baked into an exported file, each with its own storage keys; read-only and embed mode for docs pages, fitted to what is drawn, with its natural size reported to the page; the home link.")))
   (level
     (block Viewer.Review
-      (port review out Review)
+      (port :out Review)
       (message Review (carries Comment SpecText)
         (sketch "One review POSTed to the sbtel server: a message, comments and, with edits, the proposed spec and its base."))
       ; Server and Diff each make one (sessionReview) and wire it into the app: it reassigns the
@@ -79,8 +79,8 @@
       (sketch "The draft review: pending comments, a message and the edits, kept in local storage and sent together; and a comparison in a new tab.")))
   (level
     (block Viewer.Session
-      (port send in CommentBatch)
-      (port comment out Comment)
+      (port :in CommentBatch :as send)
+      (port :out Comment)
       ; Server and Diff each wire it into the app (it reassigns openSend, commentCounts and openThread)
       ; and pass it the replies they receive. It also rebuilds the reviews from the log.
       (sketch "Comments in a session: posted to the server, kept with their threads and the agent's replies."))
@@ -108,7 +108,7 @@
         (adjacent
           (block App.Comments
             ; VIOLATION (viewer.edges.txt): comment actions call render() to redraw badges.
-            (port send out CommentBatch)
+            (port :out CommentBatch :as send)
             (sketch "Comment drafts and threads on blocks, lines and types; cooperates with the message table, which shows their counts."))
           (block App.Messages
             (sketch "The message-type table sheet; cooperates with comments, whose counts and composer it shows.")))
@@ -156,8 +156,8 @@
       (level
         (block Core.Layout
           (implements Pure)
-          (port measure out TextRun)
-          (port size in TextSize)
+          (port :out TextRun :as measure)
+          (port :in TextSize :as size)
           ; layout(model, opts, M) takes the measurer as a parameter and never names the page's M: it binds
           ; MeasuresText only (the abstraction rule), the core stays free of the DOM, and diff mode can lend
           ; it a wrapped measurer.

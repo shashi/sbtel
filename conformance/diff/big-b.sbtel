@@ -10,20 +10,20 @@
       (sketch "Sends how often each thing happens.")
       (level
         (block Area0.Mod0
-          (port in in Req)
+          (port :in Req :as in)
           (sketch "Routes rows from disk.")
           (level
             (block Area0.Mod0.Piece0
               (sketch "Draws input before it reaches storage."))
             (adjacent
               (block Area0.Mod0.Part2
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Stores requests to their handlers."))
               (block Area0.Mod0.Part3
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Checks input before it reaches storage, and logs it.")))
             (block Area0.Mod0.Part4
-              (port out out Row)
+              (port :out Row :as out)
               (sketch "Keeps the visible part of the list."))
             (block Area0.Mod0.Part5
               (sketch "Reads the visible part of the list.")))
@@ -35,33 +35,33 @@
                 (sketch "Reads how often each thing happens.")))
             (adjacent
               (block Area0.Mod0.Part8
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Checks every event to subscribers."))
               (block Area0.Mod0.Part9
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Draws failed deliveries for a human.")))))
         (block Area0.Mod1
-          (port in in Cmd)
+          (port :in Cmd :as in)
           (sketch "Routes the visible part of the list.")
           (level
             (adjacent
               (block Area0.Mod1.Part0
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Counts every event to subscribers."))
               (block Area0.Mod1.Part1
                 (sketch "Keeps rows from disk.")))
             (block Area0.Mod1.Part2
-              (port in in Evt)
-              (port out out Evt)
+              (port :in Evt :as in)
+              (port :out Evt :as out)
               (sketch "Draws requests to their handlers."))
             (adjacent
               (block Area0.Mod1.Part3
                 (sketch "Sends failed deliveries for a human."))
               (block Area0.Mod1.Part4
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Draws rows from disk.")))
             (block Area0.Mod1.Part5
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Routes requests to their handlers.")))
           (level
             (adjacent
@@ -72,78 +72,78 @@
             (block Area0.Mod1.Part8
               (sketch "Reads requests to their handlers."))
             (block Area0.Mod1.Part9
-              (port in in Ack)
-              (port out out Ack)
+              (port :in Ack :as in)
+              (port :out Ack :as out)
               (sketch "Keeps how often each thing happens."))
             (block New0
               (sketch "Added in this revision."))))
         (block Area0.Mod2
-          (port in in Req)
-          (port out out Req)
+          (port :in Req :as in)
+          (port :out Req :as out)
           (sketch "Stores the visible part of the list.")
           (level
             (adjacent
               (block Area0.Mod2.Part0
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Routes the latest state per key, and logs it."))
               (block Area0.Mod2.Part1
-                (port in in Row)
-                (port out out Cmd)
+                (port :in Row :as in)
+                (port :out Cmd :as out)
                 (sketch "Draws the visible part of the list.")))
             (block Area0.Mod2.Part2
               (sketch "Checks every event to subscribers."))
             (block Area0.Mod2.Part3
-              (port in in Row)
-              (port out out Ack)
+              (port :in Row :as in)
+              (port :out Ack :as out)
               (sketch "Keeps how often each thing happens."))
             (block Area0.Mod2.Part4
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Stores input before it reaches storage.")))
           (level
             (block Area0.Mod2.Part5
               (sketch "Keeps requests to their handlers."))
             (adjacent
               (block Area0.Mod2.Part6
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Draws rows from disk."))
               (block Area0.Mod2.Part7
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Reads the visible part of the list.")))
             (block Area0.Mod2.Part8
-              (port out out Row)
+              (port :out Row :as out)
               (sketch "Counts the latest state per key."))
             (block Area0.Mod2.Piece9
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Sends every event to subscribers.")))))
       (level
         (block Area0.Mod3
           (sketch "Draws every event to subscribers.")
           (level
             (block Area0.Mod3.Part0
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Keeps requests to their handlers."))
             (block Area0.Mod3.Part2
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Draws the latest state per key."))
             (adjacent
               (block Area0.Mod3.Part3
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Routes failed deliveries for a human."))
               (block Area0.Mod3.Part4
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Keeps how often each thing happens.")))
             (block Area0.Mod3.Part5
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Draws the latest state per key.")))
           (level
             (block Area0.Mod3.Part6
-              (port in in Ack)
-              (port out out Row)
+              (port :in Ack :as in)
+              (port :out Row :as out)
               (sketch "Reads how often each thing happens."))
             (block Area0.Mod3.Part7
               (sketch "Checks failed deliveries for a human, and logs it."))
             (block Area0.Mod3.Part8
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Reads rows from disk."))
             (block Area0.Mod3.Part9
               (sketch "Checks the latest state per key."))))
@@ -152,42 +152,42 @@
           (level
             (adjacent
               (block Area0.Mod4.Part0
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Checks rows from disk."))
               (block Area0.Mod4.Part1
                 (sketch "Stores the latest state per key.")))
             (block Area0.Mod4.Part2
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Keeps the visible part of the list."))
             (block Area0.Mod4.Part3
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Reads every event to subscribers."))
             (block Area0.Mod4.Part4
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Checks input before it reaches storage.")))
           (level
             (block Area0.Mod4.Part5
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Draws input before it reaches storage."))
             (block Area0.Mod4.Part6
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Counts requests to their handlers."))
             (adjacent
               (block Area0.Mod4.Part7
                 (sketch "Routes requests to their handlers."))
               (block Area0.Mod4.Part8
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Stores failed deliveries for a human.")))
             (block Area0.Mod4.Part9
-              (port in in Row)
-              (port out out Evt)
+              (port :in Row :as in)
+              (port :out Evt :as out)
               (sketch "Sends input before it reaches storage."))))))
     (block Area1
-      (port in in Cmd)
+      (port :in Cmd :as in)
       (sketch "Counts the latest state per key.")
       (level
         (block Area1.Mod0
-          (port in in Cmd)
+          (port :in Cmd :as in)
           (sketch "Draws requests to their handlers.")
           (level
             (adjacent
@@ -196,92 +196,92 @@
               (block Area1.Mod0.Part1
                 (sketch "Checks rows from disk.")))
             (block Area1.Mod0.Part2
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Reads rows from disk."))
             (block Area1.Mod0.Part3
               (sketch "Keeps the visible part of the list."))
             (block Area1.Mod0.Part4
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Checks every event to subscribers, and logs it.")))
           (level
             (adjacent
               (block Area1.Mod0.Part5
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Checks rows from disk."))
               (block Area1.Mod0.Part6
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Checks failed deliveries for a human.")))
             (adjacent
               (block Area1.Mod0.Part7
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Counts every event to subscribers."))
               (block Area1.Mod0.Piece8
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Stores input before it reaches storage.")))
             (block Area1.Mod0.Part9
               (sketch "Sends the latest state per key."))))
         (block Area1.Mod1
-          (port in in Ack)
-          (port out out Evt)
+          (port :in Ack :as in)
+          (port :out Evt :as out)
           (sketch "Draws how often each thing happens.")
           (level
             (block Area1.Mod1.Part0
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Draws the visible part of the list."))
             (adjacent
               (block Area1.Mod1.Part1
                 (sketch "Stores every event to subscribers."))
               (block Area1.Mod1.Part2
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Draws input before it reaches storage.")))
             (adjacent
               (block Area1.Mod1.Part3
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Reads failed deliveries for a human."))
               (block Area1.Mod1.Part4
-                (port in in Req)
-                (port out out Req)
+                (port :in Req :as in)
+                (port :out Req :as out)
                 (sketch "Sends input before it reaches storage.")))
             (block Area1.Mod1.Part5
               (sketch "Stores rows from disk.")))
           (level
             (block Area1.Mod1.Part6
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Sends failed deliveries for a human."))
             (block Area1.Mod1.Part7
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Keeps how often each thing happens."))
             (block Area1.Mod1.Part8
               (sketch "Stores the visible part of the list."))
             (block Area1.Mod1.Part9
-              (port in in Req)
-              (port out out Req)
+              (port :in Req :as in)
+              (port :out Req :as out)
               (sketch "Stores failed deliveries for a human."))
             (block New1
               (sketch "Added in this revision.")))))
       (level
         (block Area1.Mod3
-          (port out out Row)
+          (port :out Row :as out)
           (sketch "Counts the latest state per key.")
           (level
             (block Area1.Mod3.Part0
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Draws the latest state per key."))
             (block Area1.Mod3.Part1
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Counts failed deliveries for a human."))
             (block Area1.Mod3.Part2
               (sketch "Sends input before it reaches storage."))
             (block Area1.Mod3.Part3
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Stores the latest state per key."))
             (block Area1.Mod3.Part4
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Draws failed deliveries for a human.")))
           (level
             (block Area1.Mod3.Part5
-              (port in in Row)
-              (port out out Ack)
+              (port :in Row :as in)
+              (port :out Ack :as out)
               (sketch "Sends the visible part of the list."))
             (adjacent
               (block Area1.Mod3.Part6
@@ -291,12 +291,12 @@
             (block Area1.Mod3.Part8
               (sketch "Stores how often each thing happens, and logs it."))))
         (block Area1.Mod4
-          (port in in Cmd)
+          (port :in Cmd :as in)
           (sketch "Sends the latest state per key.")
           (level
             (block Area1.Mod4.Part0
-              (port in in Evt)
-              (port out out Evt)
+              (port :in Evt :as in)
+              (port :out Evt :as out)
               (sketch "Keeps input before it reaches storage."))
             (block Area1.Mod4.Part1
               (sketch "Sends failed deliveries for a human."))
@@ -304,94 +304,94 @@
               (sketch "Counts the latest state per key."))
             (adjacent
               (block Area1.Mod4.Part3
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Stores rows from disk."))
               (block Area1.Mod4.Part4
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Counts input before it reaches storage.")))
             (block Area1.Mod4.Part5
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Sends the visible part of the list.")))
           (level
             (block Area1.Mod4.Part6
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Stores input before it reaches storage."))
             (block Area1.Mod4.Part7
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Keeps how often each thing happens."))
             (block Area1.Mod4.Part8
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Sends the latest state per key."))
             (adjacent
               (block Area1.Mod4.Part9
-                (port in in Evt)
-                (port out out Evt)
+                (port :in Evt :as in)
+                (port :out Evt :as out)
                 (sketch "Routes the visible part of the list."))
               (block Area11.Mod1.Part1
-                (port in in Evt)
-                (port out out Row)
+                (port :in Evt :as in)
+                (port :out Row :as out)
                 (sketch "Draws input before it reaches storage.")))))))
     (block Area2
-      (port out out Req)
+      (port :out Req :as out)
       (sketch "Routes failed deliveries for a human.")
       (level
         (block Area2.Mod0
-          (port in in Req)
+          (port :in Req :as in)
           (sketch "Keeps the latest state per key.")
           (level
             (block Area2.Mod0.Part0
               (sketch "Draws the latest state per key."))
             (adjacent
               (block Area2.Mod0.Part2
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Reads input before it reaches storage."))
               (block Area2.Mod0.Part3
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Routes requests to their handlers.")))
             (block Area2.Mod0.Part4
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Draws failed deliveries for a human."))
             (block Area2.Mod0.Part5
               (sketch "Draws every event to subscribers, and logs it.")))
           (level
             (adjacent
               (block Area2.Mod0.Part6
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Checks failed deliveries for a human."))
               (block Area2.Mod0.Part7
-                (port in in Row)
-                (port out out Cmd)
+                (port :in Row :as in)
+                (port :out Cmd :as out)
                 (sketch "Counts every event to subscribers.")))
             (block Area2.Mod0.Part8
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Routes the visible part of the list."))
             (block Area2.Mod0.Part9
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Keeps requests to their handlers."))))
         (block Area2.Mod1
-          (port out out Ack)
+          (port :out Ack :as out)
           (sketch "Draws the latest state per key.")
           (level
             (block Area2.Mod1.Part0
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Sends input before it reaches storage."))
             (block Area2.Mod1.Part1
-              (port in in Evt)
-              (port out out Cmd)
+              (port :in Evt :as in)
+              (port :out Cmd :as out)
               (sketch "Checks how often each thing happens."))
             (block Area2.Mod1.Part2
               (sketch "Checks the visible part of the list."))
             (adjacent
               (block Area2.Mod1.Part3
-                (port in in Row)
-                (port out out Evt)
+                (port :in Row :as in)
+                (port :out Evt :as out)
                 (sketch "Reads requests to their handlers."))
               (block Area2.Mod1.Part4
-                (port in in Cmd)
-                (port out out Cmd)
+                (port :in Cmd :as in)
+                (port :out Cmd :as out)
                 (sketch "Keeps input before it reaches storage.")))
             (block Area2.Mod1.Part5
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Routes the visible part of the list.")))
           (level
             (block Area2.Mod1.Piece6
@@ -406,101 +406,101 @@
             (block New2
               (sketch "Added in this revision."))))
         (block Area2.Mod2
-          (port in in Ack)
+          (port :in Ack :as in)
           (sketch "Sends requests to their handlers.")
           (level
             (block Area2.Mod2.Part0
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Counts the visible part of the list."))
             (adjacent
               (block Area2.Mod2.Part1
                 (sketch "Counts requests to their handlers."))
               (block Area2.Mod2.Part2
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Draws input before it reaches storage, and logs it.")))
             (adjacent
               (block Area2.Mod2.Part3
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Routes failed deliveries for a human."))
               (block Area2.Mod2.Part4
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Stores the latest state per key."))))
           (level
             (adjacent
               (block Area2.Mod2.Part5
                 (sketch "Keeps rows from disk."))
               (block Area2.Mod2.Part6
-                (port out out Req)
+                (port :out Req :as out)
                 (sketch "Reads the visible part of the list.")))
             (adjacent
               (block Area2.Mod2.Part7
-                (port in in Ack)
-                (port out out Ack)
+                (port :in Ack :as in)
+                (port :out Ack :as out)
                 (sketch "Keeps requests to their handlers."))
               (block Area2.Mod2.Part8
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Keeps requests to their handlers.")))
             (block Area2.Mod2.Part9
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Counts input before it reaches storage.")))))
       (level
         (block Area2.Mod3
           (sketch "Draws failed deliveries for a human.")
           (level
             (block Area2.Mod3.Part0
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Reads requests to their handlers."))
             (block Area2.Mod3.Part1
               (sketch "Keeps how often each thing happens."))
             (block Area2.Mod3.Part2
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Draws every event to subscribers."))
             (block Area2.Mod3.Part3
-              (port in in Evt)
-              (port out out Row)
+              (port :in Evt :as in)
+              (port :out Row :as out)
               (sketch "Keeps the visible part of the list."))
             (block Area2.Mod3.Part4
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Keeps how often each thing happens.")))
           (level
             (block Area2.Mod3.Part5
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Sends input before it reaches storage."))
             (adjacent
               (block Area2.Mod3.Part6
-                (port in in Ack)
-                (port out out Evt)
+                (port :in Ack :as in)
+                (port :out Evt :as out)
                 (sketch "Reads requests to their handlers."))
               (block Area2.Mod3.Part7
-                (port out out Req)
+                (port :out Req :as out)
                 (sketch "Stores rows from disk.")))
             (adjacent
               (block Area2.Mod3.Part8
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Reads every event to subscribers."))
               (block Area2.Mod3.Part9
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Reads failed deliveries for a human, and logs it.")))))
         (block Area2.Mod4
-          (port in in Ack)
+          (port :in Ack :as in)
           (sketch "Sends the latest state per key.")
           (level
             (block Area2.Mod4.Part0
-              (port in in Ack)
-              (port out out Evt)
+              (port :in Ack :as in)
+              (port :out Evt :as out)
               (sketch "Sends the visible part of the list."))
             (adjacent
               (block Area2.Mod4.Part2
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Sends the latest state per key."))
               (block Area2.Mod4.Part3
                 (sketch "Draws rows from disk.")))
             (adjacent
               (block Area2.Mod4.Part4
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Draws rows from disk."))
               (block Area2.Mod4.Piece5
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Keeps every event to subscribers."))))
           (level
             (block Area2.Mod4.Part6
@@ -510,78 +510,78 @@
             (block Area2.Mod4.Part8
               (sketch "Checks the latest state per key."))
             (block Area2.Mod4.Part9
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Draws rows from disk."))))))
     (block Area3
       (sketch "Keeps rows from disk.")
       (level
         (block Area3.Mod0
-          (port in in Req)
+          (port :in Req :as in)
           (sketch "Keeps rows from disk.")
           (level
             (block Area3.Mod0.Part0
               (sketch "Checks the visible part of the list."))
             (block Area3.Mod0.Part1
-              (port in in Evt)
-              (port out out Evt)
+              (port :in Evt :as in)
+              (port :out Evt :as out)
               (sketch "Sends rows from disk."))
             (block Area3.Mod0.Part2
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Counts requests to their handlers."))
             (block Area3.Mod0.Part3
               (sketch "Stores rows from disk."))
             (block Area3.Mod0.Part4
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Stores requests to their handlers.")))
           (level
             (block Area3.Mod0.Part5
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Counts the latest state per key."))
             (block Area3.Mod0.Part6
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Draws the visible part of the list, and logs it."))
             (block Area3.Mod0.Part7
               (sketch "Draws how often each thing happens."))
             (block Area3.Mod0.Part8
-              (port out out Row)
+              (port :out Row :as out)
               (sketch "Stores every event to subscribers."))
             (block Area3.Mod0.Part9
-              (port in in Req)
-              (port out out Req)
+              (port :in Req :as in)
+              (port :out Req :as out)
               (sketch "Reads failed deliveries for a human."))))
         (block Area3.Mod1
-          (port in in Req)
-          (port out out Req)
+          (port :in Req :as in)
+          (port :out Req :as out)
           (sketch "Routes rows from disk.")
           (level
             (block Area3.Mod1.Part0
-              (port in in Evt)
-              (port out out Ack)
+              (port :in Evt :as in)
+              (port :out Ack :as out)
               (sketch "Draws the visible part of the list."))
             (adjacent
               (block Area3.Mod1.Part1
-                (port in in Ack)
-                (port out out Cmd)
+                (port :in Ack :as in)
+                (port :out Cmd :as out)
                 (sketch "Routes rows from disk."))
               (block Area3.Mod1.Part2
-                (port out out Evt)
+                (port :out Evt :as out)
                 (sketch "Routes input before it reaches storage.")))
             (block Area3.Mod1.Part3
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Stores rows from disk."))
             (block Area3.Mod1.Part4
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Sends every event to subscribers."))
             (block Area3.Mod1.Part5
-              (port in in Row)
-              (port out out Evt)
+              (port :in Row :as in)
+              (port :out Evt :as out)
               (sketch "Reads input before it reaches storage.")))
           (level
             (block Area3.Mod1.Part6
               (sketch "Stores rows from disk."))
             (adjacent
               (block Area3.Mod1.Part7
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Keeps failed deliveries for a human."))
               (block Area3.Mod1.Part8
                 (sketch "Counts the latest state per key.")))
@@ -592,78 +592,78 @@
             (block New3
               (sketch "Added in this revision."))))
         (block Area3.Mod2
-          (port in in Row)
+          (port :in Row :as in)
           (sketch "Keeps the visible part of the list.")
           (level
             (block Area3.Mod2.Part0
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Stores every event to subscribers."))
             (block Area3.Mod2.Part2
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Sends the latest state per key."))
             (block Area3.Mod2.Part3
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Counts the latest state per key, and logs it."))
             (block Area3.Mod2.Piece4
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Stores the latest state per key."))
             (block Area3.Mod2.Part5
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Counts failed deliveries for a human.")))
           (level
             (block Area3.Mod2.Part6
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Reads every event to subscribers."))
             (adjacent
               (block Area3.Mod2.Part7
-                (port in in Cmd)
-                (port out out Cmd)
+                (port :in Cmd :as in)
+                (port :out Cmd :as out)
                 (sketch "Draws input before it reaches storage."))
               (block Area3.Mod2.Part8
-                (port in in Ack)
-                (port out out Row)
+                (port :in Ack :as in)
+                (port :out Row :as out)
                 (sketch "Counts how often each thing happens.")))
             (block Area3.Mod2.Part9
               (sketch "Reads failed deliveries for a human.")))))
       (level
         (block Area3.Mod3
-          (port in in Row)
+          (port :in Row :as in)
           (sketch "Draws every event to subscribers.")
           (level
             (block Area3.Mod3.Part0
-              (port out out Ack)
+              (port :out Ack :as out)
               (sketch "Checks requests to their handlers."))
             (adjacent
               (block Area3.Mod3.Part1
-                (port in in Ack)
-                (port out out Ack)
+                (port :in Ack :as in)
+                (port :out Ack :as out)
                 (sketch "Draws requests to their handlers."))
               (block Area3.Mod3.Part2
                 (sketch "Sends requests to their handlers.")))
             (block Area3.Mod3.Part3
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Stores every event to subscribers."))
             (block Area3.Mod3.Part4
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Stores requests to their handlers.")))
           (level
             (block Area3.Mod3.Part5
-              (port out out Ack)
+              (port :out Ack :as out)
               (sketch "Reads input before it reaches storage."))
             (block Area3.Mod3.Part6
               (sketch "Reads the visible part of the list."))
             (block Area3.Mod3.Part7
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Keeps the visible part of the list."))
             (adjacent
               (block Area3.Mod3.Part8
-                (port in in Row)
-                (port out out Req)
+                (port :in Row :as in)
+                (port :out Req :as out)
                 (sketch "Draws failed deliveries for a human."))
               (block Area3.Mod3.Part9
                 (sketch "Reads the visible part of the list.")))))
         (block Area3.Mod4
-          (port out out Ack)
+          (port :out Ack :as out)
           (sketch "Keeps how often each thing happens.")
           (level
             (block Area3.Mod4.Part0
@@ -674,133 +674,133 @@
               (block Area3.Mod4.Part2
                 (sketch "Keeps the latest state per key.")))
             (block Area3.Mod4.Part3
-              (port in in Cmd)
-              (port out out Req)
+              (port :in Cmd :as in)
+              (port :out Req :as out)
               (sketch "Draws input before it reaches storage."))
             (block Area3.Mod4.Part4
               (sketch "Sends every event to subscribers.")))
           (level
             (block Area3.Mod4.Part5
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Routes every event to subscribers."))
             (block Area3.Mod4.Part6
               (sketch "Sends the latest state per key."))
             (block Area3.Mod4.Part7
-              (port in in Ack)
-              (port out out Row)
+              (port :in Ack :as in)
+              (port :out Row :as out)
               (sketch "Reads failed deliveries for a human."))
             (block Area3.Mod4.Part8
               (sketch "Routes failed deliveries for a human."))))
         (block Area1.Mod2
-          (port in in Ack)
+          (port :in Ack :as in)
           (sketch "Counts failed deliveries for a human.")
           (level
             (block Area1.Mod2.Part0
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Keeps input before it reaches storage."))
             (adjacent
               (block Area1.Mod2.Part2
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Routes the latest state per key."))
               (block Area1.Mod2.Part3
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Stores requests to their handlers.")))
             (adjacent
               (block Area1.Mod2.Part4
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Stores failed deliveries for a human."))
               (block Area1.Mod2.Part5
-                (port in in Evt)
-                (port out out Evt)
+                (port :in Evt :as in)
+                (port :out Evt :as out)
                 (sketch "Checks rows from disk."))))
           (level
             (adjacent
               (block Area1.Mod2.Part6
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Sends input before it reaches storage."))
               (block Area1.Mod2.Part7
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Counts requests to their handlers.")))
             (block Area1.Mod2.Part8
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Counts rows from disk."))
             (block Area1.Mod2.Part9
               (sketch "Stores rows from disk."))))))
     (block Area4
-      (port in in Row)
+      (port :in Row :as in)
       (sketch "Counts input before it reaches storage.")
       (level
         (block Area4.Mod0
           (sketch "Sends how often each thing happens.")
           (level
             (block Area4.Mod0.Part0
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Routes the visible part of the list."))
             (block Area4.Mod0.Part1
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Routes input before it reaches storage."))
             (block Area4.Mod0.Part2
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Counts requests to their handlers."))
             (adjacent
               (block Area4.Mod0.Piece3
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Keeps rows from disk."))
               (block Area4.Mod0.Part4
-                (port in in Evt)
-                (port out out Cmd)
+                (port :in Evt :as in)
+                (port :out Cmd :as out)
                 (sketch "Keeps the visible part of the list.")))
             (block Area4.Mod0.Part5
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Stores failed deliveries for a human.")))
           (level
             (block Area4.Mod0.Part6
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Keeps how often each thing happens."))
             (adjacent
               (block Area4.Mod0.Part7
                 (sketch "Stores requests to their handlers, and logs it."))
               (block Area4.Mod0.Part8
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Keeps failed deliveries for a human.")))
             (adjacent
               (block Area4.Mod0.Part9
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Sends rows from disk."))
               (block Area1.Mod2.Part1
                 (sketch "Counts how often each thing happens, and logs it.")))))
         (adjacent
           (block Area4.Mod1
-            (port in in Row)
+            (port :in Row :as in)
             (sketch "Draws rows from disk.")
             (level
               (block Area4.Mod1.Part0
-                (port extra in Cmd)
+                (port :in Cmd :as extra)
                 (sketch "Checks failed deliveries for a human."))
               (block Area4.Mod1.Part2
                 (sketch "Keeps how often each thing happens."))
               (block Area4.Mod1.Part3
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Checks the visible part of the list."))
               (block Area4.Mod1.Part4
-                (port in in Req)
-                (port out out Req)
+                (port :in Req :as in)
+                (port :out Req :as out)
                 (sketch "Routes every event to subscribers."))
               (block Area4.Mod1.Part5
-                (port in in Evt)
-                (port out out Cmd)
+                (port :in Evt :as in)
+                (port :out Cmd :as out)
                 (sketch "Routes how often each thing happens.")))
             (level
               (adjacent
                 (block Area4.Mod1.Part6
-                  (port out out Ack)
+                  (port :out Ack :as out)
                   (sketch "Reads failed deliveries for a human."))
                 (block Area4.Mod1.Part7
-                  (port in in Row)
+                  (port :in Row :as in)
                   (sketch "Draws every event to subscribers.")))
               (adjacent
                 (block Area4.Mod1.Part8
-                  (port out out Req)
+                  (port :out Req :as out)
                   (sketch "Sends input before it reaches storage."))
                 (block Area4.Mod1.Part9
                   (sketch "Counts the latest state per key.")))
@@ -811,16 +811,16 @@
             (level
               (adjacent
                 (block Area4.Mod2.Part0
-                  (port in in Cmd)
+                  (port :in Cmd :as in)
                   (sketch "Stores the visible part of the list."))
                 (block Area4.Mod2.Part1
-                  (port in in Cmd)
+                  (port :in Cmd :as in)
                   (sketch "Reads input before it reaches storage.")))
               (block Area4.Mod2.Part2
                 (sketch "Keeps rows from disk."))
               (block Area4.Mod2.Part3
-                (port in in Evt)
-                (port out out Row)
+                (port :in Evt :as in)
+                (port :out Row :as out)
                 (sketch "Routes every event to subscribers."))
               (block Area4.Mod2.Part4
                 (sketch "Stores failed deliveries for a human, and logs it.")))
@@ -829,28 +829,28 @@
                 (sketch "Reads how often each thing happens."))
               (adjacent
                 (block Area4.Mod2.Part6
-                  (port in in Evt)
-                  (port out out Evt)
+                  (port :in Evt :as in)
+                  (port :out Evt :as out)
                   (sketch "Keeps every event to subscribers."))
                 (block Area4.Mod2.Part7
-                  (port in in Row)
-                  (port out out Ack)
+                  (port :in Row :as in)
+                  (port :out Ack :as out)
                   (sketch "Checks how often each thing happens.")))
               (block Area4.Mod2.Part8
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Draws failed deliveries for a human."))
               (block Area4.Mod2.Part9
-                (port in in Cmd)
-                (port out out Evt)
+                (port :in Cmd :as in)
+                (port :out Evt :as out)
                 (sketch "Sends failed deliveries for a human."))))))
       (level
         (block Area4.Mod3
-          (port in in Row)
+          (port :in Row :as in)
           (sketch "Keeps input before it reaches storage.")
           (level
             (adjacent
               (block Area4.Mod3.Part0
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Stores rows from disk."))
               (block Area4.Mod3.Part1
                 (sketch "Draws requests to their handlers.")))
@@ -858,70 +858,70 @@
               (sketch "Reads requests to their handlers."))
             (adjacent
               (block Area4.Mod3.Part3
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Sends how often each thing happens."))
               (block Area4.Mod3.Part4
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Reads input before it reaches storage.")))
             (block Area4.Mod3.Part5
-              (port in in Row)
-              (port out out Row)
+              (port :in Row :as in)
+              (port :out Row :as out)
               (sketch "Routes how often each thing happens.")))
           (level
             (block Area4.Mod3.Part6
-              (port in in Req)
-              (port out out Ack)
+              (port :in Req :as in)
+              (port :out Ack :as out)
               (sketch "Checks every event to subscribers."))
             (block Area4.Mod3.Part7
               (sketch "Draws every event to subscribers."))
             (block Area4.Mod3.Part8
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Stores the latest state per key."))
             (block Area4.Mod3.Part9
               (sketch "Sends the visible part of the list."))
             (block Area2.Mod0.Part1
-              (port in in Cmd)
-              (port out out Cmd)
+              (port :in Cmd :as in)
+              (port :out Cmd :as out)
               (sketch "Draws rows from disk."))))
         (block Area4.Mod4
-          (port in in Evt)
+          (port :in Evt :as in)
           (sketch "Draws requests to their handlers.")
           (level
             (adjacent
               (block Area4.Mod4.Part0
-                (port in in Cmd)
-                (port out out Ack)
+                (port :in Cmd :as in)
+                (port :out Ack :as out)
                 (sketch "Stores the latest state per key."))
               (block Area4.Mod4.Part2
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Keeps input before it reaches storage.")))
             (adjacent
               (block Area4.Mod4.Part3
                 (sketch "Stores the latest state per key."))
               (block Area4.Mod4.Part4
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Sends rows from disk."))))
           (level
             (block Area4.Mod4.Part5
-              (port out out Ack)
+              (port :out Ack :as out)
               (sketch "Routes failed deliveries for a human."))
             (block Area4.Mod4.Part6
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Checks requests to their handlers."))
             (adjacent
               (block Area4.Mod4.Part7
-                (port in in Ack)
-                (port out out Cmd)
+                (port :in Ack :as in)
+                (port :out Cmd :as out)
                 (sketch "Draws the latest state per key."))
               (block Area4.Mod4.Part8
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Counts rows from disk.")))))))
     (block Area5
       (sketch "Counts every event to subscribers.")
       (level
         (block Area5.Mod0
-          (port in in Row)
-          (port out out Cmd)
+          (port :in Row :as in)
+          (port :out Cmd :as out)
           (sketch "Reads how often each thing happens.")
           (level
             (adjacent
@@ -930,7 +930,7 @@
               (block Area5.Mod0.Part1
                 (sketch "Routes input before it reaches storage.")))
             (block Area5.Mod0.Part2
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Stores the latest state per key."))
             (block Area5.Mod0.Part3
               (sketch "Counts requests to their handlers."))
@@ -941,215 +941,215 @@
               (sketch "Sends the latest state per key."))
             (adjacent
               (block Area5.Mod0.Part6
-                (port in in Cmd)
-                (port out out Ack)
+                (port :in Cmd :as in)
+                (port :out Ack :as out)
                 (sketch "Sends every event to subscribers."))
               (block Area5.Mod0.Part7
-                (port in in Row)
-                (port out out Row)
+                (port :in Row :as in)
+                (port :out Row :as out)
                 (sketch "Reads every event to subscribers.")))
             (adjacent
               (block Area5.Mod0.Part8
                 (sketch "Sends rows from disk, and logs it."))
               (block Area5.Mod0.Part9
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Draws every event to subscribers.")))))
         (block Area5.Mod1
-          (port in in Req)
-          (port out out Ack)
+          (port :in Req :as in)
+          (port :out Ack :as out)
           (sketch "Counts how often each thing happens.")
           (level
             (adjacent
               (block Area5.Mod1.Part0
-                (port in in Req)
-                (port out out Ack)
+                (port :in Req :as in)
+                (port :out Ack :as out)
                 (sketch "Keeps how often each thing happens."))
               (block Area5.Mod1.Piece1
                 (sketch "Reads the visible part of the list.")))
             (adjacent
               (block Area5.Mod1.Part2
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Draws the latest state per key."))
               (block Area5.Mod1.Part3
-                (port in in Ack)
-                (port out out Evt)
+                (port :in Ack :as in)
+                (port :out Evt :as out)
                 (sketch "Stores requests to their handlers.")))
             (block Area5.Mod1.Part4
-              (port in in Cmd)
-              (port out out Row)
+              (port :in Cmd :as in)
+              (port :out Row :as out)
               (sketch "Reads the visible part of the list."))
             (block Area5.Mod1.Part5
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Counts the latest state per key.")))
           (level
             (adjacent
               (block Area5.Mod1.Part6
-                (port in in Row)
-                (port out out Evt)
+                (port :in Row :as in)
+                (port :out Evt :as out)
                 (sketch "Reads failed deliveries for a human."))
               (block Area5.Mod1.Part7
                 (sketch "Counts failed deliveries for a human.")))
             (block Area5.Mod1.Part8
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Checks how often each thing happens."))
             (block Area5.Mod1.Part9
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Routes how often each thing happens."))
             (block New5
               (sketch "Added in this revision.")))))
       (level
         (adjacent
           (block Area5.Mod2
-            (port in in Ack)
-            (port out out Row)
+            (port :in Ack :as in)
+            (port :out Row :as out)
             (sketch "Counts failed deliveries for a human.")
             (level
               (adjacent
                 (block Area5.Mod2.Part0
-                  (port in in Req)
+                  (port :in Req :as in)
                   (sketch "Reads input before it reaches storage."))
                 (block Area5.Mod2.Part1
-                  (port in in Cmd)
-                  (port out out Req)
+                  (port :in Cmd :as in)
+                  (port :out Req :as out)
                   (sketch "Sends every event to subscribers.")))
               (adjacent
                 (block Area5.Mod2.Part2
                   (sketch "Counts input before it reaches storage."))
                 (block Area5.Mod2.Part3
-                  (port in in Cmd)
-                  (port out out Row)
+                  (port :in Cmd :as in)
+                  (port :out Row :as out)
                   (sketch "Sends failed deliveries for a human.")))
               (block Area5.Mod2.Part4
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Draws requests to their handlers."))
               (block Area5.Mod2.Part5
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Routes requests to their handlers, and logs it.")))
             (level
               (block Area5.Mod2.Part6
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Routes input before it reaches storage."))
               (block Area5.Mod2.Part7
                 (sketch "Stores every event to subscribers."))
               (block Area5.Mod2.Part8
                 (sketch "Counts failed deliveries for a human."))
               (block Area5.Mod2.Part9
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Checks rows from disk."))
               (block Area2.Mod4.Part1
                 (sketch "Stores rows from disk."))))
           (block Area5.Mod3
-            (port in in Evt)
+            (port :in Evt :as in)
             (sketch "Routes how often each thing happens.")
             (level
               (adjacent
                 (block Area5.Mod3.Part0
-                  (port in in Ack)
-                  (port out out Row)
+                  (port :in Ack :as in)
+                  (port :out Row :as out)
                   (sketch "Reads input before it reaches storage."))
                 (block Area5.Mod3.Part2
-                  (port in in Req)
+                  (port :in Req :as in)
                   (sketch "Routes requests to their handlers.")))
               (block Area5.Mod3.Part3
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Stores every event to subscribers."))
               (block Area5.Mod3.Part4
-                (port in in Row)
-                (port out out Cmd)
+                (port :in Row :as in)
+                (port :out Cmd :as out)
                 (sketch "Sends failed deliveries for a human."))
               (block Area5.Mod3.Part5
                 (sketch "Reads how often each thing happens.")))
             (level
               (block Area5.Mod3.Part6
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Routes every event to subscribers."))
               (block Area5.Mod3.Part7
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Stores how often each thing happens."))
               (block Area5.Mod3.Part8
-                (port out out Evt)
+                (port :out Evt :as out)
                 (sketch "Sends the visible part of the list."))
               (block Area5.Mod3.Part9
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Draws rows from disk.")))))))
     (block Area6
-      (port out out Row)
+      (port :out Row :as out)
       (sketch "Draws input before it reaches storage.")
       (level
         (adjacent
           (block Area6.Mod0
-            (port in in Cmd)
-            (port out out Cmd)
+            (port :in Cmd :as in)
+            (port :out Cmd :as out)
             (sketch "Routes the visible part of the list.")
             (level
               (block Area6.Mod0.Part0
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Stores failed deliveries for a human."))
               (adjacent
                 (block Area6.Mod0.Part1
-                  (port in in Ack)
-                  (port out out Cmd)
+                  (port :in Ack :as in)
+                  (port :out Cmd :as out)
                   (sketch "Checks input before it reaches storage."))
                 (block Area6.Mod0.Part2
-                  (port in in Ack)
+                  (port :in Ack :as in)
                   (sketch "Reads the latest state per key.")))
               (adjacent
                 (block Area6.Mod0.Part3
-                  (port out out Cmd)
+                  (port :out Cmd :as out)
                   (sketch "Checks the latest state per key."))
                 (block Area6.Mod0.Part4
-                  (port in in Cmd)
+                  (port :in Cmd :as in)
                   (sketch "Routes failed deliveries for a human.")))
               (block Area6.Mod0.Part5
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Reads how often each thing happens.")))
             (level
               (block Area6.Mod0.Part6
                 (sketch "Checks input before it reaches storage."))
               (block Area6.Mod0.Part7
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Sends requests to their handlers."))
               (adjacent
                 (block Area6.Mod0.Part8
-                  (port out out Cmd)
+                  (port :out Cmd :as out)
                   (sketch "Routes the visible part of the list."))
                 (block Area6.Mod0.Part9
                   (sketch "Reads the visible part of the list, and logs it.")))
               (block Area3.Mod2.Part1
                 (sketch "Draws the latest state per key."))))
           (block Area6.Mod1
-            (port in in Req)
+            (port :in Req :as in)
             (sketch "Keeps every event to subscribers.")
             (level
               (block Area6.Mod1.Part0
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Sends rows from disk."))
               (adjacent
                 (block Area6.Mod1.Part2
-                  (port in in Ack)
-                  (port out out Evt)
+                  (port :in Ack :as in)
+                  (port :out Evt :as out)
                   (sketch "Checks failed deliveries for a human."))
                 (block Area6.Mod1.Part3
-                  (port in in Evt)
+                  (port :in Evt :as in)
                   (sketch "Checks rows from disk.")))
               (block Area6.Mod1.Part4
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Stores the latest state per key."))
               (block Area6.Mod1.Part5
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Stores failed deliveries for a human.")))
             (level
               (adjacent
                 (block Area6.Mod1.Part6
-                  (port out out Evt)
+                  (port :out Evt :as out)
                   (sketch "Checks requests to their handlers."))
                 (block Area6.Mod1.Part7
-                  (port out out Evt)
+                  (port :out Evt :as out)
                   (sketch "Stores failed deliveries for a human.")))
               (adjacent
                 (block Area6.Mod1.Part8
-                  (port in in Ack)
-                  (port out out Evt)
+                  (port :in Ack :as in)
+                  (port :out Evt :as out)
                   (sketch "Counts requests to their handlers."))
                 (block Area6.Mod1.Piece9
                   (sketch "Draws how often each thing happens.")))
@@ -1160,117 +1160,117 @@
           (level
             (adjacent
               (block Area6.Mod2.Part0
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Keeps the latest state per key."))
               (block Area6.Mod2.Part1
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Checks rows from disk.")))
             (block Area6.Mod2.Part2
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Counts input before it reaches storage."))
             (adjacent
               (block Area6.Mod2.Part3
                 (sketch "Stores the latest state per key."))
               (block Area6.Mod2.Part4
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Counts how often each thing happens."))))
           (level
             (block Area6.Mod2.Part5
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Keeps input before it reaches storage."))
             (block Area6.Mod2.Part6
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Draws input before it reaches storage, and logs it."))
             (block Area6.Mod2.Part7
               (sketch "Counts input before it reaches storage."))
             (block Area6.Mod2.Part8
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Checks how often each thing happens."))
             (block Area6.Mod2.Part9
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Stores rows from disk.")))))
       (level
         (adjacent
           (block Area6.Mod3
-            (port in in Ack)
+            (port :in Ack :as in)
             (sketch "Draws every event to subscribers.")
             (level
               (block Area6.Mod3.Part0
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Keeps rows from disk."))
               (adjacent
                 (block Area6.Mod3.Part1
-                  (port in in Req)
-                  (port out out Cmd)
+                  (port :in Req :as in)
+                  (port :out Cmd :as out)
                   (sketch "Counts how often each thing happens."))
                 (block Area6.Mod3.Part2
-                  (port in in Evt)
-                  (port out out Evt)
+                  (port :in Evt :as in)
+                  (port :out Evt :as out)
                   (sketch "Keeps the visible part of the list.")))
               (block Area6.Mod3.Part3
-                (port extra in Cmd)
+                (port :in Cmd :as extra)
                 (sketch "Routes how often each thing happens."))
               (block Area6.Mod3.Part4
                 (sketch "Reads the visible part of the list.")))
             (level
               (block Area6.Mod3.Part5
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Routes the visible part of the list."))
               (block Area6.Mod3.Part6
-                (port in in Req)
-                (port out out Row)
+                (port :in Req :as in)
+                (port :out Row :as out)
                 (sketch "Keeps requests to their handlers."))
               (block Area6.Mod3.Part7
-                (port in in Ack)
-                (port out out Cmd)
+                (port :in Ack :as in)
+                (port :out Cmd :as out)
                 (sketch "Routes rows from disk."))
               (block Area6.Mod3.Part8
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Keeps how often each thing happens."))
               (block Area6.Mod3.Part9
                 (sketch "Sends failed deliveries for a human."))))
           (block Area6.Mod4
-            (port in in Row)
-            (port out out Req)
+            (port :in Row :as in)
+            (port :out Req :as out)
             (sketch "Routes failed deliveries for a human.")
             (level
               (adjacent
                 (block Area6.Mod4.Part0
-                  (port in in Req)
+                  (port :in Req :as in)
                   (sketch "Counts failed deliveries for a human."))
                 (block Area6.Mod4.Part1
-                  (port in in Cmd)
+                  (port :in Cmd :as in)
                   (sketch "Sends every event to subscribers.")))
               (block Area6.Mod4.Part2
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Draws rows from disk."))
               (block Area6.Mod4.Part3
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Draws every event to subscribers, and logs it."))
               (adjacent
                 (block Area6.Mod4.Part4
-                  (port in in Row)
-                  (port out out Ack)
+                  (port :in Row :as in)
+                  (port :out Ack :as out)
                   (sketch "Checks the latest state per key."))
                 (block Area6.Mod4.Part5
-                  (port in in Req)
+                  (port :in Req :as in)
                   (sketch "Keeps the visible part of the list."))))
             (level
               (block Area6.Mod4.Part6
-                (port out out Evt)
+                (port :out Evt :as out)
                 (sketch "Stores rows from disk."))
               (block Area6.Mod4.Part7
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Keeps the latest state per key."))
               (block Area6.Mod4.Piece8
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Counts failed deliveries for a human."))
               (block Area6.Mod4.Part9
-                (port in in Cmd)
-                (port out out Req)
+                (port :in Cmd :as in)
+                (port :out Req :as out)
                 (sketch "Keeps input before it reaches storage."))
               (block Area4.Mod1.Part1
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Reads the visible part of the list.")))))))
     (block Area7
       (sketch "Draws the latest state per key.")
@@ -1280,64 +1280,64 @@
             (sketch "Sends input before it reaches storage.")
             (level
               (block Area7.Mod0.Part0
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Keeps every event to subscribers."))
               (adjacent
                 (block Area7.Mod0.Part2
-                  (port in in Row)
-                  (port out out Cmd)
+                  (port :in Row :as in)
+                  (port :out Cmd :as out)
                   (sketch "Reads requests to their handlers."))
                 (block Area7.Mod0.Part3
                   (sketch "Reads failed deliveries for a human.")))
               (block Area7.Mod0.Part4
-                (port out out Evt)
+                (port :out Evt :as out)
                 (sketch "Routes requests to their handlers.")))
             (level
               (block Area7.Mod0.Part5
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Checks failed deliveries for a human."))
               (adjacent
                 (block Area7.Mod0.Part6
                   (sketch "Stores rows from disk."))
                 (block Area7.Mod0.Part7
-                  (port in in Cmd)
+                  (port :in Cmd :as in)
                   (sketch "Routes how often each thing happens.")))
               (block Area7.Mod0.Part8
                 (sketch "Sends every event to subscribers."))))
           (block Area7.Mod1
-            (port in in Ack)
-            (port out out Evt)
+            (port :in Ack :as in)
+            (port :out Evt :as out)
             (sketch "Routes input before it reaches storage.")
             (level
               (block Area7.Mod1.Part0
                 (sketch "Sends input before it reaches storage, and logs it."))
               (block Area7.Mod1.Part1
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Stores failed deliveries for a human."))
               (adjacent
                 (block Area7.Mod1.Part2
-                  (port out out Ack)
+                  (port :out Ack :as out)
                   (sketch "Checks every event to subscribers."))
                 (block Area7.Mod1.Part3
                   (sketch "Routes how often each thing happens.")))
               (block Area7.Mod1.Part4
                 (sketch "Draws every event to subscribers."))
               (block Area7.Mod1.Part5
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Counts how often each thing happens.")))
             (level
               (block Area7.Mod1.Part6
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Routes every event to subscribers."))
               (adjacent
                 (block Area7.Mod1.Part7
-                  (port in in Row)
-                  (port out out Row)
+                  (port :in Row :as in)
+                  (port :out Row :as out)
                   (sketch "Checks the visible part of the list."))
                 (block Area7.Mod1.Part8
                   (sketch "Sends failed deliveries for a human.")))
               (block Area7.Mod1.Part9
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Checks the visible part of the list."))
               (block New7
                 (sketch "Added in this revision.")))))
@@ -1346,124 +1346,124 @@
           (level
             (adjacent
               (block Area7.Mod2.Part0
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Draws failed deliveries for a human."))
               (block Area7.Mod2.Part1
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Stores failed deliveries for a human.")))
             (block Area7.Mod2.Part2
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Sends the visible part of the list."))
             (block Area7.Mod2.Part3
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Keeps the latest state per key."))
             (adjacent
               (block Area7.Mod2.Part4
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Checks every event to subscribers."))
               (block Area7.Mod2.Part5
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Checks rows from disk."))))
           (level
             (adjacent
               (block Area7.Mod2.Part6
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Counts every event to subscribers."))
               (block Area7.Mod2.Piece7
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Stores every event to subscribers, and logs it.")))
             (block Area7.Mod2.Part8
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Checks rows from disk."))
             (block Area7.Mod2.Part9
               (sketch "Draws input before it reaches storage."))
             (block Area4.Mod4.Part1
-              (port in in Cmd)
-              (port out out Row)
+              (port :in Cmd :as in)
+              (port :out Row :as out)
               (sketch "Sends input before it reaches storage, and logs it.")))))
       (level
         (block Area7.Mod3
-          (port in in Req)
+          (port :in Req :as in)
           (sketch "Keeps requests to their handlers.")
           (level
             (block Area7.Mod3.Part0
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Stores requests to their handlers."))
             (adjacent
               (block Area7.Mod3.Part2
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Checks rows from disk."))
               (block Area7.Mod3.Part3
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Reads the latest state per key.")))
             (adjacent
               (block Area7.Mod3.Part4
-                (port out out Req)
+                (port :out Req :as out)
                 (sketch "Routes failed deliveries for a human."))
               (block Area7.Mod3.Part5
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Routes rows from disk."))))
           (level
             (adjacent
               (block Area7.Mod3.Part6
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Draws how often each thing happens."))
               (block Area7.Mod3.Part7
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Draws how often each thing happens.")))
             (block Area7.Mod3.Part8
-              (port in in Cmd)
-              (port out out Evt)
+              (port :in Cmd :as in)
+              (port :out Evt :as out)
               (sketch "Keeps input before it reaches storage."))
             (block Area7.Mod3.Part9
-              (port in in Cmd)
-              (port out out Cmd)
+              (port :in Cmd :as in)
+              (port :out Cmd :as out)
               (sketch "Reads failed deliveries for a human."))))
         (block Area7.Mod4
           (sketch "Counts how often each thing happens.")
           (level
             (block Area7.Mod4.Part0
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Reads every event to subscribers."))
             (block Area7.Mod4.Part1
-              (port in in Ack)
-              (port out out Ack)
+              (port :in Ack :as in)
+              (port :out Ack :as out)
               (sketch "Draws requests to their handlers."))
             (adjacent
               (block Area7.Mod4.Part2
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Checks the latest state per key."))
               (block Area7.Mod4.Part3
-                (port out out Evt)
+                (port :out Evt :as out)
                 (sketch "Sends failed deliveries for a human.")))
             (block Area7.Mod4.Part4
-              (port in in Evt)
-              (port out out Evt)
+              (port :in Evt :as in)
+              (port :out Evt :as out)
               (sketch "Routes rows from disk, and logs it.")))
           (level
             (block Area7.Mod4.Part5
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Keeps requests to their handlers."))
             (block Area7.Mod4.Part6
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Keeps input before it reaches storage."))
             (block Area7.Mod4.Part7
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Sends requests to their handlers."))
             (block Area7.Mod4.Part8
-              (port in in Req)
-              (port out out Row)
+              (port :in Req :as in)
+              (port :out Row :as out)
               (sketch "Draws rows from disk."))
             (block Area7.Mod4.Part9
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Draws how often each thing happens."))))))
     (block Area8
-      (port in in Cmd)
-      (port out out Req)
+      (port :in Cmd :as in)
+      (port :out Req :as out)
       (sketch "Keeps failed deliveries for a human.")
       (level
         (block Area8.Mod0
-          (port out out Row)
+          (port :out Row :as out)
           (sketch "Reads how often each thing happens.")
           (level
             (adjacent
@@ -1472,68 +1472,68 @@
               (block Area8.Mod0.Part1
                 (sketch "Checks how often each thing happens.")))
             (block Area8.Mod0.Part2
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Routes the visible part of the list."))
             (adjacent
               (block Area8.Mod0.Part3
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Sends rows from disk."))
               (block Area8.Mod0.Part4
                 (sketch "Counts every event to subscribers."))))
           (level
             (block Area8.Mod0.Part5
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Sends the visible part of the list."))
             (block Area8.Mod0.Piece6
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Routes rows from disk."))
             (block Area8.Mod0.Part7
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Checks how often each thing happens."))
             (block Area8.Mod0.Part8
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Sends requests to their handlers."))
             (block Area8.Mod0.Part9
-              (port in in Req)
-              (port out out Req)
+              (port :in Req :as in)
+              (port :out Req :as out)
               (sketch "Reads how often each thing happens."))))
         (block Area8.Mod1
-          (port in in Req)
-          (port out out Row)
+          (port :in Req :as in)
+          (port :out Row :as out)
           (sketch "Sends failed deliveries for a human.")
           (level
             (block Area8.Mod1.Part0
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Routes how often each thing happens."))
             (adjacent
               (block Area8.Mod1.Part1
-                (port in in Row)
-                (port out out Row)
+                (port :in Row :as in)
+                (port :out Row :as out)
                 (sketch "Stores failed deliveries for a human, and logs it."))
               (block Area8.Mod1.Part2
                 (sketch "Sends how often each thing happens.")))
             (block Area8.Mod1.Part3
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Draws the visible part of the list."))
             (block Area8.Mod1.Part4
               (sketch "Stores requests to their handlers."))
             (block Area8.Mod1.Part5
-              (port extra in Cmd)
+              (port :in Cmd :as extra)
               (sketch "Stores rows from disk.")))
           (level
             (adjacent
               (block Area8.Mod1.Part6
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Stores every event to subscribers."))
               (block Area8.Mod1.Part7
                 (sketch "Draws failed deliveries for a human.")))
             (adjacent
               (block Area8.Mod1.Part8
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Keeps failed deliveries for a human."))
               (block Area8.Mod1.Part9
-                (port in in Evt)
-                (port out out Evt)
+                (port :in Evt :as in)
+                (port :out Evt :as out)
                 (sketch "Routes the visible part of the list.")))
             (block Area5.Mod3.Part1
               (sketch "Reads the latest state per key."))
@@ -1543,18 +1543,18 @@
           (sketch "Checks input before it reaches storage.")
           (level
             (block Area8.Mod2.Part0
-              (port in in Cmd)
-              (port out out Row)
+              (port :in Cmd :as in)
+              (port :out Row :as out)
               (sketch "Reads input before it reaches storage."))
             (block Area8.Mod2.Part2
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Draws failed deliveries for a human."))
             (adjacent
               (block Area8.Mod2.Part3
-                (port out out Evt)
+                (port :out Evt :as out)
                 (sketch "Counts the visible part of the list."))
               (block Area8.Mod2.Part4
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Checks rows from disk.")))
             (block Area8.Mod2.Part5
               (sketch "Stores how often each thing happens.")))
@@ -1565,53 +1565,53 @@
               (sketch "Counts every event to subscribers."))
             (adjacent
               (block Area8.Mod2.Part8
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Sends the visible part of the list, and logs it."))
               (block Area8.Mod2.Part9
                 (sketch "Counts the latest state per key."))))))
       (level
         (adjacent
           (block Area8.Mod3
-            (port in in Evt)
-            (port out out Evt)
+            (port :in Evt :as in)
+            (port :out Evt :as out)
             (sketch "Routes the visible part of the list.")
             (level
               (block Area8.Mod3.Part0
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Stores the visible part of the list."))
               (block Area8.Mod3.Part1
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Checks the visible part of the list."))
               (block Area8.Mod3.Part2
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Checks input before it reaches storage."))
               (block Area8.Mod3.Part3
-                (port in in Req)
-                (port out out Cmd)
+                (port :in Req :as in)
+                (port :out Cmd :as out)
                 (sketch "Stores every event to subscribers."))
               (block Area8.Mod3.Part4
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Checks the visible part of the list.")))
             (level
               (adjacent
                 (block Area8.Mod3.Piece5
-                  (port in in Ack)
-                  (port out out Req)
+                  (port :in Ack :as in)
+                  (port :out Req :as out)
                   (sketch "Counts the visible part of the list."))
                 (block Area8.Mod3.Part6
                   (sketch "Sends how often each thing happens.")))
               (block Area8.Mod3.Part7
-                (port in in Ack)
-                (port out out Cmd)
+                (port :in Ack :as in)
+                (port :out Cmd :as out)
                 (sketch "Keeps the visible part of the list."))
               (block Area8.Mod3.Part8
                 (sketch "Stores requests to their handlers."))
               (block Area8.Mod3.Part9
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Reads requests to their handlers."))))
           (block Area8.Mod4
-            (port in in Ack)
-            (port out out Cmd)
+            (port :in Ack :as in)
+            (port :out Cmd :as out)
             (sketch "Stores the latest state per key.")
             (level
               (block Area8.Mod4.Part0
@@ -1619,102 +1619,102 @@
               (block Area8.Mod4.Part1
                 (sketch "Keeps how often each thing happens."))
               (block Area8.Mod4.Part2
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Reads the latest state per key."))
               (block Area8.Mod4.Part3
                 (sketch "Sends failed deliveries for a human."))
               (block Area8.Mod4.Part4
                 (sketch "Draws every event to subscribers."))
               (block Area8.Mod4.Part5
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Keeps input before it reaches storage, and logs it.")))
             (level
               (block Area8.Mod4.Part6
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Sends the visible part of the list."))
               (block Area8.Mod4.Part7
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Checks failed deliveries for a human."))
               (block Area8.Mod4.Part8
-                (port in in Cmd)
-                (port out out Evt)
+                (port :in Cmd :as in)
+                (port :out Evt :as out)
                 (sketch "Routes how often each thing happens."))
               (block Area8.Mod4.Part9
                 (sketch "Sends how often each thing happens."))
               (block Area6.Mod1.Part1
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Checks the latest state per key.")))))))
     (block Area9
-      (port in in Evt)
+      (port :in Evt :as in)
       (sketch "Counts requests to their handlers.")
       (level
         (block Area9.Mod0
-          (port in in Row)
-          (port out out Row)
+          (port :in Row :as in)
+          (port :out Row :as out)
           (sketch "Stores requests to their handlers.")
           (level
             (block Area9.Mod0.Part0
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Draws rows from disk."))
             (block Area9.Mod0.Part1
               (sketch "Sends how often each thing happens."))
             (adjacent
               (block Area9.Mod0.Part2
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Counts rows from disk."))
               (block Area9.Mod0.Part3
-                (port in in Ack)
-                (port out out Cmd)
+                (port :in Ack :as in)
+                (port :out Cmd :as out)
                 (sketch "Keeps how often each thing happens.")))
             (block Area9.Mod0.Part4
-              (port out out Row)
+              (port :out Row :as out)
               (sketch "Checks requests to their handlers.")))
           (level
             (block Area9.Mod0.Part5
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Routes how often each thing happens."))
             (block Area9.Mod0.Part6
               (sketch "Stores requests to their handlers."))
             (block Area9.Mod0.Part7
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Sends failed deliveries for a human."))
             (block Area9.Mod0.Part8
-              (port in in Ack)
-              (port out out Ack)
+              (port :in Ack :as in)
+              (port :out Ack :as out)
               (sketch "Draws how often each thing happens."))
             (block Area9.Mod0.Part9
               (sketch "Draws input before it reaches storage."))))
         (block Area9.Mod1
-          (port in in Evt)
+          (port :in Evt :as in)
           (sketch "Reads input before it reaches storage.")
           (level
             (block Area9.Mod1.Part0
-              (port out out Row)
+              (port :out Row :as out)
               (sketch "Draws failed deliveries for a human."))
             (block Area9.Mod1.Part1
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Draws input before it reaches storage."))
             (block Area9.Mod1.Part2
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Sends every event to subscribers, and logs it."))
             (adjacent
               (block Area9.Mod1.Part3
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Keeps every event to subscribers."))
               (block Area9.Mod1.Piece4
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Counts failed deliveries for a human."))))
           (level
             (block Area9.Mod1.Part5
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Checks input before it reaches storage."))
             (block Area9.Mod1.Part6
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Reads input before it reaches storage."))
             (block Area9.Mod1.Part7
               (sketch "Stores every event to subscribers."))
             (block Area9.Mod1.Part8
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Keeps input before it reaches storage."))
             (block New9
               (sketch "Added in this revision."))))
@@ -1722,107 +1722,107 @@
           (sketch "Draws input before it reaches storage.")
           (level
             (block Area9.Mod2.Part0
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Routes rows from disk."))
             (adjacent
               (block Area9.Mod2.Part1
                 (sketch "Sends the latest state per key."))
               (block Area9.Mod2.Part2
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Routes how often each thing happens.")))
             (block Area9.Mod2.Part3
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Counts every event to subscribers."))
             (block Area9.Mod2.Part4
               (sketch "Stores rows from disk.")))
           (level
             (block Area9.Mod2.Part5
-              (port in in Row)
-              (port out out Row)
+              (port :in Row :as in)
+              (port :out Row :as out)
               (sketch "Reads failed deliveries for a human."))
             (block Area9.Mod2.Part6
-              (port in in Req)
+              (port :in Req :as in)
               (sketch "Counts the visible part of the list."))
             (block Area9.Mod2.Part7
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Checks input before it reaches storage."))
             (block Area9.Mod2.Part8
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Keeps requests to their handlers."))
             (block Area9.Mod2.Part9
               (sketch "Counts failed deliveries for a human, and logs it.")))))
       (level
         (block Area9.Mod3
-          (port out out Cmd)
+          (port :out Cmd :as out)
           (sketch "Stores the latest state per key.")
           (level
             (adjacent
               (block Area9.Mod3.Part0
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Sends how often each thing happens."))
               (block Area9.Mod3.Part1
                 (sketch "Checks input before it reaches storage.")))
             (block Area9.Mod3.Part2
               (sketch "Sends rows from disk."))
             (block Area9.Mod3.Part3
-              (port in in Req)
-              (port out out Ack)
+              (port :in Req :as in)
+              (port :out Ack :as out)
               (sketch "Routes every event to subscribers."))
             (block Area9.Mod3.Part4
               (sketch "Stores how often each thing happens."))
             (block Area9.Mod3.Part5
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Routes requests to their handlers.")))
           (level
             (block Area9.Mod3.Part6
-              (port in in Cmd)
+              (port :in Cmd :as in)
               (sketch "Stores requests to their handlers."))
             (block Area9.Mod3.Part7
-              (port in in Ack)
-              (port out out Evt)
+              (port :in Ack :as in)
+              (port :out Evt :as out)
               (sketch "Draws rows from disk."))
             (adjacent
               (block Area9.Mod3.Part8
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Sends every event to subscribers."))
               (block Area9.Mod3.Part9
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Stores the visible part of the list.")))
             (block Area7.Mod0.Part1
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Routes failed deliveries for a human."))))
         (block Area9.Mod4
           (sketch "Reads requests to their handlers.")
           (level
             (adjacent
               (block Area9.Mod4.Part0
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Checks failed deliveries for a human."))
               (block Area9.Mod4.Part2
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Reads rows from disk.")))
             (adjacent
               (block Area9.Mod4.Piece3
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Keeps requests to their handlers."))
               (block Area9.Mod4.Part4
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Routes the visible part of the list.")))
             (block Area9.Mod4.Part5
               (sketch "Checks every event to subscribers.")))
           (level
             (adjacent
               (block Area9.Mod4.Part6
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Counts the visible part of the list, and logs it."))
               (block Area9.Mod4.Part7
                 (sketch "Reads input before it reaches storage.")))
             (block Area9.Mod4.Part8
-              (port in in Cmd)
-              (port out out Cmd)
+              (port :in Cmd :as in)
+              (port :out Cmd :as out)
               (sketch "Stores the visible part of the list."))
             (block Area9.Mod4.Part9
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Keeps the visible part of the list."))))))
     (block Area10
       (sketch "Draws rows from disk.")
@@ -1831,47 +1831,47 @@
           (sketch "Reads failed deliveries for a human.")
           (level
             (block Area10.Mod0.Part0
-              (port in in Row)
-              (port out out Req)
+              (port :in Row :as in)
+              (port :out Req :as out)
               (sketch "Routes failed deliveries for a human."))
             (adjacent
               (block Area10.Mod0.Part1
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Counts rows from disk."))
               (block Area10.Mod0.Part2
                 (sketch "Checks how often each thing happens.")))
             (block Area10.Mod0.Part3
-              (port out out Evt)
+              (port :out Evt :as out)
               (sketch "Draws the visible part of the list."))
             (block Area10.Mod0.Part4
               (sketch "Checks how often each thing happens.")))
           (level
             (block Area10.Mod0.Part5
-              (port in in Ack)
-              (port out out Evt)
+              (port :in Ack :as in)
+              (port :out Evt :as out)
               (sketch "Checks rows from disk."))
             (adjacent
               (block Area10.Mod0.Part6
-                (port in in Req)
-                (port out out Cmd)
+                (port :in Req :as in)
+                (port :out Cmd :as out)
                 (sketch "Routes the latest state per key."))
               (block Area10.Mod0.Part7
-                (port in in Ack)
-                (port out out Req)
+                (port :in Ack :as in)
+                (port :out Req :as out)
                 (sketch "Counts the latest state per key.")))
             (block Area10.Mod0.Part8
-              (port out out Cmd)
+              (port :out Cmd :as out)
               (sketch "Routes failed deliveries for a human."))
             (block Area10.Mod0.Part9
               (sketch "Stores the visible part of the list."))))
         (adjacent
           (block Area10.Mod1
-            (port in in Cmd)
+            (port :in Cmd :as in)
             (sketch "Sends how often each thing happens.")
             (level
               (block Area10.Mod1.Part0
-                (port in in Row)
-                (port out out Cmd)
+                (port :in Row :as in)
+                (port :out Cmd :as out)
                 (sketch "Routes input before it reaches storage."))
               (adjacent
                 (block Area10.Mod1.Part1
@@ -1879,17 +1879,17 @@
                 (block Area10.Mod1.Part2
                   (sketch "Counts the latest state per key.")))
               (block Area10.Mod1.Part3
-                (port out out Evt)
+                (port :out Evt :as out)
                 (sketch "Keeps input before it reaches storage."))
               (block Area10.Mod1.Part4
-                (port in in Row)
-                (port out out Req)
+                (port :in Row :as in)
+                (port :out Req :as out)
                 (sketch "Sends rows from disk."))
               (block Area10.Mod1.Part5
                 (sketch "Reads the visible part of the list.")))
             (level
               (block Area10.Mod1.Part6
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Routes rows from disk."))
               (adjacent
                 (block Area10.Mod1.Part7
@@ -1898,93 +1898,93 @@
                   (sketch "Sends failed deliveries for a human.")))
               (adjacent
                 (block Area10.Mod1.Part9
-                  (port in in Req)
+                  (port :in Req :as in)
                   (sketch "Reads input before it reaches storage."))
                 (block Area7.Mod3.Part1
                   (sketch "Draws the visible part of the list.")))))
           (block Area10.Mod2
-            (port in in Cmd)
+            (port :in Cmd :as in)
             (sketch "Reads failed deliveries for a human.")
             (level
               (block Area10.Mod2.Part0
-                (port in in Req)
+                (port :in Req :as in)
                 (sketch "Stores every event to subscribers."))
               (block Area10.Mod2.Part1
-                (port in in Ack)
+                (port :in Ack :as in)
                 (sketch "Reads how often each thing happens."))
               (block Area10.Mod2.Piece2
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Routes every event to subscribers."))
               (adjacent
                 (block Area10.Mod2.Part3
                   (sketch "Keeps requests to their handlers."))
                 (block Area10.Mod2.Part4
-                  (port in in Req)
+                  (port :in Req :as in)
                   (sketch "Reads rows from disk."))))
             (level
               (block Area10.Mod2.Part5
                 (sketch "Draws how often each thing happens."))
               (block Area10.Mod2.Part6
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Reads requests to their handlers."))
               (block Area10.Mod2.Part7
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Routes the latest state per key."))
               (adjacent
                 (block Area10.Mod2.Part8
                   (sketch "Keeps rows from disk."))
                 (block Area10.Mod2.Part9
-                  (port in in Ack)
-                  (port out out Ack)
+                  (port :in Ack :as in)
+                  (port :out Ack :as out)
                   (sketch "Reads the visible part of the list.")))))))
       (level
         (block Area10.Mod3
-          (port in in Row)
-          (port out out Ack)
+          (port :in Row :as in)
+          (port :out Ack :as out)
           (sketch "Keeps rows from disk.")
           (level
             (block Area10.Mod3.Part0
-              (port in in Cmd)
-              (port out out Cmd)
+              (port :in Cmd :as in)
+              (port :out Cmd :as out)
               (sketch "Counts the visible part of the list."))
             (block Area10.Mod3.Part1
-              (port in in Evt)
-              (port out out Ack)
+              (port :in Evt :as in)
+              (port :out Ack :as out)
               (sketch "Checks input before it reaches storage."))
             (block Area10.Mod3.Part2
               (sketch "Keeps every event to subscribers."))
             (adjacent
               (block Area10.Mod3.Part3
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Draws how often each thing happens."))
               (block Area10.Mod3.Part4
                 (sketch "Routes rows from disk."))))
           (level
             (block Area10.Mod3.Part5
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Routes the latest state per key."))
             (block Area10.Mod3.Part6
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Stores input before it reaches storage."))
             (block Area10.Mod3.Part7
-              (port in in Ack)
+              (port :in Ack :as in)
               (sketch "Reads the latest state per key."))
             (block Area10.Mod3.Part8
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Draws input before it reaches storage."))
             (block Area10.Mod3.Part9
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Routes requests to their handlers."))))
         (block Area10.Mod4
           (sketch "Routes rows from disk.")
           (level
             (block Area10.Mod4.Part0
-              (port in in Evt)
-              (port out out Ack)
+              (port :in Evt :as in)
+              (port :out Ack :as out)
               (sketch "Draws rows from disk."))
             (block Area10.Mod4.Part1
-              (port in in Ack)
-              (port out out Req)
+              (port :in Ack :as in)
+              (port :out Req :as out)
               (sketch "Reads input before it reaches storage."))
             (block Area10.Mod4.Part2
               (sketch "Keeps the visible part of the list."))
@@ -1992,39 +1992,39 @@
               (block Area10.Mod4.Part3
                 (sketch "Checks the visible part of the list."))
               (block Area10.Mod4.Part4
-                (port out out Evt)
+                (port :out Evt :as out)
                 (sketch "Stores requests to their handlers."))))
           (level
             (block Area10.Mod4.Part5
               (sketch "Reads how often each thing happens."))
             (block Area10.Mod4.Part6
-              (port in in Evt)
+              (port :in Evt :as in)
               (sketch "Checks requests to their handlers."))
             (adjacent
               (block Area10.Mod4.Part7
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Draws failed deliveries for a human."))
               (block Area10.Mod4.Part8
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Draws failed deliveries for a human.")))
             (block Area10.Mod4.Part9
               (sketch "Draws requests to their handlers."))))))
     (block Area11
-      (port in in Row)
-      (port out out Ack)
+      (port :in Row :as in)
+      (port :out Ack :as out)
       (sketch "Routes the visible part of the list.")
       (level
         (adjacent
           (block Area11.Mod0
-            (port in in Evt)
-            (port out out Cmd)
+            (port :in Evt :as in)
+            (port :out Cmd :as out)
             (sketch "Reads every event to subscribers.")
             (level
               (block Area11.Mod0.Part0
-                (port out out Req)
+                (port :out Req :as out)
                 (sketch "Draws requests to their handlers."))
               (block Area11.Mod0.Piece1
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Checks failed deliveries for a human."))
               (block Area11.Mod0.Part2
                 (sketch "Draws how often each thing happens."))
@@ -2036,55 +2036,55 @@
                 (sketch "Draws requests to their handlers.")))
             (level
               (block Area11.Mod0.Part6
-                (port out out Ack)
+                (port :out Ack :as out)
                 (sketch "Counts requests to their handlers."))
               (block Area11.Mod0.Part7
-                (port out out Req)
+                (port :out Req :as out)
                 (sketch "Reads the latest state per key."))
               (block Area11.Mod0.Part8
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Routes the latest state per key."))
               (block Area11.Mod0.Part9
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Sends the latest state per key."))
               (block Area8.Mod2.Part1
                 (sketch "Checks every event to subscribers."))))
           (block Area11.Mod1
-            (port out out Row)
+            (port :out Row :as out)
             (sketch "Draws the latest state per key.")
             (level
               (block Area11.Mod1.Part0
                 (sketch "Counts requests to their handlers."))
               (block Area11.Mod1.Part2
-                (port in in Evt)
+                (port :in Evt :as in)
                 (sketch "Keeps rows from disk."))
               (block Area11.Mod1.Part3
-                (port out out Req)
+                (port :out Req :as out)
                 (sketch "Keeps failed deliveries for a human."))
               (block Area11.Mod1.Part4
-                (port in in Row)
-                (port out out Row)
+                (port :in Row :as in)
+                (port :out Row :as out)
                 (sketch "Counts the latest state per key."))
               (block Area11.Mod1.Part5
-                (port out out Row)
+                (port :out Row :as out)
                 (sketch "Stores input before it reaches storage.")))
             (level
               (block Area11.Mod1.Part6
-                (port in in Cmd)
-                (port out out Row)
+                (port :in Cmd :as in)
+                (port :out Row :as out)
                 (sketch "Draws the visible part of the list."))
               (block Area11.Mod1.Part7
-                (port in in Cmd)
+                (port :in Cmd :as in)
                 (sketch "Counts input before it reaches storage."))
               (adjacent
                 (block Area11.Mod1.Part8
-                  (port in in Ack)
+                  (port :in Ack :as in)
                   (sketch "Reads how often each thing happens."))
                 (block Area11.Mod1.Part9
-                  (port in in Row)
+                  (port :in Row :as in)
                   (sketch "Routes the latest state per key."))))))
         (block Area11.Mod2
-          (port out out Row)
+          (port :out Row :as out)
           (sketch "Routes how often each thing happens.")
           (level
             (block Area11.Mod2.Part0
@@ -2095,23 +2095,23 @@
               (block Area11.Mod2.Part2
                 (sketch "Counts every event to subscribers.")))
             (block Area11.Mod2.Part3
-              (port in in Row)
+              (port :in Row :as in)
               (sketch "Stores the latest state per key."))
             (block Area11.Mod2.Part4
-              (port out out Ack)
+              (port :out Ack :as out)
               (sketch "Checks rows from disk.")))
           (level
             (adjacent
               (block Area11.Mod2.Part5
-                (port in in Row)
-                (port out out Evt)
+                (port :in Row :as in)
+                (port :out Evt :as out)
                 (sketch "Reads rows from disk."))
               (block Area11.Mod2.Part6
-                (port in in Ack)
-                (port out out Ack)
+                (port :in Ack :as in)
+                (port :out Ack :as out)
                 (sketch "Reads rows from disk.")))
             (block Area11.Mod2.Part7
-              (port out out Req)
+              (port :out Req :as out)
               (sketch "Draws every event to subscribers."))
             (block Area11.Mod2.Part8
               (sketch "Routes the visible part of the list.")))))
@@ -2123,23 +2123,23 @@
               (block Area11.Mod3.Part0
                 (sketch "Counts how often each thing happens."))
               (block Area11.Mod3.Part1
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Stores input before it reaches storage."))
               (adjacent
                 (block Area11.Mod3.Part2
                   (sketch "Sends requests to their handlers."))
                 (block Area11.Mod3.Part3
-                  (port out out Row)
+                  (port :out Row :as out)
                   (sketch "Draws rows from disk.")))
               (block Area11.Mod3.Part4
                 (sketch "Keeps the visible part of the list.")))
             (level
               (block Area11.Mod3.Part5
-                (port in in Ack)
-                (port out out Ack)
+                (port :in Ack :as in)
+                (port :out Ack :as out)
                 (sketch "Routes the latest state per key."))
               (block Area11.Mod3.Part6
-                (port out out Cmd)
+                (port :out Cmd :as out)
                 (sketch "Keeps how often each thing happens."))
               (block Area11.Mod3.Part7
                 (sketch "Counts how often each thing happens."))
@@ -2147,45 +2147,45 @@
                 (block Area11.Mod3.Part8
                   (sketch "Reads every event to subscribers."))
                 (block Area11.Mod3.Part9
-                  (port in in Req)
+                  (port :in Req :as in)
                   (sketch "Keeps the latest state per key.")))))
           (block Area11.Mod4
-            (port in in Req)
+            (port :in Req :as in)
             (sketch "Keeps rows from disk.")
             (level
               (adjacent
                 (block Area11.Mod4.Part0
                   (sketch "Keeps the visible part of the list."))
                 (block Area11.Mod4.Part1
-                  (port in in Evt)
-                  (port out out Evt)
+                  (port :in Evt :as in)
+                  (port :out Evt :as out)
                   (sketch "Reads the latest state per key.")))
               (adjacent
                 (block Area11.Mod4.Part2
-                  (port in in Cmd)
+                  (port :in Cmd :as in)
                   (sketch "Draws the visible part of the list."))
                 (block Area11.Mod4.Part3
-                  (port in in Evt)
-                  (port out out Ack)
+                  (port :in Evt :as in)
+                  (port :out Ack :as out)
                   (sketch "Checks failed deliveries for a human.")))
               (block Area11.Mod4.Part4
-                (port in in Row)
+                (port :in Row :as in)
                 (sketch "Reads requests to their handlers.")))
             (level
               (block Area11.Mod4.Part5
-                (port in in Cmd)
-                (port out out Cmd)
+                (port :in Cmd :as in)
+                (port :out Cmd :as out)
                 (sketch "Reads failed deliveries for a human."))
               (adjacent
                 (block Area11.Mod4.Part6
                   (sketch "Keeps how often each thing happens."))
                 (block Area11.Mod4.Part7
-                  (port in in Row)
+                  (port :in Row :as in)
                   (sketch "Counts how often each thing happens.")))
               (adjacent
                 (block Area11.Mod4.Part8
                   (sketch "Draws the visible part of the list."))
                 (block Area11.Mod4.Part9
-                  (port in in Ack)
-                  (port out out Row)
+                  (port :in Ack :as in)
+                  (port :out Row :as out)
                   (sketch "Checks how often each thing happens."))))))))))

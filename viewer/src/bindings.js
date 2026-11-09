@@ -16,19 +16,20 @@ function bindingsView(get) {
 .sb-viol .why.none { color:var(--warn); }`;
   const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
   // One more check in the pill, its violations in the popover. A violation explained in the bindings file
-  // (a `# VIOLATION: reason` comment directly above the edge, parseBindings' `note`) is still a violation,
-  // and the popover shows the reason beside it.
+  // (a `# VIOLATION: reason` comment directly above the edge, parseBindings' `note`) is listed with its
+  // reason but does not fail the check (v0.2.6): the check's failures (f) are the unexplained violations
+  // and the invalid lines, and `explained` counts the rest, which the pill shows in a neutral style.
   const bindCheck = () => {
     const B = get();
     if (!B || !B.edges || !state.model) return null;
     const f = [], viol = [];
     B.edges.forEach(e => {
       const v = bindingVerdict(state.model, e.caller, e.callee);
-      if (!v.ok) { f.push(`${e.caller} -> ${e.callee}: ${v.text || v.rule}${e.location ? ' (' + e.location + ')' : ''}`); viol.push({ e, v }); }
+      if (!v.ok) { if (!e.note) f.push(`${e.caller} -> ${e.callee}: ${v.text || v.rule}${e.location ? ' (' + e.location + ')' : ''}`); viol.push({ e, v }); }
     });
     (B.invalid || []).forEach(x => f.push(`line ${x.line}: not an edge: ${x.text.trim()}`));
     const why = viol.filter(x => x.e.note).length, n = B.edges.length;
-    return { label: `Code bindings respect the levels (${n} edge${n === 1 ? '' : 's'}${viol.length ? ', ' + why + ' of ' + viol.length + ' violation' + (viol.length === 1 ? '' : 's') + ' explained' : ''})`, f, viol };
+    return { label: `Code bindings respect the levels (${n} edge${n === 1 ? '' : 's'}${viol.length ? ', ' + why + ' of ' + viol.length + ' violation' + (viol.length === 1 ? '' : 's') + ' explained' : ''})`, f, viol, explained: why };
   };
   // Hovering a behavior also outlines the blocks whose code binds it ("uses"): edges whose callee names
   // the behavior (core.js bindingTarget, the rule check applies), from a block of the spec.
@@ -45,8 +46,8 @@ function bindingsView(get) {
     origRender();
     const bc = bindCheck(); if (!bc) return;
     const all = [...state.lay.checks, ...state.lay.spec, bc], bad = all.filter(c => c.f.length).length;
-    const b = $('chkBtn'); b.className = 'tb chkpill ' + (bad ? 'bad' : 'ok');
-    b.innerHTML = pillHTML(all);
+    const b = $('chkBtn'); b.className = 'tb chkpill ' + (bad ? 'bad' : bc.explained ? 'expl' : 'ok');
+    b.innerHTML = pillHTML(all, bc.explained);
   };
   const origShow = showChecks;
   showChecks = () => {

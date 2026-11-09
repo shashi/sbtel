@@ -91,7 +91,7 @@ window.__accept = async function () {
   await step('descendantBounceCollapsed', async () => {
     // A collapsed block whose only dependency is in a descendant.
     const s2 = original.replace('(block Shell.Sidebar\n        (implements Surface)\n        (sketch "Recent sessions and the project switcher.")))',
-      '(block Shell.Sidebar\n        (sketch "Recent sessions and the project switcher.")\n        (level\n          (block Shell.Sidebar.Foo (implements Durable) (port events in SessionEvent)))))');
+      '(block Shell.Sidebar\n        (sketch "Recent sessions and the project switcher.")\n        (level\n          (block Shell.Sidebar.Foo (implements Durable) (port :in SessionEvent :as events)))))');
     if (s2 === original) return 'fail: fixture';
     setSource(s2); state.open.delete('Shell.Sidebar'); render(); await wait(200);
     if (blk('Shell.Sidebar').classList.contains('frame')) return 'fail: not collapsed';

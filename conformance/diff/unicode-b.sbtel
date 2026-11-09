@@ -2,13 +2,13 @@
 (block Système
   (message Kaffee (sketch "Une tasse."))
   (message 消息 (sketch "一条消息。"))
-  (behavior Ünïcode (port x in 消息) (sketch "Parle toutes les langues."))
+  (behavior Ünïcode (port :in 消息 :as x) (sketch "Parle toutes les langues."))
   (level
     (block 服务器二
       (implements Ünïcode)
-      (port 入口 in 消息)
+      (port :in 消息 :as 入口)
       (sketch "处理所有请求。"))
     (block Ñandú
-      (port café out Kaffee)
+      (port :out Kaffee :as café)
       (sketch "Corre muy rápido por la pampa."))
     (block 🛰Orbit (sketch "Ships the build to orbit."))))

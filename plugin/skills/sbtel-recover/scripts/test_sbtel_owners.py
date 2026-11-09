@@ -24,8 +24,8 @@ SPEC = '''
 (block App
   (message Req (sketch "A request."))
   (message Reply)
-  (behavior Logs (port log out Req))
-  (level (block App.Ui (port submit out Req) (port done in Reply)) (block App.Api (implements Logs) (port req in Req)))
+  (behavior Logs (port :out Req :as log))
+  (level (block App.Ui (port :out Req :as submit) (port :in Reply :as done)) (block App.Api (implements Logs) (port :in Req)))
   (level (block App.Store)))
 '''
 
@@ -59,7 +59,7 @@ class SpecReading(unittest.TestCase):
 
     def test_tilde_sketches(self):
         # (~ ~) sketches hide everything inside, quotes, parens and ~) included (more tildes on both ends).
-        sp = so.read_spec('(block A (~~ (block Fake) "q ; ~) x ~~) (level :name "L" (~~ a ~) (block Nope ~~) (block B (port p in M (~ (port q in M) ~)))))')
+        sp = so.read_spec('(block A (~~ (block Fake) "q ; ~) x ~~) (level :name "L" (~~ a ~) (block Nope ~~) (block B (port :in M :as p (~ (port :in M :as q) ~)))))')
         self.assertEqual(sp.blocks, {'A', 'B'})
         self.assertEqual(sp.ports['B'], {'p'})
 
@@ -129,6 +129,13 @@ class Anchors(unittest.TestCase):
             'const Reply = {};\n')})
         self.assertEqual((code, err), (0, ''))
         self.assertEqual(ranges(out), [('m.js', '1', '6', 'App.Ui')])
+
+    def test_port_names_v03(self):
+        # sbtel 0.3: (port :in Type [:as name]); the name defaults to the type's, first letter lowercased.
+        self.assertEqual([so.default_port_name(k) for k in ('NoteSaved', 'URL', 'shell.Intent', 'pkg::Item', 'List<Item>', 'T')],
+                         ['noteSaved', 'uRL', 'intent', 'item', 'list', 't'])
+        sp = so.read_spec('(message Item) (block A (port :in Item) (port :out Item :as feed (~ x ~)) (port old in Item))')
+        self.assertEqual(sp.ports['A'], {'item', 'feed', 'old'})
 
     def test_port_anchor_owns_no_code(self):
         code, out, err = run_owners({'p.js': (
@@ -262,7 +269,7 @@ class Edges(unittest.TestCase):
 # calls only through the interface, and a composition root that builds the implementer and hands it over.
 INV_SPEC = '''
 (message Line)
-(behavior Durable :type "interface" (port save in Line))
+(behavior Durable :type "interface" (port :in Line :as save))
 (behavior Journaled :type "interface" (implements Durable))
 (behavior Tools (sketch "A behavior with a block's name."))
 (block Inv
@@ -321,7 +328,7 @@ def run_inv(files, stdin=None):
 
 class Behaviors(unittest.TestCase):
     def test_spec_reads_behaviors_and_extension(self):
-        sp = so.read_spec(INV_SPEC + '(behavior (Store T) (port put in T)) (block P (implements (Store Line)))')
+        sp = so.read_spec(INV_SPEC + '(behavior (Store T) (port :in T :as put)) (block P (implements (Store Line)))')
         self.assertEqual(sp.behaviors, {'Durable', 'Journaled', 'Tools', 'Store'})
         self.assertEqual(sp.implemented('Inv.Disk'), {'Journaled', 'Durable'})  # through Journaled
         self.assertEqual(sp.implemented('beh:Journaled'), {'Durable'})

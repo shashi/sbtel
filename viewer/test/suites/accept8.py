@@ -12,13 +12,13 @@ SPEC = '''(block Notes
   (sketch "Write notes, see them rendered, keep them on disk.")
   (message Edit :type "struct" (sketch "A change to one note's text."))
   (behavior Durable :type "trait"
-    (port edit in Edit)
+    (port :in Edit)
     (sketch "Keeps every accepted edit until it is on disk."))
   (behavior Journaled
     (implements Durable)
     (sketch "Durable, and can replay what it kept."))
   (level :name "Editing"
-    (block Notes.Editor (port edit out Edit) (sketch "The text area.")))
+    (block Notes.Editor (port :out Edit) (sketch "The text area.")))
   (level :name "Storage"
     (block Notes.Store :type "Module" (implements Journaled) (sketch "Writes notes to disk."))
     (block Notes.Memory (implements Durable) (sketch "Keeps notes in memory, for tests."))))

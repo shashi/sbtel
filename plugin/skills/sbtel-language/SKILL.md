@@ -19,14 +19,14 @@ without lint.
 ; comment
 (block Name :type "Module"                       ; :type, the one block keyword: the code artifact kind
   (sketch "One sentence: what this block is for.")
-  (port name in Type)                            ; in | out; Type is a message type in scope
-  (port cmd out Type (~ What the type alone does not say. ~))
+  (port :in Type)                                ; :in | :out, a message type in scope; named `type`
+  (port :out Type :as cmd (~ What the type alone does not say. ~))   ; :as names it; sketch last
   (implements Behavior)                          ; one behavior; adds its ports
   (message Super :type "struct" (sketch "A general kind of data."))   ; :type: what it is in code
   (message Type (refines Super))                 ; is-a
   (message Pair (carries Type Super))            ; has-a; never changes what a port accepts
-  (behavior Behavior :type "trait" (port p out Type) (sketch "…"))   ; a block's grammar
-  (behavior (Store T) (port put in T))           ; parameter T; ports typed T are not checked
+  (behavior Behavior :type "trait" (port :out Type :as p) (sketch "…"))   ; a block's grammar
+  (behavior (Store T) (port :in T :as put))      ; parameter T; ports typed T are not checked
   (behavior Keeps (implements (Store Type)))     ; extends Store with T = Type; no blocks or levels inside
   (level :name "Screens" (block A) (block B))    ; the first level is the TOP; :name labels it
   (level (adjacent (~ Why they braid. ~)         ; C and D may bind each other
@@ -43,6 +43,12 @@ output a lower level has a lower number (`Store (level 1 of App) binds upward to
 - Sketches go on blocks, messages, behaviors, levels, adjacent groups and ports; one each. Write one
   sentence, and only what the structure does not already say.
 
+- A port is `(port :in Type)` or `(port :out Type)`, named after its type with the first letter
+  lowercased (`NoteSaved` → `noteSaved`; a qualified type's last component, `shell.Intent` →
+  `intent`). Add `:as name` only when two ports of one block (inherited ones included) would get the
+  same name: `(port :out Item)`, `(port :in Item :as backlog)`. Anchors, query, diff and the viewer use
+  that name. The 0.2 form `(port name in Type)` is a lint warning; `sbtel fmt --migrate-ports spec.sbtel`
+  rewrites it in place.
 - Names are runs of characters other than whitespace, `( ) " ;`. Dotted names (`Shell.Router`) are
   only a convention, but use them: block ids must be unique across the whole file.
 - The file is an unnamed root block. Top-level blocks sit in its levels, and top-level messages and
@@ -143,6 +149,8 @@ sbtel reply "$id" r7 "Applied your edits, and answered both questions."   # the 
 - `sbtel check spec.sbtel --bindings edges.txt`: judges `Caller -> Callee  # file:line` edges against
   the levels (see the sbtel-recover skill).
 - `sbtel diff a.sbtel b.sbtel` shows what changed. `sbtel open-diff a b` shows the same in the browser.
+- `sbtel fmt --migrate-ports spec.sbtel` rewrites a 0.2 spec's ports, `(port chord in KeyChord)`, as
+  `(port :in KeyChord :as chord)` in place (`:as` only when needed); `--check` only reports.
 - `sbtel export spec.sbtel -o spec.html` writes one self-contained HTML file of the diagram (no server, no
   network) to share with humans who don't have sbtel; `--readonly`, `--bindings edges.txt`, `--embed`.
 - The commands that print results take `--json`. Exit codes: 0 ok, 1 check failures, 2 usage or IO error.

@@ -99,7 +99,7 @@ func TestSessionLoop(t *testing.T) {
 		t.Errorf("meta: %+v", m)
 	}
 	// Lint problems are printed but open still exits 0.
-	c, out, errs = runT("(block B (port p in Nope))", "open", "-", "--json")
+	c, out, errs = runT("(block B (port :in Nope :as p))", "open", "-", "--json")
 	var oj map[string]any
 	json.Unmarshal([]byte(out), &oj)
 	if c != 0 || oj["created"] != true || oj["version"].(float64) != 1 || !strings.Contains(errs, "<stdin>:") {

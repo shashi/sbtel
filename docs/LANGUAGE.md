@@ -30,15 +30,15 @@ language.
 ; comment to end of line                       "string" with \" and \\ escapes
 (block Name :type "Module"                         ; :type is a block's only keyword: what it maps to
   (~ One sentence: what this block is for. ~)      ; = (sketch "…"); nothing inside is special
-  (port name in Type)                              ; direction is in or out; Type is a message type
-  (port cmd out Type (~ Only what the type does not say. ~))   ; a port may have a sketch
+  (port :in Type)                                  ; :in or :out, then a message type; named `type`
+  (port :out Type :as cmd (~ Only what the type does not say. ~))   ; :as names it; a sketch comes last
   (implements Behavior)                            ; one behavior name; its ports become this block's
   (message Super :type "struct" (sketch "A general kind of data."))   ; :type: what it is in code
   (message Type (refines Super))                   ; is-a: a Type is a Super
   (message Pair (carries Type Super))              ; has-a: a Pair holds a Type and a Super
   (behavior Behavior :type "trait"                 ; a block's grammar: :type, sketch, ports, implements
-    (port p in Type) (sketch "…"))                 ; shared vocabulary, visible here and below
-  (behavior (Store T) (port put in T))             ; a behavior with a parameter T
+    (port :in Type :as p) (sketch "…"))            ; shared vocabulary, visible here and below
+  (behavior (Store T) (port :in T :as put))        ; a behavior with a parameter T
   (behavior Keeps (implements (Store Type)))       ; extends Store, with T = Type
   (level :name "Screens"                           ; first level, the top; :name labels it
     (~ What the level above may know of it. ~)     ; a level may have a sketch
@@ -53,7 +53,7 @@ language.
 | `(block Name [:type "T"] body…)` | file, block, level, adjacent | a part of the system; it may contain levels |
 | `(level [:name "N"] block-or-adjacent…)` | file, block | one level; levels are ordered **top to bottom** |
 | `(adjacent block-or-adjacent…)` | file, block, level, adjacent | peers in one level that may bind each other (≥ 2 members) |
-| `(port name in\|out Type [sketch])` | block, behavior | a typed input or output |
+| `(port :in\|:out Type [:as name] [sketch])` | block, behavior | a typed input or output; named after its type (`NoteSaved` → `noteSaved`) unless `:as` names it |
 | `(message Name [:type "T"] …)` | file, block | a data type; `(sketch)`, `(refines T)`, `(carries A B…)` inside |
 | `(behavior Name [:type "T"] …)` / `(behavior (Name P…) …)` | file, block | a named set of ports a block can promise; `(sketch)`, `(port …)`, `(implements …)` inside |
 | `(implements Name)` / `(implements (Name Arg…))` | block, behavior | the block (or behavior) has that behavior's ports, and counts as implementing it |
@@ -77,13 +77,18 @@ language.
 - **Scope.** A behavior or message type declared in block D is usable in D and everything inside D.
   Declared at file level, it is usable everywhere. Declare it where its users meet (lint notes it when
   it sits higher).
+- **Ports.** `(port :in NoteSaved)` is named `noteSaved`: the type's name with its first letter
+  lowercased (§3.5). Write `:as name` only when that name is taken, as when two ports have one type:
+  `(port :in Item :as backlog)`. Port names are unique per block, inherited ports included. The 0.2
+  form `(port name in Type)` is reported; `sbtel fmt --migrate-ports` rewrites it.
 - **`:type`** grounds a block, a behavior or a message type in code: what it is there (a module, a
   trait, a struct…). It shows as a pill. Keep the kinds consistent within a spec.
 - **Names** are any run of characters without whitespace, `(`, `)`, `"` or `;`. Dots (`Shell.Router`)
   are a naming convention only. Duplicate block names get ids `Name#2`, `Name#3`… and a warning.
 
-**Checks** (`sbtel lint`): parse errors; model warnings (duplicates, bad port direction, `adjacent`
-with fewer than 2 members, empty level, the old `(layer …)` and `(either …)`); structure warnings
+**Checks** (`sbtel lint`): parse errors; model warnings (duplicates, two ports with one name, bad port
+direction, `adjacent` with fewer than 2 members, empty level, the old `(layer …)`, `(either …)` and
+0.2 port forms); structure warnings
 (unknown or misplaced forms and keywords, stray words, malformed ports, levels and `carries`, second
 sketches, blocks, levels and declarations inside a behavior…); six rules: every implemented behavior is
 declared, behaviors are used in scope, every port's type is declared, message types are used in scope,
@@ -106,13 +111,13 @@ A complete, clean spec:
   (message Edit (sketch "A change to one note's text."))
   (message Saved (sketch "A note was written to disk."))
   (behavior Durable
-    (port edit in Edit)
+    (port :in Edit)
     (sketch "Keeps every accepted edit until it is on disk."))
 
   (level :name "Editing"
     (adjacent (~ The preview scrolls with the editor. ~)
       (block Notes.Editor
-        (port edit out Edit)
+        (port :out Edit)
         (sketch "The text area where the user types."))
       (block Notes.Preview
         (sketch "Renders the note beside the editor."))))
@@ -121,7 +126,7 @@ A complete, clean spec:
     (block Notes.Store
       :type "Store"
       (implements Durable)
-      (port saved out Saved)
+      (port :out Saved)
       (sketch "Writes notes to disk and reloads them on launch."))))
 ```
 
@@ -141,13 +146,13 @@ ancestors) as collapsed stubs. `sbtel query spec.sbtel Notes.Editor --with-deps`
   (message Edit (sketch "A change to one note's text."))
   (message Saved (sketch "A note was written to disk."))
   (behavior Durable
-    (port edit in Edit)
+    (port :in Edit)
     (sketch "Keeps every accepted edit until it is on disk."))
   (level :name "Editing"
     (adjacent
       (~ The preview scrolls with the editor. ~)
       (block Notes.Editor
-        (port edit out Edit)
+        (port :out Edit)
         (sketch "The text area where the user types."))
       (block Notes.Preview
         (sketch "Renders the note beside the editor."))))
@@ -155,7 +160,7 @@ ancestors) as collapsed stubs. `sbtel query spec.sbtel Notes.Editor --with-deps`
     (~ Editing sends Edits; it never touches files. ~)
     (block Notes.Store :type "Store"
       (implements Durable)
-      (port saved out Saved)
+      (port :out Saved)
       (sketch "Writes notes to disk and reloads them on launch."))))
 ```
 
@@ -174,7 +179,7 @@ The reader turns text into four kinds of token:
 - **Strings** `"…"`. A backslash takes the next character literally, so `\"` is a quote and `\\` a
   backslash. There are no other escapes (`\n` is the letter `n`). A string may span lines.
 - **Symbols**: any run of characters that are not whitespace, `(`, `)`, `"` or `;`. Names, keywords
-  (`:type`) and port directions are symbols. Unicode letters are fine.
+  (`:type`, and the port directions `:in` and `:out`) are symbols. Unicode letters are fine.
 
 A `;` outside a string starts a comment that runs to the end of the line. Whitespace is anything
 JavaScript's `\s` matches, including Unicode spaces.
@@ -209,9 +214,9 @@ Most specs have one top-level block. Several are fine:
 ```sbtel
 (message Request (sketch "An HTTP request."))
 (level
-  (block Frontend (port call out Request) (sketch "The browser app.")))
+  (block Frontend (port :out Request :as call) (sketch "The browser app.")))
 (level
-  (block Backend (port serve in Request) (sketch "The API server.")))
+  (block Backend (port :in Request :as serve) (sketch "The API server.")))
 ```
 
 ## 3. Forms
@@ -322,17 +327,45 @@ In the viewer, adjacent blocks sit side by side joined by a line.
 ### 3.5 `port`
 
 ```lisp
-(port name in Type [sketch])
-(port name out Type [sketch])
+(port :in Type [:as name] [sketch])
+(port :out Type [:as name] [sketch])
 ```
 
-A typed input or output of a block or a behavior. `Type` names a message type in scope (§4), or, in a
-behavior with parameters, one of its parameters. Port names are unique within their block or behavior.
-After the type, a port may have one sketch: write it only when the type alone does not say what the
-port promises (`(port chord in KeyChord (~ Opens the palette. ~))`).
+A typed input or output of a block or a behavior. The direction keyword comes first, then `Type`, a
+message type in scope (§4) or, in a behavior with parameters, one of its parameters. After the type, a
+port may have `:as name`, then one sketch: write the sketch only when the type alone does not say what
+the port promises (`(port :in KeyChord (~ Opens the palette. ~))`).
+
+**The port's name.** Without `:as`, a port is named after its type: the type's name with its first
+letter lowercased, exactly as written otherwise.
+
+| Type | Name |
+|---|---|
+| `NoteSaved` | `noteSaved` |
+| `URL` | `uRL` |
+| `Élan` | `élan` (Unicode lowercase of the first character) |
+| `shell.Intent`, `pkg::Intent` | `intent` (a qualified type: its last component, after the last `.` or `:`) |
+| `List<Item>`, `Map[K,V]` | `list`, `map` (a parameterized type: its arguments are dropped first) |
+| `T` (a behavior's parameter) | `t`, whatever the implementer passes for `T` |
+
+The viewer names a port it adds the same way (and adds `2`, `3`… when the name is taken). Write
+`:as name` only when the default does not fit, typically because two ports of one block have the
+same type: `(port :out Item)` and `(port :in Item :as backlog)`. `:as` with the default name
+(`(port :in Item :as item)`) is allowed and means the same; the viewer drops it when it rewrites the
+port. Port names are unique within a block or behavior, counting the ports it gets from the behaviors
+it implements: two ports with one name are a lint warning that says to tell them apart with `:as`.
+The name is what everything else uses: anchors (`@sbtel port Block.noteSaved`, §9), `sbtel query`,
+`sbtel diff` (writing the default name out with `:as`, or dropping it, is no change) and the viewer.
+Renaming a message type renames the ports named after it, so give a port `:as` when its name must not
+change with its type.
 
 A block's ports are its own ports followed by the ports of every behavior it implements, sketches
 included.
+
+**The 0.2 form.** sbtel 0.2 wrote the name first: `(port chord in KeyChord)`. 0.3 removed it. Lint
+reports it with the 0.3 text to write (§7.3), and the viewer still draws it (and writes the 0.3 form
+when it edits the port). `sbtel fmt --migrate-ports spec.sbtel` rewrites every 0.2 port in place, with
+`:as` only where the name is not the default one.
 
 ### 3.6 `message`, `refines`, `carries`
 
@@ -369,7 +402,7 @@ outlines them.
 
 ```lisp
 (behavior Name [:type "T"] (port …)… [(implements Other)…] [(sketch "…")])
-(behavior (Name Param …) (port p in Param)… [(sketch "…")])
+(behavior (Name Param …) (port :in Param :as p)… [(sketch "…")])
 (implements Name)
 (implements (Name Arg …))
 ```
@@ -403,8 +436,8 @@ levels or declarations; declare … beside the behavior instead`, and is left ou
 ```sbtel
 (message Event :type "struct" (sketch "One state change."))
 (behavior (Store T) :type "trait"
-  (port put in T)
-  (port get out T)
+  (port :in T :as put)
+  (port :out T :as get)
   (sketch "Keeps values of T and returns them on request."))
 (behavior Durable :type "trait"
   (implements (Store Event))
@@ -439,13 +472,13 @@ children in every level, and to none of its siblings.
   (level
     (block App.Checkout
       (message CardToken (sketch "Opaque payment token; never leaves Checkout."))
-      (port order out Order)
+      (port :out Order)
       (level
-        (block App.Checkout.Form (port token out CardToken)))
+        (block App.Checkout.Form (port :out CardToken :as token)))
       (level
-        (block App.Checkout.Gateway (port token in CardToken)))))
+        (block App.Checkout.Gateway (port :in CardToken :as token)))))
   (level
-    (block App.Fulfilment (port order in Order))))
+    (block App.Fulfilment (port :in Order))))
 ```
 
 Declare a type in the smallest block that holds every use of it. Declaring everything at the top
@@ -602,17 +635,60 @@ spec.sbtel:4:1: info: B is never used.
 spec.sbtel: 2 problems (0 blocks, 1 behavior, 1 message type)
 ```
 
-A port direction other than `in` or `out`:
+A port direction other than `:in` or `:out` (a bare `in` or `out` adds `(write :in, not in)`):
 
 ```sbtel fails
 (message M)
-(block A (port x sideways M))
+(block A (port :sideways M))
 ```
 
 ```text
-spec.sbtel:2:10: warning: port direction must be in or out
+spec.sbtel:2:10: warning: port direction must be :in or :out
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
 spec.sbtel: 1 problem (1 block, 0 behaviors, 1 message type)
+```
+
+A port in the 0.2 form, with the 0.3 text to write (`:as` only when the name is not the default one,
+and `…` for the sketch or anything else after the type). The diagram still draws it;
+`sbtel fmt --migrate-ports` rewrites it (§3.5):
+
+```sbtel fails
+(message KeyChord)
+(message Intent)
+(block Palette
+  (port chord in KeyChord (~ Opens the palette. ~))
+  (port intent out Intent))
+```
+
+```text
+spec.sbtel:4:3: warning: (port chord in KeyChord …) is the 0.2 form; write (port :in KeyChord :as chord …)
+spec.sbtel:5:3: warning: (port intent out Intent) is the 0.2 form; write (port :out Intent)
+spec.sbtel:1:1: info: KeyChord is declared at the top level but only used within Palette; it could live there.
+spec.sbtel:2:1: info: Intent is declared at the top level but only used within Palette; it could live there.
+spec.sbtel: 2 problems (1 block, 0 behaviors, 2 message types)
+```
+
+Two ports of one block or behavior with the same name: its own ports, its own and one it gets from a
+behavior, or two from behaviors. A clash inside a behavior is reported on the behavior, not again on
+every block that implements it:
+
+```sbtel fails
+(message Item)
+(behavior Feed (port :out Item))
+(block Queue
+  (implements Feed)
+  (port :in Item)
+  (port :in Item))
+(block Mixer (implements Feed) (implements Other))
+(behavior Other (port :out Item))
+```
+
+```text
+spec.sbtel:6:3: warning: block Queue has two ports named item; tell them apart with :as
+spec.sbtel:5:3: warning: block Queue has two ports named item: its own and one from behavior Feed; tell them apart with :as
+spec.sbtel:7:32: warning: block Mixer has two ports named item, from behaviors Feed and Other; tell them apart with :as
+spec.sbtel:8:1: info: Other is declared at the top level but only used within Mixer; it could live there.
+spec.sbtel: 3 problems (2 blocks, 2 behaviors, 1 message type)
 ```
 
 An adjacent group with one member:
@@ -631,7 +707,7 @@ What a behavior does not contain, and arguments that do not fill a behavior's pa
 
 ```sbtel fails
 (message M)
-(behavior (Box T) (port b in T))
+(behavior (Box T) (port :in T :as b))
 (behavior Durable
   (block Inner)
   (level (block L))
@@ -678,10 +754,10 @@ spec.sbtel: 1 problem (1 block, 0 behaviors, 0 message types)
 A form in a place where it has no meaning:
 
 ```sbtel fails
-(port loose in Nothing)
+(port :in Nothing :as loose)
 (block Top
   (level (implements Nothing))
-  (adjacent (block A) (block B) (port p in X)))
+  (adjacent (block A) (block B) (port :in X :as p)))
 ```
 
 ```text
@@ -753,24 +829,31 @@ spec.sbtel:3:1: warning: behavior needs a name, or (Name Param ...)
 spec.sbtel: 3 problems (1 block, 1 behavior, 1 message type)
 ```
 
-A malformed port, an extra item after the type, and two ports with one name:
+A port without a type, an extra item after the type (a single word gets a hint), an unknown keyword,
+`:as` without a name, and so two ports with one name (both `m`):
 
 ```sbtel fails
 (message M)
 (block A
-  (port x in)
-  (port y out M extra)
-  (port z in M)
-  (port z out M))
+  (port :in)
+  (port :out M :as y extra)
+  (port :in M :as w :sort 1)
+  (port :in M :as)
+  (port :out M source))
 ```
 
 ```text
-spec.sbtel:3:3: warning: port needs a name, a direction and a message type: (port name in|out Type)
-spec.sbtel:4:17: warning: port y has extra items after its message type
-spec.sbtel:6:3: warning: block A has two ports named z
+spec.sbtel:7:3: warning: block A has two ports named m; tell them apart with :as
+spec.sbtel:3:3: warning: port needs a message type after :in: (port :in Type [:as name])
+spec.sbtel:4:22: warning: port y has extra items after its message type
+spec.sbtel:5:21: warning: unknown keyword :sort in a port; a port takes only :as name
+spec.sbtel:6:15: warning: keyword :as of a port needs a name
+spec.sbtel:7:16: warning: port m has extra items after its message type (to name it, write :as source)
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
-spec.sbtel: 3 problems (1 block, 0 behaviors, 1 message type)
+spec.sbtel: 6 problems (1 block, 0 behaviors, 1 message type)
 ```
+
+A second `:as` counts once too (`port w has more than one :as; only the first counts`).
 
 `implements` with anything but one name or one `(Name Arg …)` list, and `refines` with anything but
 one name:
@@ -778,7 +861,7 @@ one name:
 ```sbtel fails
 (message M)
 (message N (refines M M))
-(behavior (Store T) (port put in T))
+(behavior (Store T) (port :in T :as put))
 (block A (implements Store Store))
 ```
 
@@ -834,14 +917,14 @@ after a port's type, and a sketch on a nested adjacent group:
 ```sbtel fails
 (message M)
 (level (~ one ~) (sketch "two")
-  (block A (port p in M (~ a ~) (~ b ~)) (port q in M extra))
+  (block A (port :in M :as p (~ a ~) (~ b ~)) (port :in M :as q extra))
   (adjacent (block B) (adjacent (~ nested ~) (block C) (block D))))
 ```
 
 ```text
 spec.sbtel:2:18: warning: a level has more than one (sketch); only the first counts
-spec.sbtel:3:33: warning: port p has more than one (sketch); only the first counts
-spec.sbtel:3:55: warning: port q has extra items after its message type
+spec.sbtel:3:38: warning: port p has more than one (sketch); only the first counts
+spec.sbtel:3:65: warning: port q has extra items after its message type
 spec.sbtel:4:33: warning: a nested adjacent group has no sketch of its own; put it in the outer (adjacent)
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
 spec.sbtel: 4 problems (4 blocks, 0 behaviors, 1 message type)
@@ -908,8 +991,8 @@ spec.sbtel: 1 problem (2 blocks, 1 behavior, 0 message types)
 excepted):
 
 ```sbtel fails
-(block A (port x in Nothing))
-(behavior B (port y out Nowhere))
+(block A (port :in Nothing :as x))
+(behavior B (port :out Nowhere :as y))
 ```
 
 ```text
@@ -925,8 +1008,8 @@ message that carries the type, the scope that counts is where the behavior or me
 ```sbtel fails
 (block Left
   (message Secret (sketch "Left's own data.")))
-(block Right (port s in Secret))
-(behavior Leak (port s out Secret))
+(block Right (port :in Secret :as s))
+(behavior Leak (port :out Secret :as s))
 (message Bundle (carries Secret))
 ```
 
@@ -993,9 +1076,9 @@ never suggests moving below the common ancestor: that is a scope failure.
 (message Unused)
 (block Shell
   (message Selection (sketch "Only Shell.View uses it."))
-  (level (block Shell.View (port sel in Selection)))
-  (level (block Shell.Log (port n in Note))))
-(block Other (port n out Note))
+  (level (block Shell.View (port :in Selection :as sel)))
+  (level (block Shell.Log (port :in Note :as n))))
+(block Other (port :out Note :as n))
 ```
 
 ```text
@@ -1180,7 +1263,7 @@ anchors, and no others:
 | `@sbtel begin Name` … `@sbtel end Name` | the region between belongs to `Name`. Regions nest; the innermost wins. The `end` name must match its `begin` |
 | `@sbtel file Name` | from here to the end of the file belongs to `Name` |
 | `@sbtel message Name` | anchor: where message type `Name`'s shape is defined in code. It owns no code |
-| `@sbtel port Block.port` | anchor: where port `port` of block `Block` is handled. It owns no code |
+| `@sbtel port Block.port` | anchor: where port `port` of block `Block` is handled; `port` is the port's name, the default one when it has no `:as` (`Shell.Router.intent` for `(port :in Intent)`). It owns no code |
 
 An anchor changes no ownership: the lines after it belong to whoever owned them anyway, and an
 `@sbtel Name` directly above an anchor still applies to the declaration below it.
@@ -1254,6 +1337,7 @@ violation and `sbtel open --bindings` shows it beside it (§8). [DESIGN.md §8](
 | `sbtel query spec.sbtel Id… [--with-deps]` | print the named elements (ids: block ids, `beh:Name`, `msg:Name`; headers print these as `β:Name` and `μ:Name`, which are accepted too) as a fragment that lints clean on its own, with the behaviors and message types they use (carried ones too); a message type's header line says which types carry it and which blocks' ports use those; `--with-deps` adds the blocks they may bind to as collapsed stubs. An unknown id is exit 2 |
 | `sbtel check spec.sbtel --bindings edges.txt` | judge code bindings (§8) |
 | `sbtel diff a.sbtel b.sbtel` | what changed between two versions |
+| `sbtel fmt --migrate-ports spec.sbtel` | rewrite 0.2 ports in the 0.3 form, in place (§3.5); `--check` only reports |
 | `sbtel open spec.sbtel` | open the diagram for the human; prints a session id |
 | `sbtel inbox <id> --wait` | wait for, then print, what the human sent: reviews, comments, saves |
 | `sbtel reply <id> <comment-id> "text"` | answer a comment (`c7`, `c7.1`) or a review (`r7`) in the open tab |

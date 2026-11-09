@@ -15,6 +15,6 @@
 
   no paragraphs."))
 (block A
-  (port p in M (~ a port's own sketch ~))
+  (port :in M :as p (~ a port's own sketch ~))
   (adjacent (~ group ~) (block B) (block C))
   (level (block D)))

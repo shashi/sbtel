@@ -11,5 +11,5 @@
         (block Pool (sketch "Fixed set of threads.")))
       (level
         (block Throttle
-          (port job in Job)
+          (port :in Job)
           (sketch "Token bucket per worker, refilled every second."))))))
