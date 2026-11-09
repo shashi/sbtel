@@ -23,14 +23,14 @@ Core.Model -> Core.Reader  # core/core.js:78 (+3 more)
 Core.Model -> Core.Constants  # core/core.js:85 (+2 more)
 Core.Lint -> Core.Model  # core/core.js:396 (+4 more)
 Core.Layout -> MeasuresText  # core/core.js:508 (+10 more)
-Core.Layout -> Core.Model  # core/core.js:511 (+9 more)
+Core.Layout -> Core.Model  # core/core.js:511 (+10 more)
 Core.Layout -> Core.Constants  # core/core.js:514 (+38 more)
 Core.Layout -> Core.LayoutChecks  # core/core.js:714
-Core.Edits -> Core.Model  # core/core.js:846 (+4 more)
-Core.Edits -> Core.Reader  # core/core.js:953 (+2 more)
-Core.Edits -> Core.Scope  # core/core.js:1092
-Core.Scope -> Core.Model  # core/core.js:1113 (+2 more)
-Core.Diff -> Core.Model  # core/core.js:1245 (+7 more)
+Core.Edits -> Core.Model  # core/core.js:872 (+4 more)
+Core.Edits -> Core.Reader  # core/core.js:979 (+2 more)
+Core.Edits -> Core.Scope  # core/core.js:1118
+Core.Scope -> Core.Model  # core/core.js:1139 (+2 more)
+Core.Diff -> Core.Model  # core/core.js:1271 (+7 more)
 App.Document -> App.Kit  # viewer/src/index.html:666 (+13 more)
 App.Document -> Viewer.Sample  # viewer/src/index.html:671
 App.History -> App.Kit  # viewer/src/index.html:725 (+3 more)
@@ -201,17 +201,18 @@ Viewer.Diff -> App.EditDialog  # viewer/src/diff.js:613 (+1 more)
 Viewer.Diff -> App.Code  # viewer/src/diff.js:621 (+1 more)
 Viewer.Diff -> App.Comments  # viewer/src/diff.js:621 (+3 more)
 Viewer.Diff -> Core.Constants  # viewer/src/diff.js:647
-Viewer.Play -> Viewer.Mode  # viewer/src/play.js:13
-Viewer.Play -> App.Kit  # viewer/src/play.js:93 (+8 more)
-Viewer.Play -> App.Page  # viewer/src/play.js:93 (+5 more)
-Viewer.Play -> App.Camera  # viewer/src/play.js:116 (+1 more)
-Viewer.Play -> App.Document  # viewer/src/play.js:124 (+15 more)
-Viewer.Play -> App.Canvas  # viewer/src/play.js:133 (+10 more)
-Viewer.Play -> App.Comments  # viewer/src/play.js:137
-Viewer.Play -> App.Messages  # viewer/src/play.js:138
-Viewer.Play -> App.Input  # viewer/src/play.js:139 (+6 more)
-Viewer.Play -> App.EditDialog  # viewer/src/play.js:150
-Viewer.Play -> Core.Model  # viewer/src/play.js:154
-Viewer.Play -> App.Code  # viewer/src/play.js:155
-Viewer.Play -> Viewer.Sample  # viewer/src/play.js:189
-Viewer.Play -> App.Modals  # viewer/src/play.js:193
+Viewer.Play -> Viewer.Mode  # viewer/src/play.js:18
+Viewer.Play -> App.Kit  # viewer/src/play.js:98 (+8 more)
+Viewer.Play -> App.Page  # viewer/src/play.js:98 (+5 more)
+Viewer.Play -> App.Camera  # viewer/src/play.js:121 (+4 more)
+Viewer.Play -> App.Document  # viewer/src/play.js:130 (+23 more)
+Viewer.Play -> App.Canvas  # viewer/src/play.js:139 (+12 more)
+Viewer.Play -> App.Comments  # viewer/src/play.js:143
+Viewer.Play -> App.Messages  # viewer/src/play.js:144
+Viewer.Play -> App.Input  # viewer/src/play.js:145 (+6 more)
+Viewer.Play -> App.EditDialog  # viewer/src/play.js:156
+Viewer.Play -> Core.Model  # viewer/src/play.js:160 (+1 more)
+Viewer.Play -> App.Code  # viewer/src/play.js:161
+Viewer.Play -> Core.Layout  # viewer/src/play.js:203
+Viewer.Play -> Viewer.Sample  # viewer/src/play.js:236
+Viewer.Play -> App.Modals  # viewer/src/play.js:240

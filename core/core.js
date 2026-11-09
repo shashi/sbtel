@@ -714,6 +714,32 @@ function layout(model, opts, M) {
   out.checks = runChecks(out);
   return out;
 }
+// What a layout draws, as a box in its own coordinates: { x, y, w, h }, or null. With an id, that block's
+// card with the ears it draws; without one, the union of every card with its ears, the level lines with
+// their names (10px either side), the file's appendix band and, with plus, the + buttons (radius 11).
+// Hover-only gutters are left out. A level item's box keeps room for both ears; an ear is drawn only
+// where the block has ports (its own or, as the viewer draws them, its children's), and a message's item
+// box is already exact. Embed mode fits to this box (docs/DESIGN.md §6.9).
+function contentBox(lay, id, plus) {
+  if (!lay) return null;
+  const items = new Map();
+  lay.levels.forEach(L => L.items.forEach(it => items.set(it.id, it.box)));
+  const card = B => {
+    const b = items.get(B.id), n = B.node;
+    if (!b) return { x:B.x, y:B.y, w:B.w, h:B.h };
+    if (n.form === 'message') return { ...b };
+    const d = dotsOf(n, true), top = d.in.length ? b.y : B.y, bot = d.out.length ? b.y + b.h : B.y + B.h;
+    return { x:b.x, y:top, w:b.w, h:bot - top };
+  };
+  if (id) { const B = lay.blocks.find(b => b.id === id); return B ? card(B) : null; }
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (ax, ay, bx, by) => { x0 = Math.min(x0, ax); y0 = Math.min(y0, ay); x1 = Math.max(x1, bx); y1 = Math.max(y1, by); };
+  lay.blocks.forEach(B => { const c = card(B); add(c.x, c.y, c.x + c.w, c.y + c.h); });
+  lay.dividers.forEach(v => add(v.x1, v.y - 10, v.x2, v.y + 10));
+  if (lay.canvas && lay.canvas.appendixY != null) add(0, lay.canvas.appendixY, lay.size.w, lay.canvas.h);
+  if (plus) lay.plus.forEach(p => add(p.x - 11, p.y - 11, p.x + 11, p.y + 11));
+  return x1 > x0 ? { x:x0, y:y0, w:x1 - x0, h:y1 - y0 } : null;
+}
 
 // @sbtel end Core.Layout
 // @sbtel begin Core.LayoutChecks

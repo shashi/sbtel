@@ -1239,6 +1239,32 @@ function layout(model, opts, M) {
   out.checks = runChecks(out);
   return out;
 }
+// What a layout draws, as a box in its own coordinates: { x, y, w, h }, or null. With an id, that block's
+// card with the ears it draws; without one, the union of every card with its ears, the level lines with
+// their names (10px either side), the file's appendix band and, with plus, the + buttons (radius 11).
+// Hover-only gutters are left out. A level item's box keeps room for both ears; an ear is drawn only
+// where the block has ports (its own or, as the viewer draws them, its children's), and a message's item
+// box is already exact. Embed mode fits to this box (docs/DESIGN.md §6.9).
+function contentBox(lay, id, plus) {
+  if (!lay) return null;
+  const items = new Map();
+  lay.levels.forEach(L => L.items.forEach(it => items.set(it.id, it.box)));
+  const card = B => {
+    const b = items.get(B.id), n = B.node;
+    if (!b) return { x:B.x, y:B.y, w:B.w, h:B.h };
+    if (n.form === 'message') return { ...b };
+    const d = dotsOf(n, true), top = d.in.length ? b.y : B.y, bot = d.out.length ? b.y + b.h : B.y + B.h;
+    return { x:b.x, y:top, w:b.w, h:bot - top };
+  };
+  if (id) { const B = lay.blocks.find(b => b.id === id); return B ? card(B) : null; }
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (ax, ay, bx, by) => { x0 = Math.min(x0, ax); y0 = Math.min(y0, ay); x1 = Math.max(x1, bx); y1 = Math.max(y1, by); };
+  lay.blocks.forEach(B => { const c = card(B); add(c.x, c.y, c.x + c.w, c.y + c.h); });
+  lay.dividers.forEach(v => add(v.x1, v.y - 10, v.x2, v.y + 10));
+  if (lay.canvas && lay.canvas.appendixY != null) add(0, lay.canvas.appendixY, lay.size.w, lay.canvas.h);
+  if (plus) lay.plus.forEach(p => add(p.x - 11, p.y - 11, p.x + 11, p.y + 11));
+  return x1 > x0 ? { x:x0, y:y0, w:x1 - x0, h:y1 - y0 } : null;
+}
 
 // @sbtel end Core.Layout
 // @sbtel begin Core.LayoutChecks
@@ -3918,7 +3944,7 @@ addEventListener('resize', () => placeStrip());
 const SBTEL = (() => {
   const m = location.protocol === 'file:' ? null : /^\/s\/([0-9a-f]{32})\/(diff)?$/.exec(location.pathname);
   const cmp = m && !m[2] ? /(?:^\?|&)compare=([\w.-]+)(?:&|$)/.exec(location.search) : null;
-  return { version: '0.2.3', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
+  return { version: '0.2.4', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
     compare: cmp ? cmp[1] : null, compares: {}, modes: {} };
 })();
 // @sbtel end Viewer.Mode
@@ -5552,6 +5578,11 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
 //   #example=<name>                        fetches examples/<name>.sbtel, relative to the page
 //   ?embed, ?embed=readonly                 a chrome-less frame for docs pages (combines with the hash)
 //   &theme=light|dark                      a fixed theme (otherwise the system's)
+//   &focus=<Block>                         embed mode fits that block (an id or a name) instead of the file
+// In a frame, embed mode posts { type:'sbtel:size', width, height } to the parent after the first layout
+// and after any relayout that changes the fitted box: its natural size in CSS pixels at zoom 1, with the
+// padding and the dock's room. The target origin is '/' (this page's own origin), so only a same-origin
+// docs page hears it; a page on another origin gets nothing and keeps its own frame height.
 // A spec from the URL, and any embed, keeps its settings, comments and undo history under keys with
 // a hash of its initial text, so demos share nothing with each other or with the playground.
 SBTEL.modes.standalone = (() => {
@@ -5562,7 +5593,7 @@ SBTEL.modes.standalone = (() => {
   const P = (() => {
     const e = query('embed'), t = query('theme');
     return { embed: e === null ? null : e === 'readonly' ? 'readonly' : 'interactive', theme: t === 'light' || t === 'dark' ? t : null,
-      src: fragment('src'), example: fragment('example') };
+      src: fragment('src'), example: fragment('example'), focus: query('focus') };
   })();
 
   // base64url (RFC 4648 §5) of the UTF-8 bytes; the decoder also takes the standard alphabet and padding.
@@ -5658,6 +5689,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     body.classList.add('embed'); if (readonly) body.classList.add('embed-ro');
     if (!P.theme) { document.documentElement.classList.add('embed-clear'); body.classList.add('embed-clear'); }
     Object.assign(fitPad, { top: 12, bottom: 52, side: 24 });
+    sizeTo();
     const seps = $('dock').querySelectorAll('.sep');
     if (seps[0]) seps[0].classList.add('pl-ro'); if (seps[2]) seps[2].classList.add('pl-gone');
     const open = document.createElement('a');
@@ -5719,13 +5751,56 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     let hinted = false;
     document.addEventListener('pointerover', e => { if (!live && !hinted && e.pointerType === 'mouse') { hinted = true; showHint(2600); } });
     document.addEventListener('pointerleave', () => { hint.hidden = true; });
-    addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') setLive(true); }, true);
+    // A press on a card prevents mousedown's default (no text selection), which would also keep the frame
+    // from taking focus, so it would never blur and stay live: take focus here (v0.2.4).
+    addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') { setLive(true); if (!document.hasFocus()) try { window.focus(); } catch (_) {} } }, true);
     addEventListener('click', () => setLive(true), true);
     addEventListener('focus', () => setLive(true));
     addEventListener('blur', () => setLive(false));
     // Capture on window runs before the canvas's own wheel handler, which zooms and pans.
     addEventListener('wheel', e => { if (!live) { e.stopPropagation(); showHint(1800); } }, { capture: true });
     return refresh;
+  }
+
+  // Embed mode fits the frame to what is drawn (contentBox, Core.Layout), or to the &focus block, with
+  // EDGE px around it and the dock's room below; no zoom past 1. It tells a same-origin parent the box's
+  // natural size, so the host page can size the frame to the diagram (sbtel:size, above).
+  const EDGE = 12, DOCK = 52;
+  function sizeTo() {
+    const focusId = () => {
+      if (!P.focus || !state.model) return null;
+      const n = state.model.node(P.focus) || state.model.blocks.find(b => b.name === P.focus);
+      return n && state.lay && state.lay.blocks.some(B => B.id === n.id) ? n.id : null;
+    };
+    const box = () => contentBox(state.lay, focusId(), !readOnly());
+    fit = animate => {
+      const B = box(); if (!B) return;
+      const aw = Math.max(40, innerWidth - 2 * EDGE), ah = Math.max(40, innerHeight - EDGE - DOCK);
+      const k = Math.max(.12, Math.min(1, aw / B.w, ah / B.h));
+      state.cam = { k, x: EDGE + (aw - B.w * k) / 2 - B.x * k, y: EDGE + Math.max(0, (ah - B.h * k) / 2) - B.y * k };
+      if (animate) animCam();
+      applyCam();
+    };
+    let framed = false; try { framed = window.parent !== window; } catch (e) {}
+    let last = '';
+    const report = () => {
+      const B = box(); if (!B || !framed) return;
+      const size = { type: 'sbtel:size', width: Math.ceil(B.w + 2 * EDGE), height: Math.ceil(B.h + EDGE + DOCK) };
+      const key = size.width + 'x' + size.height; if (key === last) return; last = key;
+      try { window.parent.postMessage(size, '/'); } catch (e) {}
+    };
+    // A drag preview (pv) is not a relayout of the spec: it reports nothing.
+    const origRender = render;
+    render = (anchorId, pv) => { origRender(anchorId, pv); if (!pv) report(); };
+    // The ancestors of a &focus block open, so it is drawn.
+    if (P.focus) {
+      const origSet = setSource;
+      setSource = (src, o) => {
+        const n = (() => { try { const m = parse(src); return m.node(P.focus) || m.blocks.find(b => b.name === P.focus); } catch (e) { return null; } })();
+        if (n && !state.model) for (let p = n.parent; p && !p.virtual; p = p.parent) state.open.add(p.id);
+        origSet(src, o);
+      };
+    }
   }
 
   async function boot() {

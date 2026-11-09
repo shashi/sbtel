@@ -167,6 +167,7 @@ the playground, and its URL can pick the spec and the presentation:
 | `?embed` | for an iframe: no side panels, a small toolbar (undo, zoom, fit, **Open in playground ↗**), fitted to the frame, transparent background |
 | `?embed=readonly` | the same, with nothing editable |
 | `&theme=light` or `&theme=dark` | a fixed theme instead of the system's |
+| `&focus=<Block>` | in embed mode, fit that block instead of the whole file |
 
 ```html
 <iframe src="/sbtel/play/?embed=readonly#example=shell" width="100%" height="360"
@@ -177,6 +178,21 @@ In JavaScript, `btoa(String.fromCharCode(...new TextEncoder().encode(spec))).rep
 .replace(/\//g, '_').replace(/=+$/, '')` makes the `#src` value. An embedded viewer scrolls with the
 page until it is clicked, and each spec keeps its own undo history and settings in the browser, apart
 from other demos and from the playground. A spec that cannot be read shows its error in place.
+
+In a frame, the viewer fits what it draws, and tells a page on the same origin its natural size, so the
+page can size the frame to the diagram:
+
+```js
+addEventListener('message', e => {
+  if (e.origin !== location.origin || e.data?.type !== 'sbtel:size') return;
+  const f = [...document.querySelectorAll('iframe')].find(f => f.contentWindow === e.source);
+  if (f) f.style.height = Math.min(720, Math.max(220, f.clientWidth * e.data.height / e.data.width)) + 'px';
+});
+```
+
+`width` and `height` are CSS pixels at zoom 1, padding and toolbar included. The message goes only to a
+same-origin parent (target origin `'/'`); a page on another origin gets nothing and keeps its own height.
+
 [docs/DESIGN.md §6.9](docs/DESIGN.md) has the details. A copy of the page with `<meta name="sbtel-home"
 content="…">` points the playground's "sbtel" link at that address.
 

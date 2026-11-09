@@ -3,6 +3,40 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
+## 0.2.4 (2026-11-08)
+
+Embedded diagrams come out at a readable size.
+
+### Changed
+
+- **Embed mode fits what is drawn.** It fits the diagram's own bounds (cards with the ears they draw,
+  level lines and names, the message band, and the + buttons where it edits) with 12 px around it and
+  room for the dock, instead of the layout's canvas width with the full app's margins; the zoom stops at
+  100%. A typical docs example (one block with levels and a message band) went from about 40-55% to
+  60-100% in a docs frame.
+
+### Added
+
+- **`sbtel:size`**: in a frame, the viewer posts `{ type: 'sbtel:size', width, height }` to its parent,
+  the diagram's natural size in CSS pixels at zoom 1 with padding and toolbar, after the first layout and
+  after any relayout that changes it, so the host page can size the frame. It goes only to a same-origin
+  parent (target origin `'/'`); a framed page on another origin, or an unframed page, gets nothing.
+- **`&focus=<Block>`** in embed mode fits one block (an id or a name) instead of the whole file.
+- `contentBox(lay, id, plus)` in core/core.js (Core.Layout): the box a layout draws, used by the fit and
+  by the website's build to give each embed its starting height.
+- viewer/test: accept11 (the tight fit, `sbtel:size`, `&focus`, nothing across origins or unframed, and
+  the release after a click on a card).
+
+### Fixed
+
+- An embedded viewer clicked on a card (rather than on empty canvas) never took focus, so a click on the
+  page did not release it and it kept the wheel. A press now focuses the frame.
+
+### Docs
+
+- README "Embedding the viewer": `&focus` and a host-side `sbtel:size` listener. DESIGN.md §6.9 and §11
+  entries 104-106.
+
 ## 0.2.3 (2026-11-08)
 
 The viewer embeds in docs pages, loads a spec from its URL, and links home.

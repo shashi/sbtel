@@ -8,6 +8,11 @@
 //   #example=<name>                        fetches examples/<name>.sbtel, relative to the page
 //   ?embed, ?embed=readonly                 a chrome-less frame for docs pages (combines with the hash)
 //   &theme=light|dark                      a fixed theme (otherwise the system's)
+//   &focus=<Block>                         embed mode fits that block (an id or a name) instead of the file
+// In a frame, embed mode posts { type:'sbtel:size', width, height } to the parent after the first layout
+// and after any relayout that changes the fitted box: its natural size in CSS pixels at zoom 1, with the
+// padding and the dock's room. The target origin is '/' (this page's own origin), so only a same-origin
+// docs page hears it; a page on another origin gets nothing and keeps its own frame height.
 // A spec from the URL, and any embed, keeps its settings, comments and undo history under keys with
 // a hash of its initial text, so demos share nothing with each other or with the playground.
 SBTEL.modes.standalone = (() => {
@@ -18,7 +23,7 @@ SBTEL.modes.standalone = (() => {
   const P = (() => {
     const e = query('embed'), t = query('theme');
     return { embed: e === null ? null : e === 'readonly' ? 'readonly' : 'interactive', theme: t === 'light' || t === 'dark' ? t : null,
-      src: fragment('src'), example: fragment('example') };
+      src: fragment('src'), example: fragment('example'), focus: query('focus') };
   })();
 
   // base64url (RFC 4648 §5) of the UTF-8 bytes; the decoder also takes the standard alphabet and padding.
@@ -114,6 +119,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     body.classList.add('embed'); if (readonly) body.classList.add('embed-ro');
     if (!P.theme) { document.documentElement.classList.add('embed-clear'); body.classList.add('embed-clear'); }
     Object.assign(fitPad, { top: 12, bottom: 52, side: 24 });
+    sizeTo();
     const seps = $('dock').querySelectorAll('.sep');
     if (seps[0]) seps[0].classList.add('pl-ro'); if (seps[2]) seps[2].classList.add('pl-gone');
     const open = document.createElement('a');
@@ -175,13 +181,56 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     let hinted = false;
     document.addEventListener('pointerover', e => { if (!live && !hinted && e.pointerType === 'mouse') { hinted = true; showHint(2600); } });
     document.addEventListener('pointerleave', () => { hint.hidden = true; });
-    addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') setLive(true); }, true);
+    // A press on a card prevents mousedown's default (no text selection), which would also keep the frame
+    // from taking focus, so it would never blur and stay live: take focus here (v0.2.4).
+    addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') { setLive(true); if (!document.hasFocus()) try { window.focus(); } catch (_) {} } }, true);
     addEventListener('click', () => setLive(true), true);
     addEventListener('focus', () => setLive(true));
     addEventListener('blur', () => setLive(false));
     // Capture on window runs before the canvas's own wheel handler, which zooms and pans.
     addEventListener('wheel', e => { if (!live) { e.stopPropagation(); showHint(1800); } }, { capture: true });
     return refresh;
+  }
+
+  // Embed mode fits the frame to what is drawn (contentBox, Core.Layout), or to the &focus block, with
+  // EDGE px around it and the dock's room below; no zoom past 1. It tells a same-origin parent the box's
+  // natural size, so the host page can size the frame to the diagram (sbtel:size, above).
+  const EDGE = 12, DOCK = 52;
+  function sizeTo() {
+    const focusId = () => {
+      if (!P.focus || !state.model) return null;
+      const n = state.model.node(P.focus) || state.model.blocks.find(b => b.name === P.focus);
+      return n && state.lay && state.lay.blocks.some(B => B.id === n.id) ? n.id : null;
+    };
+    const box = () => contentBox(state.lay, focusId(), !readOnly());
+    fit = animate => {
+      const B = box(); if (!B) return;
+      const aw = Math.max(40, innerWidth - 2 * EDGE), ah = Math.max(40, innerHeight - EDGE - DOCK);
+      const k = Math.max(.12, Math.min(1, aw / B.w, ah / B.h));
+      state.cam = { k, x: EDGE + (aw - B.w * k) / 2 - B.x * k, y: EDGE + Math.max(0, (ah - B.h * k) / 2) - B.y * k };
+      if (animate) animCam();
+      applyCam();
+    };
+    let framed = false; try { framed = window.parent !== window; } catch (e) {}
+    let last = '';
+    const report = () => {
+      const B = box(); if (!B || !framed) return;
+      const size = { type: 'sbtel:size', width: Math.ceil(B.w + 2 * EDGE), height: Math.ceil(B.h + EDGE + DOCK) };
+      const key = size.width + 'x' + size.height; if (key === last) return; last = key;
+      try { window.parent.postMessage(size, '/'); } catch (e) {}
+    };
+    // A drag preview (pv) is not a relayout of the spec: it reports nothing.
+    const origRender = render;
+    render = (anchorId, pv) => { origRender(anchorId, pv); if (!pv) report(); };
+    // The ancestors of a &focus block open, so it is drawn.
+    if (P.focus) {
+      const origSet = setSource;
+      setSource = (src, o) => {
+        const n = (() => { try { const m = parse(src); return m.node(P.focus) || m.blocks.find(b => b.name === P.focus); } catch (e) { return null; } })();
+        if (n && !state.model) for (let p = n.parent; p && !p.virtual; p = p.parent) state.open.add(p.id);
+        origSet(src, o);
+      };
+    }
   }
 
   async function boot() {

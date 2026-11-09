@@ -9,7 +9,7 @@ set -u
 T=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$T/../.." && pwd)
 PAGE=$(realpath "${1:-$ROOT/viewer/dist/index.html}")
 OUT=$(mktemp -d "${TMPDIR:-/tmp}/sbtel-accept.XXXXXX")
-SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7 accept8 accept9 accept10"}
+SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7 accept8 accept9 accept10 accept11"}
 
 # Chrome --dump-dom suites: the test is appended to a copy of the page and reports through console.log.
 virtual() { # name test.js WxH budget timeout
@@ -46,6 +46,8 @@ run_suite() {
     accept9)  cp "$PAGE" "$OUT/accept9.html"; timeout 200 python3 "$T/suites/accept9.py" "$OUT/accept9.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     # v0.2.3 a docs page with three embedded viewers: separate histories, no scroll trapping, no errors.
     accept10) cp "$PAGE" "$OUT/accept10.html"; timeout 200 python3 "$T/suites/accept10.py" "$OUT/accept10.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
+    # v0.2.4 embed mode fits what is drawn and posts sbtel:size to a same-origin parent; &focus=<Block>.
+    accept11) cp "$PAGE" "$OUT/accept11.html"; timeout 200 python3 "$T/suites/accept11.py" "$OUT/accept11.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     *) echo "unknown suite $1"; return 1 ;;
   esac
 }

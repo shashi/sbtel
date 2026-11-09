@@ -7,7 +7,9 @@ says MUST, the conformance tests, the acceptance suites or a reviewer will hold 
 find something wrong or missing, fix this document in the same change as the code. Never let the two
 disagree silently.
 
-Status: v0.2.3 (§11, entries 97-103): the viewer is a proper HTML document with a device-width
+Status: v0.2.4 (§11, entries 104-106): embed mode fits what the diagram draws, reports its natural size
+to a same-origin parent page (`sbtel:size`) so the page can size the frame, and takes `&focus=<Block>`
+(§6.9). Before that, v0.2.3 (§11, entries 97-103): the viewer is a proper HTML document with a device-width
 viewport, the playground's "sbtel" links to the project's home page, and a standalone page loads a spec
 from its URL (`#src=`, `#example=`) and embeds in docs pages (`?embed`; §6.9). Before that, v0.2.2 (§11, entries 78-96): behaviors are read with a block's grammar (`:type`, ports,
 sketch, `implements`), a behavior may implement (extend) others, message types take `:type`, and
@@ -103,7 +105,7 @@ Data flow for the agent loop:
 | `viewer/build.mjs` | assembles `viewer/dist/index.html`; inlines `viewer/fonts/*.woff2` as data: URLs | frozen |
 | `viewer/fonts/` | the page's fonts (Hanken Grotesk, JetBrains Mono; OFL, from @fontsource-variable 5.3.0) and their licenses | release owner |
 | `viewer/dist/index.html` | built page, committed (go:embed needs it) | generated |
-| `viewer/test/` | acceptance suites and `run.sh`; accept6 (v0.2) covers callouts, editors, level labels and carried types; accept7 (v0.2.1) the standalone undo history across a browser restart; accept8 (v0.2.2) behavior and message pills, the implementers outline and a behavior's Edit dialog; accept9 (v0.2.3) `#src`, `#example`, `?embed` and the home link; accept10 (v0.2.3) three embedded viewers in one docs page | frozen (add suites, don't edit; §11 entry 51) |
+| `viewer/test/` | acceptance suites and `run.sh`; accept6 (v0.2) covers callouts, editors, level labels and carried types; accept7 (v0.2.1) the standalone undo history across a browser restart; accept8 (v0.2.2) behavior and message pills, the implementers outline and a behavior's Edit dialog; accept9 (v0.2.3) `#src`, `#example`, `?embed` and the home link; accept10 (v0.2.3) three embedded viewers in one docs page; accept11 (v0.2.4) the tight fit, `sbtel:size` and `&focus` | frozen (add suites, don't edit; §11 entry 51) |
 | `conformance/` | specs, cases, expected records, node runner | shared, see §2.9 |
 | `examples/*.sbtel` | sample specs; `viewer.sbtel` is the viewer's own spec, with `viewer.edges.txt`, and `sbtel.sbtel` the system's, its Go blocks checked against the Go code with `sbtel.edges.txt` (§8) | D |
 | `tools/docs/snippets.mjs` | dev-only: checks every spec and output in the docs against the binary (`make docs-check`) | release owner |
@@ -1151,7 +1153,7 @@ App features (index.html), in every mode; §11 entries 89-91 record the choices.
   dialog lists the behaviors it may extend (in scope where it is declared), with the inherited ports;
   a choice that would make a cycle is refused with "B already implements A: A cannot implement it too."
 
-### 6.9 The standalone page's URL, embed mode and the home link (v0.2.3)
+### 6.9 The standalone page's URL, embed mode and the home link (v0.2.3; size and focus v0.2.4)
 
 viewer/src/play.js, block `Viewer.Play`, registers `SBTEL.modes.standalone`; §11 entries 97-103 record
 the choices. The page itself is a full document: `<!doctype html>`, `<html lang="en">`, `<meta
@@ -1165,6 +1167,7 @@ the `@sbtel file App.Page` comment (a comment before the doctype keeps standards
 | `?embed` | embed mode, interactive |
 | `?embed=readonly` | embed mode, nothing edits |
 | `&theme=light`, `&theme=dark` (or `?theme=`) | a fixed theme; otherwise the system's (embed mode ignores a stored setting) |
+| `&focus=<Block>` (v0.2.4) | embed mode fits that block (an id such as `Notes.Store`, or a name) instead of the whole file; its ancestors start open. An unknown name fits the file |
 
 The query and the hash combine: `play/?embed=readonly&theme=dark#example=shell`. A change of the hash
 reloads the page. `?diff` (§6.4) still wins: diff.js switches the mode before Boot.
@@ -1191,8 +1194,25 @@ In embed mode, which has no source sheet, a card says "This spec cannot be drawn
   480 px the link shows only ↗.
 - Comments, the message table and the source sheet are the playground's: their menu items and strip
   buttons are left out, and anything else that would open them says so in a toast.
-- The diagram fits the frame on load and on resize (`fitPad` leaves room for the dock only), and the
-  layout width follows the frame (1.25 × its width, from 560 to 1180), so a small frame wraps rows.
+- The diagram fits the frame on load, on resize and on Fit, and the layout width follows the frame
+  (1.25 × its width, from 560 to 1180), so a small frame wraps rows. Since v0.2.4 the fit is tight: it
+  fits `contentBox(lay, focus, plus)` (Core.Layout), what is drawn: every card with the ears it draws
+  (a level item's box keeps room for both ears; only a block with ports, its own or its children's,
+  draws one), level lines with their names, the file's appendix band and, where the frame edits, the +
+  buttons; not the hover-only gutters, and not the layout's canvas width. Around it: 12 px, and 52 px
+  below for the dock. The zoom is at most 1 (the full app's 1.1 and its extra 40 px are gone), and a box
+  smaller than the frame is centred.
+- **Natural size** (v0.2.4). In a frame, the viewer posts `{ type: 'sbtel:size', width, height }` to
+  `window.parent`: the fitted box's size in CSS pixels at zoom 1, including the 12 px padding and the
+  dock's 52 px (so `width` = box width + 24, `height` = box height + 64). It posts after the first
+  layout and after any relayout (an edit, an open or close, a resize that changes the layout width)
+  that changes those numbers; a drag preview posts nothing. The target origin is fixed at `'/'`, the
+  frame's own origin: a docs page served with the viewer (the website's `/sbtel/docs/` and
+  `/sbtel/play/`) hears it, a page on another origin gets nothing and keeps its own frame height, so no
+  page learns about a diagram it did not serve. A page that is not framed posts nothing. A host should
+  match messages to frames by `event.source`, keep the frame's width, set its height from the ratio,
+  and ignore changes of a few pixels; changing only the height never changes the layout, so the two
+  cannot chase each other.
 - Without `&theme` the background is transparent (the dot grid stays), so the frame sits on the
   page's card; with a fixed theme it is the theme's canvas colour, so it reads on any card. The theme
   follows `prefers-color-scheme` as the frame sees it.
@@ -1205,11 +1225,16 @@ In embed mode, which has no source sheet, a card says "This spec cannot be drawn
   stops the canvas's handler, so the browser scrolls the outer page, and on touch the canvas allows
   `pan-x pan-y`, so a swipe scrolls the page. A small "Click to interact" pill shows on the first
   hover, and again when a wheel is ignored. The frame stops being live when its window loses focus. A
+  press focuses the frame's window (v0.2.4): a press on a card prevents mousedown's default, which also
+  kept the frame from taking focus, so it never blurred and stayed live. A
   page opened directly (not in a frame) is live from the start.
 
 accept9 checks the parameters, the errors, embed mode, read-only and the home link over HTTP; accept10
 loads a docs page with three embedded viewers and checks that their histories stay apart, that the
-page scrolls over an idle frame and a clicked one takes the wheel, and that nothing logs an error.
+page scrolls over an idle frame and a clicked one takes the wheel, and that nothing logs an error. accept11
+(v0.2.4) checks the tight fit, `sbtel:size` (numbers, once per layout, zoom 1 at the natural height,
+after an edit, not while dragging, silent across origins and unframed), `&focus`, and the release
+after a click on a card.
 
 ---
 
@@ -2181,3 +2206,15 @@ A, B, C and D run in parallel. When they merge:
 103. **Embed backgrounds** (v0.2.3). Transparent when the theme follows the system, so the demo sits on
     the docs page's card; the theme's canvas colour when `&theme` fixes it, since a forced dark demo on a
     light card would otherwise draw light text on light paper.
+104. **Embeds fit what is drawn** (v0.2.4, user request). A docs example is usually one block with
+    levels and a message band, tall and narrow; fitted with the full app's margins to the layout's canvas
+    width, it came out at 40-55% in a docs frame and was hard to read. Embed mode now fits `contentBox`
+    (a pure function of a layout in Core.Layout, so the website's build can run the same rule in node),
+    with a 12 px edge, room for the dock, and no zoom past 1.
+105. **The frame reports its natural size; the page sizes the frame** (v0.2.4, user request). The page
+    knows its column width and how tall a frame may be; the viewer knows its diagram. `sbtel:size`
+    carries the size at zoom 1, and the host sets the height. The target origin is fixed at `'/'`
+    rather than `'*'` or a configured list: the docs and the playground are served together, and a size
+    is still information about the page's content, so other origins get nothing.
+106. **`&focus=<Block>`** (v0.2.4, user request). A demo about one part of a larger spec can fit that
+    block: the camera and the reported size use its card; the rest of the file is still there to pan to.
