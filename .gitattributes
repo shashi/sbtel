@@ -1,0 +1,6 @@
+# Keep LF everywhere: the viewer build, conformance records and docs checks compare bytes.
+* text=auto eol=lf
+*.woff2 binary
+*.png binary
+*.ico binary
+*.exe binary

@@ -114,6 +114,11 @@ func run(o options) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The go tool reports files by their real path (on macOS /var is a link to /private/var),
+	// so resolve links here too, or paths made relative to dir come out as ../../private/...
+	if real, err := filepath.EvalSymlinks(dir); err == nil {
+		dir = real
+	}
 	seen := map[string]bool{}
 	for _, g := range o.goos {
 		for _, t := range o.tags {
