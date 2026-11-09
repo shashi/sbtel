@@ -1,0 +1,9 @@
+(message Order (~ A customer's order. ~))
+(level
+  (block Checkout
+    (message CardToken (~ An opaque payment token; it never leaves Checkout. ~))
+    (port order out Order)
+    (level (block Form (port token out CardToken) (~ Collects the card. ~)))
+    (level (block Gateway (port token in CardToken) (~ Charges the card. ~)))))
+(level
+  (block Fulfilment (port order in Order) (~ Packs and ships. ~)))

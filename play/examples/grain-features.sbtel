@@ -1,0 +1,15 @@
+; A product, one block per feature.
+(block Notebook :type "product"
+  (~ Notes for people who write a lot. ~)
+  (level :name "What people do"
+    (block Writing :type "feature" (~ Write and format a note. ~))
+    (block Sharing :type "feature" (~ Share a note with a link. ~))
+    (block Finding :type "feature" (~ Find any note in a second. ~)))
+  (level :name "What makes it work"
+    (adjacent (~ An offline edit syncs when the network returns. ~)
+      (block Sync :type "feature" (~ The same notes on every device. ~))
+      (block Offline :type "feature" (~ Works without a network. ~)))
+    (block Search :type "feature" (~ Full-text search over every note. ~)))
+  (level :name "Foundations"
+    (block Accounts :type "feature" (~ Sign-in and who owns what. ~))
+    (block Storage :type "feature" (~ Notes kept safe and versioned. ~))))

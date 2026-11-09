@@ -1,0 +1,17 @@
+(message Event :type "struct" (~ One state change. ~))
+(message Image :type "struct" (~ Encoded pixels. ~))
+(behavior (Store T) :type "trait"
+  (port put in T)
+  (port get out T)
+  (~ Keeps values of T and returns them on request. ~))
+(behavior Durable :type "trait"
+  (implements (Store Event))
+  (~ A Store of events that keeps each one until it is acknowledged. ~))
+(behavior (Cache K) :type "trait"
+  (implements (Store K))
+  (~ A Store that may forget, oldest first. ~))
+(level
+  (block Log (implements Durable) (~ An append-only event log. ~))
+  (block Audit (implements Durable) (~ Who changed what, kept for a year. ~))
+  (block Thumbnails (implements (Cache Image)) (~ Small previews, rebuilt on demand. ~))
+  (block Avatars (implements (Cache Image)) (~ People's pictures. ~)))

@@ -1,0 +1,15 @@
+(message Event (~ Something the user did. ~))
+(message Click (refines Event) (~ A mouse button pressed and released. ~))
+(message Key (refines Event) (~ A key pressed. ~))
+(message Selection (~ The selected ids. ~))
+(message Camera (~ Pan and zoom. ~))
+(message Snapshot (carries Selection Camera) (~ What undo restores. ~))
+(level :name "Reacting"
+  (block History (port undo in Snapshot) (port seen in Event))
+  (block Autosave (port save in Snapshot))
+  (block Menu (port open in Click))
+  (block Shortcuts (port key in Key)))
+(level :name "Input"
+  (block Mouse (port click out Click) (port view out Camera))
+  (block Keyboard (port key out Key))
+  (block Picker (port picked out Selection)))

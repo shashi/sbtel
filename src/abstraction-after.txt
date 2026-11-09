@@ -1,0 +1,7 @@
+$ cat edges.txt
+Notes.Main -> Notes.Editor        # src/main.ts:3
+Notes.Main -> Notes.DiskStore     # src/main.ts:4
+Notes.Editor -> Durable           # src/editor.ts:7
+
+$ sbtel check notes.sbtel --bindings edges.txt
+notes.sbtel: 3 bindings, 0 not allowed

@@ -1,0 +1,8 @@
+$ cat edges.txt
+Notes.Main -> Notes.Editor        # src/main.ts:3
+Notes.Main -> Notes.DiskStore     # src/main.ts:4
+Notes.Editor -> Notes.DiskStore   # src/editor.ts:7
+
+$ sbtel check notes.sbtel --bindings edges.txt
+edges.txt:3: Notes.Editor -> Notes.DiskStore: same-level: Notes.Editor and Notes.DiskStore share level 1 "Parts" of Notes but are not adjacent  (src/editor.ts:7)
+notes.sbtel: 3 bindings, 1 not allowed, 0 explained

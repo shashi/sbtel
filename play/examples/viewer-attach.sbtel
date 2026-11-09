@@ -1,0 +1,12 @@
+(message Edit (~ A change to one note's text. ~))
+(message Changed (~ A stored note changed. ~))
+(behavior Durable :type "interface"
+  (port edit in Edit)
+  (~ Keeps every accepted edit until it is on disk. ~))
+(level :name "Editing"
+  (block Editor (port edit out Edit) (~ The text area. ~))
+  (block Preview (port changed in Changed) (~ Renders the note. ~)))
+(level :name "Keeping"
+  (block Store (port changed out Changed) (~ Keeps notes on disk. ~))
+  (block Log (implements Durable) (~ An append-only journal. ~))
+  (block Backup (implements Durable) (~ A copy on another disk. ~)))

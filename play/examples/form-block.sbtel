@@ -1,0 +1,4 @@
+(block Notes :type "app"
+  (~ Write notes, see them rendered, keep them on disk. ~)
+  (level (block Notes.Editor :type "module" (~ The text area. ~)))
+  (level (block Notes.Store :type "module" (~ Keeps notes on disk. ~))))

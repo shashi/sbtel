@@ -1,0 +1,12 @@
+(message Event (~ Something the user did. ~))
+(message Click (refines Event) (~ A mouse button pressed and released. ~))
+(message DoubleClick (refines Click) (~ Two clicks close together. ~))
+(message Key (refines Event) (~ A key pressed. ~))
+(level :name "Listeners"
+  (block Log (port any in Event) (~ Records every event. ~))
+  (block Menu (port open in Click) (~ Opens on any click. ~))
+  (block Zoom (port reset in DoubleClick) (~ Resets on a double click. ~))
+  (block Shortcuts (port key in Key) (~ Runs commands from keys. ~)))
+(level :name "Sources"
+  (block Mouse (port click out Click) (port dbl out DoubleClick))
+  (block Keyboard (port key out Key)))

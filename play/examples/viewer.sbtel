@@ -1,0 +1,196 @@
+; The viewer page (viewer/dist/index.html), recovered from its code: viewer/src/index.html,
+; viewer/src/session.js, viewer/src/review.js, viewer/src/server.js, viewer/src/diff.js and core/core.js. The code carries
+; matching @sbtel annotations, and examples/viewer.edges.txt lists who names whom (make edges);
+; make selfcheck holds the three to each other.
+;
+; Build: viewer/build.mjs inlines core.js, session.js, review.js, server.js and diff.js into the one <script> of
+; index.html, so every top-level declaration is a global of one page script. There are no imports:
+; the bindings come from identifier references resolved by the TypeScript checker, plus
+; getElementById ids ($('x')) resolved to the markup.
+;
+; The levels are the ones the code mostly follows. Where the code breaks it, the edge stays in
+; viewer.edges.txt with a # VIOLATION: note, and the block below carries a ; VIOLATION note too.
+; Nearly all of them are one pattern: a lower feature calls render() (App.Canvas) to refresh.
+;
+; Core is the page's copy of core/core.js. examples/sbtel.sbtel shows the same file as
+; Sbtel.Core, shared by the page and the binary.
+(block Viewer
+  (sketch "The single-page diagram viewer that sbtel serves for a spec, a session or a diff.")
+  (message TextRun (sketch "A string and a CSS font to measure, with a width when it is to be wrapped."))
+  (message TextSize (sketch "A width in pixels, or a number of wrapped lines."))
+  (message ModeHandler
+    (sketch "A { boot } object a page mode registers under its name in SBTEL.modes; Boot runs the one for the URL."))
+  (message CommentBatch (carries Comment)
+    (sketch "The human's saved comments, handed off by the app's openSend for delivery."))
+  (message SessionEvent
+    (sketch "A server-sent event from the sbtel server: hello, version, reply or closed."))
+  (message Comment
+    (sketch "One comment POSTed to the sbtel server: target, label, text, version and source excerpt."))
+  (message SpecText
+    (sketch "A spec's source with its version and hash, as GET spec returns and POST save sends."))
+  ; Dependency inversion: Core.Layout calls the measurer only through MeasuresText (layout's parameter M,
+  ; typed by a JSDoc @typedef in core.js), App.Kit's M implements it, and the app passes M in. It is
+  ; declared here, where both can see it; lint notes it could live in App.Kit, its one implementer, since
+  ; lint does not read the bindings that show Core.Layout calling through it.
+  (behavior MeasuresText :type "JSDoc typedef"
+    (port run in TextRun)
+    (port size out TextSize)
+    (sketch "Answers tw(text, font) with a width and wrap(text, font, width) with a line count."))
+
+  (level
+    (block Viewer.Boot
+      (port mode in ModeHandler)
+      (sketch "Starts the page: loads fonts, then runs the registered handler for the current mode, or shows the sample.")))
+  (level :name "Page modes"
+    (block Viewer.Server
+      (port mode out ModeHandler)
+      (port events in SessionEvent)
+      (port spec in SpecText)
+      (port save out SpecText)
+      ; Braided: loading, live updates, saving and the app hooks share one closure (S).
+      ; It also reassigns app functions (setSource, edit, renderChecks, showChecks...).
+      (sketch "Server mode: keeps the page in step with one sbtel session over HTTP and SSE."))
+    (block Viewer.Diff
+      (port mode out ModeHandler)
+      (port events in SessionEvent)
+      (port diff in DiffPair)
+      (message DiffPair (carries SpecText)
+        (sketch "Both sides of a diff, as GET diff.json returns them."))
+      ; It reassigns app functions (render, edit, fit, menuItems...) to make the app a read-only diff
+      ; view, and wraps the measurer's tw and wrap so that cards have room for the change marks.
+      (sketch "Diff mode: draws two versions of a spec as one picture with ghosts and a change list."))
+    (block Viewer.Play
+      (port mode out ModeHandler)
+      ; Reads #src, #example, ?embed and &theme (§6.8). In embed mode it reassigns app functions
+      ; (openComposer, menuItems, renderStrip; with readonly, edit, pressStart...), as the other modes do.
+      (sketch "The standalone page: the sample, or a spec from the URL with its own storage keys; embed mode for docs pages; the home link.")))
+  (level
+    (block Viewer.Review
+      (port review out Review)
+      (message Review (carries Comment SpecText)
+        (sketch "One review POSTed to the sbtel server: a message, comments and, with edits, the proposed spec and its base."))
+      ; Server and Diff each make one (sessionReview) and wire it into the app: it reassigns the
+      ; composer, openThread, saveComments, paint and fillBlock, and adds the Review button and panel.
+      ; Server mode gives it the edits (the draft's base and the proposal); diff mode gives none.
+      (sketch "The draft review: pending comments, a message and the edits, kept in local storage and sent together; and a comparison in a new tab.")))
+  (level
+    (block Viewer.Session
+      (port send in CommentBatch)
+      (port comment out Comment)
+      ; Server and Diff each wire it into the app (it reassigns openSend, commentCounts and openThread)
+      ; and pass it the replies they receive. It also rebuilds the reviews from the log.
+      (sketch "Comments in a session: posted to the server, kept with their threads and the agent's replies."))
+    (block Viewer.Changes
+      (sketch "A change list from a diff result: its rows and their markup, for the diff view and the Review panel.")))
+  (level
+    (block App
+      (sketch "The interactive diagram editor: canvas, panels and gestures over one spec source.")
+      (level
+        (block App.Input
+          ; Pointer, drag, context menu, keyboard, toolbar and source-sheet listeners.
+          (sketch "Turns pointer gestures, keys and toolbar clicks into calls on the features below.")))
+      (level
+        (adjacent (~ The canvas draws what a callout points at; a callout outlines partners on the canvas. ~)
+          (block App.Canvas
+            ; render() is the page's refresh: most features below call it back (see viewer.edges.txt).
+            (sketch "Draws the current layout as cards, lines and drawers, with selection on it."))
+          (block App.Callouts
+            (sketch "Sketch callouts beside ports, levels and adjacency lines, which turn into editors in place; and who carries a type."))))
+      (level
+        (adjacent
+          (block App.Comments
+            ; VIOLATION (viewer.edges.txt): comment actions call render() to redraw badges.
+            (port send out CommentBatch)
+            (sketch "Comment drafts and threads on blocks, lines and types; cooperates with the message table, which shows their counts."))
+          (block App.Messages
+            (sketch "The message-type table sheet; cooperates with comments, whose counts and composer it shows.")))
+        (block App.Checks
+          (sketch "The checks pill and its popover of layout and spec check results."))
+        (block App.Code
+          (sketch "The code overlay that shows a block's source text."))
+        (block App.EditDialog
+          (sketch "Dialogs that edit an element in place or confirm a delete.")))
+      (level
+        (block App.Popovers
+          ; VIOLATION (viewer.edges.txt): the info-card handlers here read pointer state and open the
+          ; message table.
+          (sketch "Floating popovers placed next to an anchor, including type and behavior info cards.")))
+      (level
+        (block App.Camera
+          ; VIOLATION (viewer.edges.txt): goTo() navigates, so it reaches up to render, select, closePop
+          ; and the source sheet, and applyCam() moves the selection strip and any open callout.
+          ; Navigation is braided into the camera.
+          (sketch "Pan and zoom of the canvas: fit, center on and go to an element."))
+        (block App.Modals
+          ; VIOLATION (viewer.edges.txt): the settings dialog calls render() on every option change.
+          (sketch "Modal dialogs, including the settings dialog with the theme.")))
+      (level
+        (block App.Document
+          ; The global `state` object holds more than the spec: camera, selection, comments, options.
+          ; VIOLATION (viewer.edges.txt): setSource() calls render() and renderMsgTable() directly; it
+          ; should emit a change.
+          (sketch "The page state over one spec source: its parsed model, edits, and undo and redo that persist.")))
+      (level
+        (block App.History
+          (sketch "The undo history on disk: the current text and each step as a patch from its neighbour, under a size cap.")))
+      (level
+        (block App.Kit
+          (implements MeasuresText)
+          ; M is the measurer: an offscreen canvas. The app passes it to layout() as its third argument.
+          (sketch "DOM and text primitives: element lookup, text measuring, escaping, icons, local storage, toasts."))
+        (block App.Page
+          (sketch "The static markup and stylesheet the code fills: viewport, dock, sheets, settings template.")))))
+  (level
+    (block Core
+      (sketch "The pure language core shared with the CLI: parse, check, lay out, edit and diff specs.")
+      (behavior Pure
+        (sketch "Same input, same output: no DOM, no IO, no clock, no global state written. The same text runs in the page, node and goja."))
+      (level
+        (block Core.Layout
+          (implements Pure)
+          (port measure out TextRun)
+          (port size in TextSize)
+          ; layout(model, opts, M) takes the measurer as a parameter and never names the page's M: it binds
+          ; MeasuresText only (the abstraction rule), the core stays free of the DOM, and diff mode can lend
+          ; it a wrapped measurer.
+          (sketch "Computes the geometry of a model for a given set of open blocks and options."))
+        (block Core.Edits
+          (implements Pure)
+          (sketch "Text edits on a spec source that keep the user's formatting: insert, delete, move, attach."))
+        (block Core.Diff
+          (implements Pure)
+          (sketch "What changed between two models, with word diffs of sketches and affected ports."))
+        (block Core.Lint
+          (implements Pure)
+          (sketch "The language's scope rules over a model, and the failures an edit would add."))
+        (block Core.Random
+          (implements Pure)
+          (sketch "Seeded random specs for stress tests.")))
+      (level
+        (block Core.Scope
+          (implements Pure)
+          (sketch "What an edit dialog may offer: behaviors and types in scope, port and name problems."))
+        (block Core.LayoutChecks
+          (implements Pure)
+          (sketch "Invariants any layout must keep: order, overlap, containment, adjacency chains.")))
+      (level
+        (block Core.Model
+          (implements Pure)
+          ; Braided: also holds display helpers (dotsOf, portLabel, countText, drawerH) used by layout
+          ; and the page.
+          (sketch "Builds the block tree from s-expressions and answers queries on it.")))
+      (level
+        (block Core.Reader
+          (implements Pure)
+          (sketch "Tokenizes spec text and reads it into s-expressions."))
+        (block Core.Bindings
+          (implements Pure)
+          (sketch "The bindings file syntax, with its violation notes, and the verdict on one code binding.")))
+      (level
+        (block Core.Constants
+          (implements Pure)
+          (sketch "Layout metrics, fonts and the language's form names."))))
+    (block Viewer.Mode
+      (sketch "How the page was opened (standalone, server or diff), and the registry of mode handlers."))
+    (block Viewer.Sample
+      (sketch "The built-in sample spec shown in the standalone playground."))))

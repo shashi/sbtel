@@ -1,0 +1,8 @@
+(block Notes
+  (behavior Durable :type "interface" (~ Keeps edits until they are on disk. ~))
+  (level :name "Composition"
+    (block Notes.Main (~ Builds a store and hands it to the editor. ~)))
+  (level :name "Parts"
+    (block Notes.Editor (~ Saves through the Durable it is given. ~))
+    (block Notes.DiskStore (implements Durable) (~ Writes notes to files. ~))
+    (block Notes.MemoryStore (implements Durable) (~ Keeps notes in memory, for tests. ~))))

@@ -1,0 +1,106 @@
+<!-- title: Guide -->
+<!-- description: The sbtel guide: the kind of design sbtel helps you make, every form with a live example, and what you can express with them. -->
+<h1>Guide</h1>
+<p class="intro">sbtel describes a system as blocks in levels. This guide is the concept and the manual in one: each idea comes with the real viewer, live, so you can poke at it. Click a diagram to interact with it; <span class="nowrap">&#8599;</span> opens it in the playground. Exact rules live in the <a href="reference/">Reference</a>.</p>
+
+<h2 id="design">The kind of design sbtel helps you make</h2>
+<p>Architecture is mostly a question of what knows what. sbtel asks you to make four things explicit.</p>
+<dl class="ideas">
+  <dt>Levels are vocabularies.</dt>
+  <dd>As in the stratified design of <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/full-text/book/book-Z-H-14.html"><cite>Structure and Interpretation of Computer Programs</cite></a>, each level is a language built from the levels below it. A block may use what is below it, never what is above, so a lower level can change without the upper ones noticing.</dd>
+  <dt>One strand per block.</dt>
+  <dd>If a block's one sentence needs an &ldquo;and&rdquo;, it is two blocks. Simple, in Rich Hickey's sense (<a href="https://www.infoq.com/presentations/Simple-Made-Easy/">&ldquo;Simple Made Easy&rdquo;</a>), means one strand, not braided with others.</dd>
+  <dt>Coupling is declared.</dt>
+  <dd>Peers in a level don't know each other unless you say they are <em>adjacent</em>: a braid you chose, drawn as a line. Anything else talks through messages.</dd>
+  <dt>Data is values.</dt>
+  <dd>A message is typed data that crosses a boundary, not a call. <code>carries</code> says what is inside it, so you can follow one piece of data through the whole system.</dd>
+</dl>
+<sbtel-demo example="notes" height="600">A notes app. Point at the line between Editor and Preview, at a level&rsquo;s name, or at a dot on an ear. Click one to edit it.</sbtel-demo>
+
+<h2 id="forms">The forms at a glance</h2>
+<p>That is the whole language: eleven forms and one keyword.</p>
+<dl class="forms">
+  <dt><code>(block Name &hellip;)</code></dt><dd>A part of the system: a feature, a service, a package, a file, a function.</dd>
+  <dt><code>:type "&hellip;"</code></dt><dd>What a block, behavior or message is in code. It shows as a pill.</dd>
+  <dt><code>(sketch "&hellip;")</code>, <code>(~ &hellip; ~)</code></dt><dd>One plain sentence about an element. The tilde form needs no quoting.</dd>
+  <dt><code>(level :name "&hellip;" &hellip;)</code></dt><dd>One level. Levels run top to bottom; each is built from those below.</dd>
+  <dt><code>(adjacent &hellip;)</code></dt><dd>Peers in one level that may know each other.</dd>
+  <dt><code>(port name in|out Type)</code></dt><dd>A typed input, on the card&rsquo;s top ear, or output, on its bottom ear.</dd>
+  <dt><code>(message Name &hellip;)</code></dt><dd>A kind of data, exchanged where neither side names the other.</dd>
+  <dt><code>(refines T)</code></dt><dd>Is-a: a subtype of T. A port that takes T takes it too.</dd>
+  <dt><code>(carries A B)</code></dt><dd>Has-a: a value of this type holds values of A and B.</dd>
+  <dt><code>(behavior Name &hellip;)</code></dt><dd>Shared vocabulary: a named set of ports, like an interface or a trait.</dd>
+  <dt><code>(implements Name)</code></dt><dd>A block, or a behavior, takes on a behavior&rsquo;s ports.</dd>
+</dl>
+
+<h2 id="each">Each form, with a toy</h2>
+
+<h3 id="block">Blocks, <code>:type</code> and sketches</h3>
+<p>A block is any part of the system. <code>:type</code> grounds it in code, and its sketch says what it is for in one sentence. A block can hold levels of its own, so one picture works from the whole system down to a single file.</p>
+<sbtel-demo example="form-block" height="420">Click the triangle on Notes to close and open it. Select a block and choose Edit to change its type or sketch.</sbtel-demo>
+
+<h3 id="level">Levels</h3>
+<p>Levels run top to bottom, and each is named for the vocabulary it offers upward. A level&rsquo;s sketch, when it has one, states the barrier: what the level above may know of it.</p>
+<sbtel-demo example="form-level" height="560">Point at &ldquo;Rational numbers as numerators and denominators&rdquo; to read its barrier. Click a level&rsquo;s name to edit it.</sbtel-demo>
+
+<h3 id="adjacent">Adjacency</h3>
+<p>Blocks in one level are independent. <code>adjacent</code> declares the exception, with a sentence that says why. Use it for two peers that are really one cooperation, and rarely.</p>
+<sbtel-demo example="form-adjacent" height="300">Point at the line to read why. Drag Sync onto the line to join the group; select the line and press Delete to cut it.</sbtel-demo>
+
+<h3 id="message">Ports and messages</h3>
+<p>A message type is data. Inputs sit on a card&rsquo;s top ear, outputs on its bottom ear. Keymap sends a <code>KeyChord</code> and Palette takes one, but neither names the other: something above wires them. Flow that goes upward, like an event or a callback, is always a message.</p>
+<sbtel-demo example="form-message" height="380">Click Keymap&rsquo;s lower ear to open its outputs, then point at <code>chord</code>: Palette lights up, the block it can talk to.</sbtel-demo>
+
+<h3 id="types"><code>refines</code> and <code>carries</code></h3>
+<p>Two relations between types, and only two. <code>refines</code> is is-a: a <code>Click</code> is an <code>Event</code>, so a port that takes events takes clicks. <code>carries</code> is has-a: a <code>Snapshot</code> holds a <code>Selection</code> and a <code>Camera</code>, drawn as dots on its lower ear. It never changes what a port takes.</p>
+<sbtel-demo example="form-types" height="540">Point at <code>Camera</code>: Snapshot, which carries it, lights up, and so does every block that touches either. Open History&rsquo;s inputs and point at <code>seen</code>: every source of an Event, or of a subtype, lights up.</sbtel-demo>
+
+<h3 id="behavior">Behaviors and <code>implements</code></h3>
+<p>A behavior is a promise many blocks make: a set of ports and a sketch of what holds. A block that implements it gains its ports.</p>
+<sbtel-demo example="form-behavior" height="480">Point at Surface: its implementers light up. Open Sidebar&rsquo;s ears: the ports came from Surface.</sbtel-demo>
+
+<h3 id="scope">Scope</h3>
+<p>Behaviors and message types are scoped: declared in a block, they are visible in it and in everything inside it. <code>CardToken</code> lives in Checkout, so only Checkout&rsquo;s parts can use it. The viewer holds you to that while you edit.</p>
+<sbtel-demo example="form-scope" height="600">Drag Form out of Checkout: every drop zone outside it is red. Drop it there anyway and it bounces back, with a toast that says why.</sbtel-demo>
+
+<h2 id="grain">One language, any grain</h2>
+<p>A block maps to whatever you are working with. Change <code>:type</code> and keep the language: the same rules hold for files, packages and features.</p>
+
+<h3 id="by-files">A web app, by files</h3>
+<sbtel-demo example="grain-files" height="600"></sbtel-demo>
+
+<h3 id="by-packages">A Go service, by packages</h3>
+<sbtel-demo example="grain-packages" height="660"></sbtel-demo>
+
+<h3 id="by-features">A product, by features</h3>
+<sbtel-demo example="grain-features" height="540"></sbtel-demo>
+
+<h2 id="messages">What a message can be</h2>
+<p>If it crosses a boundary and neither side names the other, it is a message: an event, an HTTP request, a queue item, a callback, a CLI&rsquo;s standard output, a database row. <code>:type</code> says which. <code>carries</code> says what is inside, so you can follow one value across all of them.</p>
+<sbtel-demo example="message-kinds" height="660">Point at <code>Body</code>: every message that holds a note&rsquo;s text lights up, and so does every block that sends or takes one.</sbtel-demo>
+
+<h2 id="inheritance">Inheritance, and how it is drawn</h2>
+<p>sbtel has two kinds of inheritance: data subtyping with <code>refines</code>, and shared vocabulary with behaviors.</p>
+
+<h3 id="subtypes">Subtypes and port compatibility</h3>
+<p>An input takes its own type or any subtype of it, through any chain. Log takes every event, Menu every click, double clicks included, and Zoom only double clicks.</p>
+<sbtel-demo example="inherit-refines" height="540">Open each listener&rsquo;s top ear and point at its port to see which sources it accepts.</sbtel-demo>
+
+<h3 id="interfaces">Behaviors as interfaces</h3>
+<p>Sidebar and Canvas implement Surface and get its ports; Canvas adds one of its own. A behavior&rsquo;s card lists its implementers when you point at it.</p>
+<sbtel-demo example="inherit-behavior" height="480">Open Canvas&rsquo;s top ear: <code>frame</code> comes from Surface, <code>zoom</code> is its own.</sbtel-demo>
+
+<h3 id="extends">Extending, and parameters</h3>
+<p>A behavior may implement another, as a supertrait does, and may take parameters. <code>Durable</code> is a <code>Store</code> of <code>Event</code>s. <code>Cache K</code> is a <code>Store</code> of <code>K</code>, so Thumbnails, a <code>Cache</code> of <code>Image</code>, has <code>put</code> and <code>get</code> typed <code>Image</code>.</p>
+<sbtel-demo example="inherit-extends" height="480">Point at Store: every block that implements it, directly or through Durable or Cache, lights up.</sbtel-demo>
+
+<h3 id="abstraction">Calling through an abstraction</h3>
+<p>Editor and DiskStore are peers, so Editor may not name DiskStore. It saves through <code>Durable</code> instead, and only Main, the composition root above them, builds the store and hands it over. That is dependency inversion, and <code>sbtel check</code> sees it: a binding to a behavior in scope passes under the rule <code>abstraction</code>.</p>
+<sbtel-demo example="inherit-abstraction" height="480"></sbtel-demo>
+<div class="pair-out">
+<sbtel-code file="src/abstraction-before.txt" label="Editor names DiskStore"></sbtel-code>
+<sbtel-code file="src/abstraction-after.txt" label="Editor names Durable"></sbtel-code>
+</div>
+
+<h2 id="reference">The full reference</h2>
+<p>This guide leaves out the edge cases on purpose. The <a href="reference/">Reference</a> has the exact rules of every form, scope and binding, every lint check with its message, the annotation syntax and the whole tool loop. The <a href="viewer/">Viewer manual</a> covers reading and editing the picture, and working with your agent.</p>

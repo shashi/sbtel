@@ -1,0 +1,10 @@
+(block Rationals
+  (level :name "Programs that use rational numbers"
+    (block Program))
+  (level :name "Rational numbers in the problem domain"
+    (block Arithmetic (~ add-rat, sub-rat, mul-rat, div-rat ~)))
+  (level :name "Rational numbers as numerators and denominators"
+    (~ Above here, a rational is make-rat, numer and denom; never the pair. ~)
+    (block Rat (~ make-rat, numer, denom ~)))
+  (level :name "Rational numbers as pairs"
+    (block Pair (~ cons, car, cdr ~))))

@@ -1,0 +1,19 @@
+; What a message can be: anything that crosses a boundary without either side naming the other.
+(block Notes :type "system"
+  (message Body :type "struct" (~ A note's title and text. ~))
+  (message SaveRequest :type "HTTP request" (carries Body) (~ POST /notes/:id from the browser. ~))
+  (message NoteSaved :type "event" (carries Body) (~ A note reached the database. ~))
+  (message IndexJob :type "queue item" (carries Body) (~ Work for the search indexer. ~))
+  (message Progress :type "callback" (~ How far an export has got. ~))
+  (message ExportText :type "stdout" (carries Body) (~ What `notes export` prints. ~))
+  (message NoteRow :type "database row" (carries Body) (~ One row of the notes table. ~))
+  (level :name "Clients"
+    (block Browser :type "app" (port save out SaveRequest) (port saved in NoteSaved))
+    (block CLI :type "binary" (port progress in Progress) (port stdout out ExportText))
+    (block Backup :type "shell script" (port stdin in ExportText)))
+  (level :name "Services"
+    (block API :type "service" (port save in SaveRequest) (port saved out NoteSaved) (port job out IndexJob))
+    (block Indexer :type "worker" (port job in IndexJob))
+    (block Exporter :type "library" (port progress out Progress) (port row in NoteRow)))
+  (level :name "Storage"
+    (block Database :type "Postgres" (port row out NoteRow))))

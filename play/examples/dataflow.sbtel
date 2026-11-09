@@ -1,0 +1,9 @@
+(message Selection (~ The selected ids. ~))
+(message Camera (~ Pan and zoom. ~))
+(message Snapshot (carries Selection Camera) (~ What undo restores. ~))
+(level :name "Snapshots"
+  (block History (port undo in Snapshot))
+  (block Autosave (port save in Snapshot)))
+(level :name "Drawing"
+  (block Canvas (port view out Camera))
+  (block Picker (port picked out Selection)))
