@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sbtel: architecture in levels</title>
-<meta name="description" content="sbtel is a language to design, understand, and collaborate on a system's architecture with AI. Blocks in levels, where every dependency points down.">
+<meta name="description" content="sbtel is a language to design, understand, and collaborate on systems at any granularity. Blocks in levels, where every dependency points down.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/hanken-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -33,12 +33,29 @@
   <div class="hero-top">
     <h1 id="h1">Untangle code and systems together with AI.</h1>
     <div class="hero-side">
-      <p class="tag">sbtel is a language to design, understand, and collaborate on a system's architecture with AI.</p>
-      <div class="install">
-        <code id="inst">curl -fsSL https://raw.githubusercontent.com/shashi/sbtel/main/install.sh | sh</code>
-        <button type="button" id="copy" aria-describedby="inst">Copy</button>
+      <p class="tag">sbtel is a language to design, understand, and collaborate on systems at any granularity.</p>
+      <div class="inst-tabs" role="tablist" aria-label="How to install">
+        <button type="button" role="tab" id="tab-go" aria-selected="true" aria-controls="pane-go" data-k="go">Go binary</button>
+        <button type="button" role="tab" id="tab-cc" aria-selected="false" aria-controls="pane-cc" data-k="cc" tabindex="-1">Claude Code</button>
       </div>
-      <p class="alt">macOS, Linux and Git Bash. For PowerShell, see <a href="https://github.com/shashi/sbtel#install">the install notes</a>.</p>
+      <div class="inst-pane" role="tabpanel" id="pane-go" aria-labelledby="tab-go">
+        <div class="install">
+          <code id="inst-go" class="sh">curl -fsSL https://raw.githubusercontent.com/shashi/sbtel/main/install.sh | sh</code>
+          <button type="button" class="copy" aria-describedby="inst-go">Copy</button>
+        </div>
+        <p class="alt">macOS, Linux and Git Bash. For PowerShell, see <a href="https://github.com/shashi/sbtel#install">the install notes</a>.</p>
+      </div>
+      <div class="inst-pane" role="tabpanel" id="pane-cc" aria-labelledby="tab-cc" hidden>
+        <div class="install">
+          <code id="inst-cc" class="multi">/plugin marketplace add shashi/sbtel
+/plugin install sbtel@sbtel</code>
+          <button type="button" class="copy" aria-describedby="inst-cc">Copy</button>
+        </div>
+        <p class="alt">The skills use the sbtel binary, so install that too.</p>
+      </div>
+      <script>try { if (localStorage.getItem('sbtel-install-tab') === 'cc') { var g = document.getElementById('tab-go'), c = document.getElementById('tab-cc');
+        g.setAttribute('aria-selected', 'false'); g.tabIndex = -1; c.setAttribute('aria-selected', 'true'); c.removeAttribute('tabindex');
+        document.getElementById('pane-go').hidden = true; document.getElementById('pane-cc').hidden = false; } } catch (e) {}</script>
       <div class="ctas">
         <a class="btn primary" href="play/">Open the playground</a>
         <a class="btn" href="docs/">Read the guide</a>
@@ -144,9 +161,9 @@ notes.sbtel: 9 bindings, <span class="hl-ok">0 not allowed</span></pre>
   <h2 class="term" id="t-blocks">Blocks</h2>
   <div class="pair">
     <div class="txt">
-      <p class="lead">A block is one part of the system: a feature, a service, a file, a function.</p>
-      <p><code>:type</code> grounds it in code. Its sketch is one plain sentence about what it is for. If the sentence needs an &ldquo;and&rdquo;, it is two blocks: one strand per block.</p>
-      <p>A block can hold levels of its own, so one picture works from the whole system down to a single file.</p>
+      <p class="lead">A block is one part of the system: it can be a feature, a service, a file, or a function.</p>
+      <p>A block can contain levels and other blocks, so you can progressively expand it with AI, from a subsystem down to a function. Its sketch is one plain sentence about what it is for. If the sentence needs an &ldquo;and&rdquo;, it is two blocks: one strand per block.</p>
+      <p><code>:type</code> says what it is in the code.</p>
 <pre class="code" data-lang="sbtel" id="bk-src">(block Store :type "Module"
   (~ Keeps notes on disk, so they survive a restart. ~))</pre>
     </div>
@@ -179,49 +196,55 @@ notes.sbtel: 9 bindings, <span class="hl-ok">0 not allowed</span></pre>
   <div class="pair">
     <div class="txt">
       <p class="lead">Each level is a vocabulary built from the level below. A block may use what is below it, never what is above.</p>
-      <p>This is the stratified design of <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/full-text/book/book-Z-H-14.html"><cite>Structure and Interpretation of Computer Programs</cite></a>. Rational numbers are built from pairs, arithmetic from rational numbers, programs from arithmetic. Each line is an abstraction barrier: above it, a rational number is <code>make-rat</code>, <code>numer</code> and <code>denom</code>, never a pair.</p>
+      <p>In a small shop, pages are made of shopping, shopping of prices, and prices of what is stored. Each line is a barrier: a page talks about carts and checkouts, never about tables and rows. This is the stratified design of <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/full-text/book/book-Z-H-14.html"><abbr title="Structure and Interpretation of Computer Programs">SICP</abbr></a>.</p>
       <p>Levels run top to bottom. Level 1 is the lowest, and knows nothing of the rest.</p>
-<pre class="code" data-lang="sbtel">(block Rationals
-  (level :name "Programs that use rational numbers"
-    (block Program))
-  (level :name "Rational numbers in the problem domain"
-    (block Arithmetic (~ add-rat, sub-rat, mul-rat, div-rat ~)))
-  (level :name "Rational numbers as numerators and denominators"
-    (block Rat (~ make-rat, numer, denom ~)))
-  (level :name "Rational numbers as pairs"
-    (block Pair (~ cons, car, cdr ~))))</pre>
+<pre class="code" data-lang="sbtel">(block Shop
+  (level :name "Pages"
+    (block Storefront))
+  (level :name "Shopping"
+    (block Cart) (block Checkout))
+  (level :name "Prices"
+    (block Pricing) (block Tax))
+  (level :name "Storage"
+    (block Database)))</pre>
     </div>
     <figure class="fig">
       <div class="frame dgm" id="lv">
-        <div class="lvl"><div class="lname"><span>Programs that use rational numbers</span></div><div class="row" data-i="0">
-          <button type="button" class="blk" data-id="Program" aria-describedby="lv-help">Program</button></div></div>
-        <div class="lvl"><div class="lname"><span>Rational numbers in the problem domain</span></div><div class="row" data-i="1">
-          <button type="button" class="blk" data-id="Arithmetic" aria-describedby="lv-help">Arithmetic<span class="sk">add-rat sub-rat mul-rat div-rat</span></button></div></div>
-        <div class="lvl"><div class="lname"><span>Rational numbers as numerators and denominators</span></div><div class="row" data-i="2">
-          <button type="button" class="blk" data-id="Rat" aria-describedby="lv-help">Rat<span class="sk">make-rat numer denom</span></button></div></div>
-        <div class="lvl"><div class="lname"><span>Rational numbers as pairs</span></div><div class="row" data-i="3">
-          <button type="button" class="blk" data-id="Pair" aria-describedby="lv-help">Pair<span class="sk">cons car cdr</span></button></div></div>
+        <div class="lvl"><div class="lname"><span>Pages</span></div><div class="row" data-i="0">
+          <button type="button" class="blk" data-id="Storefront" aria-describedby="lv-help">Storefront</button></div></div>
+        <div class="lvl"><div class="lname"><span>Shopping</span></div><div class="row" data-i="1">
+          <button type="button" class="blk" data-id="Cart" aria-describedby="lv-help">Cart</button>
+          <button type="button" class="blk" data-id="Checkout" aria-describedby="lv-help">Checkout</button></div></div>
+        <div class="lvl"><div class="lname"><span>Prices</span></div><div class="row" data-i="2">
+          <button type="button" class="blk" data-id="Pricing" aria-describedby="lv-help">Pricing</button>
+          <button type="button" class="blk" data-id="Tax" aria-describedby="lv-help">Tax</button></div></div>
+        <div class="lvl"><div class="lname"><span>Storage</span></div><div class="row" data-i="3">
+          <button type="button" class="blk" data-id="Database" aria-describedby="lv-help">Database</button></div></div>
         <svg class="edges" aria-hidden="true"></svg>
       </div>
       <div class="capline">
-        <span class="grow hint" id="lv-help">Drag a block up a level. Or focus it and press <kbd>↑</kbd> or <kbd>↓</kbd>. A level left empty leaves the spec, so it leaves the picture.</span>
+        <span class="grow hint" id="lv-help">Drag a block to another level. Or focus it and press <kbd>↑</kbd> or <kbd>↓</kbd>. A level left empty leaves the spec, so it leaves the picture.</span>
         <button class="btn" type="button" id="lv-reset">Put them back</button>
       </div>
       <div class="check-out">
-<pre class="code wrapline term-out" id="lv-out" aria-live="polite"><span class="hl-prompt">$ </span>sbtel check rationals.sbtel --bindings edges.txt
-rationals.sbtel: 3 bindings, 0 not allowed</pre>
+        <div class="verdict" id="lv-say" aria-live="polite"><p class="fine">Every arrow points down. <code>sbtel check</code> finds nothing to fix.</p></div>
+        <details id="lv-raw">
+          <summary>See the real sbtel check output</summary>
+<pre class="code wrapline term-out" id="lv-out"><span class="hl-prompt">$ </span>sbtel check shop.sbtel --bindings edges.txt
+shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
+        </details>
       </div>
     </figure>
   </div>
 </section>
 
 <!-- Adjacency -->
-<section class="sec" id="adjacent" aria-labelledby="t-adj">
-  <h2 class="term" id="t-adj">Adjacency</h2>
+<section class="sec" id="simplicity-and-explicit-coupling" aria-labelledby="t-adj">
+  <h2 class="term" id="t-adj">Simplicity and explicit coupling</h2>
   <div class="pair flip">
     <div class="txt">
-      <p class="lead">Blocks in one level are independent, unless you declare them adjacent.</p>
-      <p>In <a href="https://www.infoq.com/presentations/Simple-Made-Easy/">&ldquo;Simple Made Easy&rdquo;</a>, Rich Hickey calls a design simple when its strands are not braided together. Adjacency is a braid you chose: drawn in the picture, with a sentence that says why. Use it for two peers that are really one cooperation, and rarely.</p>
+      <p class="lead">Adjacent blocks use each other&rsquo;s internals, working as a single unit.</p>
+      <p>Other blocks in a level stay independent. A design is simple when its strands are not braided together (<a href="https://www.infoq.com/presentations/Simple-Made-Easy/">&ldquo;Simple Made Easy&rdquo;</a>); declaring two blocks adjacent makes their braid explicit, drawn in the picture with a sentence that says why.</p>
 <pre class="code" data-lang="sbtel">(level :name "Notes as text"
   (adjacent (~ The preview scrolls with the editor. ~)
     (block Editor)

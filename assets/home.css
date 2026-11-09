@@ -6,9 +6,15 @@
 .hero h1 { text-wrap:balance; margin:0; font-size:clamp(40px, 5.2vw, 64px); line-height:1.03; font-weight:620; letter-spacing:-.032em; }
 .hero h1 span { display:block; }
 .hero .tag { margin:0; font-size:20px; line-height:1.5; color:var(--ink-2); max-width:36ch; }
-.install { margin-top:30px; display:flex; align-items:stretch; max-width:100%; background:var(--surface); border:1px solid var(--panel-line); border-radius:10px; overflow:hidden; }
+.inst-tabs { margin-top:28px; display:flex; gap:22px; border-bottom:1px solid var(--panel-line); }
+.inst-tabs [role="tab"] { border:0; background:none; padding:6px 0 8px; margin-bottom:-1px; border-bottom:2px solid transparent; font-size:14.5px; color:var(--muted); cursor:pointer; }
+.inst-tabs [role="tab"]:hover { color:var(--ink); }
+.inst-tabs [role="tab"][aria-selected="true"] { color:var(--ink); font-weight:600; border-bottom-color:var(--ink); }
+.inst-pane { min-height:96px; }
+.install { margin-top:12px; display:flex; align-items:stretch; max-width:100%; background:var(--surface); border:1px solid var(--panel-line); border-radius:10px; overflow:hidden; }
 .install code { flex:1; min-width:0; padding:11px 12px 11px 14px; font-size:12.5px; line-height:1.5; white-space:nowrap; overflow-x:auto; scrollbar-width:thin; background:none; border:0; border-radius:0; }
-.install code::before { content:"$ "; color:var(--muted); }
+.install code.sh::before { content:"$ "; color:var(--muted); }
+.install code.multi { white-space:pre; }
 .install button { flex:none; border:0; border-left:1px solid var(--panel-line); background:var(--chip); padding:0 14px; font-size:13.5px; cursor:pointer; min-width:76px; }
 .install button:hover { background:var(--accent-soft); color:var(--accent-ink); }
 .hero .ctas { margin-top:22px; display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; }
@@ -102,7 +108,14 @@ details[open] > summary { margin-bottom:10px; }
 #lv .blk.drag { cursor:grabbing; z-index:6; box-shadow:0 14px 34px rgba(30,28,25,.22); transition:none; }
 #lv .blk.fly { transition:transform .32s cubic-bezier(.3,.7,.2,1); }
 .check-out { margin-top:14px; }
-.check-out pre.code { min-height:84px; }
+.verdict { min-height:84px; padding:12px 16px; border:1px solid var(--panel-line); border-radius:10px; background:var(--surface); font-size:15.5px; line-height:1.5; color:var(--ink-2); }
+.verdict p { margin:0; }
+.verdict p + p { margin-top:8px; }
+.verdict b { color:var(--warn); font-weight:600; }
+.verdict .fine { color:var(--ok); }
+.verdict .fine code { color:var(--ink-2); }
+.check-out details { margin-top:10px; }
+.check-out summary { font-size:14px; }
 
 /* Blocks demo */
 .seg { display:inline-flex; flex-wrap:wrap; border:1px solid var(--panel-line); border-radius:9px; overflow:hidden; background:var(--surface); }

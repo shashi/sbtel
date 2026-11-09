@@ -133,19 +133,39 @@ function observeResize(el, fn) {
   else addEventListener('resize', fn);
 }
 
-// ---------- install line ----------
-const copyBtn = $('#copy');
-if (copyBtn) copyBtn.addEventListener('click', async () => {
-  const text = $('#inst').textContent.trim();
+// ---------- install: two tabs, each with a copy box ----------
+$$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
+  const code = $('code', btn.parentElement), text = code.textContent.trim();
   let ok = false;
   try { await navigator.clipboard.writeText(text); ok = true; } catch (_) {
-    const r = document.createRange(); r.selectNodeContents($('#inst'));
+    const r = document.createRange(); r.selectNodeContents(code);
     const s = getSelection(); s.removeAllRanges(); s.addRange(r);
     try { ok = document.execCommand('copy'); } catch (_) {}
   }
-  copyBtn.textContent = ok ? 'Copied' : 'Press ⌘C';
-  setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1800);
-});
+  btn.textContent = ok ? 'Copied' : 'Press ⌘C';
+  setTimeout(() => { btn.textContent = 'Copy'; }, 1800);
+}));
+(() => {
+  const tabs = $$('.inst-tabs [role="tab"]'); if (!tabs.length) return;
+  const KEY = 'sbtel-install-tab';
+  const pick = (t, focus) => {
+    tabs.forEach(x => {
+      const on = x === t;
+      x.setAttribute('aria-selected', String(on)); x.tabIndex = on ? 0 : -1;
+      $('#' + x.getAttribute('aria-controls')).hidden = !on;
+    });
+    try { localStorage.setItem(KEY, t.dataset.k); } catch (_) {}
+    if (focus) t.focus();
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => pick(t));
+    t.addEventListener('keydown', e => {
+      const n = tabs.length;
+      const j = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+      if (j < 0) return; e.preventDefault(); pick(tabs[j], true);
+    });
+  });
+})();
 
 // ---------- hero: a tangle, then levels that expose two problems, then the fix ----------
 (() => {
@@ -279,47 +299,64 @@ if (copyBtn) copyBtn.addEventListener('click', async () => {
   });
 })();
 
-// ---------- levels: drag a block up and its dependency turns red ----------
+// ---------- levels: move a block and a dependency that breaks the order turns red ----------
 (() => {
   const fr = $('#lv'); if (!fr) return;
   const svg = $('svg.edges', fr), out = $('#lv-out');
   const rows = $$('.row', fr), blks = $$('.blk', fr);
   const B = Object.fromEntries(blks.map(e => [e.dataset.id, e]));
   blks.forEach(b => { b.dataset.home = rows.indexOf(b.parentElement); });
-  const E = [['Program','Arithmetic'],['Arithmetic','Rat'],['Rat','Pair']];
+  // edges.txt, in its order: who uses whom in the shop's code.
+  const E = [['Storefront','Cart'],['Storefront','Checkout'],['Cart','Pricing'],['Checkout','Tax'],['Pricing','Database'],['Tax','Database']];
+  const say = $('#lv-say');
   const names = rows.map(r => r.parentElement.querySelector('.lname span').textContent);
   let drag = null; // { el, row }
   const rowOf = id => drag && drag.el === B[id] ? drag.row : rows.indexOf(B[id].parentElement);
   const rule = (a, b) => { const ra = rowOf(a), rb = rowOf(b); return ra < rb ? 'ok' : ra === rb ? 'same-level' : 'upward'; };
   function draw() {
     let s = '';
-    E.forEach(([a, b], i) => {
-      const r = rule(a, b), ar = arrow(box(B[a], svg), box(B[b], svg));
+    const broken = rows.map(() => ({ rules: new Set(), src: new Set() })); // per row: the rules its blocks break
+    E.forEach(([a, b]) => {
+      const r = rule(a, b), A = box(B[a], svg), Z = box(B[b], svg);
+      let ar;
+      if (Math.abs(A.cy - Z.cy) < 8) {
+        // Two cards in one row: arc over the top, so the arrow never runs through a card between them.
+        const dir = Z.cx > A.cx ? 1 : -1, h = 24 + Math.min(26, Math.abs(Z.cx - A.cx) * 0.1);
+        const s0 = [A.cx + dir * Math.min(14, A.w / 4), A.y], t0 = [Z.cx - dir * Math.min(14, Z.w / 4), Z.y - 1];
+        ar = finish(s0, [s0[0], s0[1] - h], [t0[0], t0[1] - h], t0);
+      } else ar = arrow(A, Z);
       s += arrowSVG(ar, r === 'ok' ? '' : 'bad');
-      // The tag sits under the block that breaks the rule, below every card in its row, so it never
-      // meets a level's name or another card.
-      let xy = ar.mid;
-      if (r !== 'ok') {
-        const src = box(B[a], svg), ri = rowOf(a);
-        const bottom = Math.max(...blks.filter(x => rowOf(x.dataset.id) === ri).map(x => box(x, svg).b));
-        xy = [src.cx, bottom + 16];
-      }
-      tagAt(fr, 'e' + i, xy, r === 'ok' ? '' : r + ': not allowed', 'bad');
+      if (r !== 'ok') { const k = broken[rowOf(a)]; k.rules.add(r); k.src.add(a); }
     });
     svg.innerHTML = s;
+    // One tag per level whose blocks break a rule, under those blocks and below every card in the row,
+    // so it never meets a level's name, a card or another tag.
+    broken.forEach((k, ri) => {
+      let xy = [0, 0];
+      if (k.src.size) {
+        const xs = [...k.src].map(id => box(B[id], svg).cx);
+        const bottom = Math.max(...blks.filter(x => rowOf(x.dataset.id) === ri).map(x => box(x, svg).b));
+        xy = [xs.reduce((u, v) => u + v, 0) / xs.length, bottom + 16];
+      }
+      tagAt(fr, 'r' + ri, xy, k.src.size ? [...k.rules].join(', ') + ': not allowed' : '', 'bad');
+    });
   }
   function report() {
     // Exactly what `sbtel check` prints for this arrangement: empty levels are not numbered.
     const used = rows.map((r, i) => r.querySelector('.blk') ? i : -1).filter(i => i >= 0);
     const num = i => used.length - used.indexOf(i);
     const lines = []; let bad = 0;
+    const plain = [];
     E.forEach(([a, b], k) => {
       const ra = rowOf(a), rb = rowOf(b), r = rule(a, b), n = `edges.txt:${k + 1}: ${a} -&gt; ${b}: `;
-      if (r === 'upward') { bad++; lines.push(`${n}<span class="hl-warn">upward</span>: ${a} (level ${num(ra)} "${names[ra]}" of Rationals) binds upward to ${b} (level ${num(rb)} "${names[rb]}")`); }
-      if (r === 'same-level') { bad++; lines.push(`${n}<span class="hl-warn">same-level</span>: ${a} and ${b} share level ${num(ra)} "${names[ra]}" of Rationals but are not adjacent`); }
+      if (r === 'upward') { bad++; lines.push(`${n}<span class="hl-warn">upward</span>: ${a} (level ${num(ra)} "${names[ra]}" of Shop) binds upward to ${b} (level ${num(rb)} "${names[rb]}")`);
+        plain.push(`<p><b>${a} reaches up into ${b}.</b> Lower levels can\u2019t know about higher ones.</p>`); }
+      if (r === 'same-level') { bad++; lines.push(`${n}<span class="hl-warn">same-level</span>: ${a} and ${b} share level ${num(ra)} "${names[ra]}" of Shop but are not adjacent`);
+        plain.push(`<p><b>${a} uses ${b}, but they\u2019re on the same level.</b> Move ${b} below ${a}, or declare them adjacent.</p>`); }
     });
-    out.innerHTML = `<span class="hl-prompt">$ </span>sbtel check rationals.sbtel --bindings edges.txt\n` + lines.map(l => l + '\n').join('') +
-      `rationals.sbtel: 3 bindings, ${bad ? `<span class="hl-warn">${bad} not allowed</span>, 0 explained` : '<span class="hl-ok">0 not allowed</span>'}`;
+    out.innerHTML = `<span class="hl-prompt">$ </span>sbtel check shop.sbtel --bindings edges.txt\n` + lines.map(l => l + '\n').join('') +
+      `shop.sbtel: ${E.length} bindings, ${bad ? `<span class="hl-warn">${bad} not allowed</span>, 0 explained` : '<span class="hl-ok">0 not allowed</span>'}`;
+    say.innerHTML = plain.length ? plain.join('') : '<p class="fine">Every arrow points down. <code>sbtel check</code> finds nothing to fix.</p>';
   }
   // A level left with no block leaves the spec (sbtel numbers only the levels that hold blocks), so it
   // leaves the picture too: the diagram and the check output always describe the same spec.
