@@ -22,6 +22,12 @@
     (sketch "The human's draft, sent as one: a message, comments and, with edits, a proposed spec that the server stores and never writes to the spec file."))
   (behavior Pure
     (sketch "Same input, same output: no IO, no clock, no DOM, nothing global."))
+  ; Dependency inversion: the server calls DiffFunc (Options.DiffText) and never names the engine; the
+  ; session commands' diffText implements it (a blank assertion says so in the code) and serve passes it
+  ; in. Declared here, where the server and the CLI both see it; lint notes it could live in Sbtel.Cli, its
+  ; implementer's holder, since lint does not read the bindings that show Sbtel.Server.Core using it.
+  (behavior DiffsSpecs :type "Go func type"
+    (sketch "Given two spec texts, says what changed between them, as `sbtel diff` prints it."))
 
   (level
     (block Sbtel.Cli
@@ -40,6 +46,7 @@
           ; the command logic and the output formats live in core/api.js; these parse flags and read files.
           )
         (block Sbtel.Cli.SessionCommands
+          (implements DiffsSpecs)
           (sketch "open, open-diff, inbox, reply, sessions, close and serve: the session loop, driving the shared server and reading its state directory (cmd_b.go).")
           ; inbox reads events.jsonl and writes cursor.json directly (state's single-writer rule allows it).
           ))

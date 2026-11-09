@@ -33,11 +33,13 @@ language.
   (port name in Type)                              ; direction is in or out; Type is a message type
   (port cmd out Type (~ Only what the type does not say. ~))   ; a port may have a sketch
   (implements Behavior)                            ; one behavior name; its ports become this block's
-  (message Super (sketch "A general kind of data."))
+  (message Super :type "struct" (sketch "A general kind of data."))   ; :type: what it is in code
   (message Type (refines Super))                   ; is-a: a Type is a Super
   (message Pair (carries Type Super))              ; has-a: a Pair holds a Type and a Super
-  (behavior Behavior (port p in Type) (sketch "…")); shared vocabulary, visible here and below
+  (behavior Behavior :type "trait"                 ; a block's grammar: :type, sketch, ports, implements
+    (port p in Type) (sketch "…"))                 ; shared vocabulary, visible here and below
   (behavior (Store T) (port put in T))             ; a behavior with a parameter T
+  (behavior Keeps (implements (Store Type)))       ; extends Store, with T = Type
   (level :name "Screens"                           ; first level, the top; :name labels it
     (~ What the level above may know of it. ~)     ; a level may have a sketch
     (block A) (block B))
@@ -52,9 +54,9 @@ language.
 | `(level [:name "N"] block-or-adjacent…)` | file, block | one level; levels are ordered **top to bottom** |
 | `(adjacent block-or-adjacent…)` | file, block, level, adjacent | peers in one level that may bind each other (≥ 2 members) |
 | `(port name in\|out Type [sketch])` | block, behavior | a typed input or output |
-| `(message Name …)` | file, block | a data type; `(sketch)`, `(refines T)`, `(carries A B…)` inside |
-| `(behavior Name …)` / `(behavior (Name P…) …)` | file, block | a named set of ports a block can promise |
-| `(implements Name)` | block | the block has that behavior's ports |
+| `(message Name [:type "T"] …)` | file, block | a data type; `(sketch)`, `(refines T)`, `(carries A B…)` inside |
+| `(behavior Name [:type "T"] …)` / `(behavior (Name P…) …)` | file, block | a named set of ports a block can promise; `(sketch)`, `(port …)`, `(implements …)` inside |
+| `(implements Name)` / `(implements (Name Arg…))` | block, behavior | the block (or behavior) has that behavior's ports, and counts as implementing it |
 | `(sketch "text")` or `(~ text ~)` | block, message, behavior, level, adjacent, port | the prose description |
 | `(refines T)` | message | is-a: a subtype of T |
 | `(carries A B…)` | message | has-a: a value holds values of A, B… |
@@ -67,20 +69,25 @@ language.
 - **Bindings** (code in A names B) are allowed when B is: A itself, inside A, in a lower level of the
   nearest common holder (at any depth below it), or in A's adjacent group there. They are forbidden when
   B encloses A (`ancestor`), is in the same level but not adjacent (`same-level`), or is in a higher level (`upward`).
+  B may also be a **behavior**: code that calls through an interface binds the behavior, not its
+  implementers, and that is allowed when the behavior is in A's scope (`abstraction`).
 - **Messages** are data exchanged where neither side names the other: the counterpart is chosen
   elsewhere. Ports are typed with messages. `accepts(U, T)`: an `in U` port takes an `out T` value when
   U = T or T refines U (transitively). `carries` (has-a) never changes what a port accepts.
 - **Scope.** A behavior or message type declared in block D is usable in D and everything inside D.
   Declared at file level, it is usable everywhere. Declare it where its users meet (lint notes it when
   it sits higher).
+- **`:type`** grounds a block, a behavior or a message type in code: what it is there (a module, a
+  trait, a struct…). It shows as a pill. Keep the kinds consistent within a spec.
 - **Names** are any run of characters without whitespace, `(`, `)`, `"` or `;`. Dots (`Shell.Router`)
   are a naming convention only. Duplicate block names get ids `Name#2`, `Name#3`… and a warning.
 
 **Checks** (`sbtel lint`): parse errors; model warnings (duplicates, bad port direction, `adjacent`
 with fewer than 2 members, empty level, the old `(layer …)` and `(either …)`); structure warnings
 (unknown or misplaced forms and keywords, stray words, malformed ports, levels and `carries`, second
-sketches…); five rules: every implemented behavior is declared, behaviors are used in scope, every
-port's type is declared, message types are used in scope, and `refines`/`carries` name declared types;
+sketches, blocks, levels and declarations inside a behavior…); six rules: every implemented behavior is
+declared, behaviors are used in scope, every port's type is declared, message types are used in scope,
+`refines`/`carries` name declared types, and no behavior implements itself;
 and placement notes (information, never a failure). `sbtel check spec --bindings edges.txt` applies the
 binding rules to `Caller -> Callee  # file:line` edges.
 
@@ -223,7 +230,11 @@ A block is a part of the system. `Name` is its id; ids must be unique (a duplica
 the block maps to (`"Service"`, `"Module"`, `"File"`, `"Function"`…) and shows as a pill in the viewer.
 Keep the kinds consistent within a spec, so the pills mean something. The value may be a string or a
 symbol. Any other keyword (0.1's `:fill` included), or a keyword after the body has started, is a
-warning; the viewer picks its own colours.
+warning; the viewer picks its own colours. Behaviors (§3.7) and message types (§3.6) take `:type` the
+same way, with the same warnings: a block says which code artifact it is, a behavior which abstraction
+(`"trait"`, `"interface"`, `"Protocol"`, `"typeclass"`), a message type which data shape (`"struct"`,
+`"record"`, `"protobuf message"`, `"JSON schema"`). It is optional: write it where it helps a reader
+find the thing in the code.
 
 A block that contains levels is a **container**; its children are its parts. A block with no levels is
 a **leaf**.
@@ -326,7 +337,7 @@ included.
 ### 3.6 `message`, `refines`, `carries`
 
 ```lisp
-(message Name [sketch] [(refines Super)] [(carries A B …)])
+(message Name [:type "T"] [sketch] [(refines Super)] [(carries A B …)])
 ```
 
 A message type is a kind of data. Two relations between types, and only these two:
@@ -338,7 +349,7 @@ A message type is a kind of data. Two relations between types, and only these tw
   cycles are fine (a `Turn` may carry `Turn`s). `carries` never changes what a port accepts.
 
 Each names declared message types; a carried type must be in scope where the message is declared, as a
-port's type must be (§4). Only the first `refines` and the first `carries` count; a name twice in one
+port's type must be (§4). `:type` says what the data is in code (§3.1): `(message Edit :type "struct")`. Only the first `refines` and the first `carries` count; a name twice in one
 `carries` is a warning.
 
 ```sbtel
@@ -357,44 +368,67 @@ outlines them.
 ### 3.7 `behavior` and `implements`
 
 ```lisp
-(behavior Name (port …)… [(sketch "…")])
+(behavior Name [:type "T"] (port …)… [(implements Other)…] [(sketch "…")])
 (behavior (Name Param …) (port p in Param)… [(sketch "…")])
 (implements Name)
+(implements (Name Arg …))
 ```
 
 A behavior is a named promise: a set of ports plus a sketch of what holds when a block has them. A
 block that `implements` it gains its ports. Several blocks implementing the same behavior share that
-vocabulary.
+vocabulary. A behavior is read with a block's grammar, keeping what has a meaning for a promise: the
+name, `:type` (what the abstraction is in code: a trait, an interface, a Protocol…; §3.1), a sketch,
+ports and `implements`.
 
-A behavior may take **parameters**, written `(Name P …)`. A port typed with a parameter is not checked
-against declared message types. `implements` names the behavior only (`(implements Store)`); there is
-no syntax for arguments, and the ports keep the parameter as their type.
+**Extension.** `(implements Other)` inside a behavior extends Other, as a Rust supertrait, Java's
+`interface A extends B` or a protocol built on another do. The behavior has Other's ports too, and a
+block that implements it counts as implementing Other, transitively, everywhere "implementers of"
+matters: scope, placement notes, the viewer's outline and port partners. Other must be in scope where
+the behavior is declared (§4). A behavior that implements itself, through any chain (`A` implements `B`
+implements `A`), fails the rule "No behavior implements itself" (§7.4).
+
+**Parameters.** A behavior may take parameters, written `(Name P …)`. A port typed with a parameter is
+not checked against declared message types. `(implements Name)` leaves the parameters as they are (the
+ports keep the parameter as their type). `(implements (Name Arg …))` passes one argument per parameter,
+in order: each port typed with a parameter takes the argument's type, in the ports the implementer gets.
+An argument is a message type in scope, or, inside a behavior with parameters, one of its own
+parameters, which its own implementer's argument replaces in turn: `(behavior (Cache K) (implements
+(Store K)))` and `(implements (Cache Entry))` give Store's ports the type Entry. Arguments must fill
+every parameter (a warning otherwise).
+
+**What a behavior does not contain.** Blocks, levels, adjacent groups, message types and behaviors are
+not allowed inside a behavior; each is a warning at its position, `behaviors don't contain blocks,
+levels or declarations; declare … beside the behavior instead`, and is left out of the model.
 
 ```sbtel
-(message Event (sketch "One state change."))
-(behavior (Store T)
+(message Event :type "struct" (sketch "One state change."))
+(behavior (Store T) :type "trait"
   (port put in T)
   (port get out T)
   (sketch "Keeps values of T and returns them on request."))
-(behavior Durable
-  (port event in Event)
-  (sketch "Retains every accepted event until it is acknowledged."))
+(behavior Durable :type "trait"
+  (implements (Store Event))
+  (sketch "A Store of events that keeps every accepted one until it is acknowledged."))
 (block Log
-  (implements Store)
   (implements Durable)
   (sketch "An append-only event log."))
 ```
+
+Log has the ports `put in Event` and `get out Event` (from Store, through Durable), and implements both
+Durable and Store.
 
 ## 4. Scope
 
 Behaviors and message types are **scoped**. A declaration inside block D is visible in D and in every
 block nested in D, at any depth. A declaration at file level is visible everywhere.
 
-- A block may implement only behaviors in its scope.
+- A block may implement only behaviors in its scope; a behavior, only those in scope where it is
+  declared. The message types passed as arguments (`(implements (Store Event))`) follow the same rule.
 - A block's ports may use only message types in its scope.
 - A behavior's ports may use only message types in scope **where the behavior is declared** (not where
   it is implemented).
 - A message type may carry only message types in scope where it is declared.
+- Code may bind a behavior only where the behavior is in scope (§8, the `abstraction` rule).
 
 Scope follows nesting, not levels: a message type declared in a block is visible to all of its
 children in every level, and to none of its siblings.
@@ -593,6 +627,27 @@ spec.sbtel:2:3: warning: adjacent needs two or more members
 spec.sbtel: 1 problem (2 blocks, 0 behaviors, 0 message types)
 ```
 
+What a behavior does not contain, and arguments that do not fill a behavior's parameters:
+
+```sbtel fails
+(message M)
+(behavior (Box T) (port b in T))
+(behavior Durable
+  (block Inner)
+  (level (block L))
+  (message Mm)
+  (implements (Box M M)))
+```
+
+```text
+spec.sbtel:4:3: warning: behavior Durable: behaviors don't contain blocks, levels or declarations; declare block Inner beside the behavior instead
+spec.sbtel:5:3: warning: behavior Durable: behaviors don't contain blocks, levels or declarations; declare the level beside the behavior instead
+spec.sbtel:6:3: warning: behavior Durable: behaviors don't contain blocks, levels or declarations; declare message Mm beside the behavior instead
+spec.sbtel:7:3: warning: (implements (Box M M)) passes 2 arguments, but Box takes 1
+spec.sbtel:3:1: info: Durable is never used.
+spec.sbtel: 4 problems (0 blocks, 2 behaviors, 1 message type)
+```
+
 A level with no block:
 
 ```sbtel fails
@@ -717,34 +772,40 @@ spec.sbtel:1:1: info: M is declared at the top level but only used within A; it 
 spec.sbtel: 3 problems (1 block, 0 behaviors, 1 message type)
 ```
 
-`implements` with anything but one name (arguments included), and `refines` with anything but one
-name:
+`implements` with anything but one name or one `(Name Arg …)` list, and `refines` with anything but
+one name:
 
 ```sbtel fails
 (message M)
 (message N (refines M M))
 (behavior (Store T) (port put in T))
-(block A (implements (Store M)))
+(block A (implements Store Store))
 ```
 
 ```text
 spec.sbtel:2:12: warning: refines names exactly one message type
-spec.sbtel:4:10: warning: implements names exactly one behavior
+spec.sbtel:4:10: warning: implements names exactly one behavior, as Name or (Name Arg ...)
 spec.sbtel:2:1: info: N is never used.
 spec.sbtel:3:1: info: Store is declared at the top level but only used within A; it could live there.
 spec.sbtel: 2 problems (1 block, 1 behavior, 2 message types)
 ```
 
-A keyword a block does not take (`:type` is its only one):
+A keyword a block, a behavior or a message type does not take (`:type` is the only one):
 
 ```sbtel fails
 (block A :fill "blue" :owner "team-a")
+(behavior B :kind "trait")
+(message C :fill "red")
 ```
 
 ```text
 spec.sbtel:1:10: warning: unknown keyword :fill in block A; a block takes only :type
 spec.sbtel:1:23: warning: unknown keyword :owner in block A; a block takes only :type
-spec.sbtel: 2 problems (1 block, 0 behaviors, 0 message types)
+spec.sbtel:2:13: warning: unknown keyword :kind in behavior B; a behavior takes only :type
+spec.sbtel:3:12: warning: unknown keyword :fill in message C; a message takes only :type
+spec.sbtel:2:1: info: B is never used.
+spec.sbtel:3:1: info: C is never used.
+spec.sbtel: 4 problems (1 block, 1 behavior, 1 message type)
 ```
 
 A level's keywords: `:name` is its only one, once, as a non-empty string, right after `level`:
@@ -816,7 +877,7 @@ spec.sbtel:2:25: warning: block C has more than one (sketch); only the first cou
 spec.sbtel: 2 problems (2 blocks, 0 behaviors, 0 message types)
 ```
 
-### 7.4 The five rules
+### 7.4 The six rules
 
 **Every implemented behavior is declared.**
 
@@ -878,6 +939,23 @@ spec.sbtel:5:1: info: Bundle is never used.
 spec.sbtel: 3 problems (2 blocks, 1 behavior, 2 message types)
 ```
 
+**No behavior implements itself**, through any chain of `implements`. Each cycle is reported once,
+from its first behavior in the file:
+
+```sbtel fails
+(behavior A (implements B))
+(behavior B (implements C))
+(behavior C (implements A))
+(behavior Self (implements Self))
+```
+
+```text
+spec.sbtel: No behavior implements itself: A → B → C → A
+spec.sbtel: No behavior implements itself: Self → Self
+spec.sbtel:4:1: info: Self is never used.
+spec.sbtel: 2 problems (0 blocks, 4 behaviors, 0 message types)
+```
+
 **`refines` and `carries` name declared types.**
 
 ```sbtel fails
@@ -903,7 +981,11 @@ never suggests moving below the common ancestor: that is a scope failure.
 - **Users of a message type T**: blocks with a port of type T (inherited from behaviors too); blocks
   with a port of a type that carries T (transitively) or refines T; and the places that must see T: where
   each such type, and each behavior with a port of one of them, is declared.
-- **Users of a behavior**: the blocks that implement it.
+- **Users of a behavior**: the blocks that implement it, directly or through behaviors that extend it,
+  and the places where each behavior that implements it directly is declared (it must be visible
+  there). Lint does not read bindings, so a behavior that code calls through (§8) and that is
+  declared where its callers can see it may still get a note that it could live lower, beside its
+  implementers: keep it where the callers see it, and say why in a `;` comment.
 
 ```sbtel
 (message Deep (sketch "Carried by Note at the top: it must stay where Note can see it."))
@@ -933,7 +1015,8 @@ A **bindings file** lists who names whom in the code, one edge per line:
 Caller -> Callee            # optional location, e.g. src/caller.ts:12
 ```
 
-- `Caller` and `Callee` are block ids. Spaces around `->` are optional; `A->B` is fine.
+- `Caller` is a block id. `Callee` is a block id or a behavior's name (`beh:Name` names the behavior
+  explicitly). Spaces around `->` are optional; `A->B` is fine.
 - Everything after the first `#` that follows whitespace is the location, free text. Put the file and
   line there: a reviewer needs it to judge the edge.
 - Blank lines and lines whose first non-blank character is `#` are ignored. Any other line that is not
@@ -963,7 +1046,40 @@ and B.
 | `ancestor` | **no** | A is inside B: a part may not bind the block that encloses it |
 | `same-level` | **no** | a2 and b2 share a level of c but are not adjacent |
 | `upward` | **no** | a2's level is below b2's |
-| `unknown` | **no** | A or B is not a block of the spec (behaviors and message types are not blocks), or a block is not placed in a level |
+| `abstraction` | yes | B is a behavior in A's scope: declared in A, in an ancestor of A, or in the file |
+| `scope` | **no** | B is a behavior declared outside A's scope |
+| `unknown` | **no** | A is not a block, B is neither a block nor a behavior (message types are neither), or a block is not placed in a level |
+
+**Calls through an abstraction.** When code in A calls through an interface, trait or protocol that a
+behavior stands for, the binding is `A -> Behavior`, not A to whichever block implements it: A names
+the abstraction only. The composition root, the code that builds the implementer and hands it to A,
+binds the implementer. That is dependency inversion, and `abstraction` makes it checkable: A may bind
+the behavior wherever its scope reaches, whatever level the implementers sit in. A block and a
+behavior may share a name (they are separate namespaces): a bare name binds the block, with a warning,
+and `beh:Name` binds the behavior. An unknown name gets a "did you mean" over blocks and behaviors.
+
+```sbtel
+(block Notes
+  (behavior Durable :type "interface" (sketch "Keeps edits until they are on disk."))
+  (level (block Notes.Root (sketch "Makes the store and hands it to the editor.")))
+  (level (block Notes.Editor (sketch "Saves through a Durable it is given.")))
+  (level (block Notes.Store (implements Durable))))
+(block Tools)
+```
+
+```edges
+Notes.Editor -> Durable      # src/editor.ts:7  calls d.save()
+Notes.Root -> Notes.Editor   # src/main.ts:3
+Notes.Root -> Notes.Store    # src/main.ts:3   the composition root
+Tools -> Durable             # tools/dump.ts:2
+Tools -> Durabel
+```
+
+```text
+edges.txt:4: Tools -> Durable: scope: Tools binds Durable, declared in Notes: a behavior is used only inside the block that declares it  (tools/dump.ts:2)
+edges.txt:5: Tools -> Durabel: unknown: Durabel is not a block or a behavior in the spec (did you mean Durable?)
+spec.sbtel: 5 bindings, 2 not allowed, 0 explained
+```
 
 Why is `ancestor` forbidden? A container is the composition of its parts. If a part names its
 container, it depends on everything the container holds, including itself and the levels above it.
@@ -1017,7 +1133,7 @@ edges.txt:10: Store -> Orders: upward: Store (level 1 of App) binds upward to Or
 edges.txt:11: Orders -> Audit: same-level: Orders and Audit share level 2 of App but are not adjacent  (src/orders/audit.go:12)
 edges.txt:12: UI -> CLI: same-level: UI and CLI share level 3 of App but are not adjacent
 edges.txt:13: App -> Tools: same-level: App and Tools share level 1 of the file but are not adjacent
-edges.txt:14: App -> Stor: unknown: Stor is not a block in the spec (did you mean Store?)
+edges.txt:14: App -> Stor: unknown: Stor is not a block or a behavior in the spec (did you mean Store?)
 edges.txt:15: error: not an edge: this is not an edge
 spec.sbtel: 12 bindings, 6 not allowed, 0 explained
 ```
@@ -1060,7 +1176,7 @@ anchors, and no others:
 
 | Form | Meaning |
 |---|---|
-| `@sbtel Name` | the next declaration (function, class, type, constant…) belongs to block `Name`. One per declaration: a second one before the same declaration is an error |
+| `@sbtel Name` | the next declaration (function, class, type, constant…) belongs to block `Name`, or to behavior `Name` when it is an interface, trait, protocol or typedef that the behavior stands for (`beh:Name` when a block has that name too). One per declaration: a second one before the same declaration is an error |
 | `@sbtel begin Name` … `@sbtel end Name` | the region between belongs to `Name`. Regions nest; the innermost wins. The `end` name must match its `begin` |
 | `@sbtel file Name` | from here to the end of the file belongs to `Name` |
 | `@sbtel message Name` | anchor: where message type `Name`'s shape is defined in code. It owns no code |
@@ -1119,7 +1235,11 @@ string literal is not an annotation, and a multi-line string literal stays in it
 The sbtel-recover skill's `sbtel_owners.py` is such a checker.
 
 To extract bindings, find every reference in code owned by block A to a declaration owned by block B
-(A ≠ B), and write `A -> B  # file:line` for each. Extraction is per language and lives outside the
+(A ≠ B), and write `A -> B  # file:line` for each. A reference to a declaration owned by a behavior X
+is `A -> X` (a call through the abstraction, §8), except one that states that A implements X (`impl
+Durable for Store`, `class Store implements Durable`, Go's `var _ Durable = (*Store)(nil)`): that is an
+implements relation, not a binding, and the spec should say `(implements X)` in A. The code of a
+behavior's own declaration binds nothing: its signature is the behavior's ports. Extraction is per language and lives outside the
 binary: the sbtel-recover skill
 ([extracting-bindings.md](../plugin/skills/sbtel-recover/extracting-bindings.md)) has the recipes,
 with or without an import graph, and helper scripts. A `# VIOLATION: reason` comment line directly

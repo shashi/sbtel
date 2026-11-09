@@ -7,6 +7,8 @@ const FONT = {
   chip:'500 12px "JetBrains Mono"', pill:'600 11.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
 };
 const FORMS = new Set(['block','level','adjacent','port','message','behavior','implements','sketch','refines','carries']);
+// Forms a behavior does not contain (it is a set of ports, not a part of the system), and what to declare instead.
+const NOT_IN_BEHAVIOR = { block:'the block', level:'the level', adjacent:'the adjacent group', message:'the message type', behavior:'the behavior' };
 
 // @sbtel end Core.Constants
 // @sbtel begin Core.Reader
@@ -62,6 +64,16 @@ function readAll(src) {
 }
 // @sbtel end Core.Reader
 // @sbtel begin Core.Model
+// The head of a declaration, one grammar for (block Name …), (behavior Name|(Name P …) …) and (message Name …):
+// the name, then keywords. :type is the one keyword: what the element is in code (a module, a trait, a
+// struct…). Lint reports any other, which is dropped. Returns the index of the first body item.
+function declHead(node, items) {
+  let i = 1;
+  while (i < items.length && items[i].t === 'sym' && items[i].v.startsWith(':')) {
+    const k = items[i].v.slice(1), v = items[i+1]; if (k === 'type' && node.type === undefined) node.type = v ? v.v : ''; i += 2;
+  }
+  return i;
+}
 function parse(src) {
   const forms = readAll(src);
   const ctx = { warnings:[], behaviors:new Map(), messages:new Map(), blocks:new Map(), behaviorOrder:[] };
@@ -80,11 +92,7 @@ function parse(src) {
     switch (h) {
       case 'block': {
         node.name = symOf(items[0]) || '?'; node.parent = owner || null;
-        let i = 1;
-        while (i < items.length && items[i].t === 'sym' && items[i].v.startsWith(':')) {
-          // :type is a block's only keyword (lint reports any other, which is dropped).
-          const k = items[i].v.slice(1), v = items[i+1]; if (k === 'type' && node.type === undefined) node.type = v ? v.v : ''; i += 2;
-        }
+        const i = declHead(node, items);
         let id = node.name, n = 2; if (ctx.blocks.has(id)) { ctx.warnings.push('Duplicate block name ' + node.name + at); while (ctx.blocks.has(node.name + '#' + n)) n++; id = node.name + '#' + n; }
         node.id = id; ctx.blocks.set(id, node);
         node.children = items.slice(i).map(x => conv(x, node, 'block ' + node.name)).filter(Boolean);
@@ -113,18 +121,29 @@ function parse(src) {
         if (node.dir !== 'in' && node.dir !== 'out') ctx.warnings.push('port direction must be in or out' + at);
         break;
       case 'message':
-        node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(1).map(x => conv(x, owner, 'message ' + node.name)).filter(Boolean);
+        node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(declHead(node, items)).map(x => conv(x, owner, 'message ' + node.name)).filter(Boolean);
         if (ctx.messages.has(node.name)) ctx.warnings.push('Duplicate message ' + node.name + at);
         ctx.messages.set(node.name, node); break;
       case 'behavior': {
+        // A behavior is read with a block's grammar (declHead: name, :type), and its body takes what has a
+        // meaning there: sketch, ports, implements. Blocks, levels and declarations do not nest in it: each
+        // is reported here (so the viewer shows it too) and left out of the model.
         node.name = symOf(items[0]); node.id = 'β:' + node.name; node.owner = owner || null;
         node.params = items[0] && items[0].list ? items[0].list.slice(1).map(symOf) : [];
-        node.children = items.slice(1).map(x => conv(x, owner, 'behavior ' + node.name)).filter(Boolean);
+        node.children = items.slice(declHead(node, items)).map(x => {
+          const k = x.list && x.list[0] && x.list[0].t === 'sym' ? x.list[0].v : null;
+          if (!NOT_IN_BEHAVIOR[k]) return conv(x, owner, 'behavior ' + node.name);
+          const nm = k === 'level' || k === 'adjacent' ? '' : symOf(x.list[1]);
+          ctx.warnings.push(`behavior ${node.name || '?'}: behaviors don't contain blocks, levels or declarations; declare ${nm ? k + ' ' + nm : NOT_IN_BEHAVIOR[k]} beside the behavior instead (line ${lineCol(src, x.s)})`);
+          return null;
+        }).filter(Boolean);
         if (ctx.behaviors.has(node.name)) ctx.warnings.push('Duplicate behavior ' + node.name + at);
         else ctx.behaviorOrder.push(node.name);
         ctx.behaviors.set(node.name, node); break;
       }
-      case 'implements': node.name = symOf(items[0]); break;
+      // (implements Name) or, for a behavior with parameters, (implements (Name Arg …)): the arguments take
+      // the parameters' places, in order, in the ports that come through it.
+      case 'implements': node.name = symOf(items[0]); if (items[0] && items[0].list) node.args = items[0].list.slice(1).map(symOf); break;
       // (~ … ~) arrives already normalized (tildeText) and keeps its tilde count, so edits can keep the form.
       case 'sketch': if (sx.tilde) { node.text = items[0].v; node.tilde = sx.tilde; } else node.text = items.map(x => x.v || '').join(' ').replace(/\s+/g, ' ').trim(); break;
       case 'refines': case 'carries': node.names = items.map(symOf); break;
@@ -140,6 +159,12 @@ function parse(src) {
   for (const b of ctx.blocks.values()) prepBlock(b, ctx);
   for (const bh of ctx.behaviors.values()) prepBehavior(bh, ctx);
   for (const m of ctx.messages.values()) prepMessage(m, ctx);
+  // Arguments, when given, fill every parameter: (implements (Store Event)) for (behavior (Store T) …).
+  const arity = n => n.children.forEach(c => {
+    const bh = c.form === 'implements' && c.args && c.args.length ? ctx.behaviors.get(c.name) : null;
+    if (bh && c.args.length !== bh.params.length) ctx.warnings.push(`(implements (${c.name} ${c.args.map(x => x || '?').join(' ')})) passes ${c.args.length} argument${c.args.length === 1 ? '' : 's'}, but ${c.name} takes ${bh.params.length || 'none'} (line ${lineCol(src, c.s)})`);
+  });
+  [...ctx.blocks.values(), ...ctx.behaviors.values()].sort((p, q) => p.s - q.s).forEach(arity);
   const model = { root, ...ctx, src }; ctx.root = root;
   model.node = id => !id ? null : id.startsWith('β:') ? ctx.behaviors.get(id.slice(2)) : id.startsWith('μ:') ? ctx.messages.get(id.slice(2)) : ctx.blocks.get(id);
   return model;
@@ -158,7 +183,7 @@ function prepBlock(b, ctx) {
   b.levels = levels.filter(L => L.units.length);
   b.sketch = sketchOf(b);
   b.ownPorts = b.children.filter(c => c.form === 'port').map(p => ({ name:p.name, dir:p.dir, kind:p.kind, sketch:p.sketch }));
-  b.impl = b.children.filter(c => c.form === 'implements').map(c => c.name);
+  implOf(b);
   b.behaviorDecls = b.children.filter(c => c.form === 'behavior');
   b.messageDecls = b.children.filter(c => c.form === 'message');
   b._ctx = ctx;
@@ -166,7 +191,13 @@ function prepBlock(b, ctx) {
 function prepBehavior(bh, ctx) {
   bh.sketch = sketchOf(bh);
   bh.ports = bh.children.filter(c => c.form === 'port').map(p => ({ name:p.name, dir:p.dir, kind:p.kind, sketch:p.sketch }));
-  bh.levels = []; bh.impl = []; bh._ctx = ctx;
+  bh.levels = []; implOf(bh); bh._ctx = ctx;
+}
+// A block's or a behavior's (implements …): impl, the names, in order; implArgs, the arguments of each name
+// that has some (the first (implements …) of a name counts).
+function implOf(n) {
+  n.impl = []; n.implArgs = Object.create(null); const seen = new Set();
+  n.children.forEach(c => { if (c.form !== 'implements') return; n.impl.push(c.name); if (c.name && !seen.has(c.name) && c.args && c.args.length) n.implArgs[c.name] = c.args.slice(); seen.add(c.name); });
 }
 function prepMessage(m, ctx) {
   m.sketch = sketchOf(m); m.id = 'μ:' + m.name; m.levels = []; m.impl = []; m.ports = []; m._ctx = ctx;
@@ -175,12 +206,38 @@ function prepMessage(m, ctx) {
   // has-a: the types a value of m holds (only the first (carries …) counts; lint reports a second).
   m.carries = k ? [...new Set(k.names.filter(Boolean))] : [];
 }
+// A block's ports, or a behavior's: its own, then those of every behavior it implements, directly or
+// through behaviors that implement others (each behavior once, depth first), with `via` the behavior that
+// declares the port. Arguments flow down: (implements (Store Event)) gives Store's ports typed T the type
+// Event, and a behavior's own parameter passed on, (behavior (Cache K) (implements (Store K))), is
+// replaced in turn by what Cache's implementer passes. A parameter left without an argument stays itself.
 function portsOf(b) {
-  if (b.form !== 'block') return (b.ports || []).slice();
-  const ctx = b._ctx; const out = [...b.ownPorts];
-  b.impl.forEach(n => { const beh = ctx.behaviors.get(n); if (beh) beh.ports.forEach(p => out.push({ ...p, via:n })); });
+  if (b.form === 'message') return [];
+  return [...(b.form === 'block' ? b.ownPorts : b.ports), ...inheritedVia(b._ctx, b)];
+}
+function inheritedVia(model, n) {
+  const out = [], seen = new Set(n.form === 'behavior' ? [n.name] : []);
+  const walk = (x, env) => x.impl.forEach(name => {
+    const bh = model.behaviors.get(name); if (!bh || seen.has(name)) return; seen.add(name);
+    const args = (x.implArgs[name] || []).map(a => env.has(a) ? env.get(a) : a), sub = new Map();
+    if (args.length) bh.params.forEach((p, i) => { if (p && i < args.length && args[i]) sub.set(p, args[i]); });
+    bh.ports.forEach(p => out.push({ ...p, kind: sub.has(p.kind) ? sub.get(p.kind) : p.kind, via:name }));
+    walk(bh, sub);
+  });
+  walk(n, new Map());
   return out;
 }
+// The behaviors n (a block or a behavior) implements, directly or through others, each once, depth first,
+// declared ones only. A behavior on a cycle (A implements B implements A) lists itself; lint reports it.
+function behaviorsOf(n) {
+  const model = n._ctx, out = [], seen = new Set();
+  const walk = x => x.impl.forEach(name => { const bh = model.behaviors.get(name); if (!bh || seen.has(name)) return; seen.add(name); out.push(name); walk(bh); });
+  if (n.form !== 'message') walk(n);
+  return out;
+}
+// Every block that implements behavior `name`, directly or through a behavior that implements it, in
+// source order. The one "implementers of": scope and placement, the viewer's outline and its info cards.
+function implementersOf(model, name) { return [...model.blocks.values()].filter(b => behaviorsOf(b).includes(name)).sort((p, q) => p.s - q.s); }
 function childBlocks(b) { return b.levels.flatMap(L => L.units.flatMap(u => u.blocks)); }
 function stats(b) {
   if (b._stats) return b._stats;
@@ -225,7 +282,8 @@ function carriers(model, T) {
   return { messages:msgs.map(m => m.name), ports, blocks };
 }
 function portLabel(p) { return p.name && p.kind && p.name.toLowerCase() !== p.kind.toLowerCase() ? p.name + ': ' + p.kind : (p.kind || p.name || '?'); }
-function behsOf(n) { return n.form !== 'block' ? [] : n.impl.filter(x => n._ctx.behaviors.has(x)); }
+// The behavior badges of a card: a block's behaviors, or a behavior's (the ones it extends); direct ones only.
+function behsOf(n) { return n.form === 'message' ? [] : n.impl.filter(x => n._ctx.behaviors.has(x)); }
 // The count line in a collapsed card's footer (pure; layout measures it).
 function countText(b) {
   const s = stats(b), parts = [];
@@ -247,9 +305,15 @@ function topBlocks(model) { return childBlocks(model.root); }
 // b inside a (descendant). Forbidden: a inside b (ancestor: a part binding its whole). Else, with c the nearest common holder (a block or the
 // file) and a2, b2 the children of c on the way down to a and b: a2's level is above b2's in c, or a2 and
 // b2 are in the same adjacent group. Returns { ok, rule, text }; docs/DESIGN.md §3 lists the rules.
+// A callee may also name a behavior: code that calls through an abstraction (an interface, a trait) binds
+// the behavior, not its implementers. That is allowed when the behavior is in the caller's scope (declared
+// in the caller, an ancestor, or the file): rule `abstraction`; out of scope it is `scope`.
 function bindingVerdict(model, a, b) {
-  const A = model.blocks.get(a), B = model.blocks.get(b);
-  if (!A || !B) return { ok:false, rule:'unknown', text:`${!A ? a : b} is not a block in the spec` };
+  const A = model.blocks.get(a), T = bindingTarget(model, b), B = T && T.form === 'block' ? T : null;
+  const sees = d => { for (let x = A; x; x = x.parent) if (x === d) return true; return !d; };  // d's scope holds A
+  if (A && T && T.form === 'behavior') return sees(T.owner) ? { ok:true, rule:'abstraction', text:'' }
+    : { ok:false, rule:'scope', text:`${A.name} binds ${T.name}, declared in ${T.owner.name}: a behavior is used only inside the block that declares it` };
+  if (!A || !B) return { ok:false, rule:'unknown', text: !A ? `${a} is not a block in the spec` : `${b} is not a block or a behavior in the spec` };
   if (A === B) return { ok:true, rule:'same', text:'' };
   const up = x => { const r = []; for (let y = x; y; y = y.parent) r.push(y); r.push(model.root); return r; };
   const PA = up(A), PB = up(B);
@@ -267,6 +331,14 @@ function bindingVerdict(model, a, b) {
   return wa.li === wb.li
     ? { ok:false, rule:'same-level', text:`${a2.name} and ${b2.name} share ${lv(wa.li)} of ${inC} but are not adjacent` }
     : { ok:false, rule:'upward', text:`${a2.name} (${lv(wa.li)} of ${inC}) binds upward to ${b2.name} (${lv(wb.li)})` };
+}
+// What a binding's callee names. Blocks and behaviors are separate namespaces: a block id first (exactly
+// as written), then beh:Name or β:Name for a behavior, then a bare behavior name. So a name that is both a
+// block's and a behavior's binds the block (check warns), and beh:Name binds the behavior.
+function bindingTarget(model, name) {
+  if (model.blocks.has(name)) return model.blocks.get(name);
+  const m = /^(?:β|beh):(.+)$/.exec(name);
+  return (m ? model.behaviors.get(m[1]) : model.behaviors.get(name)) || null;
 }
 // The bindings text (docs/DESIGN.md §2.5), shared by the CLI (api.js check) and the viewer (server mode).
 // One edge per line: `Caller -> Callee`, then optionally whitespace, `#` and a free-text location. Blank
@@ -323,12 +395,19 @@ function messageIndex(model) {
 function scopeFailures(model) {
   const out = [], inScope = (d, where) => !d.owner || (where && ancestorsOrSelf(where).includes(d.owner));
   const add = (k, who, kind, name, owner, text) => out.push({ k, who, kind, name, owner, text });
+  // What a block or behavior implements must be visible where it is (a behavior: where it is declared),
+  // and so must the message types it passes as arguments.
+  const impls = (n, who, where) => n.impl.forEach(x => { const bh = model.behaviors.get(x); if (!bh) return;
+    if (!inScope(bh, where)) add('scope', who, 'behavior', x, bh.owner.name, `${who} uses ${x}, declared in ${bh.owner.name}`);
+    (n.implArgs[x] || []).forEach(t => { const m = n.form === 'behavior' && n.params.includes(t) ? null : model.messages.get(t);
+      if (m && !inScope(m, where)) add('mscope', who, 'message type', t, m.owner.name, `${who} passes ${t} to ${x}, declared in ${m.owner.name}`); }); });
   model.blocks.forEach(b => {
-    b.impl.forEach(n => { const bh = model.behaviors.get(n); if (bh && !inScope(bh, b)) add('scope', b.name, 'behavior', n, bh.owner.name, `${b.name} uses ${n}, declared in ${bh.owner.name}`); });
+    impls(b, b.name, b);
     b.ownPorts.forEach(p => { const m = model.messages.get(p.kind); if (m && !inScope(m, b)) add('mscope', b.name, 'message type', p.kind, m.owner.name, `${b.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); });
   });
-  model.behaviors.forEach(bh => bh.ports.forEach(p => { const m = model.messages.get(p.kind);
+  model.behaviors.forEach(bh => bh.ports.forEach(p => { const m = bh.params.includes(p.kind) ? null : model.messages.get(p.kind);
     if (m && !inScope(m, bh.owner)) add('mscope', bh.name, 'message type', p.kind, m.owner.name, `${bh.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); }));
+  model.behaviors.forEach(bh => impls(bh, bh.name, bh.owner));
   // A carried type must be visible where the carrying message is declared, as a port's type must.
   model.messages.forEach(m => m.carries.forEach(t => { const d = model.messages.get(t);
     if (d && !inScope(d, m.owner)) add('mscope', m.name, 'message type', t, d.owner.name, `${m.name} carries ${t}, declared in ${d.owner.name}`); }));
@@ -351,12 +430,25 @@ function newFailureText(m0, m1, moved) {
   return text + (fresh.length > 1 ? ` (+${fresh.length - 1} more)` : '');
 }
 function lintSpec(model) {
-  const unknownBeh = [], unknownMsg = [], badRel = [];
+  const unknownBeh = [], unknownMsg = [], badRel = [], cycles = [];
+  // An argument names a message type, or (in a behavior) one of its own parameters.
+  const args = (n, who) => n.impl.forEach(x => (n.implArgs[x] || []).forEach(t => {
+    if (t && !model.messages.get(t) && !(n.form === 'behavior' && n.params.includes(t))) unknownMsg.push(`${who} (implements (${x} ${n.implArgs[x].join(' ')})): ${t}`); }));
   model.blocks.forEach(b => {
     b.impl.forEach(n => { if (!model.behaviors.get(n)) unknownBeh.push(b.name + ' → ' + n); });
     b.ownPorts.forEach(p => { if (p.kind && !model.messages.get(p.kind)) unknownMsg.push(`${b.name}.${p.name}: ${p.kind}`); });
+    args(b, b.name);
   });
   model.behaviors.forEach(bh => bh.ports.forEach(p => { if (p.kind && !model.messages.get(p.kind) && !bh.params.includes(p.kind)) unknownMsg.push(`${bh.name}.${p.name}: ${p.kind}`); }));
+  model.behaviors.forEach(bh => { bh.impl.forEach(n => { if (!model.behaviors.get(n)) unknownBeh.push(bh.name + ' → ' + n); }); args(bh, bh.name); });
+  // A behavior that implements itself, through any chain: one failure per cycle, from its first behavior
+  // in source order (A → B → A).
+  const onCycle = new Set();
+  [...model.behaviors.values()].sort((p, q) => p.s - q.s).forEach(bh => {
+    if (onCycle.has(bh.name) || !behaviorsOf(bh).includes(bh.name)) return;
+    const path = [bh.name], find = (x, seen) => { for (const n of x.impl) { if (n === bh.name) return true; const y = model.behaviors.get(n); if (!y || seen.has(n)) continue; seen.add(n); path.push(n); if (find(y, seen)) return true; path.pop(); } return false; };
+    find(bh, new Set([bh.name])); path.forEach(n => onCycle.add(n)); cycles.push([...path, bh.name].join(' → '));
+  });
   const sf = scopeFailures(model), scope = sf.filter(f => f.k === 'scope').map(f => f.text), mscope = sf.filter(f => f.k === 'mscope').map(f => f.text);
   model.messages.forEach(m => { [m.refines, ...m.carries].filter(Boolean).forEach(n => { if (!model.messages.has(n)) badRel.push(`${m.name} → ${n}`); }); });
   return [
@@ -365,6 +457,7 @@ function lintSpec(model) {
     { k:'msg', label:'Every port uses a declared message type', f:unknownMsg },
     { k:'mscope', label:'Message types are used only inside the block that declares them', f:mscope },
     { k:'rel', label:'refines and carries name declared types', f:badRel },
+    { k:'cycle', label:'No behavior implements itself', f:cycles },
   ];
 }
 
@@ -395,15 +488,24 @@ function placementFindings(model) {
     const users = [];
     model.blocks.forEach(b => { if (portsOf(b).some(p => kinds.has(p.kind))) users.push(b); });
     model.messages.forEach(x => { if (x !== m && kinds.has(x.name)) users.push(at(x.owner)); });
-    model.behaviors.forEach(bh => { if (bh.ports.some(p => kinds.has(p.kind))) users.push(at(bh.owner)); });
+    model.behaviors.forEach(bh => { if (bh.ports.some(p => kinds.has(p.kind) && !bh.params.includes(p.kind)) || bh.impl.some(x => (bh.implArgs[x] || []).some(t => kinds.has(t)))) users.push(at(bh.owner)); });
     judge(m, 'message', users);
   });
-  model.behaviors.forEach(bh => judge(bh, 'behavior', [...model.blocks.values()].filter(b => b.impl.includes(bh.name))));
+  // Users of a behavior B: its implementers, through other behaviors too, and the places where each
+  // behavior that implements B directly is declared (B must be visible there).
+  model.behaviors.forEach(bh => judge(bh, 'behavior', [...implementersOf(model, bh.name),
+    ...[...model.behaviors.values()].filter(x => x !== bh && x.impl.includes(bh.name)).map(x => at(x.owner))]));
   return out.sort((p, q) => p.s - q.s);
 }
 // @sbtel end Core.Lint
 // @sbtel begin Core.Layout
 // ---------- Layout (pure: tree + open/detail sets + rules + text measure -> geometry) ----------
+// The text measurer layout calls through: the abstraction the page's measurer implements (the page passes
+// its M; diff mode wraps it). The core never names an implementation, so it stays free of the DOM.
+// @sbtel begin MeasuresText
+/** @typedef {{ tw: (text: string, font: string) => number, wrap: (text: string, font: string, width: number) => number }} MeasuresText */
+// @sbtel end MeasuresText
+/** @param {MeasuresText} M  how wide a text is (tw) and how many lines it wraps to (wrap), in a CSS font */
 function layout(model, opts, M) {
   const out = { blocks:[], connectors:[], dividers:[], bands:[], gutters:[], plus:[], levels:[], loc:new Map() };
   const isOpen = b => opts.open.has(b.id) && hasInside(b);
@@ -761,7 +863,7 @@ function applyEdit(src, model, act) {
     const n = act.node, reps = [], its = itemsOf(src, n), nameTok = headSym(its[1]);
     const name = act.name != null ? act.name : n.name;
     if (name !== n.name && nameTok) reps.push({ s:nameTok.s, e:nameTok.e, t:name });
-    if (n.form === 'block' && act.type != null && act.type !== (n.type || '')) {
+    if (act.type != null && act.type !== (n.type || '')) {
       let k = -1, i = 2; for (; i < its.length && its[i].t === 'sym' && its[i].v.startsWith(':'); i += 2) if (its[i].v === ':type') k = i;
       const lastKw = its[Math.min(i, its.length) - 1];
       if (k >= 0 && its[k + 1]) reps.push(act.type ? { s:its[k + 1].s, e:its[k + 1].e, t:quoteStr(act.type) } : { s:its[k - 1].e, e:its[k + 1].e, t:'' });
@@ -775,11 +877,11 @@ function applyEdit(src, model, act) {
     // A removed child takes the spaces before it, and its line break when it is on a line of its own.
     const cutRep = c => { let a = c.s; while (a > 0 && /[ \t]/.test(src[a - 1])) a--; if (a > 0 && src[a - 1] === '\n') a--; return { s:a, e:c.e, t:'' }; };
     const insert = (forms, items) => { if (!items.length) return; const p = childInsert(src, n, forms, gone), j = p.pre || p.post; reps.push({ s:p.pos, e:p.pos, t:p.pre + items.join(j) + p.post }); };
-    const impls = n.form === 'block' && act.impl ? n.children.filter(c => c.form === 'implements' && !act.impl.includes(c.name)) : [];
+    const impls = n.form !== 'message' && act.impl ? n.children.filter(c => c.form === 'implements' && !act.impl.includes(c.name)) : [];
     const ownP = n.children.filter(c => c.form === 'port'), keepP = new Set((act.ports || []).map(q => q.node).filter(Boolean));
     impls.forEach(c => gone.add(c)); if (act.ports) ownP.forEach(c => { if (!keepP.has(c)) gone.add(c); });
     if (act.sketch != null && !act.sketch.trim()) n.children.filter(c => c.form === 'sketch').forEach(c => gone.add(c));
-    if (n.form === 'block' && act.impl) insert(['implements'], act.impl.filter(x => !n.impl.includes(x)).map(x => '(implements ' + x + ')'));
+    if (n.form !== 'message' && act.impl) insert(['implements'], act.impl.filter(x => !n.impl.includes(x)).map(x => '(implements ' + x + ')'));
     // A message's carried types (act.carries: names, in order): one (carries …) form, rewritten whole.
     if (n.form === 'message' && act.carries) {
       const cur = n.children.find(c => c.form === 'carries'), want = act.carries.filter(Boolean);
@@ -807,7 +909,8 @@ function applyEdit(src, model, act) {
     if (name !== n.name && n.form !== 'block') {
       const old = n.name, sym = x => { const h = headSym(x); if (h && h.t === 'sym' && h.v === old) reps.push({ s:h.s, e:h.e, t:name }); };
       const visit = c => {
-        if (c.form === 'implements' && c.name === old) sym(itemsOf(src, c)[1]);
+        if (c.form === 'implements' && n.form === 'behavior' && c.name === old) sym(itemsOf(src, c)[1]);
+        else if (c.form === 'implements' && n.form === 'message' && (c.args || []).includes(old)) { const arg = itemsOf(src, c)[1]; arg.list.slice(1).forEach(sym); }
         else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[3]);
         else if ((c.form === 'refines' || c.form === 'carries') && (c.names || []).includes(old)) itemsOf(src, c).slice(1).forEach(sym);
         c.children.forEach(visit);
@@ -1004,21 +1107,26 @@ function attachCandidates(model, id, visibleIds) {
 // @sbtel begin Core.Scope
 // ---------- Edit dialog: what is in scope, and checks on a block's ports ----------
 const NAME_RE = /^[^\s()";:][^\s()";]*$/;
-// Behaviors a block may implement: declared in it or one of its ancestors.
-function behaviorsInScope(model, b) { const up = ancestorsOrSelf(b); return [...model.behaviors.values()].filter(bh => !bh.owner || up.includes(bh.owner)); }
+// Behaviors a block may implement: declared in it or one of its ancestors. A behavior may implement the
+// others visible where it is declared.
+function behaviorsInScope(model, b) {
+  const up = b.form === 'block' ? ancestorsOrSelf(b) : b.owner ? ancestorsOrSelf(b.owner) : [];
+  return [...model.behaviors.values()].filter(bh => bh !== b && (!bh.owner || up.includes(bh.owner)));
+}
 // Message types a port of node n may use: in scope where n is (a behavior: where it is declared), plus a behavior's own type parameters.
 function typesInScope(model, n) {
   const where = n.form === 'block' ? n : n.owner, up = where ? ancestorsOrSelf(where) : [];
   const ts = [...model.messages.values()].filter(m => !m.owner || up.includes(m.owner)).map(m => m.name);
   return n.form === 'behavior' ? [...ts, ...n.params.filter(p => p && !ts.includes(p))] : ts;
 }
-// Ports a block gets from the behaviors in impl.
-function inheritedPorts(model, impl) { return impl.flatMap(x => { const bh = model.behaviors.get(x); return bh ? bh.ports.map(p => ({ ...p, via:x })) : []; }); }
+// Ports a block (or behavior) gets from the behaviors in impl, through the behaviors they implement too,
+// with the arguments its (implements …) forms pass (portsOf's rule). `self` is a behavior's own name.
+function inheritedPorts(model, impl, args, self) { return inheritedVia(model, { form: self ? 'behavior' : 'block', name:self, impl, implArgs: args || Object.create(null) }); }
 function portNameFor(kind, taken) { const base = kind.charAt(0).toLowerCase() + kind.slice(1); if (!taken.has(base)) return base; let i = 2; while (taken.has(base + i)) i++; return base + i; }
 // The first problem with a node's port rows (with impl as its behaviors, for a block), or '' when fine.
 function portsProblem(model, node, ports, impl) {
   const types = new Set(typesInScope(model, node)), from = new Map();
-  if (node.form === 'block') inheritedPorts(model, impl || node.impl).forEach(p => { if (!from.has(p.name)) from.set(p.name, p.via); });
+  if (node.form !== 'message') inheritedPorts(model, impl || node.impl, node.implArgs, node.form === 'behavior' ? node.name : null).forEach(p => { if (!from.has(p.name)) from.set(p.name, p.via); });
   const own = new Set();
   for (let i = 0; i < ports.length; i++) {
     const p = ports[i], label = p.name ? `Port ${p.name}` : `Port ${i + 1}`;
@@ -1155,9 +1263,12 @@ function diffSpecs(m0, m1) {
       F.add('h:' + K(n.owner));
       n.ports.forEach(p => { const pi = n.params.indexOf(p.kind); F.add('p:' + p.dir + ':' + (pi >= 0 ? '$' + pi : msg(p.kind))); F.add('pn:' + p.name); });
       F.add('n:' + n.params.length);
-      MS[side].blocks.forEach(b => { if (b.impl.includes(n.name)) F.add('u:' + K(b)); });
+      if (n.type) F.add('t:' + n.type);
+      n.impl.forEach(x => F.add('i:' + beh(x)));
+      implementersOf(MS[side], n.name).forEach(b => F.add('u:' + K(b)));
     } else {
       F.add('h:' + K(n.owner));
+      if (n.type) F.add('t:' + n.type);
       if (n.refines) F.add('r:' + msg(n.refines)); n.carries.forEach(x => F.add('k:' + msg(x)));
       (uses[side].get(n.name) || []).forEach(u => F.add('u:' + K(u.o) + '.' + u.p));
     }
@@ -1232,11 +1343,9 @@ function diffSpecs(m0, m1) {
   }
   function fieldsOf(a, b) {
     const F = {};
-    if (b.form === 'block') {
-      if ((a.type || null) !== (b.type || null)) F.type = { from:a.type || null, to:b.type || null };
-    }
+    if ((a.type || null) !== (b.type || null)) F.type = { from:a.type || null, to:b.type || null };
     if ((a.sketch || '') !== (b.sketch || '')) F.sketch = { from:a.sketch || '', to:b.sketch || '', words:wordDiff(a.sketch || '', b.sketch || '') };
-    if (b.form === 'block') { const d = setDiff(a.impl.map(behB), b.impl); if (d.added.length || d.removed.length) F.implements = { added:d.added, removed: a.impl.filter(x => d.removed.includes(behB(x))) }; }
+    if (b.form !== 'message') { const d = setDiff(a.impl.map(behB), b.impl); if (d.added.length || d.removed.length) F.implements = { added:d.added, removed: a.impl.filter(x => d.removed.includes(behB(x))) }; }
     if (b.form !== 'message') {
       const PA = keyed(b.form === 'block' ? a.ownPorts : a.ports), PB = keyed(b.form === 'block' ? b.ownPorts : b.ports);
       const ia = new Map(PA.map(x => [x.key, x.p])), ib = new Map(PB.map(x => [x.key, x.p]));

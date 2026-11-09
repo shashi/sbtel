@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Optional helper for the sbtel-recover skill (Python 3.8+, standard library only).
 
-Reads `@sbtel` annotations from source files, works out which block owns each line, reports annotation
-errors, and turns location-to-location references into `Caller -> Callee  # file:line` edges.
+Reads `@sbtel` annotations from source files, works out which block (or behavior) owns each line,
+reports annotation errors, and turns location-to-location references into `Caller -> Callee  # file:line`
+edges.
 
-  sbtel_owners.py SPEC FILE...              owner ranges: file<TAB>start<TAB>end<TAB>block
+  sbtel_owners.py SPEC FILE...              owner ranges: file<TAB>start<TAB>end<TAB>owner
   sbtel_owners.py SPEC FILE... --edges      read "from_file:line to_file:line" pairs on stdin,
                                             print one edge per distinct (caller, callee, from location)
 
@@ -17,21 +18,43 @@ docs/DESIGN.md section 8. There are no others:
   @sbtel message Name     anchor: where message type Name's shape is defined; owns no code
   @sbtel port Block.port  anchor: where a port of Block is handled; owns no code
 
+A Name is a block, or a behavior: `@sbtel Durable` above an interface, trait, protocol or typedef
+declaration maps it to behavior Durable (sbtel 0.2.2). Blocks come first, so a name that is both a
+block's and a behavior's names the block; write `beh:Durable` for the behavior. A behavior should own
+only its declaration. That is not checked: what is a type-like declaration differs too much between
+languages to tell reliably, so any form may name a behavior. In the ranges a behavior owner is printed
+`beh:Name`.
+
+With --edges, each pair is a reference from one owner's code to another owner's declaration:
+  - block A to block B: the edge A -> B;
+  - block A to behavior X: the edge A -> X (sbtel check allows it when X is in A's scope: the
+    `abstraction` rule), written beh:X when a block is also called X;
+  - a pair tagged `implements` in a third column after the name (`from to<TAB>name<TAB>implements`,
+    as sbtel_refs.mjs and sbtel_refs_go print for `class Store implements Durable`, `var _ Durable =
+    (*Store)(nil)` or an embedded interface; write the tag yourself for Rust's `impl Durable for
+    Store`) whose callee is a behavior is not a binding: it states that the caller implements the
+    behavior. It prints no edge, and it is an error when the spec has no matching (implements ...),
+    directly or through behaviors the caller implements;
+  - a behavior's own code to anything else prints nothing: a behavior owns its declaration, whose
+    signature is its ports (their types are message types), not code that binds.
+
 Anchors are checked (the message type, or the block and its port, must exist in the spec) but
 change no ownership: the lines after one belong to whoever owned them anyway, and a pending
 `@sbtel Name` above an anchor still applies to the declaration below it.
 
 "The next declaration" is found by indentation: its first non-blank line, the lines indented deeper
-than it, and a closing line at its own indentation (`}`, `)`, `]`, `end`...). That fits formatted
+than it, and a closing line at its own indentation; comment lines between the annotation and it (a doc
+comment, a JSDoc block) belong to it too (`}`, `)`, `]`, `end`...). That fits formatted
 code in most languages; check the output where it matters. Lines inside a multi-line string literal
 (a backtick string in Go or JS, a triple-quoted string in Python) belong to the declaration whatever
 their indentation, and an `@sbtel` inside any string literal is not an annotation.
 
-Errors (stderr, exit 1): unknown block name, unknown message type or port in an anchor, end without
+Errors (stderr, exit 1): unknown block or behavior name, unknown message type or port in an anchor, end without
 begin or with another name, begin never ended, code in no block, code owned only by a container
 block (one with child blocks), two `@sbtel Name` lines before one declaration, a second `@sbtel file`
 in one file, and any other @sbtel text.
 """
+import os
 import re
 import sys
 
@@ -84,10 +107,32 @@ def strings(lines):
 
 class Spec:
     """What the annotations are checked against: block names, containers (blocks with a child block),
-    message type names, and each block's ports (its own, plus those of the behaviors it implements)."""
+    message type names, behavior names, each block's ports (its own, plus those of the behaviors it
+    implements, through the behaviors they implement), and what each block and behavior implements."""
 
-    def __init__(self, blocks, containers, messages, ports):
+    def __init__(self, blocks, containers, messages, ports, behaviors=(), impl_block=None, impl_beh=None):
         self.blocks, self.containers, self.messages, self.ports = blocks, containers, messages, ports
+        self.behaviors = set(behaviors)
+        self.impl_block, self.impl_beh = impl_block or {}, impl_beh or {}
+
+    def implemented(self, key):
+        """The behaviors an owner key (a block name, or beh:Name) implements, directly or through others."""
+        start = self.impl_beh.get(key[4:], ()) if key.startswith('beh:') else self.impl_block.get(key, ())
+        out, todo = set(), list(start)
+        while todo:
+            b = todo.pop()
+            if b not in out:
+                out.add(b)
+                todo.extend(self.impl_beh.get(b, ()))
+        return out
+
+    def resolve(self, name):
+        """The owner key a Name annotation means: a block first, then beh:X / β:X, then a behavior."""
+        if name in self.blocks:
+            return name
+        m = re.match(r'^(?:β|beh):(.+)$', name)
+        bare = m.group(1) if m else name
+        return 'beh:' + bare if bare in self.behaviors else None
 
 
 def read_spec(src):
@@ -95,13 +140,15 @@ def read_spec(src):
     # nothing inside is special; it is skipped like a comment, since no name lives in a sketch.
     tok = re.compile(r'\((~+)(?!~)[\s\S]*?\1\)|"(?:\\.|[^"\\])*"|;[^\n]*|[()]|[^\s()";]+', re.S)
     toks = [m.group(0) for m in tok.finditer(src) if not m.group(0).startswith(';') and not m.group(1)]
-    stack, names, containers, messages = [], [], set(), set()
-    own_ports, beh_ports, implements = {}, {}, {}
+    stack, names, containers, messages, behaviors = [], [], set(), set(), set()
+    own_ports, beh_ports, implements, beh_impl = {}, {}, {}, {}
     word = lambda k: toks[k] if k < len(toks) and toks[k] not in '()' else None
+    # (behavior (Name P ...) ...) and (implements (Name Arg ...)): the name is the first word of the list.
+    named = lambda k: word(k) or (word(k + 1) if k < len(toks) and toks[k] == '(' else None)
     for i, t in enumerate(toks):
         if t == '(':
             head = toks[i + 1] if i + 1 < len(toks) else ''
-            name = word(i + 2) if head in ('block', 'message', 'behavior') else None
+            name = named(i + 2) if head in ('block', 'message', 'behavior') else None
             # The nearest enclosing block or behavior, and whether a message form intervenes.
             owner = next(((f[0], f[1]) for f in reversed(stack) if f[0] in ('block', 'behavior', 'message')), (None, None))
             if head == 'block' and name:
@@ -110,18 +157,26 @@ def read_spec(src):
                     containers.add(owner[1])
             elif head == 'message' and name:
                 messages.add(name)
+            elif head == 'behavior' and name:
+                behaviors.add(name)
             elif head == 'port' and owner[1] and word(i + 2):
                 (own_ports if owner[0] == 'block' else beh_ports if owner[0] == 'behavior' else {}).setdefault(owner[1], set()).add(word(i + 2))
-            elif head == 'implements' and owner[0] == 'block' and word(i + 2):
-                implements.setdefault(owner[1], set()).add(word(i + 2))
+            elif head == 'implements' and owner[0] in ('block', 'behavior') and named(i + 2):
+                (implements if owner[0] == 'block' else beh_impl).setdefault(owner[1], set()).add(named(i + 2))
             stack.append((head, name))
         elif t == ')' and stack:
             stack.pop()
-    ports = {b: set(own_ports.get(b, ())) for b in names}
-    for b, behs in implements.items():
-        for beh in behs:
-            ports.setdefault(b, set()).update(beh_ports.get(beh, ()))
-    return Spec(set(names), containers, messages, ports)
+    spec = Spec(set(names), containers, messages, {}, behaviors, implements, beh_impl)
+    spec.ports = {b: set(own_ports.get(b, ())) for b in names}
+    for b in implements:
+        for beh in spec.implemented(b):
+            spec.ports.setdefault(b, set()).update(beh_ports.get(beh, ()))
+    return spec
+
+
+def show(key):
+    """An owner key as a name: beh:Name is a behavior's key, shown as Name."""
+    return key[4:] if key.startswith('beh:') else key
 
 
 def spec_blocks(src):
@@ -146,6 +201,16 @@ def owners(path, lines, spec, errors):
         if what == 'block' and name not in known:
             err(n, 'unknown block %s' % name)
         return True
+
+    def owner_key(n, name):
+        """An ownership form's Name: a block, or a behavior (beh:Name). None if it is not a name."""
+        if not NAME.match(name):
+            err(n, 'not a block name: %r' % name)
+            return None
+        key = spec.resolve(name)
+        if key is None:
+            err(n, 'unknown block or behavior %s' % name)
+        return key or name  # reported; it still opens and closes regions, as written
 
     def anchor(n, kw, name):
         """`message Name` or `port Block.port`: checked, owns nothing."""
@@ -184,7 +249,8 @@ def owners(path, lines, spec, errors):
                 anchor(n, words[0], words[1])
             elif len(words) == 2 and words[0] in ('begin', 'end', 'file'):
                 kw, name = words
-                if valid(n, name):
+                name = owner_key(n, name)
+                if name:
                     if kw == 'begin':
                         regions.append((name, n))
                     elif kw == 'file':
@@ -192,17 +258,18 @@ def owners(path, lines, spec, errors):
                             err(n, 'a second @sbtel file (the first is on line %d): one per file' % file_line)
                         file_owner, file_line = name, n
                     elif not regions:
-                        err(n, 'end %s without begin' % name)
+                        err(n, 'end %s without begin' % words[1])
                     else:
                         if regions[-1][0] != name:
-                            err(n, 'end %s does not match begin %s (line %d)' % (name, regions[-1][0], regions[-1][1]))
+                            err(n, 'end %s does not match begin %s (line %d)' % (words[1], show(regions[-1][0]), regions[-1][1]))
                         regions.pop()
             elif len(words) == 1:
-                if valid(n, words[0]):
+                key = owner_key(n, words[0])
+                if key:
                     if pending:
                         err(n, 'a second @sbtel %s for the same declaration (after @sbtel %s): one per declaration'
-                            % (words[0], pending[-1][0]))
-                    pending.append((words[0], n))
+                            % (words[0], show(pending[-1][0])))
+                    pending.append((key, n))
             else:
                 err(n, 'not one of the annotation forms (Name, begin Name, end Name, file Name, message Name, '
                        'port Block.port): %s' % ' '.join(words))
@@ -234,9 +301,11 @@ def owners(path, lines, spec, errors):
                     continue
                 break
             decl, pending = (pending[-1][0], end, len(regions)), []
-        owner[n] = current()
+        # A comment between `@sbtel Name` and its declaration is the declaration's doc comment (a JSDoc
+        # @param {T} there names T): it belongs to Name too.
+        owner[n] = pending[-1][0] if pending and raw.strip() and not lex[n - 1][0] else current()
     for name, n in regions:
-        err(n, 'begin %s never ended' % name)
+        err(n, 'begin %s never ended' % show(name))
     ranges, cur = [], None
     for n in range(1, len(lines) + 1):
         o, raw = owner[n], lines[n - 1]
@@ -283,8 +352,12 @@ def main(argv):
             lines = f.read().split('\n')
         table[path] = owners(path, lines, spec, errors)
     if '--edges' in argv:
+        # Pairs may name a file by another spelling of its path (a link resolved, as the go tool and
+        # TypeScript do with macOS's /var -> /private/var): match them by real path.
+        real = {os.path.realpath(p): r for p, r in table.items()}
+
         def owner_at(path, line):
-            for s, e, b in table.get(path, []):
+            for s, e, b in table.get(path) or real.get(os.path.realpath(path), []):
                 if s <= line <= e:
                     return b
             return None
@@ -302,10 +375,23 @@ def main(argv):
             if not a or not b:
                 errors.append('%s:%d -> %s:%d: no owner for %s' % (fa, la, fb, lb, 'caller' if not a else 'callee'))
                 continue
-            key = (a, b, fa, la)
-            if a != b and key not in seen:
+            if a == b:
+                continue
+            if len(parts) > 3 and parts[3] == 'implements' and b.startswith('beh:'):
+                # Not a binding: the code says that a implements b. The spec must say so too.
+                if b[4:] not in spec.implemented(a) and (a, b) not in seen:
+                    seen.add((a, b))
+                    errors.append('%s:%d: %s implements %s in the code, but the spec does not say so (add (implements %s) to %s%s)'
+                                  % (fa, la, show(a), show(b), show(b), 'behavior ' if a.startswith('beh:') else '', show(a)))
+                continue
+            if a.startswith('beh:'):
+                continue  # a behavior's declaration: its signature is its ports, not code that binds
+            # A callee behavior is written bare, or beh:Name when a block has that name too.
+            callee = b if b.startswith('beh:') and b[4:] in spec.blocks else show(b)
+            key = (a, callee, fa, la)
+            if key not in seen:
                 seen.add(key)
-                print('%s -> %s  # %s:%d' % (a, b, fa, la))
+                print('%s -> %s  # %s:%d' % (a, callee, fa, la))
     else:
         for path, ranges in table.items():
             for s, e, b in ranges:

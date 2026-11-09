@@ -63,10 +63,15 @@ func TestConformance(t *testing.T) {
 		random = append(random, c.Random...)
 		diffs = append(diffs, c.Diff...)
 	}
+	// Specs are read with \r\n as \n, as run-node.mjs does, so a CRLF checkout gives the same records;
+	// bindings fixtures are passed as they are (a-rules.bindings.txt tests CRLF on purpose).
 	read := func(p string) string {
 		b, err := os.ReadFile(filepath.Join(dir, p))
 		if err != nil {
 			t.Fatal(err)
+		}
+		if strings.HasSuffix(p, ".sbtel") {
+			return strings.ReplaceAll(string(b), "\r\n", "\n")
 		}
 		return string(b)
 	}
@@ -127,7 +132,7 @@ func TestConformance(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got != string(want) {
+			if want := strings.ReplaceAll(string(want), "\r\n", "\n"); got != want {
 				i := 0
 				for i < len(got) && i < len(want) && got[i] == want[i] {
 					i++

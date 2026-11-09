@@ -37,8 +37,14 @@ type Options struct {
 	Health     time.Duration // timeout of the start-race probe of server.json's server (default 1s, §5.1; tests lengthen it)
 	// DiffText returns `sbtel diff` of two specs, for a review's proposal (§5.2). The CLI passes the
 	// engine's; nil records no diff text. The server never names the engine itself.
-	DiffText func(a, b string) string
+	DiffText DiffFunc
 }
+
+// @sbtel DiffsSpecs
+// DiffFunc is what the server calls to describe a review's proposed edits: `sbtel diff` of the base and
+// the proposal, as text. The server knows only this type; the CLI, which builds the server, passes in
+// its own (cmd/sbtel diffText, through the engine), so the server never names the engine.
+type DiffFunc func(a, b string) string
 
 // Server is one running server.
 type Server struct {

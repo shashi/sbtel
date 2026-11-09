@@ -46,7 +46,7 @@ workflows do not name it: they use `${{ github.repository }}`.
    assets.
 5. **Check the release**: `curl -fsSL https://raw.githubusercontent.com/shashi/sbtel/main/install.sh | sh`
    on a clean machine, then `sbtel version`.
-6. Set `VERSION` back to a dev version (`0.2.1-dev`), run `make viewer`, and commit.
+6. Set `VERSION` back to a dev version (`0.2.2-dev`), run `make viewer`, and commit.
 
 To release by hand instead (no workflow): `scripts/release.sh`, then
 `gh release create v0.2.0 --verify-tag --generate-notes dist/sbtel_* dist/THIRD_PARTY_NOTICES dist/checksums.txt`.

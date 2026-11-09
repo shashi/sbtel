@@ -88,6 +88,21 @@ graph) and [annotations.md](annotations.md) (the forms, existing annotations, mo
    explanations, and the existing annotations you kept or changed. Then iterate on comments, as in the
    sbtel-language skill.
 
+## Calls through an abstraction
+
+When code calls through an interface, trait or protocol, model the abstraction as a **behavior** and
+annotate its declaration with the behavior's name (`// @sbtel Durable` above `type Durable
+interface`, `interface Durable`, `trait Durable`, a JSDoc `@typedef`); give the behavior a `:type`
+saying what it is in code (`"interface"`, `"trait"`). The caller then binds only the behavior
+(`Editor -> Durable`, allowed by `check`'s `abstraction` rule when Durable is in the caller's scope),
+the implementers say `(implements Durable)`, and the composition root, the code that builds the
+implementer and hands it over, binds the implementers. That is the dependency-inversion shape, and
+`check` now holds it. The helpers tag a reference that only states an implementation (`implements
+Durable`, Go's `var _ Durable = (*Store)(nil)`, an embedded interface) and `sbtel_owners.py` checks it
+against the spec's `(implements …)` instead of making it an edge; for Rust's `impl Durable for Store`,
+add the `implements` column yourself (extracting-bindings.md). Declare the behavior where its callers
+can see it, even when lint notes it could live beside its implementers: lint does not read bindings.
+
 ## Done when
 
 - `sbtel lint spec.sbtel` is clean;

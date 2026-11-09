@@ -9,7 +9,7 @@ set -u
 T=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$T/../.." && pwd)
 PAGE=$(realpath "${1:-$ROOT/viewer/dist/index.html}")
 OUT=$(mktemp -d "${TMPDIR:-/tmp}/sbtel-accept.XXXXXX")
-SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7"}
+SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7 accept8"}
 
 # Chrome --dump-dom suites: the test is appended to a copy of the page and reports through console.log.
 virtual() { # name test.js WxH budget timeout
@@ -40,6 +40,8 @@ run_suite() {
               timeout 300 python3 "$T/suites/accept6.py" "$OUT/accept6.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     # v0.2.1 persistent undo: a browser profile on disk, closed and started again (Playwright).
     accept7)  cp "$PAGE" "$OUT/accept7.html"; timeout 200 python3 "$T/suites/accept7.py" "$OUT/accept7.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
+    # v0.2.2 behaviors with a block's grammar: pills on behavior and message cards, the implementers outline.
+    accept8)  cp "$PAGE" "$OUT/accept8.html"; timeout 200 python3 "$T/suites/accept8.py" "$OUT/accept8.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     *) echo "unknown suite $1"; return 1 ;;
   esac
 }

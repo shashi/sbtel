@@ -379,6 +379,8 @@ func plural(n int, word string) string {
 
 // diffText is the server's Options.DiffText: `sbtel diff base proposal`, through a fresh engine. The
 // text is what `sbtel diff` prints; a side that does not parse gives its error line instead.
+var _ server.DiffFunc = diffText
+
 func diffText(a, b string) string {
 	if len(a)+len(b) > 8<<20 {
 		return "(not computed: the specs are larger than 8 MiB; run sbtel diff on the proposed spec)"

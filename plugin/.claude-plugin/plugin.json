@@ -1,7 +1,7 @@
 {
   "name": "sbtel",
   "displayName": "sbtel",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "sbtel is a language to design, understand, and collaborate on a system's architecture with AI.",
   "author": {
     "name": "Shashi Gowda",

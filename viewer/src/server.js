@@ -273,6 +273,14 @@ SBTEL.modes.server = (() => {
       const why = viol.filter(x => x.e.note).length;
       return { label: `Code bindings respect the levels (${S.edges.length} edge${S.edges.length === 1 ? '' : 's'}${viol.length ? ', ' + why + ' of ' + viol.length + ' violation' + (viol.length === 1 ? '' : 's') + ' explained' : ''})`, f, viol };
     };
+    // With bindings, hovering a behavior also outlines the blocks whose code binds it ("uses"): edges whose
+    // callee names the behavior (core.js bindingTarget, the rule check applies), from a block of the spec.
+    behaviorUsers = name => {
+      if (!S.edges || !state.model) return [];
+      const out = new Set();
+      S.edges.forEach(e => { const T = bindingTarget(state.model, e.callee); if (T && T.form === 'behavior' && T.name === name && state.model.blocks.has(e.caller)) out.add(e.caller); });
+      return [...out];
+    };
     const violList = viol => !viol.length ? '' : `<ul class="sb-viol">${viol.map(({ e, v }) => `<li><div><code>${esc(e.caller)} -> ${esc(e.callee)}</code>${e.location ? ` <span class="loc">${esc(e.location)}</span>` : ''}</div><div class="rule">${esc(v.text || v.rule)}</div>${e.note ? `<div class="why"><b>Explained:</b> ${esc(e.note)}</div>` : '<div class="why none">Not explained in the bindings file.</div>'}</li>`).join('')}</ul>`;
     const origRender = renderChecks;
     renderChecks = () => {

@@ -179,7 +179,7 @@ class Anchors(unittest.TestCase):
             'e.js:3: block App.Ui has no port nope',
             'e.js:4: unknown block Missing',
             'e.js:5: port anchor needs Block.port: nodot',
-            'e.js:6: unknown block message',
+            'e.js:6: unknown block or behavior message',
             'e.js:7: not one of the annotation forms (Name, begin Name, end Name, file Name, message Name, '
             'port Block.port): port App.Store.req extra',
         ])
@@ -202,7 +202,7 @@ class Errors(unittest.TestCase):
         self.assertEqual(code, 1)
         # Annotation errors in line order, then regions never ended, then ownership errors.
         self.assertEqual(err.splitlines(), [
-            'b.go:2: unknown block App.Nope',
+            'b.go:2: unknown block or behavior App.Nope',
             'b.go:3: end App.Ui does not match begin App.Nope (line 2)',
             'b.go:4: end App.Api without begin',
             'b.go:5: begin App.Store never ended',
@@ -256,6 +256,147 @@ class Edges(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(out, 'App.Ui -> App.Store  # ui.js:2\nApp.Ui -> App.Store  # ui.js:3\n')
         self.assertEqual(err, 'stdin: not a "file:line file:line" pair: bad line\nui.js:9 -> s.js:1: no owner for caller\n')
+
+
+# Dependency inversion (sbtel 0.2.2): an interface owned by a behavior, an implementer, a caller that
+# calls only through the interface, and a composition root that builds the implementer and hands it over.
+INV_SPEC = '''
+(message Line)
+(behavior Durable :type "interface" (port save in Line))
+(behavior Journaled :type "interface" (implements Durable))
+(behavior Tools (sketch "A behavior with a block's name."))
+(block Inv
+  (level (block Inv.Root))
+  (level (block Inv.Editor))
+  (level (block Inv.Disk (implements Journaled)) (block Inv.Mem)))
+(block Tools)
+'''
+# The same program in Go (store.go, editor.go, main.go) as sbtel_refs_go prints its references, and in
+# TypeScript (store.ts, ...) as sbtel_refs.mjs does: a blank assertion and an embedded interface, or the
+# heritage clauses, are tagged `implements`.
+INV_GO = {
+    'store.go': ('// @sbtel Durable\ntype Durable interface {\n\tSave(s string) error\n}\n\n'
+                 '// @sbtel Journaled\ntype Journaled interface {\n\tDurable\n\tReplay() []string\n}\n\n'
+                 '// @sbtel begin Inv.Disk\ntype Disk struct{ lines []string }\n\nvar _ Journaled = (*Disk)(nil)\n'
+                 '// @sbtel end Inv.Disk\n\n// @sbtel Inv.Mem\ntype Mem struct{}\n\n'
+                 '// @sbtel Inv.Mem\nvar _ Durable = Mem{}\n'),
+    'editor.go': '// @sbtel file Inv.Editor\ntype Editor struct{ out Durable }\n\nfunc (e *Editor) Type(s string) error { return e.out.Save(s) }\n',
+    'main.go': '// @sbtel file Inv.Root\nfunc main() { (&Editor{out: &Disk{}}).Type("hi") }\n',
+}
+INV_GO_REFS = (
+    'store.go:8 store.go:2\tDurable\timplements\n'      # Journaled embeds Durable: Journaled implements Durable
+    'store.go:15 store.go:7\tJournaled\timplements\n'   # var _ Journaled = (*Disk)(nil)
+    'store.go:15 store.go:13\tDisk\n'
+    'store.go:22 store.go:2\tDurable\timplements\n'     # var _ Durable = Mem{}: the spec does not say so
+    'editor.go:2 store.go:2\tDurable\n'                  # a field of the interface type: a use
+    'editor.go:4 store.go:3\tSave\n'                     # a call through the interface: a use
+    'main.go:2 editor.go:2\tEditor\n'
+    'main.go:2 store.go:13\tDisk\n'                      # the composition root names the implementer
+)
+INV_TS = {
+    'store.ts': ('// @sbtel Durable\ninterface Durable { save(s: string): void; }\n'
+                 '// @sbtel Journaled\ninterface Journaled extends Durable { replay(): string[]; }\n'
+                 '// @sbtel Inv.Disk\nclass Disk implements Journaled { save(s: string) {} replay() { return []; } }\n'),
+    'editor.ts': '// @sbtel file Inv.Editor\nfunction type(out: Durable) { out.save("hi"); }\n',
+    'main.ts': '// @sbtel file Inv.Root\ntype(new Disk());\n',
+}
+INV_TS_REFS = (
+    'store.ts:4 store.ts:2\tDurable\timplements\n'
+    'store.ts:6 store.ts:4\tJournaled\timplements\n'
+    'editor.ts:2 store.ts:2\tDurable\n'
+    'editor.ts:2 store.ts:2\tsave\n'
+    'main.ts:2 editor.ts:2\ttype\n'
+    'main.ts:2 store.ts:6\tDisk\n'
+)
+
+
+def run_inv(files, stdin=None):
+    global SPEC
+    keep, SPEC = SPEC, INV_SPEC
+    try:
+        return run_owners(files, stdin)
+    finally:
+        SPEC = keep
+
+
+class Behaviors(unittest.TestCase):
+    def test_spec_reads_behaviors_and_extension(self):
+        sp = so.read_spec(INV_SPEC + '(behavior (Store T) (port put in T)) (block P (implements (Store Line)))')
+        self.assertEqual(sp.behaviors, {'Durable', 'Journaled', 'Tools', 'Store'})
+        self.assertEqual(sp.implemented('Inv.Disk'), {'Journaled', 'Durable'})  # through Journaled
+        self.assertEqual(sp.implemented('beh:Journaled'), {'Durable'})
+        self.assertEqual(sp.ports['Inv.Disk'], {'save'})
+        self.assertEqual(sp.ports['P'], {'put'})
+        self.assertEqual((sp.resolve('Tools'), sp.resolve('beh:Tools'), sp.resolve('Durable'), sp.resolve('Nope')),
+                         ('Tools', 'beh:Tools', 'beh:Durable', None))
+
+    def test_ranges_name_behaviors(self):
+        code, out, err = run_inv(INV_GO)
+        self.assertEqual(err.splitlines(), [])
+        self.assertIn(('store.go', '2', '4', 'beh:Durable'), ranges(out))
+        self.assertIn(('store.go', '7', '10', 'beh:Journaled'), ranges(out))
+
+    def test_go_edges(self):
+        code, out, err = run_inv(INV_GO, INV_GO_REFS)
+        # The caller binds only the behavior; the root binds the caller and the implementer; the tagged
+        # references are no bindings, and the one the spec lacks is an error.
+        self.assertEqual(out.splitlines(), [
+            'Inv.Editor -> Durable  # editor.go:2',
+            'Inv.Editor -> Durable  # editor.go:4',
+            'Inv.Root -> Inv.Editor  # main.go:2',
+            'Inv.Root -> Inv.Disk  # main.go:2',
+        ])
+        self.assertEqual(err.splitlines(), ['store.go:22: Inv.Mem implements Durable in the code, but the spec does not say so '
+                                            '(add (implements Durable) to Inv.Mem)'])
+        self.assertEqual(code, 1)
+
+    def test_ts_edges(self):
+        code, out, err = run_inv(INV_TS, INV_TS_REFS)
+        self.assertEqual((code, err), (0, ''))
+        self.assertEqual(out.splitlines(), [
+            'Inv.Editor -> Durable  # editor.ts:2',
+            'Inv.Root -> Inv.Editor  # main.ts:2',
+            'Inv.Root -> Inv.Disk  # main.ts:2',
+        ])
+
+    def test_behavior_extension_must_match_the_spec(self):
+        files = {'s.ts': '// @sbtel Durable\ninterface Durable {}\n// @sbtel Tools\nclass ToolsImpl {}\n'
+                         '// @sbtel beh:Tools\ninterface Tools extends Durable {}\n'}
+        code, out, err = run_inv(files, 's.ts:6 s.ts:2\tDurable\timplements\n')
+        self.assertEqual(err.splitlines(), ['s.ts:6: Tools implements Durable in the code, but the spec does not say so '
+                                            '(add (implements Durable) to behavior Tools)'])
+
+    def test_name_of_a_block_and_a_behavior(self):
+        # `@sbtel Tools` names the block; `beh:Tools` the behavior, and an edge to it says beh:Tools.
+        files = {'t.js': '// @sbtel Tools\nfunction tool() {}\n// @sbtel beh:Tools\nclass ToolsApi {}\n'
+                         '// @sbtel Inv.Mem\nfunction use() { tool(); new ToolsApi(); }\n'}
+        code, out, err = run_inv(files, 't.js:6 t.js:2\ttool\nt.js:6 t.js:4\tToolsApi\n')
+        self.assertEqual((code, err), (0, ''))
+        self.assertEqual(out.splitlines(), ['Inv.Mem -> Tools  # t.js:6', 'Inv.Mem -> beh:Tools  # t.js:6'])
+
+    def test_pairs_by_real_path(self):
+        # A pair may spell a file's path through a link (TypeScript and the go tool resolve links).
+        with tempfile.TemporaryDirectory() as d:
+            real, link = os.path.join(d, 'real'), os.path.join(d, 'link')
+            os.mkdir(real)
+            try:
+                os.symlink(real, link)
+            except (OSError, NotImplementedError):
+                self.skipTest('no symbolic links here')
+            with open(os.path.join(real, 'spec.sbtel'), 'w', encoding='utf-8') as f:
+                f.write(INV_SPEC)
+            for name, text in INV_TS.items():
+                with open(os.path.join(real, name), 'w', encoding='utf-8') as f:
+                    f.write(text)
+            pairs = INV_TS_REFS.replace('editor.ts:', os.path.join(os.path.realpath(real), 'editor.ts') + ':', 1)
+            p = subprocess.run([sys.executable, '-I', SCRIPT, 'spec.sbtel'] + list(INV_TS) + ['--edges'], cwd=link,
+                               input=pairs, capture_output=True, text=True)
+            self.assertEqual(p.stderr, '')
+            self.assertIn('Inv.Editor -> Durable  # %s:2' % os.path.join(os.path.realpath(real), 'editor.ts'), p.stdout.splitlines())
+
+    def test_unknown_behavior(self):
+        code, _, err = run_inv({'u.js': '// @sbtel Durabel\nconst d = 1;\n'})
+        self.assertEqual(err.splitlines(), ['u.js:1: unknown block or behavior Durabel'])
 
 
 class Sccs(unittest.TestCase):

@@ -13,7 +13,7 @@ Ui.Button -> Ui.Menu # same-level inside Ui
 Core.Queue -> Dup#2 # lower-level from a nested block
 Dup -> Dup#2 # same-level between duplicates
 Orphan -> Core.Queue # unknown: not in a level
-Ui -> Durable # unknown: a behavior
+Ui -> Durable # abstraction: a behavior in scope (0.2.2)
 Ui -> Ui.Buton # unknown: typo
 Shell.Item -> Top # unknown: renamed away
 Top -> Tools # same-level at file level

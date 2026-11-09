@@ -9,13 +9,19 @@
 //
 // Prints one line per reference that crosses a unit:  from_file:line to_file:line<TAB>name
 // which is the input sbtel_owners.py --edges reads. Paths are printed as given (or relative to the
-// current directory, for -p), so pass the same paths to sbtel_owners.py.
+// current directory, for -p), so pass the same paths to sbtel_owners.py. A reference that states an
+// implements relation rather than a use gets a third column, `implements`: a name in a heritage clause
+// (`class Store implements Durable`, `interface Journaled extends Durable`, `class A extends Base`) or
+// in a JSDoc `@implements {Durable}`. sbtel_owners.py checks those against the spec's (implements …)
+// when the name is owned by a behavior, and never makes them bindings.
 //
 // A unit is a top-level statement of a file, or a statement directly inside a top-level immediately
 // invoked function (`(() => { ... })()`, `(function () { ... })()`), so module-pattern code gets
 // one unit per inner declaration. A reference counts when the declaration it resolves to is in another
 // unit or another file. Also printed: each import or require of a project file (from the module
-// specifier's line to line 1 of the file it resolves to).
+// specifier's line to line 1 of the file it resolves to). JSDoc counts: a type named in `@param {T}`,
+// `@type {T}` and the like is a reference, and a `@typedef` or `@callback` is a unit of its own (in plain
+// JavaScript it is how an interface is declared: `/** @typedef {{ tw: … }} MeasuresText */`).
 //
 // Options:
 //   --typescript DIR   where the typescript package is (default: $SBTEL_TYPESCRIPT, then resolved from
@@ -32,9 +38,9 @@
 // registries, event names), DOM ids and CSS classes, and calls made through untyped values (a JS
 // parameter has no type, so `p.run()` resolves to nothing). Find those by reading the code.
 import { createRequire } from 'node:module';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, realpathSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const argv = process.argv.slice(2);
@@ -79,7 +85,14 @@ if (opt.project) {
   cfg.fileNames.forEach(f => files.push(relative(process.cwd(), f)));
 }
 // Real path -> { shown: the path as printed, text }. HTML pages are presented to TypeScript as .js.
-const virt = new Map(), shownOf = new Map();
+// Keys are real paths (links resolved): TypeScript resolves imports through realpath, so on macOS a file
+// under /var (a link to /private/var) would otherwise not be found among the project's files.
+const virt = new Map(), shownOf = new Map(), canonMemo = new Map();
+const canon = n => {
+  const r = resolve(n); if (canonMemo.has(r)) return canonMemo.get(r);
+  let c = r; try { c = realpathSync(r); } catch (e) { try { c = join(realpathSync(dirname(r)), basename(r)); } catch (e2) { /* as is */ } }
+  canonMemo.set(r, c); return c;
+};
 const isHTML = f => /\.html?$/i.test(f);
 function blankOutsideScripts(text) {
   let out = '', at = 0;
@@ -94,8 +107,8 @@ function blankOutsideScripts(text) {
   return out + blank(text.slice(at));
 }
 for (const f of [...new Set(files)]) {
-  const real = resolve(f);
-  if (!existsSync(real)) { console.error('sbtel_refs: no such file: ' + f); process.exit(2); }
+  if (!existsSync(resolve(f))) { console.error('sbtel_refs: no such file: ' + f); process.exit(2); }
+  const real = canon(f);
   const raw = readFileSync(real, 'utf8');
   const name = isHTML(f) ? real + '.js' : real;
   virt.set(name, isHTML(f) ? blankOutsideScripts(raw) : raw);
@@ -103,9 +116,9 @@ for (const f of [...new Set(files)]) {
 }
 const host = ts.createCompilerHost(options, true);
 const base = { getSourceFile: host.getSourceFile, fileExists: host.fileExists, readFile: host.readFile };
-host.getSourceFile = (n, v, onErr, create) => virt.has(resolve(n)) ? ts.createSourceFile(n, virt.get(resolve(n)), v, true) : base.getSourceFile.call(host, n, v, onErr, create);
-host.fileExists = n => virt.has(resolve(n)) || base.fileExists.call(host, n);
-host.readFile = n => virt.has(resolve(n)) ? virt.get(resolve(n)) : base.readFile.call(host, n);
+host.getSourceFile = (n, v, onErr, create) => virt.has(canon(n)) ? ts.createSourceFile(n, virt.get(canon(n)), v, true) : base.getSourceFile.call(host, n, v, onErr, create);
+host.fileExists = n => virt.has(canon(n)) || base.fileExists.call(host, n);
+host.readFile = n => virt.has(canon(n)) ? virt.get(canon(n)) : base.readFile.call(host, n);
 const prog = ts.createProgram([...virt.keys()], options, host);
 const tc = prog.getTypeChecker();
 
@@ -119,6 +132,7 @@ const unparen = e => { while (e && ts.isParenthesizedExpression(e)) e = e.expres
 // The top-level statement holding n, or the statement directly inside a top-level IIFE body.
 function unitOf(n) {
   if (ts.isSourceFile(n)) return n;
+  for (let x = n; x; x = x.parent) if (x.kind === ts.SyntaxKind.JSDocTypedefTag || x.kind === ts.SyntaxKind.JSDocCallbackTag) return x;
   let top = n; while (top.parent && !ts.isSourceFile(top.parent)) top = top.parent;
   let unit = top;
   // Walk down from the top-level statement: a top-level IIFE's body statements are units of their own.
@@ -136,19 +150,28 @@ function unitOf(n) {
 const out = new Set();
 const lineOf = (sf, pos) => sf.getLineAndCharacterOfPosition(pos).line + 1;
 function emit(sf, node, decl, name) {
-  const dsf = decl.getSourceFile(); if (!virt.has(resolve(dsf.fileName))) return; // a library, not the project
+  const dsf = decl.getSourceFile(); if (!virt.has(canon(dsf.fileName))) return; // a library, not the project
   if (dsf === sf && unitOf(decl) === unitOf(node)) return;
   const at = (f, n) => ts.isSourceFile(n) ? 1 : lineOf(f, n.getStart(f));
-  const from = shownOf.get(resolve(sf.fileName)), to = shownOf.get(resolve(dsf.fileName));
+  const from = shownOf.get(canon(sf.fileName)), to = shownOf.get(canon(dsf.fileName));
   if (opt.units) out.add(`${from}:${at(sf, unitOf(node))} ${to}:${at(dsf, unitOf(decl))}`);
-  else out.add(`${from}:${lineOf(sf, node.getStart(sf))} ${to}:${at(dsf, decl)}\t${name}`);
+  else out.add(`${from}:${lineOf(sf, node.getStart(sf))} ${to}:${at(dsf, decl)}\t${name}${implementsRef(node) ? '\timplements' : ''}`);
+}
+// Does this name state that its unit implements (or extends) the type, rather than use it? A heritage
+// clause (implements X, extends X; also through a namespace, ns.X), or JSDoc's @implements {X}.
+function implementsRef(node) {
+  let p = node.parent;
+  while (p && (ts.isPropertyAccessExpression(p) || ts.isQualifiedName(p))) p = p.parent;
+  if (p && ts.isExpressionWithTypeArguments(p) && p.parent && ts.isHeritageClause(p.parent)) return true;
+  for (let x = p; x; x = x.parent) if (x.kind === ts.SyntaxKind.JSDocImplementsTag || x.kind === ts.SyntaxKind.JSDocAugmentsTag) return true;
+  return false;
 }
 const isModuleSpecifier = n => ts.isStringLiteralLike(n) && n.parent && (
   ((ts.isImportDeclaration(n.parent) || ts.isExportDeclaration(n.parent)) && n.parent.moduleSpecifier === n) ||
   (ts.isExternalModuleReference(n.parent)) ||
   (ts.isCallExpression(n.parent) && n.parent.arguments[0] === n && (n.parent.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(n.parent.expression) && n.parent.expression.text === 'require'))));
 for (const sf of prog.getSourceFiles()) {
-  if (!virt.has(resolve(sf.fileName))) continue;
+  if (!virt.has(canon(sf.fileName))) continue;
   const visit = node => {
     if (isModuleSpecifier(node)) {
       const sym = tc.getSymbolAtLocation(node), d = sym && sym.declarations && sym.declarations[0];
@@ -166,6 +189,7 @@ for (const sf of prog.getSourceFiles()) {
         }
       }
     }
+    if (node.jsDoc) node.jsDoc.forEach(visit); // JSDoc types: @param {T}, @type {T}, @typedef
     ts.forEachChild(node, visit);
   };
   visit(sf);

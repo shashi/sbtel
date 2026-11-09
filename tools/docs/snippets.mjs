@@ -66,7 +66,7 @@ const isSpec = (md, b) => b.info === 'sbtel' || b.info === 'sbtel fails' || (b.i
 
 let bad = 0, n = 0;
 for (const f of files) {
-  const md = readFileSync(f, 'utf8'), fs = fences(md), name = relative(root, f) || f, reps = [];
+  const md = readFileSync(f, 'utf8').replace(/\r\n/g, '\n'), fs = fences(md), name = relative(root, f) || f, reps = [];
   const defined = {}; let last = null;
   const want = (b, text) => { if (b.body !== text) reps.push({ at: b.at, old: '```' + b.info + '\n' + b.body + '```', neu: '```' + b.info + '\n' + text + '```' }); return b.body === text; };
   for (let i = 0; i < fs.length; i++) {

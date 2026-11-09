@@ -115,8 +115,10 @@ Some couplings do not show up as a reference from caller to callee:
   calls the module). Model the static reference as the binding, and write the hook in the module's
   sketch or a `;` comment. It is not a message: the module names its target.
 - **Parameters and interfaces whose implementation is chosen elsewhere** (`layout(model, opts,
-  measurer)`): a real seam. Give the callee an `out` port and the implementer a behavior or an `in`
-  port of a message type, and say in the sketch why the implementation stays open.
+  measurer)`): a real seam. Model the interface as a behavior and annotate its declaration with the
+  behavior's name (in plain JavaScript a JSDoc `@typedef`, typing the parameter with `@param`); the
+  caller binds the behavior, the implementer says `(implements …)`, and the composition root binds the
+  implementer (SKILL.md, "Calls through an abstraction").
 - **Registries and string-keyed dispatch** (`modes[name].boot()`, `data-action="save"`): no static
   tool sees them. Find the registration sites; a key or an interface that is named is a message, a
   concrete implementation that is named is a binding.

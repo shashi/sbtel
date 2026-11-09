@@ -12,7 +12,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const read = p => readFileSync(join(root, p), 'utf8');
+// Sources are read with \r\n as \n, so a CRLF checkout (git on Windows) builds the same bytes.
+const read = p => readFileSync(join(root, p), 'utf8').replace(/\r\n/g, '\n');
 
 export function build() {
   const version = read('VERSION').trim();
@@ -43,7 +44,7 @@ const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(imp
 if (isMain) {
   const html = build(), dest = join(root, 'viewer/dist/index.html');
   if (process.argv.includes('--check')) {
-    if (!existsSync(dest) || readFileSync(dest, 'utf8') !== html) { console.error('viewer/dist/index.html is stale: run `make viewer`'); process.exit(1); }
+    if (!existsSync(dest) || readFileSync(dest, 'utf8').replace(/\r\n/g, '\n') !== html) { console.error('viewer/dist/index.html is stale: run `make viewer`'); process.exit(1); }
     console.log('viewer/dist/index.html is up to date');
   } else {
     mkdirSync(dirname(dest), { recursive: true });

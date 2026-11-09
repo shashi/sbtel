@@ -62,6 +62,8 @@ test-e2e: check-viewer          ## the session loop end to end: binary, server, 
 # sbtel's own architecture (docs/DESIGN.md §8): examples/viewer.sbtel, the @sbtel annotations in
 # VIEWER_SRC and examples/viewer.edges.txt must agree, and so must examples/sbtel.sbtel, the annotations
 # in GO_SRC and examples/sbtel.edges.txt; every violation must be explained.
+# An edges file is stale only when its edges or comments (VIOLATION notes) change: line numbers that
+# drift with an ordinary edit do not fail selfcheck (tools/selfcheck/stale.mjs); `make edges` refreshes them.
 VIEWER_SRC = core/core.js viewer/src/index.html viewer/src/session.js viewer/src/review.js viewer/src/server.js viewer/src/diff.js
 GO_SRC = $(filter-out %_test.go,$(wildcard assets.go cmd/sbtel/*.go internal/*/*.go))
 
@@ -73,6 +75,7 @@ selfcheck: build tools/selfcheck/node_modules/.package-lock.json   ## specs, ann
 	python3 -I plugin/skills/sbtel-recover/scripts/sbtel_owners.py examples/viewer.sbtel $(VIEWER_SRC) > /dev/null
 	python3 -I plugin/skills/sbtel-recover/scripts/sbtel_owners.py examples/sbtel.sbtel $(GO_SRC) > /dev/null
 	node tools/selfcheck/refs.test.mjs
+	node tools/selfcheck/stale.test.mjs
 	node tools/selfcheck/edges.mjs --check
 	node tools/selfcheck/violations.mjs bin/sbtel
 	@echo "make selfcheck: ok"

@@ -1,0 +1,20 @@
+{
+  "specs": {
+    "v22-behaviors.sbtel": {
+      "query": [
+        { "ids": ["beh:Durable", "beh:Journaled", "msg:Edit"] },
+        { "ids": ["App.Disk"], "withDeps": true },
+        { "ids": ["App.Mem", "beh:Cache"] },
+        { "ids": ["Tools"] }
+      ],
+      "check": [{ "name": "v22-behaviors.bindings.txt" }],
+      "edits": [
+        { "on": "beh:Durable", "sketch": "Keeps every edit until it is on disk." },
+        { "on": "msg:Entry", "sketch": "One journal line." }
+      ]
+    },
+    "v22-behaviors-bad.sbtel": {
+      "query": [{ "ids": ["beh:Nest", "beh:Leaky"] }]
+    }
+  }
+}

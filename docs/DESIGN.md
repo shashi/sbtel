@@ -7,7 +7,10 @@ says MUST, the conformance tests, the acceptance suites or a reviewer will hold 
 find something wrong or missing, fix this document in the same change as the code. Never let the two
 disagree silently.
 
-Status: v0.2.1 (§11, entries 61-77): levels are numbered from the bottom (level 1 is the lowest), the
+Status: v0.2.2 (§11, entries 78-96): behaviors are read with a block's grammar (`:type`, ports,
+sketch, `implements`), a behavior may implement (extend) others, message types take `:type`, and
+`sbtel check` allows a binding to a behavior in the caller's scope (`abstraction`): calls through an
+interface are checkable; the recover skill's helpers map interfaces to behaviors. Before that, v0.2.1 (§11, entries 61-77): levels are numbered from the bottom (level 1 is the lowest), the
 browser sends GitHub-style reviews (pending comments, a message and the edits as a proposed spec, never
 written to the file; §6.7), Save asks before overwriting a newer version, and the undo history and the
 draft persist in the browser. Before that, v0.2.0, the language pass (§11, entries 42-60): `layer` is now `level` (a clean break), levels
@@ -97,7 +100,7 @@ Data flow for the agent loop:
 | `viewer/build.mjs` | assembles `viewer/dist/index.html`; inlines `viewer/fonts/*.woff2` as data: URLs | frozen |
 | `viewer/fonts/` | the page's fonts (Hanken Grotesk, JetBrains Mono; OFL, from @fontsource-variable 5.3.0) and their licenses | release owner |
 | `viewer/dist/index.html` | built page, committed (go:embed needs it) | generated |
-| `viewer/test/` | acceptance suites and `run.sh`; accept6 (v0.2) covers callouts, editors, level labels and carried types; accept7 (v0.2.1) the standalone undo history across a browser restart | frozen (add suites, don't edit; §11 entry 51) |
+| `viewer/test/` | acceptance suites and `run.sh`; accept6 (v0.2) covers callouts, editors, level labels and carried types; accept7 (v0.2.1) the standalone undo history across a browser restart; accept8 (v0.2.2) behavior and message pills, the implementers outline and a behavior's Edit dialog | frozen (add suites, don't edit; §11 entry 51) |
 | `conformance/` | specs, cases, expected records, node runner | shared, see §2.9 |
 | `examples/*.sbtel` | sample specs; `viewer.sbtel` is the viewer's own spec, with `viewer.edges.txt`, and `sbtel.sbtel` the system's, its Go blocks checked against the Go code with `sbtel.edges.txt` (§8) | D |
 | `tools/docs/snippets.mjs` | dev-only: checks every spec and output in the docs against the binary (`make docs-check`) | release owner |
@@ -193,12 +196,13 @@ LintResult = {
   error:    Located | null,       // parse error; when set, warnings=[], checks=[], counts=null
   warnings: Located[],            // model warnings: duplicates, bad port dir, adjacent < 2, empty level;
                                   // then form warnings (below), in source order
-  checks:   { k, label, failures: string[] }[],   // lintSpec, always these 5, in this order:
+  checks:   { k, label, failures: string[] }[],   // lintSpec, always these 6, in this order:
             //  beh    "Every implemented behavior is declared"
             //  scope  "Behaviors are used only inside the block that declares them"
             //  msg    "Every port uses a declared message type"
             //  mscope "Message types are used only inside the block that declares them"
             //  rel    "refines and carries name declared types"
+            //  cycle  "No behavior implements itself" (v0.2.2; failures read A → B → A)
   info:     Info[],               // placement notes (§2.8 placementFindings); never problems
   problems: int,                  // 1 if error, else warnings + all failures
   counts:   { blocks, behaviors, messages } | null
@@ -212,13 +216,18 @@ when nothing uses it. `__api.lintText(name, src)` returns the human text describ
 an unknown form (`(blok A)`), an empty or headless form, a stray word or string where a form belongs,
 a form in a place that ignores it (allowed children: the file takes block, level, adjacent, message,
 behavior; a block also takes port, implements, sketch; level and adjacent take block and adjacent;
-message takes sketch, refines, carries; behavior takes port, sketch; level and adjacent also take one
-sketch; a port takes one sketch after its type), a missing name, a keyword without
-a value or after the children, a port without exactly `name dir Type`, `implements`/`refines` without
-exactly one name, an empty `carries` or a name twice in one, a sketch that is not text, a second
+message takes sketch, refines, carries; behavior takes port, sketch, implements; level and adjacent
+also take one sketch; a port takes one sketch after its type), a missing name, a keyword without
+a value or after the children (block, behavior and message share one keyword grammar: `:type` only),
+a port without exactly `name dir Type`, `implements` without exactly one name or one `(Name Arg …)`
+list, `refines` without exactly one name, an empty `carries` or a name twice in one, a sketch that is not text, a second
 sketch/refines/carries, a block keyword other than `:type`, a level keyword other than one non-empty
 string `:name`, a sketch on a nested adjacent group, and two
-ports with one name in a block or behavior.
+ports with one name in a block or behavior. The core itself reports (as model warnings, so the viewer
+shows them too) a block, level, adjacent group, message or behavior inside a behavior (`behavior B:
+behaviors don't contain blocks, levels or declarations; declare X beside the behavior instead`, and
+the form is left out of the model) and arguments that do not fill a behavior's parameters
+(`(implements (Store A B)) passes 2 arguments, but Store takes 1`).
 
 ### 2.4 `__api.query(src, ids, withDeps) → QueryResult`
 
@@ -243,13 +252,13 @@ Element = {
   sketch: string,                 // "" if none
   lines:  { start, end },         // 1-based, inclusive, of the element's parenthesised form
   source: string,                 // the form's text, re-indented so its first line is at column 0
+  type: string|null,              // :type, every kind (v0.2.2: behaviors and message types too)
   // block only:
-  type: string|null,              // :type, the block's only keyword
-  implements: string[], ports: Port[] /* own, then inherited (via = behavior) */,
+  implements: string[], ports: Port[] /* own, then inherited (via = the behavior declaring it) */,
   levels: { name: string|null, sketch: string, units: { sketch: string, blocks: string[] }[] }[],
                                   // levels, top first → units (a block, or an adjacent group) → block ids
   // behavior only:
-  params: string[], ports: Port[],
+  params: string[], implements: string[] /* direct */, ports: Port[] /* own, then from what it extends */,
   // message only:
   refines: string|null, carries: string[],   // own (carries …)
   carriers: { messages: string[], ports: { owner, port }[], blocks: string[] }   // §2.8 carriers
@@ -259,8 +268,10 @@ Port = { name, dir: string|null /* "in"|"out" when valid; else as written, and l
 **Dependencies** are the declarations that the text of the results uses but does not contain, followed
 transitively. Every block, behavior and message lexically inside a result (or a dependency) contributes:
 
-- blocks: their `implements` names (as behaviors) and their own ports' kinds (as message types);
-- behaviors: their port kinds that are not behavior parameters;
+- blocks: their `implements` names (as behaviors), the arguments those pass (as message types) and their
+  own ports' kinds (as message types);
+- behaviors: their port kinds that are not behavior parameters, and their `implements` names and
+  arguments as for blocks;
 - message types: their `refines` and `carries` names.
 
 A declaration inside any result is not repeated as a dependency.
@@ -289,8 +300,10 @@ non-space characters. Blank lines and lines whose first non-blank character is `
 other line that does not match is `invalid`. Lines end in `\n`, `\r\n` or `\r`, and a leading BOM is
 dropped. The location starts at the first `#` that follows whitespace, so it may contain `->` and `#`
 (`Dup#2` without a space is a name). The part before it must hold exactly one `->`: `A -> B -> C` is
-invalid. Duplicate edges are kept, one per line. An `unknown` text gets a hint: `(did you mean X?)`,
-or `(X is a behavior; bindings name blocks)`. The parser is `parseBindings(text)` in core.js, shared
+invalid. Duplicate edges are kept, one per line. A callee may name a behavior (v0.2.2, below). An
+`unknown` text gets a hint: `(did you mean X?)` over blocks (callers) or blocks and behaviors
+(callees), `(X is a behavior; a binding's caller is a block)` or `(X is a message type; bindings name
+blocks and behaviors)`. The parser is `parseBindings(text)` in core.js, shared
 by api.js `check` and the viewer's server mode; `__api.parseBindings(text)` exposes it:
 `{ edges: [{line, caller, callee, location|null, note|null}], invalid: [{line, text}],
 orphans: [{line, note, why}] }`.
@@ -316,7 +329,13 @@ CheckResult = {
 }
 ```
 `bindingVerdict(model, a, b)` in core.js is the rule, shared with the viewer. It returns
-`{ ok, rule, text }`. Let A and B be the blocks named a (caller) and b (callee). Let c be their
+`{ ok, rule, text }`. The callee is resolved by `bindingTarget(model, b)`: blocks and behaviors are
+separate namespaces, and a name is a block id first (exactly as written), then `beh:Name` or `β:Name`, then
+a bare behavior name. A bare name that is both a block's and a behavior's therefore binds the block,
+and CheckResult gets a warning (`X names a block and a behavior; this edge binds the block (write
+beh:X to bind the behavior)`). When the callee is a behavior T and the caller a block A, the verdict is
+`abstraction` (ok) if T is in A's scope (declared in A, an ancestor of A, or the file), else `scope`
+(`A binds T, declared in D: a behavior is used only inside the block that declares it`). Let A and B be the blocks named a (caller) and b (callee). Let c be their
 nearest common holder (a block, or the file). Let a2 and b2 be the children of c on the way down to
 A and B. Levels are counted top to bottom in source order.
 
@@ -329,7 +348,9 @@ A and B. Levels are counted top to bottom in source order.
 | `adjacent` | yes | a2 and b2 are in the same adjacent group of the same level |
 | `same-level` | no | same level of c, different adjacent groups |
 | `upward` | no | a2's level comes after b2's |
-| `unknown` | no | a or b is not a block id (behaviors are not blocks), or a block is not placed in a level |
+| `abstraction` | yes | b is a behavior in A's scope (v0.2.2): a call through the abstraction |
+| `scope` | no | b is a behavior declared outside A's scope |
+| `unknown` | no | a is not a block id, b is neither a block nor a behavior, or a block is not placed in a level |
 
 Note the `ancestor` row: binding an enclosing block is forbidden, as an upward dependency (a part
 depending on its whole), as the older marquee-check.js had it (§11, entry 15). Binding a descendant
@@ -363,12 +384,22 @@ codes. Go reads the files, passes `args` and prints what comes back. `args.files
   behaviors') and every block with such a port (inherited ports count). Cycle-safe, in source order:
   `{ messages, ports: [{owner, port}], blocks }`. `carriedBy(model, m)` is m's own `carries` plus its
   supertypes'. `accepts` ignores `carries`.
+- core.js `behaviorsOf(n)`: the behaviors a block or behavior implements, directly or through the
+  behaviors those implement, each once, depth first (a behavior on a cycle lists itself).
+  `implementersOf(model, name)`: every block that implements the behavior that way, in source order;
+  it is the one "implementers of" (placement, the viewer's outline and info card, the diff's features).
+  `portsOf(n)` of a block or a behavior is its own ports, then those of every behavior in
+  `behaviorsOf`, with `via` the declaring behavior and each port typed with a parameter retyped by the
+  arguments that reach it (`(implements (Store Event))`; a behavior's own parameter passed on is
+  replaced by its implementer's argument). `bindingTarget(model, name)`: §2.5.
 - core.js `placementFindings(model)`: the placement notes of lint (`info`), shared with the viewer's
   checks popover. A message type or behavior should be declared at the lowest common ancestor (the
   file counts) of its users. Users of message type T: blocks with a port of T (inherited ones too),
   of a type that carries T, or of a subtype of T (and what carries those); and the declaring sites of
-  those carrying types and subtypes, and of behaviors with a port of any of them. Users of a behavior:
-  its implementers. Declared strictly above the LCA: `X is declared in A but only used within B; it
+  those carrying types and subtypes, and of behaviors with a port of any of them or passing one as an
+  argument. Users of a behavior: its implementers (`implementersOf`), and the declaring sites of the
+  behaviors that implement it directly. Bindings are not read, so a behavior kept where its callers
+  see it can be noted as one that could live lower (§11 entry 86). Declared strictly above the LCA: `X is declared in A but only used within B; it
   could live there.`; no users: `X is never used.` Below the LCA is a scope failure, never a note.
 - `__api.conformance(src, casesJSON)`: one conformance record. It is for tests only.
 
@@ -446,8 +477,8 @@ both) may be `-`. The human output is:
   `  (<location>)` appended when the edge has a location, and under it `  VIOLATION: <note>` when the
   edge is explained (§2.5);
 - one line per invalid line: `<bindings>:<line>: error: not an edge: <text>`;
-- one line per warning: `<bindings>:<line>: warning: <message>` (an orphan note, or a note on an
-  allowed edge);
+- one line per warning: `<bindings>:<line>: warning: <message>` (an orphan note, a note on an
+  allowed edge, or a bare callee that names both a block and a behavior);
 - then `<spec>: N bindings, N not allowed`, plus `, N explained` when N not allowed is not 0. So
   "every violation is explained" is the two numbers being equal.
 
@@ -711,7 +742,11 @@ two blocks' texts joined by a blank line).
   healthy, the new one exits 0. Otherwise it writes its own server.json. Every 2 s, a server that finds
   server.json naming another pid exits. The loser of a simultaneous start therefore disappears quickly.
 - It binds the port in the previous server.json if that port is free, so open tabs' EventSource
-  reconnects by itself after a restart. Otherwise it binds `127.0.0.1:0` (a random port). `--port`
+  reconnects by itself after a restart. A port the previous server has just released can stay
+  unbindable for a moment (its last connections are closing; on Windows, TIME_WAIT can hold it longer),
+  so it retries the preferred ports for up to 1.5 s (15 tries, 100 ms apart). Otherwise it binds
+  `127.0.0.1:0` (a random port): keeping the port is a best effort, and on Windows the tests only log a
+  fallback. `--port`
   overrides both.
 - **Idle shutdown**: the server exits when it has had no SSE client and no request for N minutes. N is
   `--idle`, else `$SBTEL_IDLE_MINUTES`, else 30.
@@ -959,7 +994,7 @@ uses Playwright, which is not a repo dependency.
   `const orig = openSend; openSend = list => …`. These are reassignable: `setSource(src, {flash,
   fromEditor, fromEdit})`, `render`, `fit(animate)`, `toast(msg)`, `openSend(list)`, `payload(list)`,
   `saveComments`, `renderSendBtn`, `select`, `edit`, `undo`, `redo`, `persist`, `targetLabel(key)`
-  and `targetSource(key)`. Server mode also reassigns `openThread`, `commentCounts`, `renderChecks`
+  and `targetSource(key)`. Server mode also reassigns `behaviorUsers` (v0.2.2: the blocks whose loaded bindings bind a behavior; §6.8), `openThread`, `commentCounts`, `renderChecks`
   and `showChecks` (any top-level function declaration works the same way; `openThread` and
   `commentCounts` through session.js, in both modes; review.js, in both modes, reassigns
   `openComposer`, `openThread`, `saveComments`, `renderSendBtn`, `paint` and `fillBlock`, the last two
@@ -1089,6 +1124,25 @@ history. A tab that loads a session that no longer exists (404) removes them too
 session page asks the server about every other session it holds keys for (`GET /s/<id>/meta`, at most
 64) and removes the keys of those that answer 404; an unreachable server prunes nothing.
 
+### 6.8 Behaviors: pills, implementers and users (v0.2.2)
+
+App features (index.html), in every mode; §11 entries 89-91 record the choices.
+
+- **Pills.** A behavior card and a message type card show their `:type` as a pill, as a block card
+  does (the same `topHTML` and layout row). A behavior that implements others shows their badges.
+- **Implementers and users.** Hovering a behavior, its card or a badge that names it, outlines its
+  implementers (`implementersOf`, and the behaviors that extend it) with a solid line in the behavior's
+  glyph colour and a small label, "implements"; the behavior's own card gets a dotted outline. With
+  bindings loaded (server mode, `open --bindings`), the blocks whose edges bind the behavior
+  (`bindingTarget` resolves the callee to it) get a dashed outline in the same colour, labelled
+  "uses"; a block that does both says "implements · uses". Without bindings, `behaviorUsers` returns
+  nothing and only implementers are shown. On touch, selecting a behavior card does the same. The
+  outline gives way to a port's partners or a type's carriers while those are shown. The behavior info
+  card counts both ("implemented by N · used by M") and lists what the behavior extends.
+- **Edit.** The Edit dialog has a Type field for blocks, behaviors and message types, and a behavior's
+  dialog lists the behaviors it may extend (in scope where it is declared), with the inherited ports;
+  a choice that would make a cycle is refused with "B already implements A: A cannot implement it too."
+
 ---
 
 ## 7. The diff contract
@@ -1117,9 +1171,9 @@ Change = {
 Ref   = { id, name, in: string|null, lines: { start, end } }   // in its own side's model; `in` as in §2.4
 Place = { in: string|null, level: int|null }                   // level: number from the bottom, 1-based (7.3); null for behaviors/messages
 Fields = {
-  type?:      { from: string|null, to: string|null },          // blocks
+  type?:      { from: string|null, to: string|null },          // all three kinds (behaviors and messages since v0.2.2)
   sketch?:    { from: string, to: string, words: { op: "=" | "+" | "-", text: string }[] },
-  implements?:{ added: string[], removed: string[] },          // blocks: behavior names, compared after rename mapping
+  implements?:{ added: string[], removed: string[] },          // blocks and behaviors: names, compared after rename mapping
   ports?:     { added: Port[], removed: Port[], changed: { name, from: Port, to: Port, sketch?: Words }[] },
               // own ports (blocks), ports (behaviors); identity = port name; a port whose sketch alone
               // changed is `changed`, with `sketch`, and stays stable for §7.4
@@ -1164,8 +1218,9 @@ Affected = {
      `pn:name` for each own port; `i:` each implemented behavior; `c:` each child block; `db:` and
      `dm:` each declared behavior and message type;
    - **behaviors**: `h:` declaring block; `p:dir:kind` for each port (a type parameter becomes `$i`)
-     and `pn:name`; `n:` the number of parameters; `u:` each block that implements it;
-   - **message types**: `h:` declaring block; `r:` refines; `k:` each carried type; `u:owner.port`
+     and `pn:name`; `n:` the number of parameters; `t:` type; `i:` each behavior it implements; `u:`
+     each block that implements it (`implementersOf`, so through extension too);
+   - **message types**: `h:` declaring block; `t:` type; `r:` refines; `k:` each carried type; `u:owner.port`
      for each port that uses it.
    - **all three**: `w:` each sketch word, with ASCII letters lowercased and ASCII punctuation
      trimmed from both ends. This is ASCII only, so every engine agrees. The word diff (§7.3) still
@@ -1264,7 +1319,7 @@ belong to the declaration that holds them, whatever their indentation.
 
 | Form | Meaning |
 |---|---|
-| `@sbtel Name` | the next declaration belongs to Name. One per declaration: a second one before the same declaration is an error |
+| `@sbtel Name` | the next declaration belongs to Name: a block, or (v0.2.2) a behavior, for the interface, trait, protocol or typedef it stands for. One per declaration: a second one before the same declaration is an error |
 | `@sbtel begin Name` | a region starts; regions nest, and the innermost one wins |
 | `@sbtel end Name` | the region ends; the name MUST match its `begin` |
 | `@sbtel file Name` | from here to the end of the file |
@@ -1273,6 +1328,20 @@ belong to the declaration that holds them, whatever their indentation.
 
 - There is no other form (an earlier draft had a long s-expression form; it is gone). Names use the
   spec's name syntax: no whitespace, no `( ) " ;`, and not starting with `:`.
+- **Behaviors** (v0.2.2). A Name is a block first, then a behavior (`beh:Name` names the behavior when
+  a block has the same name), as a binding's callee is (§2.5). A behavior owns the declaration of its
+  abstraction in code. Any form may name one: what is a type-like declaration differs too much across
+  languages to check reliably, so this is documented, not enforced. Comment lines between `@sbtel Name`
+  and its declaration (a doc comment, a JSDoc block whose `@param {T}` names a type) belong to the
+  declaration.
+- **Edges to and from behaviors.** A reference from block A's code to a declaration owned by behavior
+  X is the edge `A -> X` (the abstraction rule decides it). A reference that states an implements
+  relation (a heritage clause `implements X` / `extends X`, JSDoc `@implements`, Go's blank assertion
+  `var _ X = …` or an interface embedded in an interface; Rust's `impl X for T` written by hand) is
+  tagged `implements` by the reference helpers (a third column after the name) and is no binding:
+  `sbtel_owners.py --edges` checks that the spec says the caller implements X, directly or through
+  other behaviors, and reports an error when it does not. A behavior's own code binds nothing: its
+  signature is its ports, whose types are message types.
 - **Anchors** change no ownership: the lines after one belong to whoever owned them anyway, and a
   pending `@sbtel Name` above an anchor still applies to the declaration below it.
 - **Errors** an annotation checker reports:
@@ -1314,15 +1383,25 @@ belong to the declaration that holds them, whatever their indentation.
      session.js, review.js, server.js, diff.js};
   3. `tools/selfcheck/edges.mjs --check` regenerates the edges (sbtel_refs.mjs, plus `$('id')` lookups
      resolved to the markup, through `sbtel_owners.py --edges`, one line per caller, callee and file)
-     and the result equals the committed file. Regeneration carries each `# VIOLATION:` comment to
-     the same caller, callee and file, so `make edges` keeps the explanations;
+     and the result says what the committed file says: the same edges (caller, callee and file) and
+     the same comment lines (the header and the `# VIOLATION:` notes, so what is explained). Line
+     numbers and "(+N more)" counts are not compared (tools/selfcheck/stale.mjs, tested by
+     stale.test.mjs): an ordinary edit moves them, and only a note, "locations drifted, run `make edges`
+     to refresh them", is printed. `make edges` still writes them, for readers. Regeneration carries
+     each `# VIOLATION:` comment to the same caller, callee and file, so `make edges` keeps the
+     explanations;
   4. `tools/selfcheck/violations.mjs` runs `bin/sbtel check` and finds every violation explained, and
      no explanation on an edge that is allowed.
 
+  Two edges cross a dependency-inversion seam through a behavior (v0.2.2, §11 entry 93): `Core.Layout ->
+  MeasuresText` (core.js's JSDoc `@typedef`, the measurer layout takes as a parameter) and
+  `Sbtel.Server.Core -> DiffsSpecs` (server.go's `DiffFunc`); the abstraction rule allows both.
+
   The extractor needs node, python3 and a TypeScript checker pinned in `tools/selfcheck/package.json`
   (installed by `npm ci` on first use). It is dev-only: the binary and the page never load it.
-  Changing the viewer's code usually moves line numbers, so run `make edges` and commit the result;
-  a new violation then needs an explanation (or a fix of the spec or the code).
+  Changing the code usually moves line numbers; that alone passes, and `make edges` refreshes them. A
+  new edge fails until `make edges` is run and committed, and a new violation then needs an
+  explanation (or a fix of the spec or the code).
 
 ---
 
@@ -1864,3 +1943,140 @@ A, B, C and D run in parallel. When they merge:
     App.Kit, whose `store` it uses), `Viewer.Review` (with its `Review` message, between the page modes
     and the session) and `Viewer.Changes` (beside Viewer.Session). examples/sbtel.sbtel gains the
     `Review` event and `Sbtel.Viewer.Review`. The page's standalone title is "sbtel Playground".
+78. **One declaration grammar** (v0.2.2, user decision; §2.3). Block, behavior and message type heads are
+    read by one function, core.js `declHead` (the name, then keywords; `:type` is the one keyword), and
+    lint's form warnings by one `keywords()` in api.js, so the three report unknown, late and valueless
+    keywords in the same words (`unknown keyword :k in behavior B; a behavior takes only :type`). A
+    behavior's body keeps what has a meaning for a promise: sketch, ports, `implements`. *Red team*:
+    "one grammar" could have meant a behavior accepting levels and blocks too; they have no meaning for
+    a set of ports, so they are refused by name (entry 83) rather than accepted and ignored.
+79. **`:type` on behaviors and message types** (v0.2.2, user decision). Stored as on blocks, drawn by the
+    same pill code (`topHTML`, the layout's top row already measured `n.type` for any card). Query's
+    Element has `type` for every kind (null when unset), so every behavior and message Element in the
+    conformance records gained `"type":null`; adding a key keeps `apiVersion` 2 (§2.2). The diff
+    compares `type` for all kinds and uses it as a matching feature (`t:`).
+80. **A behavior that implements another extends it** (v0.2.2, user decision). `behaviorsOf` is the
+    transitive closure, each behavior once, depth first; `implementersOf` is the one "implementers of"
+    (placement, the viewer's outline and info card, the diff's `u:` features); a behavior's `portsOf`
+    is its own ports then those of what it extends, `via` the declaring behavior (so "Edit in behavior
+    X" opens the right one). In a diamond (A extends B and C, both extend D) D's ports come once, through
+    the first path; with arguments, the first path's arguments win. A block's card shows its direct
+    behaviors only; a behavior's card shows the ones it extends as badges.
+81. **Arguments flow by substitution** (v0.2.2). `(implements (Store Event))` retypes each of Store's
+    ports typed with its parameter T to Event, in the ports the implementer gets; a behavior's own
+    parameter passed on (`(behavior (Cache K) (implements (Store K)))`) is replaced by its implementer's
+    argument, so arguments flow down the chain. Bare `(implements Store)` keeps the parameters as types
+    (0.2.1's meaning). Arguments must fill every parameter (a model warning names the counts); partial
+    application was rejected as a second meaning for one form. The list form is accepted on blocks too,
+    not only on behaviors, because one grammar means one `implements`; 0.2.1 warned "implements names
+    exactly one behavior" for it there and kept the bare parameter types. An argument is checked like a
+    port type: declared (`msg`), in scope where the implementer is (`mscope`, "X passes M to Store,
+    declared in D"), and it is a dependency in query fragments and a placement user. *Red team*: a spec
+    that relied on 0.2.1 ignoring block arguments now gets typed ports, which is what it wrote.
+82. **Cycles are a sixth lint rule, `cycle`** (v0.2.2), "No behavior implements itself", one failure per
+    cycle named from its first behavior in source order (`A → B → C → A`). A rule, not a positioned
+    warning, so the viewer's checks popover lists it and an edit that would add one is caught by the
+    same comparison as other spec checks. LintResult's `checks` has six entries; every conformance
+    record gained the empty one. Every walk over `implements` is cycle-safe, so a cycle never hangs
+    layout, ports or placement. *Red team*: a model warning would carry a line and column; the chain is
+    what one fixes, and one of its `implements` forms is the place.
+83. **What a behavior does not contain** (v0.2.2, user decision). `block`, `level`, `adjacent`,
+    `message` and `behavior` inside a behavior are reported by the core with their position, `behavior
+    B: behaviors don't contain blocks, levels or declarations; declare block X beside the behavior
+    instead` (or "the level", "the adjacent group", "message M", "behavior N"), so the viewer shows them,
+    and are left out of the model: before, a `(block X)` inside a behavior became a block in no level.
+    Lint's form warnings skip them, so each is said once.
+84. **`abstraction` and `scope`** (v0.2.2, user decision; §2.5). A binding whose callee is a behavior is
+    allowed (`abstraction`) when the behavior is declared in the caller, an ancestor or the file, else
+    refused (`scope`, worded like lint's scope rule). The rule ignores levels on purpose: calling
+    through an abstraction is how a higher block uses a lower one without naming it, and the levels
+    still judge the composition root, which binds the implementers. `# VIOLATION:` notes work as on any
+    edge. *Red team*: a block could launder an upward dependency through an interface its caller above
+    implements; the root that wires them is then the one binding upward, and check sees it there.
+85. **Blocks and behaviors are separate namespaces; a bare name binds the block** (v0.2.2). `bindingTarget`
+    resolves a callee as a block id first (exactly as written), then `beh:Name`/`β:Name`, then a bare
+    behavior name; check warns when a bare callee names both. Chosen over an error so an edges file keeps
+    its meaning when someone adds a behavior with a block's name, and so `beh:` is the one explicit
+    spelling, as in query ids. "Did you mean" ranges over blocks for callers and over blocks and
+    behaviors for callees; an unknown callee reads "is not a block or a behavior in the spec" (records
+    and docs updated); a behavior as a caller is `unknown` with "(X is a behavior; a binding's caller is
+    a block)". sbtel_owners.py resolves annotation names the same way.
+86. **Placement does not read bindings** (v0.2.2). Users of a behavior are its implementers (through
+    extension) and the declaring sites of behaviors that extend it, which the user asked for. A behavior
+    that exists for its callers must be declared where they see it, often above its implementers, and
+    lint, which has no bindings, notes that it could live lower. Both dogfood specs keep such a note
+    with a `;` comment saying why, the precedent of examples/sbtel.sbtel's Event kinds. *Red team*:
+    `lint --bindings` would remove the note but adds CLI surface and a per-file flag to a multi-file
+    command; the language docs and the recover skill say to keep the behavior where its callers see it.
+87. **The helpers tag implements relations; they are no bindings** (v0.2.2, user decision; §8).
+    sbtel_refs.mjs tags a name in a heritage clause (`implements`, `extends`) or JSDoc `@implements`;
+    sbtel_refs_go tags the type of a blank assertion (`var _ X = …`) and an interface embedded in an
+    interface; a third column, `implements`, after the name. sbtel_owners.py --edges never makes a
+    tagged reference to a behavior a binding: it checks that the spec says the caller implements it
+    (directly or by extension) and reports an error otherwise (exit 1, so make selfcheck fails on a
+    mismatch). A tagged reference to a block (a class extending a concrete class) is an ordinary edge.
+    An untagged reference from an implementer to its behavior (a hand-made pair for Rust's `impl X for
+    T`, if not tagged) is `A -> X`, which the abstraction rule allows: harmless, and the docs say to tag
+    it. The reverse mismatch (the spec says implements, the code has no assertion) is not reported: Go
+    implements implicitly, so absence proves nothing. Code owned by a behavior binds nothing: its
+    signature is its ports, typed with message types. *Red team*: an interface whose method names a
+    concrete block's type couples every caller to that block, and this hides it; the data shape belongs
+    to a message type, whose `@sbtel message` anchor marks it.
+88. **sbtel_owners.py and behavior owners** (v0.2.2). Any ownership form may name a behavior: what is a
+    type-like declaration differs too much across languages to check reliably (Go `type X interface`,
+    a Python `class X(Protocol)`, a JSDoc `@typedef`, a Rust `trait`, an Elixir `defprotocol`), so it
+    is documented, not enforced. The ranges print a behavior owner as `beh:Name`; edges print it bare,
+    or `beh:Name` when a block has the name. Comment lines between `@sbtel Name` and its declaration
+    now belong to the declaration (they were the region's or the file's): a JSDoc `@param {T}` above a
+    function is part of it. "unknown block X" became "unknown block or behavior X" for ownership forms;
+    anchors still name blocks.
+89. **JSDoc in sbtel_refs.mjs** (v0.2.2). JSDoc is visited (`node.jsDoc`), so `@param {T}` and `@type {T}`
+    are references, and a `@typedef` or `@callback` is a unit of its own (it is attached to the next
+    statement, which would otherwise swallow references to it). Plain JavaScript declares interfaces
+    that way. No JSDoc type existed in sbtel's own code, so no earlier edge changed.
+90. **The viewer's implementers and users outline** (v0.2.2, user decision; §6.8). The brief said hovering
+    a behavior highlights its implementers "as it already does": 0.2.1 only showed the behavior's info
+    card after 280 ms, so the outline is new. Implementers get a solid outline and "implements", users
+    (from loaded bindings) a dashed one and "uses", both in the behavior's glyph colour, the behavior
+    itself a dotted one; the label is a small pill above the card's top left corner (`::after` from
+    `data-bh`), away from the ear and from the comment bubbles at the top right. Solid and dashed follow the port-partner outline's own pair (partner solid,
+    source dashed), and the colour ties them to the behavior. `behaviorUsers` lives in App.Document's
+    region and server.js reassigns it (§6.5), because App.Popovers (the info card) sits below
+    App.Callouts.
+91. **The Edit dialog edits a behavior like a block** (v0.2.2): a Type field for all three kinds; a
+    behavior lists the behaviors it may extend (in scope where it is declared, not itself) with the
+    ports that come through them; a choice that makes a cycle is refused in the dialog.
+92. **bindingVerdict walks the caller's ancestors itself** (v0.2.2). Using Core.Model's `ancestorsOrSelf`
+    from Core.Bindings would bind upward (Core.Bindings sits below Core.Model in examples/viewer.sbtel,
+    beside the reader); a three-line loop keeps the levels.
+93. **Dogfood: two dependency-inversion seams** (v0.2.2, §8). The viewer: layout(model, opts, M) calls
+    the measurer only through its parameter. core.js now declares that interface as a JSDoc `@typedef
+    MeasuresText` (annotated `@sbtel begin/end MeasuresText`) and types M with `@param`; the behavior
+    MeasuresText (`:type "JSDoc typedef"`) moved from App.Kit up to Viewer, where Core.Layout can see
+    it, and App.Kit implements it. New edge: `Core.Layout -> MeasuresText` (abstraction). The Go code:
+    Options.DiffText was an anonymous `func(a, b string) string`; it is now the named type
+    `server.DiffFunc`, annotated `@sbtel DiffsSpecs` (`:type "Go func type"`, declared in Sbtel), and
+    cmd_b.go says `var _ server.DiffFunc = diffText`, a tagged reference that sbtel_owners.py checks
+    against `(implements DiffsSpecs)` on Sbtel.Cli.SessionCommands. New edge: `Sbtel.Server.Core ->
+    DiffsSpecs` (abstraction). No explained violation became an allowed abstraction binding: neither
+    seam had produced an edge before (the layout never named M, the server never named the engine),
+    so the counts went from 171 to 172 edges (viewer) and 39 to 40 (Go), with 10 and 3 explained
+    violations as before.
+94. **Portability fixes from the first CI run** (v0.2.2, coordinator). sbtel_refs_go resolves links in
+    `--dir` (macOS's /var is /private/var, and the go tool reports real paths); sbtel_refs.mjs keys the
+    project's files by real path and sbtel_owners.py matches pairs by real path, as hardening (on
+    Linux the old JS helper did not show the bug through a linked directory; each helper has a test
+    through a link). `.gitattributes` keeps LF everywhere except `conformance/specs/a-rules.bindings.txt`,
+    which tests CRLF bindings and is `-text`. The byte-comparing checks (build.mjs --check, both
+    conformance runners, docs-check, the notices check) read `\r\n` as `\n`, except that bindings
+    fixtures are passed as they are.
+95. **The server retries its previous port** (v0.2.2, coordinator; §5.1). A just-released port can stay
+    unbindable for a moment (TIME_WAIT on Windows, where Go sets no SO_REUSEADDR), so listen tries the
+    preferred ports 15 times, 100 ms apart, before a random port. Keeping the port stays a best effort:
+    TestPortReuseStartRaceAndWatchdog logs a fallback on Windows instead of failing.
+96. **Line drift is not staleness** (v0.2.2, coordinator; §8). `make selfcheck` compared the edges files
+    byte for byte, so six lines added to server.go failed CI on locations alone. It now compares edges as
+    `caller -> callee  # file` and every comment line: a new or removed edge, the same edge in a new file
+    (it may need its own explanation) or a changed note is stale; line numbers and "(+N more)" are not,
+    and a note says to refresh them. *Red team*: an edge whose only location moved to a different
+    function in the same file passes unseen; the edge itself, and whether it is allowed, did not change.

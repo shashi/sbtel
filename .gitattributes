@@ -4,3 +4,5 @@
 *.png binary
 *.ico binary
 *.exe binary
+# A conformance fixture that tests CRLF line endings in a bindings file: keep its bytes as committed.
+conformance/specs/a-rules.bindings.txt -text

@@ -1,0 +1,24 @@
+; v0.2.2: a behavior is read with a block's grammar (:type, sketch, ports, implements); message types take
+; :type too; a behavior may implement (extend) others, with arguments for a parameterized one.
+(message Edit :type "struct" (sketch "One change to a note."))
+(message Entry :type "record" (~ What the journal keeps. ~))
+(behavior (Store T) :type "trait"
+  (port put in T)
+  (port get out T)
+  (sketch "Keeps values of T."))
+(behavior Durable :type "Protocol"
+  (implements (Store Edit))
+  (port ack out Entry)
+  (sketch "Keeps edits until they are on disk."))
+(behavior Journaled (implements Durable) (sketch "Durable, and replays what it kept."))
+(behavior (Cache K) (implements (Store K)) (sketch "A Store that may forget."))
+(block App
+  (behavior Local (sketch "Visible inside App only."))
+  (level
+    (block App.Editor (port edit out Edit) (sketch "Saves through a Durable it is given."))
+    (block App.Root (sketch "The composition root: makes the store and hands it to the editor.")))
+  (level
+    (block App.Disk :type "Module" (implements Journaled))
+    (block App.Mem (implements (Cache Entry)) (implements Local))))
+(block Tools (sketch "Outside App."))
+(behavior Tools (sketch "A behavior with a block's name."))

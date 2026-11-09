@@ -145,6 +145,15 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .dgo:hover { background:var(--surface); color:var(--accent); }
 .blk.talk { outline:3px solid var(--talk); outline-offset:5px; }
 .blk.talk-src { outline:3px dashed var(--talk); outline-offset:5px; }
+/* A behavior's implementers (solid) and the blocks whose code binds it (dashed, server mode with bindings),
+   in the behavior's glyph colour, each with a small label: "implements" or "uses", at the card's top
+   left (the top right holds comment bubbles, the middle the port ear). */
+.blk.bh-src { outline:2px dotted var(--bhc); outline-offset:5px; }
+.blk.bh-impl { outline:2.5px solid var(--bhc); outline-offset:5px; }
+.blk.bh-uses { outline:2.5px dashed var(--bhc); outline-offset:5px; }
+.blk[data-bh]::after { content:attr(data-bh); position:absolute; left:10px; top:-7px; transform:translateY(-100%); z-index:4; pointer-events:none;
+  font:600 10.5px/16px var(--ff-ui); letter-spacing:.02em; padding:0 6px; border-radius:8px; white-space:nowrap;
+  background:var(--surface); color:var(--ink); box-shadow:inset 0 0 0 1.5px var(--bhc); }
 .drow .pn { color:var(--muted); font-family:var(--ff-mono); font-size:11.5px; }
 .pdot { width:11px; height:11px; border-radius:50%; flex:none; cursor:pointer; }
 .pdot.child { opacity:.45; }
@@ -519,6 +528,8 @@ const FONT = {
   chip:'500 12px "JetBrains Mono"', pill:'600 11.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
 };
 const FORMS = new Set(['block','level','adjacent','port','message','behavior','implements','sketch','refines','carries']);
+// Forms a behavior does not contain (it is a set of ports, not a part of the system), and what to declare instead.
+const NOT_IN_BEHAVIOR = { block:'the block', level:'the level', adjacent:'the adjacent group', message:'the message type', behavior:'the behavior' };
 
 // @sbtel end Core.Constants
 // @sbtel begin Core.Reader
@@ -574,6 +585,16 @@ function readAll(src) {
 }
 // @sbtel end Core.Reader
 // @sbtel begin Core.Model
+// The head of a declaration, one grammar for (block Name …), (behavior Name|(Name P …) …) and (message Name …):
+// the name, then keywords. :type is the one keyword: what the element is in code (a module, a trait, a
+// struct…). Lint reports any other, which is dropped. Returns the index of the first body item.
+function declHead(node, items) {
+  let i = 1;
+  while (i < items.length && items[i].t === 'sym' && items[i].v.startsWith(':')) {
+    const k = items[i].v.slice(1), v = items[i+1]; if (k === 'type' && node.type === undefined) node.type = v ? v.v : ''; i += 2;
+  }
+  return i;
+}
 function parse(src) {
   const forms = readAll(src);
   const ctx = { warnings:[], behaviors:new Map(), messages:new Map(), blocks:new Map(), behaviorOrder:[] };
@@ -592,11 +613,7 @@ function parse(src) {
     switch (h) {
       case 'block': {
         node.name = symOf(items[0]) || '?'; node.parent = owner || null;
-        let i = 1;
-        while (i < items.length && items[i].t === 'sym' && items[i].v.startsWith(':')) {
-          // :type is a block's only keyword (lint reports any other, which is dropped).
-          const k = items[i].v.slice(1), v = items[i+1]; if (k === 'type' && node.type === undefined) node.type = v ? v.v : ''; i += 2;
-        }
+        const i = declHead(node, items);
         let id = node.name, n = 2; if (ctx.blocks.has(id)) { ctx.warnings.push('Duplicate block name ' + node.name + at); while (ctx.blocks.has(node.name + '#' + n)) n++; id = node.name + '#' + n; }
         node.id = id; ctx.blocks.set(id, node);
         node.children = items.slice(i).map(x => conv(x, node, 'block ' + node.name)).filter(Boolean);
@@ -625,18 +642,29 @@ function parse(src) {
         if (node.dir !== 'in' && node.dir !== 'out') ctx.warnings.push('port direction must be in or out' + at);
         break;
       case 'message':
-        node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(1).map(x => conv(x, owner, 'message ' + node.name)).filter(Boolean);
+        node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(declHead(node, items)).map(x => conv(x, owner, 'message ' + node.name)).filter(Boolean);
         if (ctx.messages.has(node.name)) ctx.warnings.push('Duplicate message ' + node.name + at);
         ctx.messages.set(node.name, node); break;
       case 'behavior': {
+        // A behavior is read with a block's grammar (declHead: name, :type), and its body takes what has a
+        // meaning there: sketch, ports, implements. Blocks, levels and declarations do not nest in it: each
+        // is reported here (so the viewer shows it too) and left out of the model.
         node.name = symOf(items[0]); node.id = 'β:' + node.name; node.owner = owner || null;
         node.params = items[0] && items[0].list ? items[0].list.slice(1).map(symOf) : [];
-        node.children = items.slice(1).map(x => conv(x, owner, 'behavior ' + node.name)).filter(Boolean);
+        node.children = items.slice(declHead(node, items)).map(x => {
+          const k = x.list && x.list[0] && x.list[0].t === 'sym' ? x.list[0].v : null;
+          if (!NOT_IN_BEHAVIOR[k]) return conv(x, owner, 'behavior ' + node.name);
+          const nm = k === 'level' || k === 'adjacent' ? '' : symOf(x.list[1]);
+          ctx.warnings.push(`behavior ${node.name || '?'}: behaviors don't contain blocks, levels or declarations; declare ${nm ? k + ' ' + nm : NOT_IN_BEHAVIOR[k]} beside the behavior instead (line ${lineCol(src, x.s)})`);
+          return null;
+        }).filter(Boolean);
         if (ctx.behaviors.has(node.name)) ctx.warnings.push('Duplicate behavior ' + node.name + at);
         else ctx.behaviorOrder.push(node.name);
         ctx.behaviors.set(node.name, node); break;
       }
-      case 'implements': node.name = symOf(items[0]); break;
+      // (implements Name) or, for a behavior with parameters, (implements (Name Arg …)): the arguments take
+      // the parameters' places, in order, in the ports that come through it.
+      case 'implements': node.name = symOf(items[0]); if (items[0] && items[0].list) node.args = items[0].list.slice(1).map(symOf); break;
       // (~ … ~) arrives already normalized (tildeText) and keeps its tilde count, so edits can keep the form.
       case 'sketch': if (sx.tilde) { node.text = items[0].v; node.tilde = sx.tilde; } else node.text = items.map(x => x.v || '').join(' ').replace(/\s+/g, ' ').trim(); break;
       case 'refines': case 'carries': node.names = items.map(symOf); break;
@@ -652,6 +680,12 @@ function parse(src) {
   for (const b of ctx.blocks.values()) prepBlock(b, ctx);
   for (const bh of ctx.behaviors.values()) prepBehavior(bh, ctx);
   for (const m of ctx.messages.values()) prepMessage(m, ctx);
+  // Arguments, when given, fill every parameter: (implements (Store Event)) for (behavior (Store T) …).
+  const arity = n => n.children.forEach(c => {
+    const bh = c.form === 'implements' && c.args && c.args.length ? ctx.behaviors.get(c.name) : null;
+    if (bh && c.args.length !== bh.params.length) ctx.warnings.push(`(implements (${c.name} ${c.args.map(x => x || '?').join(' ')})) passes ${c.args.length} argument${c.args.length === 1 ? '' : 's'}, but ${c.name} takes ${bh.params.length || 'none'} (line ${lineCol(src, c.s)})`);
+  });
+  [...ctx.blocks.values(), ...ctx.behaviors.values()].sort((p, q) => p.s - q.s).forEach(arity);
   const model = { root, ...ctx, src }; ctx.root = root;
   model.node = id => !id ? null : id.startsWith('β:') ? ctx.behaviors.get(id.slice(2)) : id.startsWith('μ:') ? ctx.messages.get(id.slice(2)) : ctx.blocks.get(id);
   return model;
@@ -670,7 +704,7 @@ function prepBlock(b, ctx) {
   b.levels = levels.filter(L => L.units.length);
   b.sketch = sketchOf(b);
   b.ownPorts = b.children.filter(c => c.form === 'port').map(p => ({ name:p.name, dir:p.dir, kind:p.kind, sketch:p.sketch }));
-  b.impl = b.children.filter(c => c.form === 'implements').map(c => c.name);
+  implOf(b);
   b.behaviorDecls = b.children.filter(c => c.form === 'behavior');
   b.messageDecls = b.children.filter(c => c.form === 'message');
   b._ctx = ctx;
@@ -678,7 +712,13 @@ function prepBlock(b, ctx) {
 function prepBehavior(bh, ctx) {
   bh.sketch = sketchOf(bh);
   bh.ports = bh.children.filter(c => c.form === 'port').map(p => ({ name:p.name, dir:p.dir, kind:p.kind, sketch:p.sketch }));
-  bh.levels = []; bh.impl = []; bh._ctx = ctx;
+  bh.levels = []; implOf(bh); bh._ctx = ctx;
+}
+// A block's or a behavior's (implements …): impl, the names, in order; implArgs, the arguments of each name
+// that has some (the first (implements …) of a name counts).
+function implOf(n) {
+  n.impl = []; n.implArgs = Object.create(null); const seen = new Set();
+  n.children.forEach(c => { if (c.form !== 'implements') return; n.impl.push(c.name); if (c.name && !seen.has(c.name) && c.args && c.args.length) n.implArgs[c.name] = c.args.slice(); seen.add(c.name); });
 }
 function prepMessage(m, ctx) {
   m.sketch = sketchOf(m); m.id = 'μ:' + m.name; m.levels = []; m.impl = []; m.ports = []; m._ctx = ctx;
@@ -687,12 +727,38 @@ function prepMessage(m, ctx) {
   // has-a: the types a value of m holds (only the first (carries …) counts; lint reports a second).
   m.carries = k ? [...new Set(k.names.filter(Boolean))] : [];
 }
+// A block's ports, or a behavior's: its own, then those of every behavior it implements, directly or
+// through behaviors that implement others (each behavior once, depth first), with `via` the behavior that
+// declares the port. Arguments flow down: (implements (Store Event)) gives Store's ports typed T the type
+// Event, and a behavior's own parameter passed on, (behavior (Cache K) (implements (Store K))), is
+// replaced in turn by what Cache's implementer passes. A parameter left without an argument stays itself.
 function portsOf(b) {
-  if (b.form !== 'block') return (b.ports || []).slice();
-  const ctx = b._ctx; const out = [...b.ownPorts];
-  b.impl.forEach(n => { const beh = ctx.behaviors.get(n); if (beh) beh.ports.forEach(p => out.push({ ...p, via:n })); });
+  if (b.form === 'message') return [];
+  return [...(b.form === 'block' ? b.ownPorts : b.ports), ...inheritedVia(b._ctx, b)];
+}
+function inheritedVia(model, n) {
+  const out = [], seen = new Set(n.form === 'behavior' ? [n.name] : []);
+  const walk = (x, env) => x.impl.forEach(name => {
+    const bh = model.behaviors.get(name); if (!bh || seen.has(name)) return; seen.add(name);
+    const args = (x.implArgs[name] || []).map(a => env.has(a) ? env.get(a) : a), sub = new Map();
+    if (args.length) bh.params.forEach((p, i) => { if (p && i < args.length && args[i]) sub.set(p, args[i]); });
+    bh.ports.forEach(p => out.push({ ...p, kind: sub.has(p.kind) ? sub.get(p.kind) : p.kind, via:name }));
+    walk(bh, sub);
+  });
+  walk(n, new Map());
   return out;
 }
+// The behaviors n (a block or a behavior) implements, directly or through others, each once, depth first,
+// declared ones only. A behavior on a cycle (A implements B implements A) lists itself; lint reports it.
+function behaviorsOf(n) {
+  const model = n._ctx, out = [], seen = new Set();
+  const walk = x => x.impl.forEach(name => { const bh = model.behaviors.get(name); if (!bh || seen.has(name)) return; seen.add(name); out.push(name); walk(bh); });
+  if (n.form !== 'message') walk(n);
+  return out;
+}
+// Every block that implements behavior `name`, directly or through a behavior that implements it, in
+// source order. The one "implementers of": scope and placement, the viewer's outline and its info cards.
+function implementersOf(model, name) { return [...model.blocks.values()].filter(b => behaviorsOf(b).includes(name)).sort((p, q) => p.s - q.s); }
 function childBlocks(b) { return b.levels.flatMap(L => L.units.flatMap(u => u.blocks)); }
 function stats(b) {
   if (b._stats) return b._stats;
@@ -737,7 +803,8 @@ function carriers(model, T) {
   return { messages:msgs.map(m => m.name), ports, blocks };
 }
 function portLabel(p) { return p.name && p.kind && p.name.toLowerCase() !== p.kind.toLowerCase() ? p.name + ': ' + p.kind : (p.kind || p.name || '?'); }
-function behsOf(n) { return n.form !== 'block' ? [] : n.impl.filter(x => n._ctx.behaviors.has(x)); }
+// The behavior badges of a card: a block's behaviors, or a behavior's (the ones it extends); direct ones only.
+function behsOf(n) { return n.form === 'message' ? [] : n.impl.filter(x => n._ctx.behaviors.has(x)); }
 // The count line in a collapsed card's footer (pure; layout measures it).
 function countText(b) {
   const s = stats(b), parts = [];
@@ -759,9 +826,15 @@ function topBlocks(model) { return childBlocks(model.root); }
 // b inside a (descendant). Forbidden: a inside b (ancestor: a part binding its whole). Else, with c the nearest common holder (a block or the
 // file) and a2, b2 the children of c on the way down to a and b: a2's level is above b2's in c, or a2 and
 // b2 are in the same adjacent group. Returns { ok, rule, text }; docs/DESIGN.md §3 lists the rules.
+// A callee may also name a behavior: code that calls through an abstraction (an interface, a trait) binds
+// the behavior, not its implementers. That is allowed when the behavior is in the caller's scope (declared
+// in the caller, an ancestor, or the file): rule `abstraction`; out of scope it is `scope`.
 function bindingVerdict(model, a, b) {
-  const A = model.blocks.get(a), B = model.blocks.get(b);
-  if (!A || !B) return { ok:false, rule:'unknown', text:`${!A ? a : b} is not a block in the spec` };
+  const A = model.blocks.get(a), T = bindingTarget(model, b), B = T && T.form === 'block' ? T : null;
+  const sees = d => { for (let x = A; x; x = x.parent) if (x === d) return true; return !d; };  // d's scope holds A
+  if (A && T && T.form === 'behavior') return sees(T.owner) ? { ok:true, rule:'abstraction', text:'' }
+    : { ok:false, rule:'scope', text:`${A.name} binds ${T.name}, declared in ${T.owner.name}: a behavior is used only inside the block that declares it` };
+  if (!A || !B) return { ok:false, rule:'unknown', text: !A ? `${a} is not a block in the spec` : `${b} is not a block or a behavior in the spec` };
   if (A === B) return { ok:true, rule:'same', text:'' };
   const up = x => { const r = []; for (let y = x; y; y = y.parent) r.push(y); r.push(model.root); return r; };
   const PA = up(A), PB = up(B);
@@ -779,6 +852,14 @@ function bindingVerdict(model, a, b) {
   return wa.li === wb.li
     ? { ok:false, rule:'same-level', text:`${a2.name} and ${b2.name} share ${lv(wa.li)} of ${inC} but are not adjacent` }
     : { ok:false, rule:'upward', text:`${a2.name} (${lv(wa.li)} of ${inC}) binds upward to ${b2.name} (${lv(wb.li)})` };
+}
+// What a binding's callee names. Blocks and behaviors are separate namespaces: a block id first (exactly
+// as written), then beh:Name or β:Name for a behavior, then a bare behavior name. So a name that is both a
+// block's and a behavior's binds the block (check warns), and beh:Name binds the behavior.
+function bindingTarget(model, name) {
+  if (model.blocks.has(name)) return model.blocks.get(name);
+  const m = /^(?:β|beh):(.+)$/.exec(name);
+  return (m ? model.behaviors.get(m[1]) : model.behaviors.get(name)) || null;
 }
 // The bindings text (docs/DESIGN.md §2.5), shared by the CLI (api.js check) and the viewer (server mode).
 // One edge per line: `Caller -> Callee`, then optionally whitespace, `#` and a free-text location. Blank
@@ -835,12 +916,19 @@ function messageIndex(model) {
 function scopeFailures(model) {
   const out = [], inScope = (d, where) => !d.owner || (where && ancestorsOrSelf(where).includes(d.owner));
   const add = (k, who, kind, name, owner, text) => out.push({ k, who, kind, name, owner, text });
+  // What a block or behavior implements must be visible where it is (a behavior: where it is declared),
+  // and so must the message types it passes as arguments.
+  const impls = (n, who, where) => n.impl.forEach(x => { const bh = model.behaviors.get(x); if (!bh) return;
+    if (!inScope(bh, where)) add('scope', who, 'behavior', x, bh.owner.name, `${who} uses ${x}, declared in ${bh.owner.name}`);
+    (n.implArgs[x] || []).forEach(t => { const m = n.form === 'behavior' && n.params.includes(t) ? null : model.messages.get(t);
+      if (m && !inScope(m, where)) add('mscope', who, 'message type', t, m.owner.name, `${who} passes ${t} to ${x}, declared in ${m.owner.name}`); }); });
   model.blocks.forEach(b => {
-    b.impl.forEach(n => { const bh = model.behaviors.get(n); if (bh && !inScope(bh, b)) add('scope', b.name, 'behavior', n, bh.owner.name, `${b.name} uses ${n}, declared in ${bh.owner.name}`); });
+    impls(b, b.name, b);
     b.ownPorts.forEach(p => { const m = model.messages.get(p.kind); if (m && !inScope(m, b)) add('mscope', b.name, 'message type', p.kind, m.owner.name, `${b.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); });
   });
-  model.behaviors.forEach(bh => bh.ports.forEach(p => { const m = model.messages.get(p.kind);
+  model.behaviors.forEach(bh => bh.ports.forEach(p => { const m = bh.params.includes(p.kind) ? null : model.messages.get(p.kind);
     if (m && !inScope(m, bh.owner)) add('mscope', bh.name, 'message type', p.kind, m.owner.name, `${bh.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); }));
+  model.behaviors.forEach(bh => impls(bh, bh.name, bh.owner));
   // A carried type must be visible where the carrying message is declared, as a port's type must.
   model.messages.forEach(m => m.carries.forEach(t => { const d = model.messages.get(t);
     if (d && !inScope(d, m.owner)) add('mscope', m.name, 'message type', t, d.owner.name, `${m.name} carries ${t}, declared in ${d.owner.name}`); }));
@@ -863,12 +951,25 @@ function newFailureText(m0, m1, moved) {
   return text + (fresh.length > 1 ? ` (+${fresh.length - 1} more)` : '');
 }
 function lintSpec(model) {
-  const unknownBeh = [], unknownMsg = [], badRel = [];
+  const unknownBeh = [], unknownMsg = [], badRel = [], cycles = [];
+  // An argument names a message type, or (in a behavior) one of its own parameters.
+  const args = (n, who) => n.impl.forEach(x => (n.implArgs[x] || []).forEach(t => {
+    if (t && !model.messages.get(t) && !(n.form === 'behavior' && n.params.includes(t))) unknownMsg.push(`${who} (implements (${x} ${n.implArgs[x].join(' ')})): ${t}`); }));
   model.blocks.forEach(b => {
     b.impl.forEach(n => { if (!model.behaviors.get(n)) unknownBeh.push(b.name + ' → ' + n); });
     b.ownPorts.forEach(p => { if (p.kind && !model.messages.get(p.kind)) unknownMsg.push(`${b.name}.${p.name}: ${p.kind}`); });
+    args(b, b.name);
   });
   model.behaviors.forEach(bh => bh.ports.forEach(p => { if (p.kind && !model.messages.get(p.kind) && !bh.params.includes(p.kind)) unknownMsg.push(`${bh.name}.${p.name}: ${p.kind}`); }));
+  model.behaviors.forEach(bh => { bh.impl.forEach(n => { if (!model.behaviors.get(n)) unknownBeh.push(bh.name + ' → ' + n); }); args(bh, bh.name); });
+  // A behavior that implements itself, through any chain: one failure per cycle, from its first behavior
+  // in source order (A → B → A).
+  const onCycle = new Set();
+  [...model.behaviors.values()].sort((p, q) => p.s - q.s).forEach(bh => {
+    if (onCycle.has(bh.name) || !behaviorsOf(bh).includes(bh.name)) return;
+    const path = [bh.name], find = (x, seen) => { for (const n of x.impl) { if (n === bh.name) return true; const y = model.behaviors.get(n); if (!y || seen.has(n)) continue; seen.add(n); path.push(n); if (find(y, seen)) return true; path.pop(); } return false; };
+    find(bh, new Set([bh.name])); path.forEach(n => onCycle.add(n)); cycles.push([...path, bh.name].join(' → '));
+  });
   const sf = scopeFailures(model), scope = sf.filter(f => f.k === 'scope').map(f => f.text), mscope = sf.filter(f => f.k === 'mscope').map(f => f.text);
   model.messages.forEach(m => { [m.refines, ...m.carries].filter(Boolean).forEach(n => { if (!model.messages.has(n)) badRel.push(`${m.name} → ${n}`); }); });
   return [
@@ -877,6 +978,7 @@ function lintSpec(model) {
     { k:'msg', label:'Every port uses a declared message type', f:unknownMsg },
     { k:'mscope', label:'Message types are used only inside the block that declares them', f:mscope },
     { k:'rel', label:'refines and carries name declared types', f:badRel },
+    { k:'cycle', label:'No behavior implements itself', f:cycles },
   ];
 }
 
@@ -907,15 +1009,24 @@ function placementFindings(model) {
     const users = [];
     model.blocks.forEach(b => { if (portsOf(b).some(p => kinds.has(p.kind))) users.push(b); });
     model.messages.forEach(x => { if (x !== m && kinds.has(x.name)) users.push(at(x.owner)); });
-    model.behaviors.forEach(bh => { if (bh.ports.some(p => kinds.has(p.kind))) users.push(at(bh.owner)); });
+    model.behaviors.forEach(bh => { if (bh.ports.some(p => kinds.has(p.kind) && !bh.params.includes(p.kind)) || bh.impl.some(x => (bh.implArgs[x] || []).some(t => kinds.has(t)))) users.push(at(bh.owner)); });
     judge(m, 'message', users);
   });
-  model.behaviors.forEach(bh => judge(bh, 'behavior', [...model.blocks.values()].filter(b => b.impl.includes(bh.name))));
+  // Users of a behavior B: its implementers, through other behaviors too, and the places where each
+  // behavior that implements B directly is declared (B must be visible there).
+  model.behaviors.forEach(bh => judge(bh, 'behavior', [...implementersOf(model, bh.name),
+    ...[...model.behaviors.values()].filter(x => x !== bh && x.impl.includes(bh.name)).map(x => at(x.owner))]));
   return out.sort((p, q) => p.s - q.s);
 }
 // @sbtel end Core.Lint
 // @sbtel begin Core.Layout
 // ---------- Layout (pure: tree + open/detail sets + rules + text measure -> geometry) ----------
+// The text measurer layout calls through: the abstraction the page's measurer implements (the page passes
+// its M; diff mode wraps it). The core never names an implementation, so it stays free of the DOM.
+// @sbtel begin MeasuresText
+/** @typedef {{ tw: (text: string, font: string) => number, wrap: (text: string, font: string, width: number) => number }} MeasuresText */
+// @sbtel end MeasuresText
+/** @param {MeasuresText} M  how wide a text is (tw) and how many lines it wraps to (wrap), in a CSS font */
 function layout(model, opts, M) {
   const out = { blocks:[], connectors:[], dividers:[], bands:[], gutters:[], plus:[], levels:[], loc:new Map() };
   const isOpen = b => opts.open.has(b.id) && hasInside(b);
@@ -1273,7 +1384,7 @@ function applyEdit(src, model, act) {
     const n = act.node, reps = [], its = itemsOf(src, n), nameTok = headSym(its[1]);
     const name = act.name != null ? act.name : n.name;
     if (name !== n.name && nameTok) reps.push({ s:nameTok.s, e:nameTok.e, t:name });
-    if (n.form === 'block' && act.type != null && act.type !== (n.type || '')) {
+    if (act.type != null && act.type !== (n.type || '')) {
       let k = -1, i = 2; for (; i < its.length && its[i].t === 'sym' && its[i].v.startsWith(':'); i += 2) if (its[i].v === ':type') k = i;
       const lastKw = its[Math.min(i, its.length) - 1];
       if (k >= 0 && its[k + 1]) reps.push(act.type ? { s:its[k + 1].s, e:its[k + 1].e, t:quoteStr(act.type) } : { s:its[k - 1].e, e:its[k + 1].e, t:'' });
@@ -1287,11 +1398,11 @@ function applyEdit(src, model, act) {
     // A removed child takes the spaces before it, and its line break when it is on a line of its own.
     const cutRep = c => { let a = c.s; while (a > 0 && /[ \t]/.test(src[a - 1])) a--; if (a > 0 && src[a - 1] === '\n') a--; return { s:a, e:c.e, t:'' }; };
     const insert = (forms, items) => { if (!items.length) return; const p = childInsert(src, n, forms, gone), j = p.pre || p.post; reps.push({ s:p.pos, e:p.pos, t:p.pre + items.join(j) + p.post }); };
-    const impls = n.form === 'block' && act.impl ? n.children.filter(c => c.form === 'implements' && !act.impl.includes(c.name)) : [];
+    const impls = n.form !== 'message' && act.impl ? n.children.filter(c => c.form === 'implements' && !act.impl.includes(c.name)) : [];
     const ownP = n.children.filter(c => c.form === 'port'), keepP = new Set((act.ports || []).map(q => q.node).filter(Boolean));
     impls.forEach(c => gone.add(c)); if (act.ports) ownP.forEach(c => { if (!keepP.has(c)) gone.add(c); });
     if (act.sketch != null && !act.sketch.trim()) n.children.filter(c => c.form === 'sketch').forEach(c => gone.add(c));
-    if (n.form === 'block' && act.impl) insert(['implements'], act.impl.filter(x => !n.impl.includes(x)).map(x => '(implements ' + x + ')'));
+    if (n.form !== 'message' && act.impl) insert(['implements'], act.impl.filter(x => !n.impl.includes(x)).map(x => '(implements ' + x + ')'));
     // A message's carried types (act.carries: names, in order): one (carries …) form, rewritten whole.
     if (n.form === 'message' && act.carries) {
       const cur = n.children.find(c => c.form === 'carries'), want = act.carries.filter(Boolean);
@@ -1319,7 +1430,8 @@ function applyEdit(src, model, act) {
     if (name !== n.name && n.form !== 'block') {
       const old = n.name, sym = x => { const h = headSym(x); if (h && h.t === 'sym' && h.v === old) reps.push({ s:h.s, e:h.e, t:name }); };
       const visit = c => {
-        if (c.form === 'implements' && c.name === old) sym(itemsOf(src, c)[1]);
+        if (c.form === 'implements' && n.form === 'behavior' && c.name === old) sym(itemsOf(src, c)[1]);
+        else if (c.form === 'implements' && n.form === 'message' && (c.args || []).includes(old)) { const arg = itemsOf(src, c)[1]; arg.list.slice(1).forEach(sym); }
         else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[3]);
         else if ((c.form === 'refines' || c.form === 'carries') && (c.names || []).includes(old)) itemsOf(src, c).slice(1).forEach(sym);
         c.children.forEach(visit);
@@ -1516,21 +1628,26 @@ function attachCandidates(model, id, visibleIds) {
 // @sbtel begin Core.Scope
 // ---------- Edit dialog: what is in scope, and checks on a block's ports ----------
 const NAME_RE = /^[^\s()";:][^\s()";]*$/;
-// Behaviors a block may implement: declared in it or one of its ancestors.
-function behaviorsInScope(model, b) { const up = ancestorsOrSelf(b); return [...model.behaviors.values()].filter(bh => !bh.owner || up.includes(bh.owner)); }
+// Behaviors a block may implement: declared in it or one of its ancestors. A behavior may implement the
+// others visible where it is declared.
+function behaviorsInScope(model, b) {
+  const up = b.form === 'block' ? ancestorsOrSelf(b) : b.owner ? ancestorsOrSelf(b.owner) : [];
+  return [...model.behaviors.values()].filter(bh => bh !== b && (!bh.owner || up.includes(bh.owner)));
+}
 // Message types a port of node n may use: in scope where n is (a behavior: where it is declared), plus a behavior's own type parameters.
 function typesInScope(model, n) {
   const where = n.form === 'block' ? n : n.owner, up = where ? ancestorsOrSelf(where) : [];
   const ts = [...model.messages.values()].filter(m => !m.owner || up.includes(m.owner)).map(m => m.name);
   return n.form === 'behavior' ? [...ts, ...n.params.filter(p => p && !ts.includes(p))] : ts;
 }
-// Ports a block gets from the behaviors in impl.
-function inheritedPorts(model, impl) { return impl.flatMap(x => { const bh = model.behaviors.get(x); return bh ? bh.ports.map(p => ({ ...p, via:x })) : []; }); }
+// Ports a block (or behavior) gets from the behaviors in impl, through the behaviors they implement too,
+// with the arguments its (implements …) forms pass (portsOf's rule). `self` is a behavior's own name.
+function inheritedPorts(model, impl, args, self) { return inheritedVia(model, { form: self ? 'behavior' : 'block', name:self, impl, implArgs: args || Object.create(null) }); }
 function portNameFor(kind, taken) { const base = kind.charAt(0).toLowerCase() + kind.slice(1); if (!taken.has(base)) return base; let i = 2; while (taken.has(base + i)) i++; return base + i; }
 // The first problem with a node's port rows (with impl as its behaviors, for a block), or '' when fine.
 function portsProblem(model, node, ports, impl) {
   const types = new Set(typesInScope(model, node)), from = new Map();
-  if (node.form === 'block') inheritedPorts(model, impl || node.impl).forEach(p => { if (!from.has(p.name)) from.set(p.name, p.via); });
+  if (node.form !== 'message') inheritedPorts(model, impl || node.impl, node.implArgs, node.form === 'behavior' ? node.name : null).forEach(p => { if (!from.has(p.name)) from.set(p.name, p.via); });
   const own = new Set();
   for (let i = 0; i < ports.length; i++) {
     const p = ports[i], label = p.name ? `Port ${p.name}` : `Port ${i + 1}`;
@@ -1667,9 +1784,12 @@ function diffSpecs(m0, m1) {
       F.add('h:' + K(n.owner));
       n.ports.forEach(p => { const pi = n.params.indexOf(p.kind); F.add('p:' + p.dir + ':' + (pi >= 0 ? '$' + pi : msg(p.kind))); F.add('pn:' + p.name); });
       F.add('n:' + n.params.length);
-      MS[side].blocks.forEach(b => { if (b.impl.includes(n.name)) F.add('u:' + K(b)); });
+      if (n.type) F.add('t:' + n.type);
+      n.impl.forEach(x => F.add('i:' + beh(x)));
+      implementersOf(MS[side], n.name).forEach(b => F.add('u:' + K(b)));
     } else {
       F.add('h:' + K(n.owner));
+      if (n.type) F.add('t:' + n.type);
       if (n.refines) F.add('r:' + msg(n.refines)); n.carries.forEach(x => F.add('k:' + msg(x)));
       (uses[side].get(n.name) || []).forEach(u => F.add('u:' + K(u.o) + '.' + u.p));
     }
@@ -1744,11 +1864,9 @@ function diffSpecs(m0, m1) {
   }
   function fieldsOf(a, b) {
     const F = {};
-    if (b.form === 'block') {
-      if ((a.type || null) !== (b.type || null)) F.type = { from:a.type || null, to:b.type || null };
-    }
+    if ((a.type || null) !== (b.type || null)) F.type = { from:a.type || null, to:b.type || null };
     if ((a.sketch || '') !== (b.sketch || '')) F.sketch = { from:a.sketch || '', to:b.sketch || '', words:wordDiff(a.sketch || '', b.sketch || '') };
-    if (b.form === 'block') { const d = setDiff(a.impl.map(behB), b.impl); if (d.added.length || d.removed.length) F.implements = { added:d.added, removed: a.impl.filter(x => d.removed.includes(behB(x))) }; }
+    if (b.form !== 'message') { const d = setDiff(a.impl.map(behB), b.impl); if (d.added.length || d.removed.length) F.implements = { added:d.added, removed: a.impl.filter(x => d.removed.includes(behB(x))) }; }
     if (b.form !== 'message') {
       const PA = keyed(b.form === 'block' ? a.ownPorts : a.ports), PB = keyed(b.form === 'block' ? b.ownPorts : b.ports);
       const ia = new Map(PA.map(x => [x.key, x.p])), ib = new Map(PB.map(x => [x.key, x.p]));
@@ -1977,7 +2095,7 @@ const state = {
   src: SAMPLE, model: null, lay: null,
   open: new Set(['Shell.SessionView']), details: new Set(), seenTop: new Set(),
   opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system' },
-  cam: { x:40, y:80, k:1 }, elems: new Map(), openLabels: new Set(), carry: null, flash: null, sel: null, multi: new Set(), selLine: null, expanded: new Set(), drawers: new Map(), talk: null,
+  cam: { x:40, y:80, k:1 }, elems: new Map(), openLabels: new Set(), carry: null, bhl: null, flash: null, sel: null, multi: new Set(), selLine: null, expanded: new Set(), drawers: new Map(), talk: null,
   comments: [], msgSort:'name', msgQ:'', msgOwner:null, msgOpen:null
 };
 // @sbtel end App.Document
@@ -2104,7 +2222,7 @@ function render(anchorId, pv) {
   renderChecks();
   if (world.classList.contains('anim')) setTimeout(() => { world.classList.remove('anim'); placeStrip(); placeCallout(); }, 340);
   document.body.classList.toggle('ro', readOnly());
-  applySelection(); applyTalk(); applyCarry(); refreshCallout();
+  applySelection(); applyTalk(); applyCarry(); applyBeh(); refreshCallout();
 }
 // Draw a layout: one element per block (reused by id so moves animate), lines, + buttons and bubbles.
 function paint(lay, keep) {
@@ -2485,7 +2603,7 @@ vp.addEventListener('click', e => {
   if (blk && e.shiftKey && !mod) { toggleSel(blk.dataset.id); return; }
   select(blk ? blk.dataset.id : null, null);
   if (blk && mod) openComposer(targetKey(blk.dataset.id));
-  if (touchy()) { carryOff('tap'); if (blk && blk.dataset.id.startsWith('μ:')) carryOn(blk.dataset.id.slice(2), 'tap'); }
+  if (touchy()) { carryOff('tap'); behOff('tap'); if (blk && blk.dataset.id.startsWith('μ:')) carryOn(blk.dataset.id.slice(2), 'tap'); if (blk && blk.dataset.id.startsWith('β:')) behOn(blk.dataset.id.slice(2), 'tap'); }
 });
 vp.addEventListener('dblclick', e => {
   const blk = e.target.closest('.blk.card'); if (!blk || e.target.closest('button, [data-msg], [data-beh], [data-drawer]')) return;
@@ -2971,9 +3089,9 @@ function openEdit(id) {
   const isBlk = n.form === 'block', kind = isBlk ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
   const md = modal(`Edit ${n.name}`, `<form class="editf" autocomplete="off">
     <label class="fld"><span>Name</span><input name="name" value="${esc(n.name)}" spellcheck="false"></label>
-    ${isBlk ? `<label class="fld"><span>Type</span><input name="type" value="${esc(n.type || '')}" placeholder="None" spellcheck="false"></label>` : ''}
+    <label class="fld"><span>Type</span><input name="type" value="${esc(n.type || '')}" placeholder="${isBlk ? 'None' : n.form === 'behavior' ? 'None (an interface, a trait, a protocol…)' : 'None (a struct, a record, a schema…)'}" spellcheck="false"></label>
     <label class="fld"><span>Sketch</span><textarea name="sketch" rows="4">${esc(n.sketch || '')}</textarea></label>
-    ${isBlk ? editBehaviorsHTML(n) : ''}
+    ${n.form !== 'message' ? editBehaviorsHTML(n) : ''}
     ${n.form === 'message' ? `<label class="fld"><span>Carries</span><input name="carries" value="${esc(n.carries.join(' '))}" placeholder="Message types a value of ${esc(n.name)} holds" spellcheck="false" list="edCarry"><datalist id="edCarry">${typesInScope(state.model, n).map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>` : ''}
     ${isBlk || n.form === 'behavior' ? `<fieldset class="fset"><legend>Ports</legend><div class="prows"></div><div class="pinh"></div>
       <button type="button" class="btn small" data-m="addport">Add port</button></fieldset>` : ''}
@@ -2984,7 +3102,7 @@ function openEdit(id) {
   md.querySelector('[data-m="cancel"]').onclick = closeModal;
   const hasPorts = isBlk || n.form === 'behavior', types = hasPorts ? typesInScope(state.model, n) : [];
   const rowsEl = md.querySelector('.prows'), inhEl = md.querySelector('.pinh');
-  const implNow = () => isBlk ? [...f.querySelectorAll('input[name="impl"]:checked')].map(x => x.value) : null;
+  const implNow = () => hasPorts ? [...f.querySelectorAll('input[name="impl"]:checked')].map(x => x.value) : null;
   // Port rows: el.portNode ties a row to the source port it edits; new rows have none.
   const addRow = p => {
     const row = document.createElement('div'); row.className = 'prow2'; row.portNode = p.node || null;
@@ -3000,14 +3118,14 @@ function openEdit(id) {
     rowsEl.appendChild(row); return row;
   };
   const readRows = () => [...rowsEl.children].map(r => ({ node:r.portNode, name:r.querySelector('.pname').value.trim(), dir:r.dataset.dir, kind:r.querySelector('.pkind').value, sketch:r.querySelector('.psk').value }));
-  const showInherited = () => { if (!isBlk) return; const inh = inheritedPorts(state.model, implNow());
+  const showInherited = () => { const inh = inheritedPorts(state.model, implNow(), n.implArgs, isBlk ? null : n.name);
     inhEl.innerHTML = inh.map(p => `<div class="prow2 inh" aria-disabled="true"><span class="pname">${esc(p.name)}</span><span class="pdirv">${esc(p.dir)}</span><span class="pkindv">${esc(p.kind)}</span><span class="pvia">from ${esc(p.via)}</span></div>`).join(''); };
   if (hasPorts) {
     n.children.filter(c => c.form === 'port').forEach(c => addRow({ node:c, name:c.name, dir:c.dir, kind:c.kind, sketch:c.sketch }));
     showInherited();
     f.querySelectorAll('input[name="impl"]').forEach(x => x.addEventListener('change', showInherited));
     md.querySelector('[data-m="addport"]').onclick = () => {
-      const taken = new Set([...readRows().map(p => p.name), ...(isBlk ? inheritedPorts(state.model, implNow()).map(p => p.name) : [])]);
+      const taken = new Set([...readRows().map(p => p.name), ...inheritedPorts(state.model, implNow(), n.implArgs, isBlk ? null : n.name).map(p => p.name)]);
       const kind = types[0] || '', row = addRow({ name: kind ? portNameFor(kind, taken) : '', dir:'in', kind });
       row.querySelector('.pname').focus();
     };
@@ -3018,8 +3136,8 @@ function openEdit(id) {
     const name = f.elements.name.value.trim(), why = nameClash(state.model, n, name);
     if (why) { err.textContent = why; err.hidden = false; f.elements.name.focus(); return; }
     const act = { t:'props', node:n, name, sketch: f.elements.sketch.value };
-    if (isBlk) act.type = f.elements.type.value.trim();
-    if (isBlk) act.impl = implNow();
+    act.type = f.elements.type.value.trim();
+    if (hasPorts) act.impl = implNow();
     if (n.form === 'message') {
       act.carries = [...new Set(f.elements.carries.value.split(/\s+/).filter(Boolean))];
       const scope = new Set(typesInScope(state.model, n)), out = act.carries.find(t => !scope.has(t));
@@ -3028,7 +3146,9 @@ function openEdit(id) {
     if (hasPorts) {
       act.ports = readRows();
       const bad = portsProblem(state.model, n, act.ports, act.impl);
-      if (bad) { err.textContent = bad; err.hidden = false; return; }
+      // A behavior may extend others, never itself through a chain (lint's cycle rule).
+      const loop = n.form === 'behavior' && act.impl.find(x => x === n.name || behaviorsOf(state.model.behaviors.get(x) || { impl:[], form:'message' }).includes(n.name));
+      if (bad || loop) { err.textContent = bad || `${loop} already implements ${n.name}: ${n.name} cannot implement it too.`; err.hidden = false; return; }
     }
     closeModal();
     const newId = isBlk ? (n.id === n.name ? name : n.id) : (n.form === 'behavior' ? 'β:' : 'μ:') + name;
@@ -3043,12 +3163,13 @@ function openEdit(id) {
   });
 }
 
-// The behaviors a block may implement (in scope only), one checkbox each.
+// The behaviors a block may implement (in scope only), one checkbox each; for a behavior, the ones it may
+// extend (in scope where it is declared).
 function editBehaviorsHTML(b) {
   const list = behaviorsInScope(state.model, b);
   return `<fieldset class="fset"><legend>Behaviors</legend>${list.length ? list.map(bh => { const g = glyphFor(bh.name);
     return `<label class="bchk"><input type="checkbox" name="impl" value="${esc(bh.name)}"${b.impl.includes(bh.name) ? ' checked' : ''}><i class="g" style="background:${g.c}">${g.g}</i>${esc(bh.name)}${bh.owner && bh.owner !== state.model.root ? `<span class="pvia">from ${esc(bh.owner.name)}</span>` : ''}</label>`; }).join('')
-    : '<p class="pvia">No behaviors are declared here or above.</p>'}</fieldset>`;
+    : `<p class="pvia">No ${b.form === 'block' ? '' : 'other '}behaviors are declared here or above.</p>`}</fieldset>`;
 }
 
 // @sbtel end App.EditDialog
@@ -3085,11 +3206,12 @@ function msgInfoHTML(name, withActs) {
 function behInfoHTML(name, withActs) {
   const b = state.model.behaviors.get(name); const g = glyphFor(name);
   if (!b) return `<h3>${esc(name)}</h3><p class="meta">Not declared anywhere.</p>`;
-  const users = [...state.model.blocks.values()].filter(x => x.impl.includes(name)).length;
-  return `<div class="kind">Behavior</div><h3><span class="badge" style="background:${g.c};width:18px;height:18px">${g.g}</span>${esc(name)}</h3>` +
+  const users = implementersOf(state.model, name).length, uses = behaviorUsers(name).length;
+  return `<div class="kind">Behavior${b.type ? ' · ' + esc(b.type) : ''}</div><h3><span class="badge" style="background:${g.c};width:18px;height:18px">${g.g}</span>${esc(name)}</h3>` +
     (b.sketch ? `<p>${esc(b.sketch)}</p>` : '') +
-    b.ports.map(p => `<div class="meta">${esc(p.dir)} ${esc(portLabel(p))}</div>`).join('') +
-    `<div class="meta">declared in ${esc(b.owner ? b.owner.name : '—')} · implemented by ${users}</div>` +
+    portsOf(b).map(p => `<div class="meta">${esc(p.dir)} ${esc(portLabel(p))}${p.via ? ' (from ' + esc(p.via) + ')' : ''}</div>`).join('') +
+    (b.impl.length ? `<div class="meta">extends ${esc(b.impl.join(', '))}</div>` : '') +
+    `<div class="meta">declared in ${esc(b.owner ? b.owner.name : '—')} · implemented by ${users}${uses ? ` · used by ${uses}` : ''}</div>` +
     (withActs ? `<div class="acts"><button class="btn primary" data-pa="goto" data-v="${esc(b.id)}">Go to definition</button></div>` : `<div class="tip">Click to go to its definition.</div>`);
 }
 function showInfo(t, hover) {
@@ -3359,6 +3481,28 @@ function carryCallout(dot, mode) {
 // A click on a carried dot goes to that type's card; a tap shows the callout first, with the way there.
 function carryClick(dot) { if (touchy()) { carryCallout(dot, 'pin'); return; } hideCallout(); goTo('μ:' + dot.dataset.carry); }
 
+// ---------- Who implements and who uses a behavior ----------
+// Hovering a behavior (its card or a badge) outlines its implementers, through behaviors that extend it
+// too ("implements", solid), and the blocks whose code binds it ("uses", dashed): the abstraction's callers.
+// Only server mode knows the code's bindings: it reassigns behaviorUsers when `open --bindings` loaded them.
+// @sbtel App.Document
+function behaviorUsers(name) { return []; }
+function applyBeh() {
+  state.elems.forEach(el => { el.classList.remove('bh-src', 'bh-impl', 'bh-uses'); delete el.dataset.bh; });
+  const H = state.bhl; if (!H || state.talk || state.carry) return;
+  const col = glyphFor(H.name).c, mark = (id, cls, label) => { const el = state.elems.get(id); if (!el) return; el.classList.add(cls); el.style.setProperty('--bhc', col); if (label) el.dataset.bh = el.dataset.bh ? el.dataset.bh + ' · ' + label : label; };
+  mark('β:' + H.name, 'bh-src');
+  H.impl.forEach(id => mark(id, 'bh-impl', 'implements'));
+  H.uses.forEach(id => mark(id, 'bh-uses', 'uses'));
+}
+function behOn(name, src) {
+  if (state.bhl && state.bhl.name === name) return;
+  const m = state.model; if (!m.behaviors.has(name)) return;
+  const impl = [...implementersOf(m, name).map(b => b.id), ...[...m.behaviors.values()].filter(x => x.name !== name && behaviorsOf(x).includes(name)).map(x => x.id)];
+  state.bhl = { name, src, impl, uses:behaviorUsers(name) }; applyBeh();
+}
+function behOff(src) { if (!state.bhl || (src && state.bhl.src !== src)) return; state.bhl = null; applyBeh(); }
+
 // @sbtel end App.Callouts
 // @sbtel begin App.Input
 // Mouse hover: rows, ears' dots, level labels and lines (callouts), and types (carriers). Instant.
@@ -3367,6 +3511,7 @@ vp.addEventListener('pointerover', e => {
   const t = e.target;
   const ty = t.closest('[data-carry], .chip[data-msg], .blk.msg');
   if (ty) carryOn(ty.dataset.carry || ty.dataset.msg || ty.dataset.id.slice(2), 'hover');
+  const bh = t.closest('[data-beh], .blk.beh'); if (bh) behOn(bh.dataset.beh || bh.dataset.id.slice(2), 'hover');
   const cd = t.closest('.tab.cry [data-carry]'); if (cd) { if (!co.mode || co.mode === 'hover') carryCallout(cd, 'hover'); return; }
   const row = t.closest('.drow[data-pi]'); if (row) { portHover(row, true); return; }
   const dot = t.closest('.tab:not(.open) .pdot[data-pi]'); if (dot) { portHover(dot, false); return; }
@@ -3381,6 +3526,8 @@ vp.addEventListener('pointerout', e => {
     if (!next) carryOff('hover');
     if (ty.matches('[data-carry]') && co.mode === 'hover') hideCallout();
   }
+  const bo = e.target.closest('[data-beh], .blk.beh');
+  if (bo && !(e.relatedTarget && bo.contains(e.relatedTarget)) && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-beh], .blk.beh'))) behOff('hover');
   const from = e.target.closest('.drow[data-pi], .tab:not(.open) .pdot[data-pi], .llab[data-lvl], path.hit'); if (!from) return;
   if (e.relatedTarget && from.contains(e.relatedTarget)) return;
   if (from.classList.contains('drow')) talkOff();
@@ -3756,7 +3903,7 @@ addEventListener('resize', () => placeStrip());
 const SBTEL = (() => {
   const m = location.protocol === 'file:' ? null : /^\/s\/([0-9a-f]{32})\/(diff)?$/.exec(location.pathname);
   const cmp = m && !m[2] ? /(?:^\?|&)compare=([\w.-]+)(?:&|$)/.exec(location.search) : null;
-  return { version: '0.2.1', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
+  return { version: '0.2.2', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
     compare: cmp ? cmp[1] : null, compares: {}, modes: {} };
 })();
 // @sbtel end Viewer.Mode
@@ -4531,6 +4678,14 @@ SBTEL.modes.server = (() => {
       S.invalid.forEach(x => f.push(`line ${x.line}: not an edge: ${x.text.trim()}`));
       const why = viol.filter(x => x.e.note).length;
       return { label: `Code bindings respect the levels (${S.edges.length} edge${S.edges.length === 1 ? '' : 's'}${viol.length ? ', ' + why + ' of ' + viol.length + ' violation' + (viol.length === 1 ? '' : 's') + ' explained' : ''})`, f, viol };
+    };
+    // With bindings, hovering a behavior also outlines the blocks whose code binds it ("uses"): edges whose
+    // callee names the behavior (core.js bindingTarget, the rule check applies), from a block of the spec.
+    behaviorUsers = name => {
+      if (!S.edges || !state.model) return [];
+      const out = new Set();
+      S.edges.forEach(e => { const T = bindingTarget(state.model, e.callee); if (T && T.form === 'behavior' && T.name === name && state.model.blocks.has(e.caller)) out.add(e.caller); });
+      return [...out];
     };
     const violList = viol => !viol.length ? '' : `<ul class="sb-viol">${viol.map(({ e, v }) => `<li><div><code>${esc(e.caller)} -> ${esc(e.callee)}</code>${e.location ? ` <span class="loc">${esc(e.location)}</span>` : ''}</div><div class="rule">${esc(v.text || v.rule)}</div>${e.note ? `<div class="why"><b>Explained:</b> ${esc(e.note)}</div>` : '<div class="why none">Not explained in the bindings file.</div>'}</li>`).join('')}</ul>`;
     const origRender = renderChecks;

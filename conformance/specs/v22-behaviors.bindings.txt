@@ -1,0 +1,14 @@
+App.Editor -> Durable          # abstraction: declared at the top, in scope everywhere
+App.Editor -> beh:Journaled    # abstraction, named with beh:
+App.Editor -> Local            # abstraction: declared in App, the editor's ancestor
+App.Root -> App.Disk           # lower-level: the composition root binds the implementer
+App.Disk -> Store              # abstraction: an implementer may bind its own behavior's base
+Tools -> Local                 # scope: Local is declared in App
+# VIOLATION: kept on purpose, to show an explained scope violation.
+Tools -> beh:Local             # scope, explained
+App.Editor -> Tools            # a block and a behavior: binds the block (warning)
+App.Editor -> beh:Tools        # abstraction: the behavior
+App.Editor -> Edit             # unknown: a message type
+Durable -> App.Disk            # unknown: a behavior is never a caller
+App.Editor -> Durabel          # unknown: did you mean Durable?
+App.Editor -> beh:Nothing      # unknown: no such behavior

@@ -107,16 +107,24 @@ var __api = (function () {
     for (var x = holder; x; x = x.parent) path.unshift(x.id);
     var d = { id: n.id, kind: kindOf(n), name: n.name, in: holder ? holder.id : null, path: path, sketch: n.sketch || '',
       lines: { start: posOf(starts, n.s).line, end: posOf(starts, Math.max(n.s, n.e - 1)).line }, source: sliceAt(model.src, n, 0) };
+    // :type grounds every kind the same way: what the element is in code.
+    d.type = n.type === undefined ? null : n.type;
     if (n.form === 'block') {
-      d.type = n.type === undefined ? null : n.type;
       d.implements = n.impl.slice();
       d.ports = portsOf(n).map(function (p) { return { name: p.name, dir: p.dir, kind: p.kind, via: p.via || null, sketch: p.sketch || '' }; });
       d.levels = n.levels.map(function (L) { return { name: L.name || null, sketch: L.sketch || '', units: L.units.map(function (u) { return { sketch: u.sketch || '', blocks: u.blocks.map(function (b) { return b.id; }) }; }) }; });
     } else if (n.form === 'behavior') {
       d.params = n.params.slice();
-      d.ports = n.ports.map(function (p) { return { name: p.name, dir: p.dir, kind: p.kind, via: null, sketch: p.sketch || '' }; });
+      d.implements = n.impl.slice();
+      d.ports = portsOf(n).map(function (p) { return { name: p.name, dir: p.dir, kind: p.kind, via: p.via || null, sketch: p.sketch || '' }; });
     } else { d.refines = n.refines; d.carries = n.carries.slice(); d.carriers = carriers(model, n.name); }
     return d;
+  }
+  // What a block's or behavior's (implements …) forms name: the behaviors, and the message types passed as
+  // arguments (a behavior's own parameters are not declarations).
+  function implUses(x, beh, msg) {
+    if (x.form === 'message') return;
+    x.impl.forEach(function (b) { if (!b) return; beh(b); (x.implArgs[b] || []).forEach(function (t) { if (t && !(x.form === 'behavior' && x.params.indexOf(t) >= 0)) msg(t); }); });
   }
   // Declarations that n's source text uses but does not contain, transitively, in source order.
   function depsOf(model, roots) {
@@ -133,7 +141,8 @@ var __api = (function () {
     while (queue.length) {
       var n = queue.shift();
       all.filter(function (x) { return inside(x, n); }).forEach(function (x) {
-        if (x.form === 'block') { x.impl.forEach(function (b) { want(b, model.behaviors); }); x.ownPorts.forEach(function (p) { if (p.kind) want(p.kind, model.messages); }); }
+        implUses(x, function (b) { want(b, model.behaviors); }, function (t) { want(t, model.messages); });
+        if (x.form === 'block') x.ownPorts.forEach(function (p) { if (p.kind) want(p.kind, model.messages); });
         else if (x.form === 'behavior') x.ports.forEach(function (p) { if (p.kind && x.params.indexOf(p.kind) < 0) want(p.kind, model.messages); });
         else [x.refines].concat(x.carries).forEach(function (t) { if (t) want(t, model.messages); });
       });
@@ -171,6 +180,8 @@ var __api = (function () {
     B.edges.forEach(function (e) {
       var v = bindingVerdict(L.model, e.caller, e.callee);
       if (!v.ok && v.rule === 'unknown') v = { ok: false, rule: v.rule, text: v.text + unknownHint(L.model, e.caller, e.callee) };
+      // A bare name that is both a block's and a behavior's binds the block (bindingTarget); say so.
+      if (L.model.blocks.has(e.callee) && L.model.behaviors.has(e.callee)) warnings.push({ line: e.line, message: e.callee + ' names a block and a behavior; this edge binds the block (write beh:' + e.callee + ' to bind the behavior)' });
       if (!v.ok) violations.push({ line: e.line, caller: e.caller, callee: e.callee, location: e.location, rule: v.rule, text: v.text, note: e.note });
       else if (e.note !== null) warnings.push({ line: e.line, message: 'VIOLATION note on an allowed edge: ' + e.caller + ' -> ' + e.callee + ' (' + v.rule + ')' });
     });
@@ -196,7 +207,7 @@ var __api = (function () {
     file: ['block', 'level', 'adjacent', 'message', 'behavior'],
     block: ['block', 'level', 'adjacent', 'port', 'message', 'behavior', 'implements', 'sketch'],
     level: ['block', 'adjacent', 'sketch'], adjacent: ['block', 'adjacent', 'sketch'], port: ['sketch'],
-    message: ['sketch', 'refines', 'carries'], behavior: ['port', 'sketch']
+    message: ['sketch', 'refines', 'carries'], behavior: ['port', 'sketch', 'implements']
   };
   function formWarnings(src) {
     var out = [], starts = lineStarts(src);
@@ -209,7 +220,7 @@ var __api = (function () {
       for (var i = 0; i < items.length; i++) {
         var x = items[i];
         if (!x.list) {
-          if (isSym(x) && x.v.charAt(0) === ':' && ctx === 'block') { warn('keyword ' + x.v + ' must come right after the name of ' + where, x.s); if (items[i + 1] && !items[i + 1].list) i++; }
+          if (isSym(x) && x.v.charAt(0) === ':' && (ctx === 'block' || ctx === 'behavior' || ctx === 'message')) { warn('keyword ' + x.v + ' must come right after the name of ' + where, x.s); if (items[i + 1] && !items[i + 1].list) i++; }
           else if (isSym(x) && x.v.charAt(0) === ':' && ctx === 'level') { warn('keyword ' + x.v + ' must come right after (level', x.s); if (items[i + 1] && !items[i + 1].list) i++; }
           else warn('stray ' + (x.t === 'str' ? 'string' : x.v) + ' in ' + where + ' (expected a form)', x.s);
           continue;
@@ -218,6 +229,7 @@ var __api = (function () {
         if (!isSym(h)) { warn((x.list.length ? 'a form must start with its name' : 'empty form ()') + ' in ' + where, x.s); continue; }
         if (h.v === 'layer' || h.v === 'either') continue;  // the core reports both (renamed, removed in 0.2)
         if (!FORMS.has(h.v)) { warn('unknown form (' + h.v + ') in ' + where, x.s); continue; }
+        if (ctx === 'behavior' && NOT_IN_BEHAVIOR[h.v]) continue;  // the core reports it: declare it beside the behavior
         if (ALLOWED[ctx].indexOf(h.v) < 0) { warn('(' + h.v + ') is not allowed in ' + where, x.s); continue; }
         if ((h.v === 'sketch' || h.v === 'refines' || h.v === 'carries') && seen[h.v]) warn(where + ' has more than one (' + h.v + '); only the first counts', x.s);
         else if (h.v === 'sketch' && nested) warn('a nested adjacent group has no sketch of its own; put it in the outer (adjacent)', x.s);
@@ -226,18 +238,23 @@ var __api = (function () {
         form(h.v, x, ctx === 'adjacent');
       }
     }
+    // The keywords right after a declaration's name, one grammar for block, behavior and message (the
+    // core's declHead): :type is the one keyword (v0.2 dropped :fill and free :key value pairs). Returns the
+    // index of the first body item.
+    function keywords(kind, name, it) {
+      var i = 1;
+      for (; i < it.length && isSym(it[i]) && it[i].v.charAt(0) === ':'; i += 2) {
+        var v = it[i + 1];
+        if (it[i].v !== ':type') warn('unknown keyword ' + it[i].v + ' in ' + kind + ' ' + name + '; a ' + kind + ' takes only :type', it[i].s);
+        if (!v || v.list || (isSym(v) && v.v.charAt(0) === ':')) { warn('keyword ' + it[i].v + ' of ' + kind + ' ' + name + ' needs a value', it[i].s); if (v && isSym(v)) i--; }
+      }
+      return i;
+    }
     function form(h, x, inAdjacent) {
       var it = x.list.slice(1), nm = it[0];
       if (h === 'block') {
         if (!isName(nm)) { warn('block needs a name', x.s); return kids('block', 'a block', it.filter(function (y) { return y.list; })); }
-        var i = 1;
-        for (; i < it.length && isSym(it[i]) && it[i].v.charAt(0) === ':'; i += 2) {
-          var v = it[i + 1];
-          // A block's one keyword is :type (v0.2 dropped :fill and free :key value pairs).
-          if (it[i].v !== ':type') warn('unknown keyword ' + it[i].v + ' in block ' + nm.v + '; a block takes only :type', it[i].s);
-          if (!v || v.list || (isSym(v) && v.v.charAt(0) === ':')) { warn('keyword ' + it[i].v + ' of block ' + nm.v + ' needs a value', it[i].s); if (v && isSym(v)) i--; }
-        }
-        return kids('block', 'block ' + nm.v, it.slice(i));
+        return kids('block', 'block ' + nm.v, it.slice(keywords('block', nm.v, it)));
       }
       if (h === 'level') {
         // Keywords right after `level`: :name "a non-empty string", once. Nothing else is a level keyword.
@@ -262,7 +279,8 @@ var __api = (function () {
         if (bad.length) warn('port ' + nm.v + ' has extra items after its message type', bad[0].s);
         return;
       }
-      if (h === 'implements') { if (it.length !== 1 || !isName(nm)) warn('implements names exactly one behavior', x.s); return; }
+      // (implements Name), or (implements (Name Arg ...)) for a behavior with parameters.
+      if (h === 'implements') { if (it.length !== 1 || !(isName(nm) || (nm.list && nm.list.length > 1 && nm.list.every(isName)))) warn('implements names exactly one behavior, as Name or (Name Arg ...)', x.s); return; }
       if (h === 'refines') { if (it.length !== 1 || !isName(nm)) warn('refines names exactly one message type', x.s); return; }
       if (h === 'carries') {
         if (!it.length || !it.every(isName)) warn('carries names one or more message types', x.s);
@@ -272,12 +290,13 @@ var __api = (function () {
       if (h === 'sketch') { if (!it.length || it.some(function (y) { return y.list; })) warn('sketch takes a "string"', x.s); return; }
       if (h === 'message') {
         if (!isName(nm)) { warn('message needs a name', x.s); return; }
-        return kids('message', 'message ' + nm.v, it.slice(1));
+        return kids('message', 'message ' + nm.v, it.slice(keywords('message', nm.v, it)));
       }
       if (h === 'behavior') {
         var ok = isName(nm) || (nm && nm.list && nm.list.length && nm.list.every(isName));
         if (!ok) { warn('behavior needs a name, or (Name Param ...)', x.s); return; }
-        return kids('behavior', 'behavior ' + (nm.list ? nm.list[0].v : nm.v), it.slice(1));
+        var bn = nm.list ? nm.list[0].v : nm.v;
+        return kids('behavior', 'behavior ' + bn, it.slice(keywords('behavior', bn, it)));
       }
     }
     kids('file', 'the file', readAll(src));
@@ -304,24 +323,28 @@ var __api = (function () {
     var m = /^(β|beh|μ|msg):(.*)$/.exec(id), want = (m ? m[2] : id).toLowerCase(), wt = tail(want), c = [];
     var capOf = function (s) { return Math.max(1, Math.floor(s.length / 3)); }, cap = capOf(want), capT = capOf(wt);
     var only = kinds || (m ? (m[1] === 'β' || m[1] === 'beh' ? 'behavior' : 'message') : null);
+    var has = function (k) { return !only || only.split(',').indexOf(k) >= 0; };
     var add = function (show, name, order) {
       var n = name.toLowerCase(), t = tail(n), d = n === want ? 0 : t === want || t === wt ? 1 : 99;
       if (d === 99) { var df = editDistance(want, n, cap), dt = editDistance(wt, t, capT); d = 2 + Math.min(df <= cap ? df : 99, dt <= capT ? dt : 99); }
       if (d < 99) c.push({ show: show, score: d, order: order });
     };
     var k = 0;
-    if (!only || only === 'block') model.blocks.forEach(function (b) { add(b.id, b.id, k++); });
-    if (!only || only === 'behavior') model.behaviors.forEach(function (b) { add(model.blocks.has(b.name) || only ? 'beh:' + b.name : b.name, b.name, k++); });
-    if (!only || only === 'message') model.messages.forEach(function (x) { add(model.blocks.has(x.name) || model.behaviors.has(x.name) || only ? 'msg:' + x.name : x.name, x.name, k++); });
+    if (has('block')) model.blocks.forEach(function (b) { add(b.id, b.id, k++); });
+    if (has('behavior')) model.behaviors.forEach(function (b) { add(model.blocks.has(b.name) || only === 'behavior' ? 'beh:' + b.name : b.name, b.name, k++); });
+    if (has('message')) model.messages.forEach(function (x) { add(model.blocks.has(x.name) || model.behaviors.has(x.name) || only ? 'msg:' + x.name : x.name, x.name, k++); });
     c.sort(function (p, q) { return p.score - q.score || p.order - q.order; });
     c = c.filter(function (x) { return x.show !== id; });
     return c.filter(function (x) { return x.score === c[0].score; }).slice(0, 3).map(function (x) { return x.show; });  // the closest tier only
   }
+  // The hint after an `unknown` verdict. A caller is a block; a callee is a block or a behavior (§2.5).
   function unknownHint(model, a, b) {
-    var miss = !model.blocks.has(a) ? a : !model.blocks.has(b) ? b : null;
+    var caller = !model.blocks.has(a), miss = caller ? a : !bindingTarget(model, b) ? b : null;
     if (!miss) return '';
-    if (model.behaviors.has(miss) || model.messages.has(miss)) return ' (' + miss + ' is a ' + (model.behaviors.has(miss) ? 'behavior' : 'message type') + '; bindings name blocks)';
-    var s = suggestIds(model, miss, 'block');
+    var bare = miss.replace(/^(β|beh):/, '');
+    if (caller && (model.behaviors.has(a) || /^(β|beh):/.test(a) && model.behaviors.has(bare))) return ' (' + bare + ' is a behavior; a binding\'s caller is a block)';
+    if (model.messages.has(bare)) return ' (' + bare + ' is a message type; bindings name blocks' + (caller ? '' : ' and behaviors') + ')';
+    var s = suggestIds(model, miss, caller ? 'block' : 'block,behavior');
     return s.length ? ' (did you mean ' + s.join(', ') + '?)' : '';
   }
 
@@ -365,7 +388,8 @@ var __api = (function () {
     var need = new Set(), unresolved = new Set(), queue = [];
     function want(nm, map) { if (!nm) return; var d = map.get(nm); if (!d) { unresolved.add(nm); return; } if (!need.has(d)) { need.add(d); queue.push(d); } }
     function uses(x) {
-      if (x.form === 'block') { x.impl.forEach(function (b) { want(b, model.behaviors); }); x.ownPorts.forEach(function (p) { want(p.kind, model.messages); }); }
+      implUses(x, function (b) { want(b, model.behaviors); }, function (t) { want(t, model.messages); });
+      if (x.form === 'block') x.ownPorts.forEach(function (p) { want(p.kind, model.messages); });
       else if (x.form === 'behavior') x.ports.forEach(function (p) { if (p.kind && x.params.indexOf(p.kind) < 0) want(p.kind, model.messages); });
       else [x.refines].concat(x.carries).forEach(function (t) { want(t, model.messages); });
     }

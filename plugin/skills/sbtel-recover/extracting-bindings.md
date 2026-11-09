@@ -25,13 +25,21 @@ Code in block A **binds** block B when it names something owned by B:
 - an import, require, include or `use` of B's module;
 - a call, a construction or a reference to a type, function, constant or variable owned by B;
 - a type-only import or annotation (it still names B);
-- inheritance from B's class, or implementation of B's interface (it names B);
+- inheritance from B's class (it names B);
 - replacing or wrapping B's function (`render = myRender`): the code names B's declaration.
 
 These are **not** bindings: A and B exchanging data through a port-like mechanism (a queue, an event
 bus, HTTP, a callback or parameter that a third party supplies, a string-keyed registry), where
-neither names the other. Those are messages. If A calls an interface declared in C that B implements,
-the binding is `A -> C` (and `B -> C`), not `A -> B`.
+neither names the other. Those are messages.
+
+An interface, trait or protocol that a behavior stands for is annotated with the behavior's name. If A
+calls through behavior X's interface, the binding is `A -> X`, not A to whichever block implements it
+(`check`'s `abstraction` rule allows it when X is in A's scope). A's own implementation of X (`class A
+implements X`, `impl X for A`, Go's `var _ X = (*A)(nil)`) is **not** a binding: it is the spec's
+`(implements X)`. The reference helpers mark those references with a third column, `implements`
+(`from to<TAB>name<TAB>implements`), and `sbtel_owners.py --edges` checks them against the spec
+instead of printing an edge; write the column yourself for a language without a helper. The code of the
+interface's own declaration binds nothing: its signature is the behavior's ports.
 
 ## The pipeline
 

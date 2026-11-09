@@ -10,6 +10,9 @@
 # identifier that names a declaration, method or struct field of another top-level declaration (calls,
 # types and fields alike). sbtel_owners.py --edges maps both ends to the blocks that own them (the
 # @sbtel annotations). A Go package has no imports between its files, so this is the no-imports recipe.
+# A callee may be a behavior: server.go's DiffFunc is DiffsSpecs, which the server calls through; the
+# blank assertion `var _ server.DiffFunc = diffText` in cmd_b.go states that the session commands
+# implement it, which sbtel_owners.py checks against the spec instead of making it a binding.
 #
 # Not covered: _test.go files; calls that reach a method only through an interface (net/http calls
 # Server.ServeHTTP because Lifecycle passes the Server as an http.Handler: no name, so no edge); the HTTP
@@ -27,8 +30,8 @@ Sbtel.Cli.SessionCommands -> Sbtel.Server.Client  # cmd/sbtel/cmd_b.go:44 (+14 m
 Sbtel.Cli.SessionCommands -> Sbtel.Assets  # cmd/sbtel/cmd_b.go:48 (+1 more)
 Sbtel.Cli.SessionCommands -> Sbtel.Engine  # cmd/sbtel/cmd_b.go:109 (+10 more)
 Sbtel.Cli.SessionCommands -> Sbtel.Server.Launch  # cmd/sbtel/cmd_b.go:127
-Sbtel.Cli.SessionCommands -> Sbtel.Server.Core  # cmd/sbtel/cmd_b.go:673 (+4 more)
-Sbtel.Cli.SessionCommands -> Sbtel.Server.Lifecycle  # cmd/sbtel/cmd_b.go:697 (+1 more)
+Sbtel.Cli.SessionCommands -> Sbtel.Server.Core  # cmd/sbtel/cmd_b.go:675 (+4 more)
+Sbtel.Cli.SessionCommands -> Sbtel.Server.Lifecycle  # cmd/sbtel/cmd_b.go:699 (+1 more)
 Sbtel.Cli.SpecCommands -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_lint.go:6 (+6 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.Kit  # cmd/sbtel/main.go:30 (+15 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.SpecCommands  # cmd/sbtel/main.go:45 (+3 more)
@@ -43,16 +46,17 @@ Sbtel.Server.Routes -> Sbtel.State  # internal/server/http.go:68 (+20 more)
 Sbtel.Server.Routes -> Sbtel.Server.Sessions  # internal/server/http.go:99 (+26 more)
 Sbtel.Server.Routes -> Sbtel.Server.Fanout  # internal/server/http.go:131 (+1 more)
 Sbtel.Server.Routes -> Sbtel.Server.Lifecycle  # internal/server/http.go:246
-Sbtel.Server.Core -> Sbtel.State  # internal/server/server.go:46 (+1 more)
+Sbtel.Server.Core -> DiffsSpecs  # internal/server/server.go:40
+Sbtel.Server.Core -> Sbtel.State  # internal/server/server.go:52 (+1 more)
 # VIOLATION: the Server struct holds map[string]*session (and New makes it), so the shared core names the
 # type of the session store above it: the usual Go pattern of one struct whose methods live in other
 # files. Moving `session` into Core would be gaming check: it is the session store's own record.
-Sbtel.Server.Core -> Sbtel.Server.Sessions  # internal/server/server.go:52 (+1 more)
-Sbtel.Server.Lifecycle -> Sbtel.Server.Core  # internal/server/server.go:99 (+32 more)
-Sbtel.Server.Lifecycle -> Sbtel.State  # internal/server/server.go:107 (+10 more)
-Sbtel.Server.Lifecycle -> Sbtel.Server.Client  # internal/server/server.go:138
-Sbtel.Server.Lifecycle -> Sbtel.Server.Sessions  # internal/server/server.go:192
-Sbtel.Server.Lifecycle -> Sbtel.Server.Fanout  # internal/server/server.go:196
+Sbtel.Server.Core -> Sbtel.Server.Sessions  # internal/server/server.go:58 (+1 more)
+Sbtel.Server.Lifecycle -> Sbtel.Server.Core  # internal/server/server.go:105 (+32 more)
+Sbtel.Server.Lifecycle -> Sbtel.State  # internal/server/server.go:113 (+10 more)
+Sbtel.Server.Lifecycle -> Sbtel.Server.Client  # internal/server/server.go:144
+Sbtel.Server.Lifecycle -> Sbtel.Server.Sessions  # internal/server/server.go:198
+Sbtel.Server.Lifecycle -> Sbtel.Server.Fanout  # internal/server/server.go:202
 Sbtel.Server.Sessions -> Sbtel.State  # internal/server/sessions.go:19 (+119 more)
 Sbtel.Server.Sessions -> Sbtel.Server.Fanout  # internal/server/sessions.go:24 (+9 more)
 Sbtel.Server.Sessions -> Sbtel.Server.Core  # internal/server/sessions.go:38 (+72 more)

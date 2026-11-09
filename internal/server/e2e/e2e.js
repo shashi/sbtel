@@ -274,10 +274,11 @@ async function until(fn, ms = 8000, step = 100) {
 
   // ---- bindings ----
   const edges = path.join(TMP, 'edges.txt');
-  fs.writeFileSync(edges, '# test edges\nShell.Router -> Shell.Keymap  # src/router.ts:3\n# VIOLATION: the store raises the notification itself\nShell.SessionStore -> Shell.Notification # src/store.ts:9\nnot an edge\n');
+  fs.writeFileSync(edges, '# test edges\nShell.Router -> Shell.Keymap  # src/router.ts:3\n# VIOLATION: the store raises the notification itself\nShell.SessionStore -> Shell.Notification # src/store.ts:9\nnot an edge\n' +
+    'Shell.Router -> Surface  # src/router.ts:12 (calls through the Surface interface: the abstraction rule)\n');
   const ob = sb(['open', SPEC, '--session', id, '--bindings', edges]);
   check('open --bindings exits 0', ob.code === 0, ob.err);
-  await until(() => page.evaluate(() => SBTEL.modes.server._state.edges && SBTEL.modes.server._state.edges.length === 2));
+  await until(() => page.evaluate(() => SBTEL.modes.server._state.edges && SBTEL.modes.server._state.edges.length === 3));
   check('bindings-only change is adopted without a toast', !(await page.$('.sb-vt')));
   const want = await page.evaluate(() => ['Shell.Router|Shell.Keymap', 'Shell.SessionStore|Shell.Notification'].filter(k => !bindingVerdict(state.model, ...k.split('|')).ok).length);
   await page.click('#chkBtn');
@@ -287,6 +288,26 @@ async function until(fn, ms = 8000, step = 100) {
   const explained = viol.find(t => t.includes('Shell.SessionStore -> Shell.Notification'));
   check('the popover shows the # VIOLATION: explanation beside its violation', viol.length === want && !!explained && explained.includes('Explained: the store raises the notification itself'), JSON.stringify(viol));
   await page.keyboard.press('Escape');
+  const absV = await page.evaluate(() => bindingVerdict(state.model, 'Shell.Router', 'Surface'));
+  check('a binding to a behavior in scope is allowed (abstraction)', absV.rule === 'abstraction' && !viol.some(t => t.includes('-> Surface')), JSON.stringify([absV, viol]));
+
+  // ---- a behavior's implementers and users (0.2.2): hovering its card outlines both, labelled ----
+  await page.evaluate(() => { closePop(); document.getElementById('help').hidden = true; state.open = new Set(['Shell']); render(); fit(false); });
+  await sleep(500);
+  const hover = async id => { const b = await page.evaluate(id => { const r = state.elems.get(id).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height - 12]; }, id); await page.mouse.move(b[0], b[1]); await sleep(250); };
+  const marks = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('.blk[data-bh]')].map(e => [e.dataset.id, (e.classList.contains('bh-impl') ? 'impl ' : '') + (e.classList.contains('bh-uses') ? 'uses ' : '') + e.dataset.bh])));
+  await hover('β:Surface');
+  const hl = await marks();
+  check('hovering a behavior: its implementers are outlined "implements", the blocks that bind it "uses"',
+    hl['Shell.Notification'] === 'impl implements' && hl['Shell.SessionView'] === 'impl implements' && hl['Shell.Router'] === 'uses uses' &&
+    await page.evaluate(() => state.elems.get('β:Surface').classList.contains('bh-src') && getComputedStyle(state.elems.get('Shell.Router')).outlineStyle === 'dashed' && getComputedStyle(state.elems.get('Shell.Notification')).outlineStyle === 'solid'), JSON.stringify(hl));
+  check('the behavior info card counts users from the bindings', await page.evaluate(() => behInfoHTML('Surface', false).includes('used by 1')));
+  if (SHOTS) await page.screenshot({ path: path.join(SHOTS, 'behavior-uses-implements.png') });
+  await page.mouse.move(5, 300); await sleep(250);
+  check('moving away clears both outlines', Object.keys(await marks()).length === 0);
+  await hover('β:Durable');
+  check('a behavior nobody binds: implementers only', JSON.stringify(await marks()) === '{}' || Object.values(await marks()).every(v => v === 'impl implements'));
+  await page.mouse.move(5, 300); await sleep(150);
 
   // ---- kill -9 the server mid-session; the tab says so and reconnects ----
   const info = JSON.parse(fs.readFileSync(path.join(HOME, 'server.json'), 'utf8'));

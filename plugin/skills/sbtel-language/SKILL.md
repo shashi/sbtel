@@ -21,12 +21,13 @@ without lint.
   (sketch "One sentence: what this block is for.")
   (port name in Type)                            ; in | out; Type is a message type in scope
   (port cmd out Type (~ What the type alone does not say. ~))
-  (implements Behavior)                          ; exactly one behavior name; adds its ports
-  (message Super (sketch "A general kind of data."))
+  (implements Behavior)                          ; one behavior; adds its ports
+  (message Super :type "struct" (sketch "A general kind of data."))   ; :type: what it is in code
   (message Type (refines Super))                 ; is-a
   (message Pair (carries Type Super))            ; has-a; never changes what a port accepts
-  (behavior Behavior (port p out Type) (sketch "…"))
+  (behavior Behavior :type "trait" (port p out Type) (sketch "…"))   ; a block's grammar
   (behavior (Store T) (port put in T))           ; parameter T; ports typed T are not checked
+  (behavior Keeps (implements (Store Type)))     ; extends Store with T = Type; no blocks or levels inside
   (level :name "Screens" (block A) (block B))    ; the first level is the TOP; :name labels it
   (level (adjacent (~ Why they braid. ~)         ; C and D may bind each other
     (block C) (block D)))
@@ -51,8 +52,15 @@ output a lower level has a lower number (`Store (level 1 of App) binds upward to
 - **Levels**: inside each holder, a block may bind (name in code) blocks in **lower** levels, at any
   depth. It may never bind upward, or across its own level unless the two are `adjacent`. A level's
   `:name` is the vocabulary it offers upward; binding messages quote it (`level 2 "Routing" of Shell`).
-- **Bindings** allowed: `same`, `descendant`, `lower-level`, `adjacent`. Forbidden: `ancestor` (a part
-  naming its container), `same-level`, `upward` and `unknown`.
+- **Bindings** allowed: `same`, `descendant`, `lower-level`, `adjacent`, and `abstraction`: the callee
+  is a behavior in the caller's scope (code calling through an interface binds the behavior, not its
+  implementers). Forbidden: `ancestor` (a part naming its container), `same-level`, `upward`, `scope`
+  (a behavior out of the caller's scope) and `unknown`.
+- **`:type`** grounds an element in code: for a block the code artifact (`"Module"`), for a behavior
+  the abstraction (`"trait"`, `"interface"`), for a message type the data shape (`"struct"`). Optional;
+  keep the kinds consistent within a spec.
+- A behavior that `implements` another **extends** it: it has its ports, and its implementers count as
+  implementing both. No behavior may implement itself through a chain (lint's `cycle` rule).
 - A **message** is data exchanged where neither side names the other, so the counterpart is chosen
   elsewhere. `accepts(U, T)`: an `in U` port takes an `out T` value when U = T or T refines U
   (through a chain). A union is a supertype its alternatives refine.

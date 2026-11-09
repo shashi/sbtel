@@ -3,6 +3,65 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
+## 0.2.2 (2026-11-08)
+
+Behaviors read like blocks, and code that calls through an interface is checkable.
+
+### Added
+
+- **Behaviors take a block's grammar**: `(behavior Durable :type "trait" (implements Store) (port …)
+  (sketch …))`. One parser path reads block, behavior and message heads. Blocks, levels, adjacent
+  groups and declarations inside a behavior are reported where they are (`behavior B: behaviors don't
+  contain blocks, levels or declarations; declare block X beside the behavior instead`) and left out.
+- **`:type` on behaviors and message types** (`"trait"`, `"interface"`, `"struct"`, `"JSON schema"`…),
+  shown as a pill on their cards, as on blocks. Query's Element has `type` for every kind; the diff
+  compares it.
+- **A behavior may implement (extend) others**: it gets their ports, and a block that implements it
+  counts as implementing them, transitively, for scope, placement notes, the viewer's outline and every
+  "implementers of". Cycles fail a sixth lint rule, `No behavior implements itself: A → B → A`. The
+  extended behavior must be in scope where the extending one is declared.
+- **Arguments for parameterized behaviors**: `(implements (Store Event))`, in blocks and behaviors,
+  retypes Store's ports typed with its parameter; a behavior may pass its own parameter on
+  (`(behavior (Cache K) (implements (Store K)))`). Arguments must fill every parameter.
+- **`sbtel check` allows a binding to a behavior** in the caller's scope: rule `abstraction`; out of
+  scope it is `scope`. A bare name that is both a block's and a behavior's binds the block, with a
+  warning; `beh:Name` binds the behavior. "Did you mean" suggests behaviors for callees.
+- **The viewer outlines who implements and who uses a behavior**: hovering a behavior card or badge
+  outlines its implementers ("implements", solid) and, with `open --bindings`, the blocks that bind it
+  ("uses", dashed), in the behavior's colour. The Edit dialog edits a behavior's and a message type's
+  type, and what a behavior extends.
+- **The recover skill's helpers map interfaces to behaviors**: `@sbtel Durable` above an interface,
+  trait, protocol or typedef; a reference to it is `A -> Durable`; `class Store implements Durable`, Go's
+  `var _ Durable = (*Store)(nil)` and embedded interfaces are tagged `implements` and checked against
+  the spec instead of becoming edges. sbtel_refs.mjs reads JSDoc types and typedefs. The skill has a
+  section "Calls through an abstraction".
+- **sbtel's own seams**: core.js declares the layout's measurer as a JSDoc typedef, MeasuresText, and
+  the Go server's injected diff function is the named type `DiffFunc` (behavior DiffsSpecs); both are
+  now `abstraction` edges in examples/*.edges.txt.
+
+### Changed
+
+- An unknown callee reads `X is not a block or a behavior in the spec`. LintResult's `checks` has six
+  entries (`cycle`). `implements` with a `(Name Arg …)` list is no longer a warning.
+- `make selfcheck` treats an edges file as stale only when an edge or a comment (a `# VIOLATION:`
+  note) changes; line numbers that drift with an edit print a note instead of failing.
+- sbtel_owners.py: comment lines between `@sbtel Name` and its declaration belong to the declaration;
+  "unknown block X" is "unknown block or behavior X" for ownership forms.
+
+### Fixed
+
+- macOS: sbtel_refs_go resolves links in `--dir` (temp dirs under /var gave `../../private/...` paths);
+  the JS helper and sbtel_owners.py match files by real path too.
+- Windows: `.gitattributes` keeps LF; the byte-comparing checks (viewer build, conformance, docs,
+  notices) read `\r\n` as `\n`; the server retries its previous port for 1.5 s before a random one.
+
+### Docs
+
+- LANGUAGE.md: the cheat sheet, §3.7 (extension, arguments, what a behavior does not contain), §7
+  (the sixth rule, the new warnings), §8 (the `abstraction` and `scope` rows, calls through an
+  abstraction), §9 (behavior annotations). DESIGN §2.5, §6.8, §8 and §11 entries 78-96. The language,
+  design and recover skills say what `:type` is for on each kind.
+
 ## 0.2.1 (2026-11-08)
 
 Reviews, as on GitHub, and an undo history that survives the browser. **Level numbers now count from

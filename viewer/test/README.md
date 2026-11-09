@@ -14,6 +14,7 @@ in standalone mode and compares each `RESULT` line with `expected.txt`.
 | accept5 | Playwright + CDP touch, iPhone 13 | touch selection and drags (11, plus pageErrors) |
 | accept6 | Playwright mouse, then CDP touch, iPhone 13 | v0.2: instant port callouts and the hover outline, inline port editor (one undo, Esc, live validation), inherited ports, level labels (render, alignment at zoom 0.5/1/2, edit), adjacency sketch, `(~ ~)` kept through edits, carried types, touch Edit button (12, plus pageErrors) |
 | accept7 | Playwright, a persistent browser profile | v0.2.1: the standalone undo history survives closing and restarting the browser (Ctrl-Z and Ctrl-Shift-Z after a restart), stored as patches; the title is "sbtel Playground" (4, plus pageErrors) |
+| accept8 | Playwright, real mouse | v0.2.2: behavior and message type pills, a behavior's badge for what it extends, hovering a behavior or its badge outlines its implementers ("implements"; nothing "uses" without bindings), and a behavior's Edit dialog (type, extends, a cycle refused) (13, plus pageErrors) |
 
 Any change to viewer/src or core must keep `make accept` green. v0.2 changed two regexes in accept and accept2 (the sample's group now starts with its sketch) and renamed layer to level in test names. Server and diff modes must leave
 standalone mode untouched, so these suites stay valid as they are.

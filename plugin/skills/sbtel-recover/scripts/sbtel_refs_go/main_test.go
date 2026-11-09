@@ -134,3 +134,117 @@ func TestReferences(t *testing.T) {
 		t.Errorf("--units:\n got %s\nwant %s", strings.Join(got, "\n     "), strings.Join(wantUnits, "\n     "))
 	}
 }
+
+// Dependency inversion: an interface (owned by a behavior in the spec), an interface that embeds it, an
+// implementer with a blank assertion, a caller that calls only through the interface, and a composition
+// root that builds the implementer and hands it to the caller. The blank assertion's type and the
+// embedded interface are tagged `implements`; the caller's references to Durable and Save are plain uses.
+var inversion = map[string]string{
+	"go.mod": "module example.com/inv\n\ngo 1.22\n",
+	"store/durable.go": `package store
+
+// @sbtel Durable
+type Durable interface {
+	Save(s string) error
+}
+
+// @sbtel Journaled
+type Journaled interface {
+	Durable
+	Replay() []string
+}
+`,
+	"store/disk.go": `// @sbtel file Disk
+
+package store
+
+type Disk struct{ lines []string }
+
+var _ Journaled = (*Disk)(nil)
+
+func (d *Disk) Save(s string) error { d.lines = append(d.lines, s); return nil }
+func (d *Disk) Replay() []string    { return d.lines }
+`,
+	"editor/editor.go": `// @sbtel file Editor
+
+package editor
+
+import "example.com/inv/store"
+
+type Editor struct{ out store.Durable }
+
+func New(out store.Durable) *Editor { return &Editor{out} }
+
+func (e *Editor) Type(s string) error { return e.out.Save(s) }
+`,
+	"main.go": `// @sbtel file Root
+
+package main
+
+import (
+	"example.com/inv/editor"
+	"example.com/inv/store"
+)
+
+func main() { editor.New(&store.Disk{}).Type("hi") }
+`,
+}
+
+func TestImplementsTags(t *testing.T) {
+	dir := t.TempDir()
+	for name, text := range inversion {
+		p := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := run(options{dir: dir, goos: []string{"linux"}, tags: []string{""}, pats: []string{"./..."}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"editor/editor.go:11 editor/editor.go:7\tEditor",
+		"editor/editor.go:11 editor/editor.go:7\tout",
+		"editor/editor.go:11 store/durable.go:5\tSave",   // a call through the interface: a use
+		"editor/editor.go:7 store/durable.go:4\tDurable", // a field of the interface type: a use
+		"editor/editor.go:9 editor/editor.go:7\tEditor",
+		"editor/editor.go:9 store/durable.go:4\tDurable", // a parameter of the interface type: a use
+		"main.go:10 editor/editor.go:11\tType",
+		"main.go:10 editor/editor.go:9\tNew", // the composition root names the caller...
+		"main.go:10 store/disk.go:5\tDisk",   // ...and the implementer
+		"store/disk.go:10 store/disk.go:5\tDisk",
+		"store/disk.go:10 store/disk.go:5\tlines",
+		"store/disk.go:7 store/disk.go:5\tDisk",
+		"store/disk.go:7 store/durable.go:9\tJournaled\timplements", // the blank assertion
+		"store/disk.go:9 store/disk.go:5\tDisk",
+		"store/disk.go:9 store/disk.go:5\tlines",
+		"store/durable.go:10 store/durable.go:4\tDurable\timplements", // an embedded interface
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got  %s\nwant %s", strings.Join(got, "\n     "), strings.Join(want, "\n     "))
+	}
+}
+
+// A module reached through a symbolic link (macOS's temp dirs live under /var, a link to /private/var):
+// the paths stay relative to the module, as the go tool reports real paths.
+func TestSymlinkedDir(t *testing.T) {
+	dir := write(t)
+	link := filepath.Join(t.TempDir(), "link")
+	if err := os.Symlink(dir, link); err != nil {
+		t.Skip("no symbolic links here:", err)
+	}
+	want, err := run(options{dir: dir, goos: []string{"linux"}, tags: []string{""}, pats: []string{"./..."}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := run(options{dir: link, goos: []string{"linux"}, tags: []string{""}, pats: []string{"./..."}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("through a link:\n got %s\nwant %s", strings.Join(got, "\n     "), strings.Join(want, "\n     "))
+	}
+}

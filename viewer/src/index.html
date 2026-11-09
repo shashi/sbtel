@@ -145,6 +145,15 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .dgo:hover { background:var(--surface); color:var(--accent); }
 .blk.talk { outline:3px solid var(--talk); outline-offset:5px; }
 .blk.talk-src { outline:3px dashed var(--talk); outline-offset:5px; }
+/* A behavior's implementers (solid) and the blocks whose code binds it (dashed, server mode with bindings),
+   in the behavior's glyph colour, each with a small label: "implements" or "uses", at the card's top
+   left (the top right holds comment bubbles, the middle the port ear). */
+.blk.bh-src { outline:2px dotted var(--bhc); outline-offset:5px; }
+.blk.bh-impl { outline:2.5px solid var(--bhc); outline-offset:5px; }
+.blk.bh-uses { outline:2.5px dashed var(--bhc); outline-offset:5px; }
+.blk[data-bh]::after { content:attr(data-bh); position:absolute; left:10px; top:-7px; transform:translateY(-100%); z-index:4; pointer-events:none;
+  font:600 10.5px/16px var(--ff-ui); letter-spacing:.02em; padding:0 6px; border-radius:8px; white-space:nowrap;
+  background:var(--surface); color:var(--ink); box-shadow:inset 0 0 0 1.5px var(--bhc); }
 .drow .pn { color:var(--muted); font-family:var(--ff-mono); font-size:11.5px; }
 .pdot { width:11px; height:11px; border-radius:50%; flex:none; cursor:pointer; }
 .pdot.child { opacity:.45; }
@@ -658,7 +667,7 @@ const state = {
   src: SAMPLE, model: null, lay: null,
   open: new Set(['Shell.SessionView']), details: new Set(), seenTop: new Set(),
   opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system' },
-  cam: { x:40, y:80, k:1 }, elems: new Map(), openLabels: new Set(), carry: null, flash: null, sel: null, multi: new Set(), selLine: null, expanded: new Set(), drawers: new Map(), talk: null,
+  cam: { x:40, y:80, k:1 }, elems: new Map(), openLabels: new Set(), carry: null, bhl: null, flash: null, sel: null, multi: new Set(), selLine: null, expanded: new Set(), drawers: new Map(), talk: null,
   comments: [], msgSort:'name', msgQ:'', msgOwner:null, msgOpen:null
 };
 // @sbtel end App.Document
@@ -785,7 +794,7 @@ function render(anchorId, pv) {
   renderChecks();
   if (world.classList.contains('anim')) setTimeout(() => { world.classList.remove('anim'); placeStrip(); placeCallout(); }, 340);
   document.body.classList.toggle('ro', readOnly());
-  applySelection(); applyTalk(); applyCarry(); refreshCallout();
+  applySelection(); applyTalk(); applyCarry(); applyBeh(); refreshCallout();
 }
 // Draw a layout: one element per block (reused by id so moves animate), lines, + buttons and bubbles.
 function paint(lay, keep) {
@@ -1166,7 +1175,7 @@ vp.addEventListener('click', e => {
   if (blk && e.shiftKey && !mod) { toggleSel(blk.dataset.id); return; }
   select(blk ? blk.dataset.id : null, null);
   if (blk && mod) openComposer(targetKey(blk.dataset.id));
-  if (touchy()) { carryOff('tap'); if (blk && blk.dataset.id.startsWith('μ:')) carryOn(blk.dataset.id.slice(2), 'tap'); }
+  if (touchy()) { carryOff('tap'); behOff('tap'); if (blk && blk.dataset.id.startsWith('μ:')) carryOn(blk.dataset.id.slice(2), 'tap'); if (blk && blk.dataset.id.startsWith('β:')) behOn(blk.dataset.id.slice(2), 'tap'); }
 });
 vp.addEventListener('dblclick', e => {
   const blk = e.target.closest('.blk.card'); if (!blk || e.target.closest('button, [data-msg], [data-beh], [data-drawer]')) return;
@@ -1652,9 +1661,9 @@ function openEdit(id) {
   const isBlk = n.form === 'block', kind = isBlk ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
   const md = modal(`Edit ${n.name}`, `<form class="editf" autocomplete="off">
     <label class="fld"><span>Name</span><input name="name" value="${esc(n.name)}" spellcheck="false"></label>
-    ${isBlk ? `<label class="fld"><span>Type</span><input name="type" value="${esc(n.type || '')}" placeholder="None" spellcheck="false"></label>` : ''}
+    <label class="fld"><span>Type</span><input name="type" value="${esc(n.type || '')}" placeholder="${isBlk ? 'None' : n.form === 'behavior' ? 'None (an interface, a trait, a protocol…)' : 'None (a struct, a record, a schema…)'}" spellcheck="false"></label>
     <label class="fld"><span>Sketch</span><textarea name="sketch" rows="4">${esc(n.sketch || '')}</textarea></label>
-    ${isBlk ? editBehaviorsHTML(n) : ''}
+    ${n.form !== 'message' ? editBehaviorsHTML(n) : ''}
     ${n.form === 'message' ? `<label class="fld"><span>Carries</span><input name="carries" value="${esc(n.carries.join(' '))}" placeholder="Message types a value of ${esc(n.name)} holds" spellcheck="false" list="edCarry"><datalist id="edCarry">${typesInScope(state.model, n).map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>` : ''}
     ${isBlk || n.form === 'behavior' ? `<fieldset class="fset"><legend>Ports</legend><div class="prows"></div><div class="pinh"></div>
       <button type="button" class="btn small" data-m="addport">Add port</button></fieldset>` : ''}
@@ -1665,7 +1674,7 @@ function openEdit(id) {
   md.querySelector('[data-m="cancel"]').onclick = closeModal;
   const hasPorts = isBlk || n.form === 'behavior', types = hasPorts ? typesInScope(state.model, n) : [];
   const rowsEl = md.querySelector('.prows'), inhEl = md.querySelector('.pinh');
-  const implNow = () => isBlk ? [...f.querySelectorAll('input[name="impl"]:checked')].map(x => x.value) : null;
+  const implNow = () => hasPorts ? [...f.querySelectorAll('input[name="impl"]:checked')].map(x => x.value) : null;
   // Port rows: el.portNode ties a row to the source port it edits; new rows have none.
   const addRow = p => {
     const row = document.createElement('div'); row.className = 'prow2'; row.portNode = p.node || null;
@@ -1681,14 +1690,14 @@ function openEdit(id) {
     rowsEl.appendChild(row); return row;
   };
   const readRows = () => [...rowsEl.children].map(r => ({ node:r.portNode, name:r.querySelector('.pname').value.trim(), dir:r.dataset.dir, kind:r.querySelector('.pkind').value, sketch:r.querySelector('.psk').value }));
-  const showInherited = () => { if (!isBlk) return; const inh = inheritedPorts(state.model, implNow());
+  const showInherited = () => { const inh = inheritedPorts(state.model, implNow(), n.implArgs, isBlk ? null : n.name);
     inhEl.innerHTML = inh.map(p => `<div class="prow2 inh" aria-disabled="true"><span class="pname">${esc(p.name)}</span><span class="pdirv">${esc(p.dir)}</span><span class="pkindv">${esc(p.kind)}</span><span class="pvia">from ${esc(p.via)}</span></div>`).join(''); };
   if (hasPorts) {
     n.children.filter(c => c.form === 'port').forEach(c => addRow({ node:c, name:c.name, dir:c.dir, kind:c.kind, sketch:c.sketch }));
     showInherited();
     f.querySelectorAll('input[name="impl"]').forEach(x => x.addEventListener('change', showInherited));
     md.querySelector('[data-m="addport"]').onclick = () => {
-      const taken = new Set([...readRows().map(p => p.name), ...(isBlk ? inheritedPorts(state.model, implNow()).map(p => p.name) : [])]);
+      const taken = new Set([...readRows().map(p => p.name), ...inheritedPorts(state.model, implNow(), n.implArgs, isBlk ? null : n.name).map(p => p.name)]);
       const kind = types[0] || '', row = addRow({ name: kind ? portNameFor(kind, taken) : '', dir:'in', kind });
       row.querySelector('.pname').focus();
     };
@@ -1699,8 +1708,8 @@ function openEdit(id) {
     const name = f.elements.name.value.trim(), why = nameClash(state.model, n, name);
     if (why) { err.textContent = why; err.hidden = false; f.elements.name.focus(); return; }
     const act = { t:'props', node:n, name, sketch: f.elements.sketch.value };
-    if (isBlk) act.type = f.elements.type.value.trim();
-    if (isBlk) act.impl = implNow();
+    act.type = f.elements.type.value.trim();
+    if (hasPorts) act.impl = implNow();
     if (n.form === 'message') {
       act.carries = [...new Set(f.elements.carries.value.split(/\s+/).filter(Boolean))];
       const scope = new Set(typesInScope(state.model, n)), out = act.carries.find(t => !scope.has(t));
@@ -1709,7 +1718,9 @@ function openEdit(id) {
     if (hasPorts) {
       act.ports = readRows();
       const bad = portsProblem(state.model, n, act.ports, act.impl);
-      if (bad) { err.textContent = bad; err.hidden = false; return; }
+      // A behavior may extend others, never itself through a chain (lint's cycle rule).
+      const loop = n.form === 'behavior' && act.impl.find(x => x === n.name || behaviorsOf(state.model.behaviors.get(x) || { impl:[], form:'message' }).includes(n.name));
+      if (bad || loop) { err.textContent = bad || `${loop} already implements ${n.name}: ${n.name} cannot implement it too.`; err.hidden = false; return; }
     }
     closeModal();
     const newId = isBlk ? (n.id === n.name ? name : n.id) : (n.form === 'behavior' ? 'β:' : 'μ:') + name;
@@ -1724,12 +1735,13 @@ function openEdit(id) {
   });
 }
 
-// The behaviors a block may implement (in scope only), one checkbox each.
+// The behaviors a block may implement (in scope only), one checkbox each; for a behavior, the ones it may
+// extend (in scope where it is declared).
 function editBehaviorsHTML(b) {
   const list = behaviorsInScope(state.model, b);
   return `<fieldset class="fset"><legend>Behaviors</legend>${list.length ? list.map(bh => { const g = glyphFor(bh.name);
     return `<label class="bchk"><input type="checkbox" name="impl" value="${esc(bh.name)}"${b.impl.includes(bh.name) ? ' checked' : ''}><i class="g" style="background:${g.c}">${g.g}</i>${esc(bh.name)}${bh.owner && bh.owner !== state.model.root ? `<span class="pvia">from ${esc(bh.owner.name)}</span>` : ''}</label>`; }).join('')
-    : '<p class="pvia">No behaviors are declared here or above.</p>'}</fieldset>`;
+    : `<p class="pvia">No ${b.form === 'block' ? '' : 'other '}behaviors are declared here or above.</p>`}</fieldset>`;
 }
 
 // @sbtel end App.EditDialog
@@ -1766,11 +1778,12 @@ function msgInfoHTML(name, withActs) {
 function behInfoHTML(name, withActs) {
   const b = state.model.behaviors.get(name); const g = glyphFor(name);
   if (!b) return `<h3>${esc(name)}</h3><p class="meta">Not declared anywhere.</p>`;
-  const users = [...state.model.blocks.values()].filter(x => x.impl.includes(name)).length;
-  return `<div class="kind">Behavior</div><h3><span class="badge" style="background:${g.c};width:18px;height:18px">${g.g}</span>${esc(name)}</h3>` +
+  const users = implementersOf(state.model, name).length, uses = behaviorUsers(name).length;
+  return `<div class="kind">Behavior${b.type ? ' · ' + esc(b.type) : ''}</div><h3><span class="badge" style="background:${g.c};width:18px;height:18px">${g.g}</span>${esc(name)}</h3>` +
     (b.sketch ? `<p>${esc(b.sketch)}</p>` : '') +
-    b.ports.map(p => `<div class="meta">${esc(p.dir)} ${esc(portLabel(p))}</div>`).join('') +
-    `<div class="meta">declared in ${esc(b.owner ? b.owner.name : '—')} · implemented by ${users}</div>` +
+    portsOf(b).map(p => `<div class="meta">${esc(p.dir)} ${esc(portLabel(p))}${p.via ? ' (from ' + esc(p.via) + ')' : ''}</div>`).join('') +
+    (b.impl.length ? `<div class="meta">extends ${esc(b.impl.join(', '))}</div>` : '') +
+    `<div class="meta">declared in ${esc(b.owner ? b.owner.name : '—')} · implemented by ${users}${uses ? ` · used by ${uses}` : ''}</div>` +
     (withActs ? `<div class="acts"><button class="btn primary" data-pa="goto" data-v="${esc(b.id)}">Go to definition</button></div>` : `<div class="tip">Click to go to its definition.</div>`);
 }
 function showInfo(t, hover) {
@@ -2040,6 +2053,28 @@ function carryCallout(dot, mode) {
 // A click on a carried dot goes to that type's card; a tap shows the callout first, with the way there.
 function carryClick(dot) { if (touchy()) { carryCallout(dot, 'pin'); return; } hideCallout(); goTo('μ:' + dot.dataset.carry); }
 
+// ---------- Who implements and who uses a behavior ----------
+// Hovering a behavior (its card or a badge) outlines its implementers, through behaviors that extend it
+// too ("implements", solid), and the blocks whose code binds it ("uses", dashed): the abstraction's callers.
+// Only server mode knows the code's bindings: it reassigns behaviorUsers when `open --bindings` loaded them.
+// @sbtel App.Document
+function behaviorUsers(name) { return []; }
+function applyBeh() {
+  state.elems.forEach(el => { el.classList.remove('bh-src', 'bh-impl', 'bh-uses'); delete el.dataset.bh; });
+  const H = state.bhl; if (!H || state.talk || state.carry) return;
+  const col = glyphFor(H.name).c, mark = (id, cls, label) => { const el = state.elems.get(id); if (!el) return; el.classList.add(cls); el.style.setProperty('--bhc', col); if (label) el.dataset.bh = el.dataset.bh ? el.dataset.bh + ' · ' + label : label; };
+  mark('β:' + H.name, 'bh-src');
+  H.impl.forEach(id => mark(id, 'bh-impl', 'implements'));
+  H.uses.forEach(id => mark(id, 'bh-uses', 'uses'));
+}
+function behOn(name, src) {
+  if (state.bhl && state.bhl.name === name) return;
+  const m = state.model; if (!m.behaviors.has(name)) return;
+  const impl = [...implementersOf(m, name).map(b => b.id), ...[...m.behaviors.values()].filter(x => x.name !== name && behaviorsOf(x).includes(name)).map(x => x.id)];
+  state.bhl = { name, src, impl, uses:behaviorUsers(name) }; applyBeh();
+}
+function behOff(src) { if (!state.bhl || (src && state.bhl.src !== src)) return; state.bhl = null; applyBeh(); }
+
 // @sbtel end App.Callouts
 // @sbtel begin App.Input
 // Mouse hover: rows, ears' dots, level labels and lines (callouts), and types (carriers). Instant.
@@ -2048,6 +2083,7 @@ vp.addEventListener('pointerover', e => {
   const t = e.target;
   const ty = t.closest('[data-carry], .chip[data-msg], .blk.msg');
   if (ty) carryOn(ty.dataset.carry || ty.dataset.msg || ty.dataset.id.slice(2), 'hover');
+  const bh = t.closest('[data-beh], .blk.beh'); if (bh) behOn(bh.dataset.beh || bh.dataset.id.slice(2), 'hover');
   const cd = t.closest('.tab.cry [data-carry]'); if (cd) { if (!co.mode || co.mode === 'hover') carryCallout(cd, 'hover'); return; }
   const row = t.closest('.drow[data-pi]'); if (row) { portHover(row, true); return; }
   const dot = t.closest('.tab:not(.open) .pdot[data-pi]'); if (dot) { portHover(dot, false); return; }
@@ -2062,6 +2098,8 @@ vp.addEventListener('pointerout', e => {
     if (!next) carryOff('hover');
     if (ty.matches('[data-carry]') && co.mode === 'hover') hideCallout();
   }
+  const bo = e.target.closest('[data-beh], .blk.beh');
+  if (bo && !(e.relatedTarget && bo.contains(e.relatedTarget)) && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-beh], .blk.beh'))) behOff('hover');
   const from = e.target.closest('.drow[data-pi], .tab:not(.open) .pdot[data-pi], .llab[data-lvl], path.hit'); if (!from) return;
   if (e.relatedTarget && from.contains(e.relatedTarget)) return;
   if (from.classList.contains('drow')) talkOff();

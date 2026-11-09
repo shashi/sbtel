@@ -84,7 +84,7 @@ func TestCheckText(t *testing.T) {
 		b + ":8: Shell.Router -> Shell.Composer: upward: Shell.Router (level 2 of Shell) binds upward to Shell.SessionView (level 3)  (src/router.ts:40  upward)\n" +
 		b + ":9: Shell.Theme -> Shell.Router: same-level: Shell.Theme and Shell.Router share level 2 of Shell but are not adjacent  (same level, not adjacent)\n" +
 		b + ":12: Shell.Turn -> Shell.TurnList: upward: Shell.Turn (level 1 of Shell.Transcript) binds upward to Shell.TurnList (level 2)  (upward inside Transcript)\n" +
-		b + ":13: Shell.Toast -> Nope: unknown: Nope is not a block in the spec  (unknown callee)\n" +
+		b + ":13: Shell.Toast -> Nope: unknown: Nope is not a block or a behavior in the spec  (unknown callee)\n" +
 		b + ":15: error: not an edge: this line is not an edge\n" +
 		b + ":16: error: not an edge: A -> B -> C\n" +
 		sampleSpec + ": 11 bindings, 5 not allowed, 0 explained\n"
@@ -153,7 +153,7 @@ func TestQueryFragmentsLint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, p := range []string{sampleSpec, "../../examples/viewer.sbtel", "../../conformance/specs/playground.sbtel"} {
+	for _, p := range []string{sampleSpec, "../../examples/viewer.sbtel", "../../conformance/specs/playground.sbtel", "../../conformance/specs/v22-behaviors.sbtel"} {
 		src := mustRead(t, p)
 		var model struct {
 			Model struct {
@@ -183,7 +183,7 @@ func TestQueryFragmentsLint(t *testing.T) {
 		add(model.Model.Blocks.Map, "")
 		add(model.Model.Behaviors.Map, "beh:")
 		add(model.Model.Messages.Map, "msg:")
-		if len(ids) < 20 {
+		if len(ids) < 12 {
 			t.Fatalf("%s: only %d ids", p, len(ids))
 		}
 		for i, id := range ids {

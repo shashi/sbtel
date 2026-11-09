@@ -28,6 +28,14 @@
     (sketch "One comment POSTed to the sbtel server: target, label, text, version and source excerpt."))
   (message SpecText
     (sketch "A spec's source with its version and hash, as GET spec returns and POST save sends."))
+  ; Dependency inversion: Core.Layout calls the measurer only through MeasuresText (layout's parameter M,
+  ; typed by a JSDoc @typedef in core.js), App.Kit's M implements it, and the app passes M in. It is
+  ; declared here, where both can see it; lint notes it could live in App.Kit, its one implementer, since
+  ; lint does not read the bindings that show Core.Layout calling through it.
+  (behavior MeasuresText :type "JSDoc typedef"
+    (port run in TextRun)
+    (port size out TextSize)
+    (sketch "Answers tw(text, font) with a width and wrap(text, font, width) with a line count."))
 
   (level
     (block Viewer.Boot
@@ -123,10 +131,6 @@
       (level
         (block App.Kit
           (implements MeasuresText)
-          (behavior MeasuresText
-            (port run in TextRun)
-            (port size out TextSize)
-            (sketch "Answers tw(text, font) with a width and wrap(text, font, width) with a line count."))
           ; M is the measurer: an offscreen canvas. The app passes it to layout() as its third argument.
           (sketch "DOM and text primitives: element lookup, text measuring, escaping, icons, local storage, toasts."))
         (block App.Page
@@ -141,8 +145,9 @@
           (implements Pure)
           (port measure out TextRun)
           (port size in TextSize)
-          ; layout(model, opts, M) takes the measurer as a parameter and never names the page's M: the
-          ; core stays free of the DOM, and diff mode can lend it a wrapped measurer.
+          ; layout(model, opts, M) takes the measurer as a parameter and never names the page's M: it binds
+          ; MeasuresText only (the abstraction rule), the core stays free of the DOM, and diff mode can lend
+          ; it a wrapped measurer.
           (sketch "Computes the geometry of a model for a given set of open blocks and options."))
         (block Core.Edits
           (implements Pure)

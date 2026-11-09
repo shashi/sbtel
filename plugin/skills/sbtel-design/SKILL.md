@@ -33,8 +33,11 @@ Use the sbtel-language skill for syntax and commands. This skill covers *what* t
    (levels, adjacency, ports, types), and leave implementation detail out. A port gets a sketch only
    when its type alone does not say what it promises. Prefer adding nothing over adding a form or a
    sentence "just in case".
-7. **Ground blocks with `:type`.** Name the kind of code artifact each block maps to (`"Service"`,
-   `"Module"`, `"File"`, `"Function"`), and keep the kinds consistent within a spec.
+7. **Ground elements with `:type`.** Name the kind of code artifact each block maps to (`"Service"`,
+   `"Module"`, `"File"`, `"Function"`), what each behavior is in code (`"trait"`, `"interface"`) and
+   what each message type is (`"struct"`, `"JSON schema"`) where that helps; keep the kinds consistent
+   within a spec. A caller that should not know its implementer calls through a behavior: it binds the
+   behavior, and the block that wires them binds the implementer.
 
 The reasoning behind each principle, with a before-and-after example, is in
 [principles.md](principles.md).

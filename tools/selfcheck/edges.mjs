@@ -6,7 +6,10 @@
 //           examples/sbtel.edges.txt.
 //
 //   node tools/selfcheck/edges.mjs [viewer|go]...            write the files (default: both)
-//   node tools/selfcheck/edges.mjs --check [viewer|go]...    exit 1 if a committed file differs
+//   node tools/selfcheck/edges.mjs --check [viewer|go]...    exit 1 if a committed file is stale: an edge
+//                                                            or a comment (a VIOLATION note) changed.
+//                                                            Line numbers that only drifted are not
+//                                                            stale (stale.mjs); a note says to refresh.
 //
 // Dev-only: needs node >= 18, python3, go, and the TypeScript checker installed by `npm ci` in this
 // directory (`make selfcheck` does that). The binary and the page do not use any of it.
@@ -26,6 +29,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compareEdges } from './stale.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url)), root = resolve(here, '../..');
 const HTML = 'viewer/src/index.html';
@@ -86,9 +90,11 @@ const TARGETS = {
 # How: viewer/build.mjs inlines core.js, session.js, review.js, server.js and diff.js into the one <script> of
 # index.html, so every top-level declaration is a global of one page script and there are no imports.
 # plugin/skills/sbtel-recover/scripts/sbtel_refs.mjs resolves every identifier with the TypeScript
-# checker (a reference counts when its declaration is in another top-level statement), getElementById
-# and $('id') lookups are resolved to the markup line with that id, and sbtel_owners.py --edges maps
-# both ends to the blocks that own them (the @sbtel annotations).
+# checker (a reference counts when its declaration is in another top-level statement; JSDoc types too),
+# getElementById and $('id') lookups are resolved to the markup line with that id, and sbtel_owners.py
+# --edges maps both ends to the blocks that own them (the @sbtel annotations). A callee may be a
+# behavior: core.js declares MeasuresText as a JSDoc @typedef, and Core.Layout -> MeasuresText is a call
+# through that abstraction (check's abstraction rule), not a binding of the page's measurer.
 #
 # Not covered: string-keyed dispatch (SBTEL.modes[mode], data-a="..." button actions, CSS classes in
 # generated HTML), the HTTP and SSE traffic with the sbtel server (ports in the spec), and core/api.js
@@ -112,6 +118,9 @@ const TARGETS = {
 # identifier that names a declaration, method or struct field of another top-level declaration (calls,
 # types and fields alike). sbtel_owners.py --edges maps both ends to the blocks that own them (the
 # @sbtel annotations). A Go package has no imports between its files, so this is the no-imports recipe.
+# A callee may be a behavior: server.go's DiffFunc is DiffsSpecs, which the server calls through; the
+# blank assertion \`var _ server.DiffFunc = diffText\` in cmd_b.go states that the session commands
+# implement it, which sbtel_owners.py checks against the spec instead of making it a binding.
 #
 # Not covered: _test.go files; calls that reach a method only through an interface (net/http calls
 # Server.ServeHTTP because Lifecycle passes the Server as an http.Handler: no name, so no edge); the HTTP
@@ -164,11 +173,11 @@ for (const r of rows) {
 const dest = join(root, EDGES);
 if (check) {
   const old = existsSync(dest) ? readFileSync(dest, 'utf8') : '';
-  if (old === text) { console.log(`${EDGES} is up to date (${rows.length} edge${rows.length === 1 ? '' : 's'})`); continue; }
-  const a = old.split('\n'), b = text.split('\n'), A = new Set(a), B = new Set(b);
+  const cmp = compareEdges(old, text), n = `${rows.length} edge${rows.length === 1 ? '' : 's'}`;
+  if (cmp.same) { console.log(`${EDGES} is up to date (${n})` + (cmp.drifted ? '; locations drifted, run `make edges` to refresh them' : '')); continue; }
   console.error(`${EDGES} is stale: run \`make edges\`, then explain any new violation (make selfcheck).`);
-  a.filter(l => !B.has(l)).slice(0, 20).forEach(l => console.error('- ' + l));
-  b.filter(l => !A.has(l)).slice(0, 20).forEach(l => console.error('+ ' + l));
+  cmp.removed.slice(0, 20).forEach(l => console.error('- ' + l));
+  cmp.added.slice(0, 20).forEach(l => console.error('+ ' + l));
   process.exitCode = 1;
   continue;
 }

@@ -6,7 +6,12 @@
 //	go -C <this directory> run . [options] [PACKAGES]      (PACKAGES default: ./...)
 //
 // Prints one line per reference that crosses a unit:  from_file:line to_file:line<TAB>name
-// which is the input sbtel_owners.py --edges reads. Paths are relative to --dir.
+// which is the input sbtel_owners.py --edges reads. Paths are relative to --dir. A reference that states
+// an implements relation rather than a use gets a third column, `implements`: the type of a blank
+// assertion (`var _ Durable = (*Store)(nil)`, `var _ server.DiffFunc = diffText`) and an interface
+// embedded in an interface (`type Journaled interface { Durable; Replay() }`). sbtel_owners.py checks
+// those against the spec's (implements …) when the type is owned by a behavior, and never makes them
+// bindings.
 //
 // A unit is one top-level declaration: a function or method, or one spec of a const, var or type
 // declaration (each spec of a parenthesised group is a unit of its own). A reference counts when the
@@ -232,6 +237,7 @@ func load(dir, goos, tags string, pats []string, units bool) ([]string, error) {
 	}
 	var out []string
 	for _, d := range mine {
+		impl := implementsIdents(d.files)
 		for id, obj := range d.info.Uses {
 			if obj == nil || !obj.Pos().IsValid() {
 				continue
@@ -247,7 +253,11 @@ func load(dir, goos, tags string, pats []string, units bool) ([]string, error) {
 				out = append(out, fmt.Sprintf("%s:%d %s:%d", from.file, from.line, to.file, to.line))
 				continue
 			}
-			out = append(out, fmt.Sprintf("%s:%d %s:%d\t%s", from.file, fset.Position(id.Pos()).Line, to.file, fset.Position(obj.Pos()).Line, obj.Name()))
+			tag := ""
+			if impl[id] {
+				tag = "\timplements"
+			}
+			out = append(out, fmt.Sprintf("%s:%d %s:%d\t%s%s", from.file, fset.Position(id.Pos()).Line, to.file, fset.Position(obj.Pos()).Line, obj.Name(), tag))
 		}
 	}
 	return out, nil
@@ -276,6 +286,43 @@ func unitsOf(fset *token.FileSet, f *ast.File, rel string) []unit {
 		}
 	}
 	return us
+}
+
+// implementsIdents finds the names that state an implements relation: every identifier in the type of a
+// var spec whose names are all blank (`var _ Durable = (*Store)(nil)`: the compiler checks that Store
+// implements Durable), and in an interface embedded in an interface type (`interface { Durable; ... }`).
+func implementsIdents(files []*ast.File) map[*ast.Ident]bool {
+	out := map[*ast.Ident]bool{}
+	mark := func(e ast.Expr) {
+		ast.Inspect(e, func(n ast.Node) bool {
+			if id, ok := n.(*ast.Ident); ok {
+				out[id] = true
+			}
+			return true
+		})
+	}
+	for _, f := range files {
+		ast.Inspect(f, func(n ast.Node) bool {
+			switch n := n.(type) {
+			case *ast.ValueSpec:
+				blank := n.Type != nil && len(n.Names) > 0
+				for _, nm := range n.Names {
+					blank = blank && nm.Name == "_"
+				}
+				if blank {
+					mark(n.Type)
+				}
+			case *ast.InterfaceType:
+				for _, m := range n.Methods.List {
+					if len(m.Names) == 0 {
+						mark(m.Type)
+					}
+				}
+			}
+			return true
+		})
+	}
+	return out
 }
 
 type importerFunc func(path string) (*types.Package, error)

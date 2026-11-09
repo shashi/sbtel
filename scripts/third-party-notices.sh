@@ -58,7 +58,8 @@ sub='---------------------------------------------------------------------------
   done
 } > "$out"
 if [ "${1:-}" = --check ]; then
-  if cmp -s "$out" THIRD_PARTY_NOTICES; then echo "THIRD_PARTY_NOTICES is up to date"; exit 0; fi
+  # Compared with \r\n read as \n, so a CRLF checkout of THIRD_PARTY_NOTICES is not "stale".
+  if tr -d '\r' < THIRD_PARTY_NOTICES | cmp -s "$out" -; then echo "THIRD_PARTY_NOTICES is up to date"; exit 0; fi
   echo "THIRD_PARTY_NOTICES is stale: run scripts/third-party-notices.sh" >&2; exit 1
 fi
 cp "$out" THIRD_PARTY_NOTICES
