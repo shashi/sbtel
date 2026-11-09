@@ -107,10 +107,16 @@ func (s *Server) listen() (net.Listener, error) {
 	if prev, _ := state.ReadServer(s.paths); prev != nil && prev.Port > 0 {
 		tries = append(tries, prev.Port)
 	}
-	for _, p := range tries {
-		if ln, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(p)); err == nil {
-			return ln, nil
+	// A port the previous server just released can stay unbindable for a moment (its last
+	// connections are still closing; on Windows this can last longer). Retry briefly before
+	// giving up on it: open tabs reconnect only if the port is the same.
+	for attempt := 0; attempt < 15 && len(tries) > 0; attempt++ {
+		for _, p := range tries {
+			if ln, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(p)); err == nil {
+				return ln, nil
+			}
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 	return net.Listen("tcp", "127.0.0.1:0")
 }

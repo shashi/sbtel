@@ -564,7 +564,14 @@ func TestPortReuseStartRaceAndWatchdog(t *testing.T) {
 	<-c.done
 	d := start(t, Options{Home: home, PortSet: false, PreferPort: -1})
 	if d.s.Port() != port {
-		t.Errorf("after a stale server.json: port %d, want %d", d.s.Port(), port)
+		// Windows can keep a just-used port unbindable for minutes (TIME_WAIT without
+		// SO_REUSEADDR); the server then falls back to a fresh port, which is the documented
+		// best-effort behaviour, so only Linux and macOS insist on the same port here.
+		if runtime.GOOS == "windows" {
+			t.Logf("after a stale server.json: port %d, want %d (best effort on Windows)", d.s.Port(), port)
+		} else {
+			t.Errorf("after a stale server.json: port %d, want %d", d.s.Port(), port)
+		}
 	}
 	// Port in use: --port fails, a preferred port falls back to a random one.
 	ln, _ := net.Listen("tcp", "127.0.0.1:0")
