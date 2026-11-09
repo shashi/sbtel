@@ -2,14 +2,15 @@
 # Viewer acceptance suites (standalone mode), run against a built page in headless Chrome.
 #   viewer/test/run.sh [page.html]        default: viewer/dist/index.html
 #   SUITES="accept accept4" viewer/test/run.sh   run a subset
-# Needs google-chrome at /usr/bin/google-chrome, python3 and the playwright python package.
+# Needs google-chrome at /usr/bin/google-chrome, python3 and the playwright python package; accept12
+# also needs bin/sbtel built from this page (make accept builds it), or SBTEL_BIN.
 # Each suite's RESULT line must equal its line in expected.txt (results recorded on the frozen
 # Marquee playground, md5 a94bbc1d4b8752b16ac116a54581b118, and on viewer/dist). Exit 1 on any mismatch.
 set -u
 T=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$T/../.." && pwd)
 PAGE=$(realpath "${1:-$ROOT/viewer/dist/index.html}")
 OUT=$(mktemp -d "${TMPDIR:-/tmp}/sbtel-accept.XXXXXX")
-SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7 accept8 accept9 accept10 accept11"}
+SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7 accept8 accept9 accept10 accept11 accept12"}
 
 # Chrome --dump-dom suites: the test is appended to a copy of the page and reports through console.log.
 virtual() { # name test.js WxH budget timeout
@@ -48,6 +49,9 @@ run_suite() {
     accept10) cp "$PAGE" "$OUT/accept10.html"; timeout 200 python3 "$T/suites/accept10.py" "$OUT/accept10.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     # v0.2.4 embed mode fits what is drawn and posts sbtel:size to a same-origin parent; &focus=<Block>.
     accept11) cp "$PAGE" "$OUT/accept11.html"; timeout 200 python3 "$T/suites/accept11.py" "$OUT/accept11.html" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
+    # v0.2.5 files made by `sbtel export`, opened from disk: rendering, no network, read-only, bindings, undo.
+    # They come from the binary ($SBTEL_BIN, default bin/sbtel), which must embed this page.
+    accept12) cp "$PAGE" "$OUT/accept12.html"; timeout 240 python3 "$T/suites/accept12.py" "$OUT/accept12.html" "${SBTEL_BIN:-$ROOT/bin/sbtel}" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     *) echo "unknown suite $1"; return 1 ;;
   esac
 }

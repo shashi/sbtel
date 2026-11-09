@@ -143,4 +143,6 @@ sbtel reply "$id" r7 "Applied your edits, and answered both questions."   # the 
 - `sbtel check spec.sbtel --bindings edges.txt`: judges `Caller -> Callee  # file:line` edges against
   the levels (see the sbtel-recover skill).
 - `sbtel diff a.sbtel b.sbtel` shows what changed. `sbtel open-diff a b` shows the same in the browser.
-- Every command takes `--json`. Exit codes: 0 ok, 1 check failures, 2 usage or IO error.
+- `sbtel export spec.sbtel -o spec.html` writes one self-contained HTML file of the diagram (no server, no
+  network) to share with humans who don't have sbtel; `--readonly`, `--bindings edges.txt`, `--embed`.
+- The commands that print results take `--json`. Exit codes: 0 ok, 1 check failures, 2 usage or IO error.

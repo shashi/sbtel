@@ -1,9 +1,10 @@
 ; The viewer page (viewer/dist/index.html), recovered from its code: viewer/src/index.html,
-; viewer/src/session.js, viewer/src/review.js, viewer/src/server.js, viewer/src/diff.js and core/core.js. The code carries
+; viewer/src/session.js, viewer/src/bindings.js, viewer/src/review.js, viewer/src/server.js, viewer/src/diff.js,
+; viewer/src/play.js and core/core.js. The code carries
 ; matching @sbtel annotations, and examples/viewer.edges.txt lists who names whom (make edges);
 ; make selfcheck holds the three to each other.
 ;
-; Build: viewer/build.mjs inlines core.js, session.js, review.js, server.js and diff.js into the one <script> of
+; Build: viewer/build.mjs inlines core.js, session.js, bindings.js, review.js, server.js, diff.js and play.js into the one <script> of
 ; index.html, so every top-level declaration is a global of one page script. There are no imports:
 ; the bindings come from identifier references resolved by the TypeScript checker, plus
 ; getElementById ids ($('x')) resolved to the markup.
@@ -61,10 +62,12 @@
       (sketch "Diff mode: draws two versions of a spec as one picture with ghosts and a change list."))
     (block Viewer.Play
       (port mode out ModeHandler)
-      ; Reads #src, #example, ?embed, &theme and &focus (§6.9). In embed mode it reassigns app functions
-      ; (openComposer, menuItems, renderStrip, fit, render; with readonly, edit, pressStart...), as the other
-      ; modes do; fit uses Core.Layout's contentBox, and render posts sbtel:size to a same-origin parent.
-      (sketch "The standalone page: the sample, or a spec from the URL with its own storage keys; embed mode for docs pages, fitted to what is drawn, with its natural size reported to the page; the home link.")))
+      ; Reads #src, #example, ?embed, &theme and &focus (§6.9), and the spec, options and bindings an
+      ; exported file bakes in (sbtel export, v0.2.5). In embed mode it reassigns app functions
+      ; (openComposer, menuItems, renderStrip, fit, render; read-only, in either layout: edit, pressStart...),
+      ; as the other modes do; fit uses Core.Layout's contentBox, and render posts sbtel:size to a
+      ; same-origin parent. An export's bindings go to Viewer.Bindings, as server mode's do.
+      (sketch "The standalone page: the sample, a spec from the URL or one baked into an exported file, each with its own storage keys; read-only and embed mode for docs pages, fitted to what is drawn, with its natural size reported to the page; the home link.")))
   (level
     (block Viewer.Review
       (port review out Review)
@@ -82,7 +85,11 @@
       ; and pass it the replies they receive. It also rebuilds the reviews from the log.
       (sketch "Comments in a session: posted to the server, kept with their threads and the agent's replies."))
     (block Viewer.Changes
-      (sketch "A change list from a diff result: its rows and their markup, for the diff view and the Review panel.")))
+      (sketch "A change list from a diff result: its rows and their markup, for the diff view and the Review panel."))
+    (block Viewer.Bindings
+      ; Server mode passes the session's edges, the standalone page an exported file's (v0.2.5). It
+      ; reassigns renderChecks, showChecks and behaviorUsers, and reads the binding rule from Core.
+      (sketch "An edges file's violations in the page: one more check in the pill, the violations with their explanations in the checks popover, and who uses a behavior.")))
   (level
     (block App
       (sketch "The interactive diagram editor: canvas, panels and gestures over one spec source.")

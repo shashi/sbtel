@@ -31,7 +31,7 @@ export function build() {
     if (!p.endsWith('.woff2')) throw new Error('@@font takes a .woff2 file, got ' + p);
     return 'data:font/woff2;base64,' + readFileSync(join(root, p)).toString('base64');
   });
-  for (const need of ['core/core.js', 'viewer/src/session.js', 'viewer/src/review.js', 'viewer/src/server.js', 'viewer/src/diff.js', 'viewer/src/play.js'])
+  for (const need of ['core/core.js', 'viewer/src/session.js', 'viewer/src/bindings.js', 'viewer/src/review.js', 'viewer/src/server.js', 'viewer/src/diff.js', 'viewer/src/play.js'])
     if (!seen.includes(need)) throw new Error('viewer/src/index.html does not include ' + need);
   if (/@@(include|VERSION|font)/.test(out)) throw new Error('unexpanded @@ directive left in output');
   // The page must work offline and never call out (DESIGN.md §6): no remote stylesheet, font or script.

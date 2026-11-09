@@ -7,7 +7,10 @@ says MUST, the conformance tests, the acceptance suites or a reviewer will hold 
 find something wrong or missing, fix this document in the same change as the code. Never let the two
 disagree silently.
 
-Status: v0.2.4 (§11, entries 104-106): embed mode fits what the diagram draws, reports its natural size
+Status: v0.2.5 (§11, entries 107-113): `sbtel export` writes one self-contained HTML file, the viewer with
+a spec (and optionally its bindings) baked in, to share with people who have no sbtel (§3.14, §6.9);
+read-only works in the full viewer too, and the bindings view moved to viewer/src/bindings.js, shared by
+server mode and exported files. Before that, v0.2.4 (§11, entries 104-106): embed mode fits what the diagram draws, reports its natural size
 to a same-origin parent page (`sbtel:size`) so the page can size the frame, and takes `&focus=<Block>`
 (§6.9). Before that, v0.2.3 (§11, entries 97-103): the viewer is a proper HTML document with a device-width
 viewport, the playground's "sbtel" links to the project's home page, and a standalone page loads a spec
@@ -95,17 +98,19 @@ Data flow for the agent loop:
 | `cmd/sbtel/main.go`, `args.go`, `errors.go`, `cmd_lint.go` | dispatch table, flag syntax, IO helpers, lint | frozen |
 | `cmd/sbtel/cmd_a.go` | check, query, diff | A |
 | `cmd/sbtel/cmd_b*.go` | open, open-diff, inbox, reply, sessions, close, serve | B |
+| `cmd/sbtel/cmd_export.go` | export (§3.14): the viewer page with a spec baked in | release owner |
 | `internal/state/`, `internal/server/` | state dir, sessions, HTTP server | B |
 | `viewer/src/index.html` | the page with core removed and `/*@@include …@@*/` slots | frozen (see §6.5) |
 | `viewer/src/session.js` | comments in a session, shared by server and diff mode (§6.3, §6.4) | B and C |
+| `viewer/src/bindings.js` | an edges file's violations in the checks and the "uses" outline: server mode and exported files (§6.3, §6.9) | release owner |
 | `viewer/src/review.js` | the draft review and the shared change list, both modes (§6.7) | B and C |
 | `viewer/src/server.js` | server-mode module | B |
 | `viewer/src/diff.js` | diff-mode module | C |
-| `viewer/src/play.js` | the standalone page: a spec from the URL, embed mode, the home link (§6.9) | release owner |
+| `viewer/src/play.js` | the standalone page: a spec from the URL or baked into an exported file, read-only, embed mode, the home link (§6.9) | release owner |
 | `viewer/build.mjs` | assembles `viewer/dist/index.html`; inlines `viewer/fonts/*.woff2` as data: URLs | frozen |
 | `viewer/fonts/` | the page's fonts (Hanken Grotesk, JetBrains Mono; OFL, from @fontsource-variable 5.3.0) and their licenses | release owner |
 | `viewer/dist/index.html` | built page, committed (go:embed needs it) | generated |
-| `viewer/test/` | acceptance suites and `run.sh`; accept6 (v0.2) covers callouts, editors, level labels and carried types; accept7 (v0.2.1) the standalone undo history across a browser restart; accept8 (v0.2.2) behavior and message pills, the implementers outline and a behavior's Edit dialog; accept9 (v0.2.3) `#src`, `#example`, `?embed` and the home link; accept10 (v0.2.3) three embedded viewers in one docs page; accept11 (v0.2.4) the tight fit, `sbtel:size` and `&focus` | frozen (add suites, don't edit; §11 entry 51) |
+| `viewer/test/` | acceptance suites and `run.sh`; accept6 (v0.2) covers callouts, editors, level labels and carried types; accept7 (v0.2.1) the standalone undo history across a browser restart; accept8 (v0.2.2) behavior and message pills, the implementers outline and a behavior's Edit dialog; accept9 (v0.2.3) `#src`, `#example`, `?embed` and the home link; accept10 (v0.2.3) three embedded viewers in one docs page; accept11 (v0.2.4) the tight fit, `sbtel:size` and `&focus`; accept12 (v0.2.5) files made by `sbtel export`, from disk | frozen (add suites, don't edit; §11 entry 51) |
 | `conformance/` | specs, cases, expected records, node runner | shared, see §2.9 |
 | `examples/*.sbtel` | sample specs; `viewer.sbtel` is the viewer's own spec, with `viewer.edges.txt`, and `sbtel.sbtel` the system's, its Go blocks checked against the Go code with `sbtel.edges.txt` (§8) | D |
 | `tools/docs/snippets.mjs` | dev-only: checks every spec and output in the docs against the binary (`make docs-check`) | release owner |
@@ -123,7 +128,7 @@ Data flow for the agent loop:
 ```
 make            # check-viewer + node conformance + go vet/test + bin/sbtel
 make viewer     # rebuild viewer/dist/index.html (after any change to viewer/src or core/core.js)
-make accept     # viewer acceptance suites in headless Chrome (standalone mode)
+make accept     # viewer acceptance suites in headless Chrome (standalone mode; builds bin/sbtel for accept12)
 make release    # dist/sbtel_<os>_<arch>[.exe] for 6 targets + dist/checksums.txt
 make selfcheck  # the viewer's spec, annotations and edges agree; every violation explained (§8)
 make edges      # regenerate examples/viewer.edges.txt
@@ -383,6 +388,9 @@ codes. Go reads the files, passes `args` and prints what comes back. `args.files
 - `__api.parseSpec(src)`: `{error, model}`, with the full model in canonical form. It is a debug and
   conformance shape, not stable: don't build on it.
 - `__api.randomSpec(seed)`: the playground's random spec generator, deterministic per seed.
+- `__api.topBlocks(src)` (v0.2.5): `{error, blocks: [{id, name}]}`, the file's top-level blocks in source
+  order (core.js `topBlocks`); `error` is the parse error (Located) or null. `sbtel export` titles its
+  page with the first, as the viewer's chip names it.
 - `__api.carriers(src, name)` and core.js `carriers(model, T)`: every message type that carries T,
   transitively (A carries B, B carries T), counting what a subtype inherits from its supertype's
   `carries`; T itself only through a cycle. Then every port typed with one of them (blocks' own,
@@ -434,6 +442,8 @@ change, after reading the diff.
 - `sbtel <command> [args]`. Flags are long only: `--name`, `--name=value` or `--name value`. Flags and
   positionals mix in any order, and `--` ends flags. `-` as a spec argument means stdin, at most once
   per command. Unknown flags are a usage error. The one parser is `parseArgs` in cmd/sbtel/args.go.
+  The one short flag is `export`'s `-o` (and `-o=f`), the compilers' spelling, which it turns into
+  `--out` before parsing (§11 entry 109).
 - `--help` or `-h` anywhere before `--` in a command's arguments, and `sbtel help <command>`, print
   that command's usage line, what it does and its flags on stdout, and exit 0 (the `help` field in
   main.go's `commands`). `sbtel help`, `--help` and `-h` alone print every command's usage line.
@@ -646,6 +656,49 @@ file-backed spec file is never touched. An unknown session is exit 2.
   hidden from help; `open` uses it to start the detached server, and tests use it directly. `--idle`
   may be fractional. `--prefer-port` is the port to try first; the CLI passes the old server's port
   when it replaces one, because a cleanly stopped server has removed server.json (§5.1).
+
+### 3.14 `sbtel export <spec>|- [-o out.html] [--readonly] [--embed] [--bindings edges.txt] [--title text]`  (v0.2.5)
+
+Writes one self-contained HTML file: the viewer page (`sbtel.ViewerHTML`, as `open` serves it) with
+the spec, its options and, with `--bindings`, the edges baked in, for people who have no sbtel. It
+needs no server and starts none, and the page requests nothing (§6.5); it runs in the standalone mode
+of §6.9, with everything §6.9 says of a spec from the URL.
+
+- **Output**: `-o f` or `--out f`; the default is the spec's base name with its extension replaced by
+  `.html`, in the current directory (`examples/viewer.sbtel` → `viewer.html`). `-o -` writes the page to
+  stdout. From stdin, `-o` is required (no name to derive). An output that is the spec file itself is a
+  usage error. The file is written through a temporary file in the same directory and renamed, so a
+  failure never leaves half a page. An existing file is replaced.
+- **The baked blocks** replace the page's `<title>sbtel Playground</title>` line, in the head, before the
+  page's script: `<title>` (the title, HTML-escaped), `<meta name="generator" content="sbtel export
+  <version>">`, then three inert script blocks:
+  `<script type="application/json" id="sbtel-export">{"embed","readonly","title","version"}</script>`
+  (encoding/json, which writes `<`, `>` and `&` as `\u003c`, `\u003e`, `\u0026`),
+  `<script type="text/sbtel" id="sbtel-spec">…</script>` and, with `--bindings`,
+  `<script type="text/plain" id="sbtel-bindings">…</script>`. The text of the last two is escaped: `&`
+  as `&amp;`, `<` as `&lt;`, CR as `&#13;` and NUL as `&#0;`, after invalid UTF-8 is replaced with
+  U+FFFD. With no `<` left, no text can end the block (`</script`) or start a comment (`<!--`), and
+  the escaped CR and NUL survive the HTML parser, which would turn them into LF and U+FFFD. play.js
+  undoes exactly these escapes (`&lt;`, `&amp;`, `&#N;`), so the page's text is the spec's text, byte
+  for byte.
+- **`--readonly`**: the page opens read-only, in the full viewer (the semantics of `?embed=readonly`).
+  **`--embed`**: the chromeless layout of `?embed`, for an iframe. Together: `?embed=readonly`.
+- **`--bindings f`** (or `-`, when the spec is not): the checks pill and popover show the edges'
+  violations and a behavior's "uses" outline, as in server mode with `open --bindings` (§6.3, §6.8).
+- **`--title t`**: the page's `<title>` and the label in the brand chip (`<title> · N blocks`, plus
+  ` · read-only`). Default: the name of the spec's first top-level block (`__api.topBlocks`), else the
+  spec's file name (`stdin` from stdin). An empty or blank `--title` is a usage error.
+- **Validation**: the spec is parsed first. A parse error prints `sbtel export: <file>:<line>:<col>:
+  error: <message> (nothing written)` and exits 2, writing nothing (as `diff`, §3.6: the command cannot
+  make its output). Otherwise lint problems go to stderr in lint's format (§3.3) when there are any,
+  and the file is written. With `--bindings`, stderr gets `sbtel check`'s text (§3.4) when a violation is
+  unexplained, a line is not an edge or a note is misplaced, and otherwise only its summary line. As with
+  `open`, a spec over 1 MiB is not linted or checked (a note says so); it is still parsed.
+- **stderr** ends with `sbtel export: wrote <out> (<n> bytes, <k> KiB)`, or `sbtel export: <n> bytes, <k>
+  KiB to stdout`. stdout is empty unless `-o -`. The page is the viewer's size plus the spec (about
+  600 KB, most of it the two embedded fonts).
+- **Exit codes**: 0 written (with any warnings or violations); 2 usage or IO error, or a spec that does
+  not parse. There is no 1: problems are reported, not fatal, as with `open` (§11 entry 13).
 
 ---
 
@@ -991,8 +1044,10 @@ uses Playwright, which is not a repo dependency.
 
 ### 6.5 Rules for viewer modules
 
-- session.js, review.js, server.js and diff.js are inlined by `viewer/build.mjs` into the page's single
-  script, in that order, after the app code and before Boot. review.js defines `sessionReview(o)`
+- session.js, bindings.js (v0.2.5), review.js, server.js, diff.js and play.js are inlined by
+  `viewer/build.mjs` into the page's single script, in that order, after the app code and before Boot.
+  bindings.js defines `bindingsView(get)`, which server.js and play.js call (it reassigns `renderChecks`,
+  `showChecks` and `behaviorUsers`). review.js defines `sessionReview(o)`
   (the draft review, §6.7), `openCompare(data)`, and the change list both modes draw
   (`changeItems`, `changeListHTML`, `changeSummaryHTML`, `changeLines`, `runsHTML`, `changesStyle`,
   region `Viewer.Changes`). session.js defines `sessionComments({ version,
@@ -1153,7 +1208,7 @@ App features (index.html), in every mode; §11 entries 89-91 record the choices.
   dialog lists the behaviors it may extend (in scope where it is declared), with the inherited ports;
   a choice that would make a cycle is refused with "B already implements A: A cannot implement it too."
 
-### 6.9 The standalone page's URL, embed mode and the home link (v0.2.3; size and focus v0.2.4)
+### 6.9 The standalone page's URL, embed mode and the home link (v0.2.3; size and focus v0.2.4; read-only and exported files v0.2.5)
 
 viewer/src/play.js, block `Viewer.Play`, registers `SBTEL.modes.standalone`; §11 entries 97-103 record
 the choices. The page itself is a full document: `<!doctype html>`, `<html lang="en">`, `<meta
@@ -1168,6 +1223,7 @@ the `@sbtel file App.Page` comment (a comment before the doctype keeps standards
 | `?embed=readonly` | embed mode, nothing edits |
 | `&theme=light`, `&theme=dark` (or `?theme=`) | a fixed theme; otherwise the system's (embed mode ignores a stored setting) |
 | `&focus=<Block>` (v0.2.4) | embed mode fits that block (an id such as `Notes.Store`, or a name) instead of the whole file; its ancestors start open. An unknown name fits the file |
+| `?embed=off` (v0.2.5) | no embed mode, even in an exported file that bakes `--embed` in (its Open full view link) |
 
 The query and the hash combine: `play/?embed=readonly&theme=dark#example=shell`. A change of the hash
 reloads the page. `?diff` (§6.4) still wins: diff.js switches the mode before Boot.
@@ -1229,12 +1285,45 @@ In embed mode, which has no source sheet, a card says "This spec cannot be drawn
   kept the frame from taking focus, so it never blurred and stayed live. A
   page opened directly (not in a frame) is live from the start.
 
+**Read-only** (v0.2.5, also in the full viewer). `?embed=readonly`, and a file exported with
+`--readonly` in either layout, reassign what edits (§6.5), as diff mode does: `readOnly()` is true;
+`edit`, `undo`, `redo`, `pressStart`, `startLink`, `openEdit`, the deletes and `cutSelected` do nothing;
+the menu and the strip keep the items that only look (Open or Close, Code, the message table) and,
+where the layout has them, Comment (a comment is the reader's note, not an edit); the source textarea
+is read-only; undo, redo, the + buttons, gutters and handles are hidden (`body.pl-ro`); callouts only
+pin. No undo history is kept.
+
+**Exported files** (v0.2.5, `sbtel export`, §3.14). play.js reads the baked blocks first: when
+`#sbtel-export` and `#sbtel-spec` are in the page, the spec is the baked one, unless the hash has `#src`
+or `#example`, which win as they do over the sample (so a link can carry an edited text); the layout is
+the baked one (`embed`, `readonly`) unless the query has `?embed…`; a baked read-only stays read-only
+whatever the query says (it is a presentation, not protection: anyone can edit the file). Storage is
+that of a spec from the URL: `…:spec-<hash>` or `…:embed-<hash>` of the baked text, so each exported
+spec keeps its own undo history, settings and comments, apart from other exports, from the playground
+and from the same spec's embed; two files of one spec in one browser share them, being one spec (file://
+pages share one origin in Chrome). Beyond that:
+
+- The chip and the tab say the baked title (`<title> · N blocks · read-only`); Load sample and Random
+  spec are gone from the source sheet, since the file is about its spec.
+- Baked bindings go to `bindingsView` (viewer/src/bindings.js), so the pill counts and lists their
+  violations with their notes and a behavior's "uses" outline works, exactly as in server mode.
+- The home link ("sbtel" in the chip) stays, at the project's home page, and always opens a new tab
+  (`rel="noopener noreferrer"`): a reader of a shared file most likely needs to learn what sbtel is, and
+  should keep the diagram open. It is a link the reader follows, not a request the page makes.
+- In embed layout, **Open in playground ↗** becomes **Open full view ↗**: the same file at `?embed=off`
+  (with `#src=` of the text once it was edited, as before). There is no playground beside a shared file,
+  and sending the spec to the public playground would take it somewhere the author did not choose.
+- Nothing else changes: no server calls, no session, comments are the standalone page's (Send copies a
+  text to paste to an agent).
+
 accept9 checks the parameters, the errors, embed mode, read-only and the home link over HTTP; accept10
 loads a docs page with three embedded viewers and checks that their histories stay apart, that the
 page scrolls over an idle frame and a clicked one takes the wheel, and that nothing logs an error. accept11
 (v0.2.4) checks the tight fit, `sbtel:size` (numbers, once per layout, zoom 1 at the natural height,
 after an edit, not while dragging, silent across origins and unframed), `&focus`, and the release
-after a click on a card.
+after a click on a card. accept12 (v0.2.5) exports with the binary and opens the files from disk: the
+spec renders and round-trips exactly, no network request, read-only, bindings, and an edit kept per
+spec across a reload.
 
 ---
 
@@ -2218,3 +2307,49 @@ A, B, C and D run in parallel. When they merge:
     is still information about the page's content, so other origins get nothing.
 106. **`&focus=<Block>`** (v0.2.4, user request). A demo about one part of a larger spec can fit that
     block: the camera and the reported size use its card; the rest of the file is still there to pan to.
+107. **`sbtel export`, a file and not a URL** (v0.2.5, user request; §3.14). A shareable diagram had to be
+    `play/?embed#src=<base64url>` on someone's server, or a session on the author's machine. A spec of a
+    few hundred lines is tens of KB of base64 in a URL, which mail clients and chat tools wrap or cut;
+    an inert `<script type="text/sbtel">` block in the page has no such limit, keeps the spec readable
+    in the file, and needs no hosting. The page is the one `open` serves (no second build), so an
+    export is always the binary's own viewer. The blocks replace the `<title>` line, which build.mjs
+    keeps fixed, and a Go test and accept12's `builtFromThisPage` check that nothing else changed.
+108. **The escape is HTML's, undone by hand** (v0.2.5). Script text is raw: the parser decodes no
+    entities in it, ends it at `</script` and can be thrown into its "escaped" states by `<!--`. Writing
+    `&` and `<` as entities removes every `<`, so none of that can happen whatever the spec holds, and
+    the text stays readable; play.js decodes the same two entities and numeric references. CR and NUL
+    are escaped too, because the parser rewrites them in any text. base64 was rejected: a third larger,
+    and unreadable for a reader who opens the file in an editor. A `<template>` or `<textarea>` would
+    decode entities by itself, but changes CRs and is less obviously inert. The JSON block is safe by
+    encoding/json's own escaping.
+109. **`-o`, one short flag** (v0.2.5, user request). §3.1 says flags are long only; `export` takes `-o` as
+    its users expect from compilers and converters, rewritten to `--out` before `parseArgs`, so the one
+    parser is unchanged and `--out` works too. No other command gains a short flag.
+110. **A parse error is exit 2; problems are not fatal** (v0.2.5, user request). §3.1's "a spec does not
+    parse" is 1 for commands that report on specs; `export`'s output is a file, and with a parse error it
+    cannot make one, as `diff` cannot make a diff (§3.6). Warnings, check failures and binding violations
+    are printed and the file is written, as `open` opens a spec with problems (entry 13): the page shows
+    them too. Explained violations are not repeated on stderr one by one (only check's summary): an
+    export of examples/viewer.sbtel would print twenty lines that say nothing is wrong.
+111. **Read-only in the full viewer; comments allowed** (v0.2.5). `--readonly` needed the read-only of
+    `?embed=readonly` without the embed layout, so it moved out of `embed()` into `readonlyMode()`, which
+    filters the app's own menu and strip (dropping items that edit: those with an edit action, Edit and
+    Delete; and Edit, Delete and Cut buttons) instead of building a fixed one. In embed layout the result
+    is what it was (accept9 unchanged); in the full layout Comment and the message table stay, because a
+    comment is the reader's own note and changes no spec. The source textarea is read-only too.
+112. **bindings.js** (v0.2.5, §6.5). The bindings view (one more check, the popover's Bindings section,
+    `behaviorUsers`) was server.js's; an exported page needs it without a server, so it moved, unchanged,
+    into viewer/src/bindings.js (block `Viewer.Bindings`, beside Viewer.Session below the page modes),
+    called by server.js and play.js, rather than play.js calling into server.js, a peer. The include is a
+    new line in index.html outside Viewer.Mode, as the other module includes are; build.mjs's list of
+    required includes and tools/selfcheck/edges.mjs's file list name it. New edges: Viewer.Server and
+    Viewer.Play → Viewer.Bindings, and Viewer.Bindings → App and Core, all downward (193 edges, 10
+    explained violations as before).
+113. **The exported page's links** (v0.2.5, user request to decide). The home link stays (to the project's
+    page, in a new tab): the reader of a shared file is the person most likely not to know what sbtel is.
+    Open in playground would send the spec to the public playground (in a hash, so not to the server, but
+    to a page the author did not choose), so in an export it is Open full view: the same file at
+    `?embed=off`, which is why that value exists. `__api.topBlocks` was added for the default title so
+    the CLI does not read the unstable `parseSpec` model. Sbtel.Cli.ExportCommand is a new block in
+    examples/sbtel.sbtel beside the other commands; it binds Sbtel.Cli.Kit, Sbtel.Engine and Sbtel.Assets
+    (all lower) and avoids cmd_b.go's helpers, a peer's.

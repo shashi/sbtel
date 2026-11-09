@@ -45,7 +45,7 @@ build:                          ## local binary at bin/sbtel
 release:                        ## six targets + THIRD_PARTY_NOTICES + checksums into dist/
 	scripts/release.sh
 
-accept: check-viewer            ## viewer acceptance suites, standalone mode
+accept: check-viewer build      ## viewer acceptance suites, standalone mode (accept12 exports with bin/sbtel)
 	viewer/test/run.sh
 
 test-owners:                    ## the sbtel-recover helpers' tests (python3, and go for sbtel_refs_go)
@@ -64,7 +64,7 @@ test-e2e: check-viewer          ## the session loop end to end: binary, server, 
 # in GO_SRC and examples/sbtel.edges.txt; every violation must be explained.
 # An edges file is stale only when its edges or comments (VIOLATION notes) change: line numbers that
 # drift with an ordinary edit do not fail selfcheck (tools/selfcheck/stale.mjs); `make edges` refreshes them.
-VIEWER_SRC = core/core.js viewer/src/index.html viewer/src/session.js viewer/src/review.js viewer/src/server.js viewer/src/diff.js viewer/src/play.js
+VIEWER_SRC = core/core.js viewer/src/index.html viewer/src/session.js viewer/src/bindings.js viewer/src/review.js viewer/src/server.js viewer/src/diff.js viewer/src/play.js
 GO_SRC = $(filter-out %_test.go,$(wildcard assets.go cmd/sbtel/*.go internal/*/*.go))
 
 tools/selfcheck/node_modules/.package-lock.json: tools/selfcheck/package.json tools/selfcheck/package-lock.json

@@ -9,6 +9,13 @@
 //   ?embed, ?embed=readonly                 a chrome-less frame for docs pages (combines with the hash)
 //   &theme=light|dark                      a fixed theme (otherwise the system's)
 //   &focus=<Block>                         embed mode fits that block (an id or a name) instead of the file
+//   ?embed=off                              no embed mode, even where an exported file bakes one in
+// An exported file (`sbtel export`, v0.2.5) carries its spec, options and bindings in inert blocks the
+// boot reads first: <script type="application/json" id="sbtel-export"> ({ title, readonly, embed }),
+// <script type="text/sbtel" id="sbtel-spec"> and, with --bindings, <script type="text/plain"
+// id="sbtel-bindings">. Their text is escaped by the CLI (& as &amp;, < as &lt;, CR and NUL as &#13;
+// and &#0;), so no spec text can end the block, and unescaped here. The URL still wins: #src or #example
+// over the baked spec, ?embed=… over the baked layout; read-only stays.
 // In a frame, embed mode posts { type:'sbtel:size', width, height } to the parent after the first layout
 // and after any relayout that changes the fitted box: its natural size in CSS pixels at zoom 1, with the
 // padding and the dock's room. The target origin is '/' (this page's own origin), so only a same-origin
@@ -20,9 +27,19 @@ SBTEL.modes.standalone = (() => {
   const dec = s => { try { return decodeURIComponent(s); } catch (e) { return s; } };
   const query = name => { const m = new RegExp('(?:^\\?|&)' + name + '(?:=([^&]*))?(?:&|$)').exec(location.search); return m ? dec(m[1] || '') : null; };
   const fragment = name => { const m = new RegExp('(?:^#|&)' + name + '=([^&]*)').exec(location.hash); return m ? m[1] : null; };
+  // &amp; &lt; and numeric references: the escapes `sbtel export` writes (cmd/sbtel/cmd_export.go).
+  const unescape = s => s.replace(/&(?:lt|amp|#(\d+));/g, (m, n) => n ? String.fromCodePoint(+n) : m === '&lt;' ? '<' : '&');
+  const X = (() => {
+    const el = id => document.getElementById(id), cfg = el('sbtel-export'), spec = el('sbtel-spec');
+    if (!cfg || !spec) return null;
+    let o; try { o = JSON.parse(cfg.textContent); } catch (e) { return null; }
+    const b = el('sbtel-bindings');
+    return { title: String(o.title || ''), readonly: o.readonly === true, embed: o.embed === true, spec: unescape(spec.textContent), bindings: b ? unescape(b.textContent) : null };
+  })();
   const P = (() => {
     const e = query('embed'), t = query('theme');
-    return { embed: e === null ? null : e === 'readonly' ? 'readonly' : 'interactive', theme: t === 'light' || t === 'dark' ? t : null,
+    const embed = e === 'off' ? null : e !== null ? (e === 'readonly' ? 'readonly' : 'interactive') : X && X.embed ? (X.readonly ? 'readonly' : 'interactive') : null;
+    return { embed, readonly: embed === 'readonly' || !!(X && X.readonly), theme: t === 'light' || t === 'dark' ? t : null,
       src: fragment('src'), example: fragment('example'), focus: query('focus') };
   })();
 
@@ -47,7 +64,8 @@ SBTEL.modes.standalone = (() => {
     return (b >>> 0).toString(16).padStart(8, '0') + (a >>> 0).toString(16).padStart(8, '0');
   }
 
-  // The spec the URL asks for: { text } or { text:'', error, raw }; null for none (the sample).
+  // The spec the URL asks for, else an exported file's: { text, exported? } or { text:'', error, raw };
+  // null for none (the sample).
   async function fromURL() {
     if (P.src !== null) {
       try { return { text: decode(P.src) }; }
@@ -62,6 +80,7 @@ SBTEL.modes.standalone = (() => {
         return { text: await r.text() };
       } catch (e) { return { text: '', raw: 'example:' + name, error: `Could not load ${path} (${e.message}).` }; }
     }
+    if (X) return { text: X.spec, exported: true };
     return null;
   }
 
@@ -82,6 +101,8 @@ body.embed .pl-open { text-decoration:none; color:inherit; padding:0 9px; gap:4p
 body.embed .pl-open .lbl { display:inline; }
 @media (max-width: 479px) { body.embed .pl-open .lbl { display:none; } }
 body.embed-ro .aff .plus, body.embed-ro .lsep .plus, body.embed-ro .gutter, body.embed-ro .hdl, body.embed-ro #undo, body.embed-ro #redo, body.embed-ro .dock .sep.pl-ro { display:none !important; }
+body.pl-ro .aff .plus, body.pl-ro .lsep .plus, body.pl-ro .gutter, body.pl-ro .hdl, body.pl-ro #undo, body.pl-ro #redo, body.pl-ro .dock .sep.pl-ro { display:none !important; }
+body.pl-export #srcSheet .row2 { display:none; }
 html.embed-clear, body.embed-clear, body.embed-clear .viewport { background-color:transparent; }
 body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
 .pl-hint { position:fixed; left:50%; top:10px; transform:translateX(-50%); z-index:2900; background:var(--ink); color:var(--canvas); font-size:12px; line-height:1;
@@ -93,7 +114,8 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
 `;
 
   // "sbtel" in the brand chip links home: <meta name="sbtel-home" content="…"> if the page has one
-  // (the website's copy at /sbtel/play/ says "../"), else the project's home page.
+  // (the website's copy at /sbtel/play/ says "../"), else the project's home page. In an exported file
+  // it is the project's page, in a new tab, so the reader keeps the diagram and learns what it is.
   function homeLink() {
     const meta = document.querySelector('meta[name="sbtel-home"]'), b = $('brand').querySelector('b');
     if (!b) return;
@@ -101,7 +123,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     a.className = 'home'; a.href = (meta && meta.getAttribute('content') || '').trim() || DEFAULT_HOME;
     a.textContent = b.textContent; a.title = 'sbtel home page';
     let framed = true; try { framed = window.top !== window; } catch (e) {}
-    if (framed) { a.target = '_blank'; a.rel = 'noopener'; } // in a frame (a published artifact), not inside it
+    if (framed || X) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } // in a frame (a published artifact) or from a shared file: a new tab
     b.replaceWith(a);
   }
 
@@ -122,12 +144,15 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     sizeTo();
     const seps = $('dock').querySelectorAll('.sep');
     if (seps[0]) seps[0].classList.add('pl-ro'); if (seps[2]) seps[2].classList.add('pl-gone');
+    // An exported file has no playground beside it: the link opens the file itself in full view (?embed=off,
+    // read-only if it was exported so), with nothing sent anywhere.
+    const label = X ? 'Open full view' : 'Open in playground';
     const open = document.createElement('a');
-    open.className = 'tb pl-open'; open.target = '_blank'; open.rel = 'noopener'; open.title = 'Open in playground';
-    open.innerHTML = '<span class="lbl">Open in playground</span><span aria-hidden="true">↗</span>';
-    open.setAttribute('aria-label', 'Open in playground (new tab)');
+    open.className = 'tb pl-open'; open.target = '_blank'; open.rel = 'noopener'; open.title = label;
+    open.innerHTML = `<span class="lbl">${label}</span><span aria-hidden="true">↗</span>`;
+    open.setAttribute('aria-label', label + ' (new tab)');
     // The playground is this page without the query: the same hash, or the edited text as #src.
-    const target = () => location.pathname + (state.src === initial ? location.hash : '#src=' + encode(state.src));
+    const target = () => location.pathname + (X ? '?embed=off' : '') + (state.src === initial ? location.hash : '#src=' + encode(state.src));
     const refresh = () => { open.href = target(); };
     ['pointerenter', 'pointerdown', 'focus', 'click'].forEach(t => open.addEventListener(t, refresh));
     $('dock').appendChild(open);
@@ -139,7 +164,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { const w = width(); if (w !== state.opts.width) { state.opts.width = w; render(); } fit(false); }, 120); });
 
     // Only what fits a frame: no comments, message table or source sheet (they are in the playground).
-    const elsewhere = what => toast(`${what} ${what.endsWith('s') ? 'are' : 'is'} in the playground: Open in playground ↗.`);
+    const elsewhere = what => toast(`${what} ${what.endsWith('s') ? 'are' : 'is'} in the ${X ? 'full view' : 'playground'}: ${label} ↗.`);
     openComposer = () => elsewhere('Comments');
     openMessages = () => elsewhere('The message table');
     const origSource = toggleSource;
@@ -148,26 +173,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     const origMenu = menuItems, origStrip = renderStrip;
     menuItems = (t, wy) => { const m = origMenu(t, wy); if (!m) return m; const items = m.items.filter(x => x === '-' || !drop.has(x.label)); while (items[items.length - 1] === '-') items.pop(); return { ...m, items }; };
     renderStrip = () => { origStrip(); strip.querySelectorAll('[data-a="comment"], [data-a="table"]').forEach(b => b.remove()); if (!strip.hidden && !strip.children.length) strip.hidden = true; };
-    if (readonly) {
-      readOnly = () => true;
-      edit = () => ({ src: state.src }); undo = () => {}; redo = () => {};
-      pressStart = () => false;
-      startLink = e => { e.preventDefault(); e.stopPropagation(); };
-      openEdit = () => {}; askDelete = () => {}; askDeleteMany = () => {}; cutSelected = () => {};
-      menuItems = t => {
-        const el = t && t.closest && t.closest('.blk'), n = el && state.model.node(el.dataset.id); if (!n) return null;
-        const items = [];
-        if (n.form === 'block' && hasInside(n)) items.push({ label: state.open.has(n.id) ? 'Close' : 'Open', run: () => toggle(n.id) });
-        items.push({ label: 'Code', run: () => openCode(n.id) });
-        return { title: n.name, items };
-      };
-      renderStrip = () => {
-        if (!state.sel || state.multi.size !== 1 || !state.model.node(state.sel)) { strip.hidden = true; return; }
-        strip.innerHTML = `<button class="tb" data-a="code" title="Show source">${ICON.code}<span class="lbl">Code</span></button>`;
-        strip.setAttribute('aria-label', 'Actions for ' + state.model.node(state.sel).name);
-        strip.hidden = false; placeStrip();
-      };
-    }
+    if (readonly) readonlyMode();
 
     // Live: the frame was clicked, tapped or focused. Until then the wheel and a touch swipe go to the
     // outer page, and a hint says how to start. A page that is not in a frame is live from the start.
@@ -190,6 +196,33 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     // Capture on window runs before the canvas's own wheel handler, which zooms and pans.
     addEventListener('wheel', e => { if (!live) { e.stopPropagation(); showHint(1800); } }, { capture: true });
     return refresh;
+  }
+
+  // Read-only (?embed=readonly, or a file exported with --readonly, in either layout): nothing edits, as in
+  // diff mode (§6.5). The menu and the strip keep what only looks (Open or Close, Code, the message table)
+  // and, where the layout has them, comments: they are the reader's own notes, not edits.
+  function readonlyMode() {
+    document.body.classList.add('pl-ro');
+    const sep = $('dock').querySelector('.sep'); if (sep) sep.classList.add('pl-ro');
+    readOnly = () => true;
+    edit = () => ({ src: state.src }); undo = () => {}; redo = () => {};
+    pressStart = () => false;
+    startLink = e => { e.preventDefault(); e.stopPropagation(); };
+    openEdit = () => {}; askDelete = () => {}; askDeleteMany = () => {}; cutSelected = () => {};
+    $('src').readOnly = true;
+    const origMenu = menuItems, origStrip = renderStrip;
+    menuItems = (t, wy) => {
+      const m = origMenu(t, wy); if (!m) return m;
+      const items = [];
+      m.items.forEach(x => { if (x === '-' ? items.length && items[items.length - 1] !== '-' : !(x.act || x.danger || x.label === 'Edit')) items.push(x); });
+      while (items[items.length - 1] === '-') items.pop();
+      return items.length ? { ...m, items } : null;
+    };
+    renderStrip = () => {
+      origStrip();
+      strip.querySelectorAll('[data-a="edit"], [data-a="delete"], [data-a="cut"]').forEach(b => b.remove());
+      if (!strip.hidden && !strip.children.length) strip.hidden = true;
+    };
   }
 
   // Embed mode fits the frame to what is drawn (contentBox, Core.Layout), or to the &focus block, with
@@ -235,12 +268,14 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
 
   async function boot() {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
-    const got = await fromURL(), text = got ? got.text : SAMPLE;
+    const got = await fromURL(), text = got ? got.text : SAMPLE, exported = !!(got && got.exported);
     const key = got || P.embed ? ':' + (P.embed ? 'embed-' : 'spec-') + digest(got && got.error ? got.raw : text) : '';
     if (key) loadPrefs(key);
     if (P.theme) state.opts.theme = P.theme; else if (P.embed) state.opts.theme = 'system';
     applyTheme();
-    const embedded = P.embed && embed(text, P.embed === 'readonly');
+    const embedded = P.embed && embed(text, P.readonly);
+    if (!P.embed && P.readonly) readonlyMode();
+    if (X) exportView(exported);
     if (got) state.open = new Set();
     let error = got && got.error;
     if (error) { setSource(''); $('err').hidden = false; $('err').textContent = error; }
@@ -250,10 +285,25 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
       if (!state.model) { const msg = $('err').textContent; setSource(''); setSource(text); error = msg; }
     }
     if (error) { $('specName').textContent = got.error ? 'the spec could not be loaded' : 'the spec does not parse'; if (P.embed) showError(error); else toggleSource(true); }
-    if (P.embed !== 'readonly') histUse('sbtel-hist' + key);
+    if (!P.readonly) histUse('sbtel-hist' + key);
     if (embedded) embedded(); else homeLink();
     // A link to another spec of this page changes only the hash: load it as if opened.
     addEventListener('hashchange', () => location.reload());
   }
-  return { boot, encode, decode, digest, params: P };
+  // An exported file: no sample or random spec to replace its spec with; the chip and the tab say its
+  // title (`sbtel export --title`, else the top block's name or the file's), "read-only" when it is; the
+  // bindings it carries show as in server mode (bindings.js).
+  function exportView(exported) {
+    document.body.classList.add('pl-export');
+    if (X.bindings !== null) { const B = parseBindings(X.bindings); bindingsView(() => B); }
+    if (!exported) return; // #src or #example: the URL's spec, under its own name
+    const orig = setSource;
+    setSource = (src, o) => {
+      const before = state.model; orig(src, o);
+      if (state.model === before || !X.title) return; // did not parse: the error UI says so
+      const n = stats(state.model.root).n;
+      $('specName').textContent = `${X.title} · ${n} block${n === 1 ? '' : 's'}${P.readonly ? ' · read-only' : ''}`;
+    };
+  }
+  return { boot, encode, decode, digest, params: P, exported: X };
 })();

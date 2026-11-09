@@ -618,6 +618,8 @@ var __api = (function () {
     check: function (src, bindingsText) { return J(checkObj(src, bindingsText)); },
     diff: function (a, b) { return J(diffObj(a, b)); },
     diffText: function (d) { return diffText(typeof d === 'string' ? JSON.parse(d) : d); },
+    // The file's top-level blocks, in source order (v0.2.5): `sbtel export` titles a page with the first.
+    topBlocks: function (src) { var L = load(src); return J({ error: L.error, blocks: L.model ? topBlocks(L.model).map(function (b) { return { id: b.id, name: b.name }; }) : [] }); },
     carriers: function (src, name) { var L = load(src); return J(L.error ? { error: L.error } : carriers(L.model, String(name).replace(/^(μ|msg):/, ''))); },
     cli: cli,
     conformance: conformance,

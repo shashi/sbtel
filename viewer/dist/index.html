@@ -3936,7 +3936,7 @@ addEventListener('resize', () => placeStrip());
 // @sbtel begin Viewer.Mode
 // How this page was opened. Anything not served by `sbtel open` at /s/<32 hex>/ is the standalone
 // playground (file://, the published page, any other path). viewer/src/server.js and diff.js are
-// inlined below (after session.js, which they share), and play.js after them (the standalone page's URL
+// inlined below (after session.js and bindings.js, which they share), and play.js after them (the standalone page's URL
 // parameters, embed mode and home link); they register { boot } handlers in SBTEL.modes and Boot runs the one for SBTEL.mode.
 // A spec session's page with ?compare=<key> is a comparison opened from another tab of it (the Review
 // panel's full diff, or a save conflict's "View their changes"): diff mode, with the pair from the opener
@@ -3944,7 +3944,7 @@ addEventListener('resize', () => placeStrip());
 const SBTEL = (() => {
   const m = location.protocol === 'file:' ? null : /^\/s\/([0-9a-f]{32})\/(diff)?$/.exec(location.pathname);
   const cmp = m && !m[2] ? /(?:^\?|&)compare=([\w.-]+)(?:&|$)/.exec(location.search) : null;
-  return { version: '0.2.4', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
+  return { version: '0.2.5', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
     compare: cmp ? cmp[1] : null, compares: {}, modes: {} };
 })();
 // @sbtel end Viewer.Mode
@@ -4048,6 +4048,64 @@ function sessionComments({ version, closed }) {
   const addReview = r => { C.reviews.push(r); changed(); };
   const onChange = f => { C.listeners.push(f); };
   return { rebuild, send, onReply, hook, reviews, addReview, onChange, _state: C };
+}
+// @sbtel file Viewer.Bindings
+// Code bindings in the page (docs/DESIGN.md §6.3, §6.9): an edges file's violations as one more check in
+// the pill and a "Bindings" section in the checks popover, and the "uses" outline of a behavior. Inlined
+// by viewer/build.mjs after session.js; it defines bindingsView and does nothing at load. Server mode
+// calls it with the session's edges (`sbtel open --bindings`), the standalone page with the edges an
+// exported file carries (`sbtel export --bindings`). get() returns { edges, invalid } as core.js
+// parseBindings makes them (the CLI's own parser), or null for none.
+function bindingsView(get) {
+  const CSS = `
+.sb-viol { list-style:none; margin:6px 0 0; padding:0; max-height:min(320px, 40vh); overflow:auto; font-size:12px; line-height:1.4; }
+.sb-viol li { padding:6px 0; border-top:1px solid var(--panel-line); }
+.sb-viol code { font-family:var(--ff-mono); font-size:11.5px; color:var(--ink); }
+.sb-viol .loc, .sb-viol .rule { color:var(--muted); }
+.sb-viol .loc { font-size:11px; }
+.sb-viol .why { margin-top:3px; color:var(--ink); }
+.sb-viol .why.none { color:var(--warn); }`;
+  const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+  // One more check in the pill, its violations in the popover. A violation explained in the bindings file
+  // (a `# VIOLATION: reason` comment directly above the edge, parseBindings' `note`) is still a violation,
+  // and the popover shows the reason beside it.
+  const bindCheck = () => {
+    const B = get();
+    if (!B || !B.edges || !state.model) return null;
+    const f = [], viol = [];
+    B.edges.forEach(e => {
+      const v = bindingVerdict(state.model, e.caller, e.callee);
+      if (!v.ok) { f.push(`${e.caller} -> ${e.callee}: ${v.text || v.rule}${e.location ? ' (' + e.location + ')' : ''}`); viol.push({ e, v }); }
+    });
+    (B.invalid || []).forEach(x => f.push(`line ${x.line}: not an edge: ${x.text.trim()}`));
+    const why = viol.filter(x => x.e.note).length, n = B.edges.length;
+    return { label: `Code bindings respect the levels (${n} edge${n === 1 ? '' : 's'}${viol.length ? ', ' + why + ' of ' + viol.length + ' violation' + (viol.length === 1 ? '' : 's') + ' explained' : ''})`, f, viol };
+  };
+  // Hovering a behavior also outlines the blocks whose code binds it ("uses"): edges whose callee names
+  // the behavior (core.js bindingTarget, the rule check applies), from a block of the spec.
+  behaviorUsers = name => {
+    const B = get();
+    if (!B || !B.edges || !state.model) return [];
+    const out = new Set();
+    B.edges.forEach(e => { const T = bindingTarget(state.model, e.callee); if (T && T.form === 'behavior' && T.name === name && state.model.blocks.has(e.caller)) out.add(e.caller); });
+    return [...out];
+  };
+  const violList = viol => !viol.length ? '' : `<ul class="sb-viol">${viol.map(({ e, v }) => `<li><div><code>${esc(e.caller)} -> ${esc(e.callee)}</code>${e.location ? ` <span class="loc">${esc(e.location)}</span>` : ''}</div><div class="rule">${esc(v.text || v.rule)}</div>${e.note ? `<div class="why"><b>Explained:</b> ${esc(e.note)}</div>` : '<div class="why none">Not explained in the bindings file.</div>'}</li>`).join('')}</ul>`;
+  const origRender = renderChecks;
+  renderChecks = () => {
+    origRender();
+    const bc = bindCheck(); if (!bc) return;
+    const all = [...state.lay.checks, ...state.lay.spec, bc], bad = all.filter(c => c.f.length).length;
+    const b = $('chkBtn'); b.className = 'tb chkpill ' + (bad ? 'bad' : 'ok');
+    b.innerHTML = pillHTML(all);
+  };
+  const origShow = showChecks;
+  showChecks = () => {
+    origShow();
+    const bc = bindCheck(); if (!bc || !pops.checks) return;
+    pops.checks.insertAdjacentHTML('beforeend', `<h5>Bindings</h5>${chkList([bc])}${violList(bc.viol)}`);
+    placeNear(pops.checks, $('chkBtn').getBoundingClientRect());
+  };
 }
 // @sbtel file Viewer.Review
 // The draft review (docs/DESIGN.md §6.7), shared by server mode and diff mode. Comments and edits gather
@@ -4480,13 +4538,6 @@ SBTEL.modes.server = (() => {
 .sb-vt { position:fixed; left:50%; transform:translateX(-50%); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 46px); z-index:2950; background:var(--panel); color:var(--ink); border:1px solid var(--panel-line); border-left:3px solid var(--accent); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.45; box-shadow:0 14px 40px var(--shadow); width:max-content; max-width:min(460px, calc(100vw - 32px)); box-sizing:border-box; }
 .sb-vt.warn { border-left-color:var(--warn); }
 .sb-vt .acts { display:flex; gap:6px; justify-content:flex-end; margin-top:8px; flex-wrap:wrap; }
-.sb-viol { list-style:none; margin:6px 0 0; padding:0; max-height:min(320px, 40vh); overflow:auto; font-size:12px; line-height:1.4; }
-.sb-viol li { padding:6px 0; border-top:1px solid var(--panel-line); }
-.sb-viol code { font-family:var(--ff-mono); font-size:11.5px; color:var(--ink); }
-.sb-viol .loc, .sb-viol .rule { color:var(--muted); }
-.sb-viol .loc { font-size:11px; }
-.sb-viol .why { margin-top:3px; color:var(--ink); }
-.sb-viol .why.none { color:var(--warn); }
 .tb.sb-save:disabled { opacity:.55; }
 .sb-ow p { margin:0 0 10px; line-height:1.5; }
 .sb-ow .muted { color:var(--muted); font-size:13px; }
@@ -4706,44 +4757,9 @@ SBTEL.modes.server = (() => {
       if (S.closed) { toast('This session is closed; the page is read-only.'); return { src: state.src }; }
       return origEdit(act);
     };
-    // Bindings from `open --bindings`: one more check in the pill, its violations in the popover. A
-    // violation explained in the bindings file (a `# VIOLATION: reason` comment directly above the edge,
-    // parseBindings' `note`) is still a violation, and the popover shows the reason beside it.
-    const bindCheck = () => {
-      if (!S.edges || !state.model) return null;
-      const f = [], viol = [];
-      S.edges.forEach(e => {
-        const v = bindingVerdict(state.model, e.caller, e.callee);
-        if (!v.ok) { f.push(`${e.caller} -> ${e.callee}: ${v.text || v.rule}${e.location ? ' (' + e.location + ')' : ''}`); viol.push({ e, v }); }
-      });
-      S.invalid.forEach(x => f.push(`line ${x.line}: not an edge: ${x.text.trim()}`));
-      const why = viol.filter(x => x.e.note).length;
-      return { label: `Code bindings respect the levels (${S.edges.length} edge${S.edges.length === 1 ? '' : 's'}${viol.length ? ', ' + why + ' of ' + viol.length + ' violation' + (viol.length === 1 ? '' : 's') + ' explained' : ''})`, f, viol };
-    };
-    // With bindings, hovering a behavior also outlines the blocks whose code binds it ("uses"): edges whose
-    // callee names the behavior (core.js bindingTarget, the rule check applies), from a block of the spec.
-    behaviorUsers = name => {
-      if (!S.edges || !state.model) return [];
-      const out = new Set();
-      S.edges.forEach(e => { const T = bindingTarget(state.model, e.callee); if (T && T.form === 'behavior' && T.name === name && state.model.blocks.has(e.caller)) out.add(e.caller); });
-      return [...out];
-    };
-    const violList = viol => !viol.length ? '' : `<ul class="sb-viol">${viol.map(({ e, v }) => `<li><div><code>${esc(e.caller)} -> ${esc(e.callee)}</code>${e.location ? ` <span class="loc">${esc(e.location)}</span>` : ''}</div><div class="rule">${esc(v.text || v.rule)}</div>${e.note ? `<div class="why"><b>Explained:</b> ${esc(e.note)}</div>` : '<div class="why none">Not explained in the bindings file.</div>'}</li>`).join('')}</ul>`;
-    const origRender = renderChecks;
-    renderChecks = () => {
-      origRender();
-      const bc = bindCheck(); if (!bc) return;
-      const all = [...state.lay.checks, ...state.lay.spec, bc], bad = all.filter(c => c.f.length).length;
-      const b = $('chkBtn'); b.className = 'tb chkpill ' + (bad ? 'bad' : 'ok');
-      b.innerHTML = pillHTML(all);
-    };
-    const origShow = showChecks;
-    showChecks = () => {
-      origShow();
-      const bc = bindCheck(); if (!bc || !pops.checks) return;
-      pops.checks.insertAdjacentHTML('beforeend', `<h5>Bindings</h5>${chkList([bc])}${violList(bc.viol)}`);
-      placeNear(pops.checks, $('chkBtn').getBoundingClientRect());
-    };
+    // Bindings from `open --bindings`: one more check in the pill, its violations in the popover, and
+    // the "uses" outline of a behavior (bindings.js, shared with an exported page).
+    bindingsView(() => S.edges ? { edges: S.edges, invalid: S.invalid } : null);
   }
 
   async function boot() {
@@ -5579,6 +5595,13 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
 //   ?embed, ?embed=readonly                 a chrome-less frame for docs pages (combines with the hash)
 //   &theme=light|dark                      a fixed theme (otherwise the system's)
 //   &focus=<Block>                         embed mode fits that block (an id or a name) instead of the file
+//   ?embed=off                              no embed mode, even where an exported file bakes one in
+// An exported file (`sbtel export`, v0.2.5) carries its spec, options and bindings in inert blocks the
+// boot reads first: <script type="application/json" id="sbtel-export"> ({ title, readonly, embed }),
+// <script type="text/sbtel" id="sbtel-spec"> and, with --bindings, <script type="text/plain"
+// id="sbtel-bindings">. Their text is escaped by the CLI (& as &amp;, < as &lt;, CR and NUL as &#13;
+// and &#0;), so no spec text can end the block, and unescaped here. The URL still wins: #src or #example
+// over the baked spec, ?embed=… over the baked layout; read-only stays.
 // In a frame, embed mode posts { type:'sbtel:size', width, height } to the parent after the first layout
 // and after any relayout that changes the fitted box: its natural size in CSS pixels at zoom 1, with the
 // padding and the dock's room. The target origin is '/' (this page's own origin), so only a same-origin
@@ -5590,9 +5613,19 @@ SBTEL.modes.standalone = (() => {
   const dec = s => { try { return decodeURIComponent(s); } catch (e) { return s; } };
   const query = name => { const m = new RegExp('(?:^\\?|&)' + name + '(?:=([^&]*))?(?:&|$)').exec(location.search); return m ? dec(m[1] || '') : null; };
   const fragment = name => { const m = new RegExp('(?:^#|&)' + name + '=([^&]*)').exec(location.hash); return m ? m[1] : null; };
+  // &amp; &lt; and numeric references: the escapes `sbtel export` writes (cmd/sbtel/cmd_export.go).
+  const unescape = s => s.replace(/&(?:lt|amp|#(\d+));/g, (m, n) => n ? String.fromCodePoint(+n) : m === '&lt;' ? '<' : '&');
+  const X = (() => {
+    const el = id => document.getElementById(id), cfg = el('sbtel-export'), spec = el('sbtel-spec');
+    if (!cfg || !spec) return null;
+    let o; try { o = JSON.parse(cfg.textContent); } catch (e) { return null; }
+    const b = el('sbtel-bindings');
+    return { title: String(o.title || ''), readonly: o.readonly === true, embed: o.embed === true, spec: unescape(spec.textContent), bindings: b ? unescape(b.textContent) : null };
+  })();
   const P = (() => {
     const e = query('embed'), t = query('theme');
-    return { embed: e === null ? null : e === 'readonly' ? 'readonly' : 'interactive', theme: t === 'light' || t === 'dark' ? t : null,
+    const embed = e === 'off' ? null : e !== null ? (e === 'readonly' ? 'readonly' : 'interactive') : X && X.embed ? (X.readonly ? 'readonly' : 'interactive') : null;
+    return { embed, readonly: embed === 'readonly' || !!(X && X.readonly), theme: t === 'light' || t === 'dark' ? t : null,
       src: fragment('src'), example: fragment('example'), focus: query('focus') };
   })();
 
@@ -5617,7 +5650,8 @@ SBTEL.modes.standalone = (() => {
     return (b >>> 0).toString(16).padStart(8, '0') + (a >>> 0).toString(16).padStart(8, '0');
   }
 
-  // The spec the URL asks for: { text } or { text:'', error, raw }; null for none (the sample).
+  // The spec the URL asks for, else an exported file's: { text, exported? } or { text:'', error, raw };
+  // null for none (the sample).
   async function fromURL() {
     if (P.src !== null) {
       try { return { text: decode(P.src) }; }
@@ -5632,6 +5666,7 @@ SBTEL.modes.standalone = (() => {
         return { text: await r.text() };
       } catch (e) { return { text: '', raw: 'example:' + name, error: `Could not load ${path} (${e.message}).` }; }
     }
+    if (X) return { text: X.spec, exported: true };
     return null;
   }
 
@@ -5652,6 +5687,8 @@ body.embed .pl-open { text-decoration:none; color:inherit; padding:0 9px; gap:4p
 body.embed .pl-open .lbl { display:inline; }
 @media (max-width: 479px) { body.embed .pl-open .lbl { display:none; } }
 body.embed-ro .aff .plus, body.embed-ro .lsep .plus, body.embed-ro .gutter, body.embed-ro .hdl, body.embed-ro #undo, body.embed-ro #redo, body.embed-ro .dock .sep.pl-ro { display:none !important; }
+body.pl-ro .aff .plus, body.pl-ro .lsep .plus, body.pl-ro .gutter, body.pl-ro .hdl, body.pl-ro #undo, body.pl-ro #redo, body.pl-ro .dock .sep.pl-ro { display:none !important; }
+body.pl-export #srcSheet .row2 { display:none; }
 html.embed-clear, body.embed-clear, body.embed-clear .viewport { background-color:transparent; }
 body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
 .pl-hint { position:fixed; left:50%; top:10px; transform:translateX(-50%); z-index:2900; background:var(--ink); color:var(--canvas); font-size:12px; line-height:1;
@@ -5663,7 +5700,8 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
 `;
 
   // "sbtel" in the brand chip links home: <meta name="sbtel-home" content="…"> if the page has one
-  // (the website's copy at /sbtel/play/ says "../"), else the project's home page.
+  // (the website's copy at /sbtel/play/ says "../"), else the project's home page. In an exported file
+  // it is the project's page, in a new tab, so the reader keeps the diagram and learns what it is.
   function homeLink() {
     const meta = document.querySelector('meta[name="sbtel-home"]'), b = $('brand').querySelector('b');
     if (!b) return;
@@ -5671,7 +5709,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     a.className = 'home'; a.href = (meta && meta.getAttribute('content') || '').trim() || DEFAULT_HOME;
     a.textContent = b.textContent; a.title = 'sbtel home page';
     let framed = true; try { framed = window.top !== window; } catch (e) {}
-    if (framed) { a.target = '_blank'; a.rel = 'noopener'; } // in a frame (a published artifact), not inside it
+    if (framed || X) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } // in a frame (a published artifact) or from a shared file: a new tab
     b.replaceWith(a);
   }
 
@@ -5692,12 +5730,15 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     sizeTo();
     const seps = $('dock').querySelectorAll('.sep');
     if (seps[0]) seps[0].classList.add('pl-ro'); if (seps[2]) seps[2].classList.add('pl-gone');
+    // An exported file has no playground beside it: the link opens the file itself in full view (?embed=off,
+    // read-only if it was exported so), with nothing sent anywhere.
+    const label = X ? 'Open full view' : 'Open in playground';
     const open = document.createElement('a');
-    open.className = 'tb pl-open'; open.target = '_blank'; open.rel = 'noopener'; open.title = 'Open in playground';
-    open.innerHTML = '<span class="lbl">Open in playground</span><span aria-hidden="true">↗</span>';
-    open.setAttribute('aria-label', 'Open in playground (new tab)');
+    open.className = 'tb pl-open'; open.target = '_blank'; open.rel = 'noopener'; open.title = label;
+    open.innerHTML = `<span class="lbl">${label}</span><span aria-hidden="true">↗</span>`;
+    open.setAttribute('aria-label', label + ' (new tab)');
     // The playground is this page without the query: the same hash, or the edited text as #src.
-    const target = () => location.pathname + (state.src === initial ? location.hash : '#src=' + encode(state.src));
+    const target = () => location.pathname + (X ? '?embed=off' : '') + (state.src === initial ? location.hash : '#src=' + encode(state.src));
     const refresh = () => { open.href = target(); };
     ['pointerenter', 'pointerdown', 'focus', 'click'].forEach(t => open.addEventListener(t, refresh));
     $('dock').appendChild(open);
@@ -5709,7 +5750,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { const w = width(); if (w !== state.opts.width) { state.opts.width = w; render(); } fit(false); }, 120); });
 
     // Only what fits a frame: no comments, message table or source sheet (they are in the playground).
-    const elsewhere = what => toast(`${what} ${what.endsWith('s') ? 'are' : 'is'} in the playground: Open in playground ↗.`);
+    const elsewhere = what => toast(`${what} ${what.endsWith('s') ? 'are' : 'is'} in the ${X ? 'full view' : 'playground'}: ${label} ↗.`);
     openComposer = () => elsewhere('Comments');
     openMessages = () => elsewhere('The message table');
     const origSource = toggleSource;
@@ -5718,26 +5759,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     const origMenu = menuItems, origStrip = renderStrip;
     menuItems = (t, wy) => { const m = origMenu(t, wy); if (!m) return m; const items = m.items.filter(x => x === '-' || !drop.has(x.label)); while (items[items.length - 1] === '-') items.pop(); return { ...m, items }; };
     renderStrip = () => { origStrip(); strip.querySelectorAll('[data-a="comment"], [data-a="table"]').forEach(b => b.remove()); if (!strip.hidden && !strip.children.length) strip.hidden = true; };
-    if (readonly) {
-      readOnly = () => true;
-      edit = () => ({ src: state.src }); undo = () => {}; redo = () => {};
-      pressStart = () => false;
-      startLink = e => { e.preventDefault(); e.stopPropagation(); };
-      openEdit = () => {}; askDelete = () => {}; askDeleteMany = () => {}; cutSelected = () => {};
-      menuItems = t => {
-        const el = t && t.closest && t.closest('.blk'), n = el && state.model.node(el.dataset.id); if (!n) return null;
-        const items = [];
-        if (n.form === 'block' && hasInside(n)) items.push({ label: state.open.has(n.id) ? 'Close' : 'Open', run: () => toggle(n.id) });
-        items.push({ label: 'Code', run: () => openCode(n.id) });
-        return { title: n.name, items };
-      };
-      renderStrip = () => {
-        if (!state.sel || state.multi.size !== 1 || !state.model.node(state.sel)) { strip.hidden = true; return; }
-        strip.innerHTML = `<button class="tb" data-a="code" title="Show source">${ICON.code}<span class="lbl">Code</span></button>`;
-        strip.setAttribute('aria-label', 'Actions for ' + state.model.node(state.sel).name);
-        strip.hidden = false; placeStrip();
-      };
-    }
+    if (readonly) readonlyMode();
 
     // Live: the frame was clicked, tapped or focused. Until then the wheel and a touch swipe go to the
     // outer page, and a hint says how to start. A page that is not in a frame is live from the start.
@@ -5760,6 +5782,33 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     // Capture on window runs before the canvas's own wheel handler, which zooms and pans.
     addEventListener('wheel', e => { if (!live) { e.stopPropagation(); showHint(1800); } }, { capture: true });
     return refresh;
+  }
+
+  // Read-only (?embed=readonly, or a file exported with --readonly, in either layout): nothing edits, as in
+  // diff mode (§6.5). The menu and the strip keep what only looks (Open or Close, Code, the message table)
+  // and, where the layout has them, comments: they are the reader's own notes, not edits.
+  function readonlyMode() {
+    document.body.classList.add('pl-ro');
+    const sep = $('dock').querySelector('.sep'); if (sep) sep.classList.add('pl-ro');
+    readOnly = () => true;
+    edit = () => ({ src: state.src }); undo = () => {}; redo = () => {};
+    pressStart = () => false;
+    startLink = e => { e.preventDefault(); e.stopPropagation(); };
+    openEdit = () => {}; askDelete = () => {}; askDeleteMany = () => {}; cutSelected = () => {};
+    $('src').readOnly = true;
+    const origMenu = menuItems, origStrip = renderStrip;
+    menuItems = (t, wy) => {
+      const m = origMenu(t, wy); if (!m) return m;
+      const items = [];
+      m.items.forEach(x => { if (x === '-' ? items.length && items[items.length - 1] !== '-' : !(x.act || x.danger || x.label === 'Edit')) items.push(x); });
+      while (items[items.length - 1] === '-') items.pop();
+      return items.length ? { ...m, items } : null;
+    };
+    renderStrip = () => {
+      origStrip();
+      strip.querySelectorAll('[data-a="edit"], [data-a="delete"], [data-a="cut"]').forEach(b => b.remove());
+      if (!strip.hidden && !strip.children.length) strip.hidden = true;
+    };
   }
 
   // Embed mode fits the frame to what is drawn (contentBox, Core.Layout), or to the &focus block, with
@@ -5805,12 +5854,14 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
 
   async function boot() {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
-    const got = await fromURL(), text = got ? got.text : SAMPLE;
+    const got = await fromURL(), text = got ? got.text : SAMPLE, exported = !!(got && got.exported);
     const key = got || P.embed ? ':' + (P.embed ? 'embed-' : 'spec-') + digest(got && got.error ? got.raw : text) : '';
     if (key) loadPrefs(key);
     if (P.theme) state.opts.theme = P.theme; else if (P.embed) state.opts.theme = 'system';
     applyTheme();
-    const embedded = P.embed && embed(text, P.embed === 'readonly');
+    const embedded = P.embed && embed(text, P.readonly);
+    if (!P.embed && P.readonly) readonlyMode();
+    if (X) exportView(exported);
     if (got) state.open = new Set();
     let error = got && got.error;
     if (error) { setSource(''); $('err').hidden = false; $('err').textContent = error; }
@@ -5820,12 +5871,27 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
       if (!state.model) { const msg = $('err').textContent; setSource(''); setSource(text); error = msg; }
     }
     if (error) { $('specName').textContent = got.error ? 'the spec could not be loaded' : 'the spec does not parse'; if (P.embed) showError(error); else toggleSource(true); }
-    if (P.embed !== 'readonly') histUse('sbtel-hist' + key);
+    if (!P.readonly) histUse('sbtel-hist' + key);
     if (embedded) embedded(); else homeLink();
     // A link to another spec of this page changes only the hash: load it as if opened.
     addEventListener('hashchange', () => location.reload());
   }
-  return { boot, encode, decode, digest, params: P };
+  // An exported file: no sample or random spec to replace its spec with; the chip and the tab say its
+  // title (`sbtel export --title`, else the top block's name or the file's), "read-only" when it is; the
+  // bindings it carries show as in server mode (bindings.js).
+  function exportView(exported) {
+    document.body.classList.add('pl-export');
+    if (X.bindings !== null) { const B = parseBindings(X.bindings); bindingsView(() => B); }
+    if (!exported) return; // #src or #example: the URL's spec, under its own name
+    const orig = setSource;
+    setSource = (src, o) => {
+      const before = state.model; orig(src, o);
+      if (state.model === before || !X.title) return; // did not parse: the error UI says so
+      const n = stats(state.model.root).n;
+      $('specName').textContent = `${X.title} · ${n} block${n === 1 ? '' : 's'}${P.readonly ? ' · read-only' : ''}`;
+    };
+  }
+  return { boot, encode, decode, digest, params: P, exported: X };
 })();
 
 // @sbtel begin Viewer.Boot

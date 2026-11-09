@@ -2482,7 +2482,7 @@ addEventListener('resize', () => placeStrip());
 // @sbtel begin Viewer.Mode
 // How this page was opened. Anything not served by `sbtel open` at /s/<32 hex>/ is the standalone
 // playground (file://, the published page, any other path). viewer/src/server.js and diff.js are
-// inlined below (after session.js, which they share), and play.js after them (the standalone page's URL
+// inlined below (after session.js and bindings.js, which they share), and play.js after them (the standalone page's URL
 // parameters, embed mode and home link); they register { boot } handlers in SBTEL.modes and Boot runs the one for SBTEL.mode.
 // A spec session's page with ?compare=<key> is a comparison opened from another tab of it (the Review
 // panel's full diff, or a save conflict's "View their changes"): diff mode, with the pair from the opener
@@ -2495,6 +2495,7 @@ const SBTEL = (() => {
 })();
 // @sbtel end Viewer.Mode
 /*@@include viewer/src/session.js@@*/
+/*@@include viewer/src/bindings.js@@*/
 /*@@include viewer/src/review.js@@*/
 /*@@include viewer/src/server.js@@*/
 /*@@include viewer/src/diff.js@@*/

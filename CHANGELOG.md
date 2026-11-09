@@ -3,6 +3,39 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
+## 0.2.5 (2026-11-08)
+
+A diagram you can share as one file.
+
+### Added
+
+- **`sbtel export <spec>|- [-o out.html] [--readonly] [--embed] [--bindings f] [--title t]`** writes one
+  self-contained HTML file: the viewer with the spec baked in, interactive in any browser, with nothing
+  to install and no network request. Email it, commit it or host it anywhere; edits, undo and comments
+  stay in the reader's browser, kept per spec. `--readonly` turns editing off in the full viewer,
+  `--embed` gives the chromeless layout for an iframe, `--bindings` shows the edges' violations in the
+  checks pill and a behavior's "uses" outline (as `open --bindings` does), and `--title` names the page
+  (default: the top block's name). The spec is linted first: warnings and binding violations go to
+  stderr and the file is still written; a spec that does not parse writes nothing and exits 2. The file
+  size is printed on stderr (about 600 KB, most of it the embedded fonts). `-o -` writes to stdout.
+- The page reads an exported file's baked blocks (`#sbtel-export`, `#sbtel-spec`, `#sbtel-bindings`);
+  `#src` and `#example` still win. In an exported embed, **Open in playground ↗** is **Open full view
+  ↗**, the same file at the new `?embed=off`; the "sbtel" home link opens the project's page in a new tab.
+- Read-only in the full viewer (for `--readonly`): nothing edits, the source is read-only, and Comment and
+  the message table stay.
+- `__api.topBlocks(src)` in core/api.js: the file's top-level blocks.
+- Tests: Go tests for export (the file, the escaping of `</script>`, `<!--`, CR and NUL, the flags, a
+  parse error writing nothing), and viewer/test accept12 (exported files from disk: rendering, no
+  network, read-only, bindings, undo per spec). `make accept` now builds bin/sbtel for it.
+- The sbtel-language skill tells agents they can export a shareable HTML file for humans.
+
+### Changed
+
+- The bindings view (the extra check, the popover's Bindings section, the "uses" outline) moved from
+  server.js into viewer/src/bindings.js (block `Viewer.Bindings`), shared by server mode and exported
+  files; server mode behaves as before. Read-only moved out of embed mode into one function; in embed
+  mode it behaves as before.
+
 ## 0.2.4 (2026-11-08)
 
 Embedded diagrams come out at a readable size.

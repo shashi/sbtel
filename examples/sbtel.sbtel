@@ -49,6 +49,13 @@
           (implements DiffsSpecs)
           (sketch "open, open-diff, inbox, reply, sessions, close and serve: the session loop, driving the shared server and reading its state directory (cmd_b.go).")
           ; inbox reads events.jsonl and writes cursor.json directly (state's single-writer rule allows it).
+          )
+        (block Sbtel.Cli.ExportCommand
+          (port page out HTMLPage)
+          (message HTMLPage (carries SpecText)
+            (sketch "The viewer page with a spec, its options and its bindings baked in: one file to share."))
+          (sketch "export: lints the spec, then writes the embedded viewer page with the spec baked in, for people without sbtel; no server, no session (cmd_export.go).")
+          ; the page reads what it bakes in (Sbtel.Viewer.Play); they share a format, not code.
           ))
       (level
         (block Sbtel.Cli.Kit
@@ -123,13 +130,15 @@
         (block Sbtel.Viewer.DiffMode
           (sketch "diff.js: draws the changes between two specs on the newer one."))
         (block Sbtel.Viewer.Play
-          (sketch "play.js: the standalone playground, a spec from the URL, and embed mode for docs pages.")))
+          (sketch "play.js: the standalone playground, a spec from the URL or baked into an exported file, read-only and embed mode for docs pages.")))
       (level
         (block Sbtel.Viewer.Review
           (sketch "review.js: the draft review, kept in the browser and sent as one review; and the change list it shares with the diff view.")))
       (level
         (block Sbtel.Viewer.Session
-          (sketch "session.js: comments in a session, posted to the server and threaded with the agent's replies.")))
+          (sketch "session.js: comments in a session, posted to the server and threaded with the agent's replies."))
+        (block Sbtel.Viewer.Bindings
+          (sketch "bindings.js: an edges file's violations in the checks pill and who uses a behavior, for server mode and exported pages.")))
       (level
         (block Sbtel.Viewer.App
           (sketch "The playground: drawing, selection, editing with an undo history that persists, and comments, plus the mode registry and the sample spec."))))

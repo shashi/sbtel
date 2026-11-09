@@ -32,11 +32,15 @@ Sbtel.Cli.SessionCommands -> Sbtel.Engine  # cmd/sbtel/cmd_b.go:109 (+10 more)
 Sbtel.Cli.SessionCommands -> Sbtel.Server.Launch  # cmd/sbtel/cmd_b.go:127
 Sbtel.Cli.SessionCommands -> Sbtel.Server.Core  # cmd/sbtel/cmd_b.go:675 (+4 more)
 Sbtel.Cli.SessionCommands -> Sbtel.Server.Lifecycle  # cmd/sbtel/cmd_b.go:699 (+1 more)
+Sbtel.Cli.ExportCommand -> Sbtel.Assets  # cmd/sbtel/cmd_export.go:46 (+2 more)
+Sbtel.Cli.ExportCommand -> Sbtel.Engine  # cmd/sbtel/cmd_export.go:89 (+15 more)
+Sbtel.Cli.ExportCommand -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_export.go:108 (+27 more)
 Sbtel.Cli.SpecCommands -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_lint.go:6 (+6 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.Kit  # cmd/sbtel/main.go:30 (+15 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.SpecCommands  # cmd/sbtel/main.go:45 (+3 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.SessionCommands  # cmd/sbtel/main.go:53 (+6 more)
-Sbtel.Cli.Dispatch -> Sbtel.Assets  # cmd/sbtel/main.go:151 (+2 more)
+Sbtel.Cli.Dispatch -> Sbtel.Cli.ExportCommand  # cmd/sbtel/main.go:65
+Sbtel.Cli.Dispatch -> Sbtel.Assets  # cmd/sbtel/main.go:153 (+2 more)
 Sbtel.Engine -> Sbtel.Assets  # internal/engine/engine.go:26
 Sbtel.Server.Launch -> Sbtel.Server.Detach  # internal/server/browser.go:37
 Sbtel.Server.Client -> Sbtel.State  # internal/server/client.go:32 (+21 more)

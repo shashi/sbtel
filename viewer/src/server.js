@@ -33,13 +33,6 @@ SBTEL.modes.server = (() => {
 .sb-vt { position:fixed; left:50%; transform:translateX(-50%); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 46px); z-index:2950; background:var(--panel); color:var(--ink); border:1px solid var(--panel-line); border-left:3px solid var(--accent); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.45; box-shadow:0 14px 40px var(--shadow); width:max-content; max-width:min(460px, calc(100vw - 32px)); box-sizing:border-box; }
 .sb-vt.warn { border-left-color:var(--warn); }
 .sb-vt .acts { display:flex; gap:6px; justify-content:flex-end; margin-top:8px; flex-wrap:wrap; }
-.sb-viol { list-style:none; margin:6px 0 0; padding:0; max-height:min(320px, 40vh); overflow:auto; font-size:12px; line-height:1.4; }
-.sb-viol li { padding:6px 0; border-top:1px solid var(--panel-line); }
-.sb-viol code { font-family:var(--ff-mono); font-size:11.5px; color:var(--ink); }
-.sb-viol .loc, .sb-viol .rule { color:var(--muted); }
-.sb-viol .loc { font-size:11px; }
-.sb-viol .why { margin-top:3px; color:var(--ink); }
-.sb-viol .why.none { color:var(--warn); }
 .tb.sb-save:disabled { opacity:.55; }
 .sb-ow p { margin:0 0 10px; line-height:1.5; }
 .sb-ow .muted { color:var(--muted); font-size:13px; }
@@ -259,44 +252,9 @@ SBTEL.modes.server = (() => {
       if (S.closed) { toast('This session is closed; the page is read-only.'); return { src: state.src }; }
       return origEdit(act);
     };
-    // Bindings from `open --bindings`: one more check in the pill, its violations in the popover. A
-    // violation explained in the bindings file (a `# VIOLATION: reason` comment directly above the edge,
-    // parseBindings' `note`) is still a violation, and the popover shows the reason beside it.
-    const bindCheck = () => {
-      if (!S.edges || !state.model) return null;
-      const f = [], viol = [];
-      S.edges.forEach(e => {
-        const v = bindingVerdict(state.model, e.caller, e.callee);
-        if (!v.ok) { f.push(`${e.caller} -> ${e.callee}: ${v.text || v.rule}${e.location ? ' (' + e.location + ')' : ''}`); viol.push({ e, v }); }
-      });
-      S.invalid.forEach(x => f.push(`line ${x.line}: not an edge: ${x.text.trim()}`));
-      const why = viol.filter(x => x.e.note).length;
-      return { label: `Code bindings respect the levels (${S.edges.length} edge${S.edges.length === 1 ? '' : 's'}${viol.length ? ', ' + why + ' of ' + viol.length + ' violation' + (viol.length === 1 ? '' : 's') + ' explained' : ''})`, f, viol };
-    };
-    // With bindings, hovering a behavior also outlines the blocks whose code binds it ("uses"): edges whose
-    // callee names the behavior (core.js bindingTarget, the rule check applies), from a block of the spec.
-    behaviorUsers = name => {
-      if (!S.edges || !state.model) return [];
-      const out = new Set();
-      S.edges.forEach(e => { const T = bindingTarget(state.model, e.callee); if (T && T.form === 'behavior' && T.name === name && state.model.blocks.has(e.caller)) out.add(e.caller); });
-      return [...out];
-    };
-    const violList = viol => !viol.length ? '' : `<ul class="sb-viol">${viol.map(({ e, v }) => `<li><div><code>${esc(e.caller)} -> ${esc(e.callee)}</code>${e.location ? ` <span class="loc">${esc(e.location)}</span>` : ''}</div><div class="rule">${esc(v.text || v.rule)}</div>${e.note ? `<div class="why"><b>Explained:</b> ${esc(e.note)}</div>` : '<div class="why none">Not explained in the bindings file.</div>'}</li>`).join('')}</ul>`;
-    const origRender = renderChecks;
-    renderChecks = () => {
-      origRender();
-      const bc = bindCheck(); if (!bc) return;
-      const all = [...state.lay.checks, ...state.lay.spec, bc], bad = all.filter(c => c.f.length).length;
-      const b = $('chkBtn'); b.className = 'tb chkpill ' + (bad ? 'bad' : 'ok');
-      b.innerHTML = pillHTML(all);
-    };
-    const origShow = showChecks;
-    showChecks = () => {
-      origShow();
-      const bc = bindCheck(); if (!bc || !pops.checks) return;
-      pops.checks.insertAdjacentHTML('beforeend', `<h5>Bindings</h5>${chkList([bc])}${violList(bc.viol)}`);
-      placeNear(pops.checks, $('chkBtn').getBoundingClientRect());
-    };
+    // Bindings from `open --bindings`: one more check in the pill, its violations in the popover, and
+    // the "uses" outline of a behavior (bindings.js, shared with an exported page).
+    bindingsView(() => S.edges ? { edges: S.edges, invalid: S.invalid } : null);
   }
 
   async function boot() {

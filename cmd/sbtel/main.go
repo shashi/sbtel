@@ -62,6 +62,8 @@ func init() {
 			help: "List the sessions, newest first: id, kind, label, version, unread events, last update and path.\n\n  --json   one object per session"},
 		"close": {run: cmdClose, usage: "close <session>                          end a session",
 			help: "End a session: its tabs say so and its state is deleted. A spec file is never touched."},
+		"export": {run: cmdExport, usage: "export <spec>|- [-o out.html] [--readonly] [--embed] [--bindings f] [--title t]  one shareable HTML file",
+			help: "Write one self-contained HTML file: the viewer with the spec baked in, interactive in any browser,\nwith no sbtel, no server and no network. Email it, commit it or host it anywhere. Edits, undo and\ncomments stay in the reader's browser, kept per spec. The spec is linted first: warnings and binding\nviolations go to stderr and the file is still written; a spec that does not parse writes nothing.\nThe file's size is printed on stderr.\n\n  -o f, --out f   the file to write (default: the spec's base name with .html; - for stdout)\n  --readonly      nothing edits (the full viewer, read-only)\n  --embed         the chromeless layout of ?embed, for an iframe\n  --bindings f    an edges file whose violations the checks pill shows (as for sbtel check)\n  --title t       the page title and the label in its corner (default: the top block's name)\n\nExit 0 when the file is written, 2 on a usage or IO error or a spec that does not parse."},
 		"serve": {run: cmdServe, usage: "serve --status|--stop [--json]           the local viewer server",
 			help: "The shared localhost server that open and open-diff start.\n\n  --status   say whether it runs (exit 0) or not (exit 1)\n  --stop     stop it\n  --json     --status as JSON"},
 	}

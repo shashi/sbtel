@@ -76,8 +76,8 @@ const goRefs = () => run('go', ['-C', join(SKILL, 'sbtel_refs_go'), 'run', '.', 
 const TARGETS = {
   viewer: {
     SPEC: 'examples/viewer.sbtel', EDGES: 'examples/viewer.edges.txt',
-    // In page order: viewer/build.mjs inlines core.js, then session.js, review.js, server.js, diff.js and play.js.
-    files: () => ['core/core.js', 'viewer/src/index.html', 'viewer/src/session.js', 'viewer/src/review.js', 'viewer/src/server.js', 'viewer/src/diff.js', 'viewer/src/play.js'],
+    // In page order: viewer/build.mjs inlines core.js, then session.js, bindings.js, review.js, server.js, diff.js and play.js.
+    files: () => ['core/core.js', 'viewer/src/index.html', 'viewer/src/session.js', 'viewer/src/bindings.js', 'viewer/src/review.js', 'viewer/src/server.js', 'viewer/src/diff.js', 'viewer/src/play.js'],
     refs: viewerRefs,
     header: `# Bindings of the viewer's code against examples/viewer.sbtel: who names whom, one line per caller,
 # callee and file (the first location; "+N more" counts the others in that file).
@@ -87,7 +87,7 @@ const TARGETS = {
 # The \`# VIOLATION: reason\` comments are written by hand: one directly above an edge explains why the
 # code breaks the levels there. A fresh run keeps it with the same caller, callee and file.
 #
-# How: viewer/build.mjs inlines core.js, session.js, review.js, server.js, diff.js and play.js into the one <script> of
+# How: viewer/build.mjs inlines core.js, session.js, bindings.js, review.js, server.js, diff.js and play.js into the one <script> of
 # index.html, so every top-level declaration is a global of one page script and there are no imports.
 # plugin/skills/sbtel-recover/scripts/sbtel_refs.mjs resolves every identifier with the TypeScript
 # checker (a reference counts when its declaration is in another top-level statement; JSDoc types too),

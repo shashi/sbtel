@@ -6,7 +6,7 @@
 # The `# VIOLATION: reason` comments are written by hand: one directly above an edge explains why the
 # code breaks the levels there. A fresh run keeps it with the same caller, callee and file.
 #
-# How: viewer/build.mjs inlines core.js, session.js, review.js, server.js, diff.js and play.js into the one <script> of
+# How: viewer/build.mjs inlines core.js, session.js, bindings.js, review.js, server.js, diff.js and play.js into the one <script> of
 # index.html, so every top-level declaration is a global of one page script and there are no imports.
 # plugin/skills/sbtel-recover/scripts/sbtel_refs.mjs resolves every identifier with the TypeScript
 # checker (a reference counts when its declaration is in another top-level statement; JSDoc types too),
@@ -135,14 +135,14 @@ App.Code -> App.Kit  # viewer/src/index.html:2411 (+5 more)
 App.Code -> App.Document  # viewer/src/index.html:2419 (+1 more)
 App.Code -> Core.Edits  # viewer/src/index.html:2420
 App.Input -> App.Modals  # viewer/src/index.html:2459 (+1 more)
-Viewer.Boot -> Core.Constants  # viewer/src/index.html:2505
-Viewer.Boot -> Viewer.Mode  # viewer/src/index.html:2506
-Viewer.Boot -> App.Document  # viewer/src/index.html:2507 (+1 more)
-Viewer.Boot -> Viewer.Sample  # viewer/src/index.html:2507
-Viewer.Boot -> App.Camera  # viewer/src/index.html:2508
-Viewer.Boot -> App.Comments  # viewer/src/index.html:2509
-Viewer.Boot -> App.Kit  # viewer/src/index.html:2510
-Viewer.Boot -> App.Page  # viewer/src/index.html:2510
+Viewer.Boot -> Core.Constants  # viewer/src/index.html:2506
+Viewer.Boot -> Viewer.Mode  # viewer/src/index.html:2507
+Viewer.Boot -> App.Document  # viewer/src/index.html:2508 (+1 more)
+Viewer.Boot -> Viewer.Sample  # viewer/src/index.html:2508
+Viewer.Boot -> App.Camera  # viewer/src/index.html:2509
+Viewer.Boot -> App.Comments  # viewer/src/index.html:2510
+Viewer.Boot -> App.Kit  # viewer/src/index.html:2511
+Viewer.Boot -> App.Page  # viewer/src/index.html:2511
 Viewer.Session -> App.Document  # viewer/src/session.js:20 (+4 more)
 Viewer.Session -> App.Kit  # viewer/src/session.js:39 (+5 more)
 Viewer.Session -> App.Comments  # viewer/src/session.js:45 (+8 more)
@@ -150,6 +150,12 @@ Viewer.Session -> Viewer.Mode  # viewer/src/session.js:45
 Viewer.Session -> App.Canvas  # viewer/src/session.js:51 (+1 more)
 Viewer.Session -> App.Messages  # viewer/src/session.js:51
 Viewer.Session -> App.Popovers  # viewer/src/session.js:67 (+4 more)
+Viewer.Bindings -> App.Document  # viewer/src/bindings.js:23 (+5 more)
+Viewer.Bindings -> Core.Bindings  # viewer/src/bindings.js:26 (+2 more)
+Viewer.Bindings -> App.Kit  # viewer/src/bindings.js:42 (+2 more)
+Viewer.Bindings -> App.Checks  # viewer/src/bindings.js:43 (+5 more)
+Viewer.Bindings -> App.Page  # viewer/src/bindings.js:48 (+1 more)
+Viewer.Bindings -> App.Popovers  # viewer/src/bindings.js:54 (+2 more)
 Viewer.Changes -> App.Kit  # viewer/src/review.js:43 (+10 more)
 Viewer.Changes -> Core.Model  # viewer/src/review.js:55
 Viewer.Review -> Viewer.Mode  # viewer/src/review.js:114 (+3 more)
@@ -165,17 +171,16 @@ Viewer.Review -> App.Canvas  # viewer/src/review.js:288 (+4 more)
 Viewer.Review -> App.Page  # viewer/src/review.js:312 (+2 more)
 Viewer.Review -> App.Popovers  # viewer/src/review.js:320 (+5 more)
 Viewer.Server -> Viewer.Mode  # viewer/src/server.js:5 (+3 more)
-Viewer.Server -> App.Kit  # viewer/src/server.js:55 (+22 more)
-Viewer.Server -> App.Document  # viewer/src/server.js:79 (+25 more)
-Viewer.Server -> Core.Model  # viewer/src/server.js:82
-Viewer.Server -> App.Page  # viewer/src/server.js:84 (+6 more)
-Viewer.Server -> Viewer.Review  # viewer/src/server.js:95 (+9 more)
-Viewer.Server -> Core.Bindings  # viewer/src/server.js:105 (+3 more)
-Viewer.Server -> Viewer.Session  # viewer/src/server.js:127 (+3 more)
-Viewer.Server -> App.Modals  # viewer/src/server.js:177 (+2 more)
-Viewer.Server -> App.Canvas  # viewer/src/server.js:238
-Viewer.Server -> App.Checks  # viewer/src/server.js:285 (+5 more)
-Viewer.Server -> App.Popovers  # viewer/src/server.js:296 (+2 more)
+Viewer.Server -> App.Kit  # viewer/src/server.js:48 (+19 more)
+Viewer.Server -> App.Document  # viewer/src/server.js:72 (+19 more)
+Viewer.Server -> Core.Model  # viewer/src/server.js:75
+Viewer.Server -> App.Page  # viewer/src/server.js:77 (+4 more)
+Viewer.Server -> Viewer.Review  # viewer/src/server.js:88 (+9 more)
+Viewer.Server -> Core.Bindings  # viewer/src/server.js:98
+Viewer.Server -> Viewer.Session  # viewer/src/server.js:120 (+3 more)
+Viewer.Server -> App.Modals  # viewer/src/server.js:170 (+2 more)
+Viewer.Server -> App.Canvas  # viewer/src/server.js:231
+Viewer.Server -> Viewer.Bindings  # viewer/src/server.js:257
 Viewer.Diff -> Viewer.Mode  # viewer/src/diff.js:11 (+10 more)
 Viewer.Diff -> Viewer.Sample  # viewer/src/diff.js:34 (+3 more)
 Viewer.Diff -> Viewer.Session  # viewer/src/diff.js:122 (+3 more)
@@ -201,18 +206,19 @@ Viewer.Diff -> App.EditDialog  # viewer/src/diff.js:613 (+1 more)
 Viewer.Diff -> App.Code  # viewer/src/diff.js:621 (+1 more)
 Viewer.Diff -> App.Comments  # viewer/src/diff.js:621 (+3 more)
 Viewer.Diff -> Core.Constants  # viewer/src/diff.js:647
-Viewer.Play -> Viewer.Mode  # viewer/src/play.js:18
-Viewer.Play -> App.Kit  # viewer/src/play.js:98 (+8 more)
-Viewer.Play -> App.Page  # viewer/src/play.js:98 (+5 more)
-Viewer.Play -> App.Camera  # viewer/src/play.js:121 (+4 more)
-Viewer.Play -> App.Document  # viewer/src/play.js:130 (+23 more)
-Viewer.Play -> App.Canvas  # viewer/src/play.js:139 (+12 more)
-Viewer.Play -> App.Comments  # viewer/src/play.js:143
-Viewer.Play -> App.Messages  # viewer/src/play.js:144
-Viewer.Play -> App.Input  # viewer/src/play.js:145 (+6 more)
-Viewer.Play -> App.EditDialog  # viewer/src/play.js:156
-Viewer.Play -> Core.Model  # viewer/src/play.js:160 (+1 more)
-Viewer.Play -> App.Code  # viewer/src/play.js:161
-Viewer.Play -> Core.Layout  # viewer/src/play.js:203
-Viewer.Play -> Viewer.Sample  # viewer/src/play.js:236
-Viewer.Play -> App.Modals  # viewer/src/play.js:240
+Viewer.Play -> Viewer.Mode  # viewer/src/play.js:25
+Viewer.Play -> App.Kit  # viewer/src/play.js:120 (+10 more)
+Viewer.Play -> App.Page  # viewer/src/play.js:120 (+8 more)
+Viewer.Play -> App.Camera  # viewer/src/play.js:143 (+4 more)
+Viewer.Play -> App.Document  # viewer/src/play.js:155 (+24 more)
+Viewer.Play -> App.Canvas  # viewer/src/play.js:164 (+10 more)
+Viewer.Play -> App.Comments  # viewer/src/play.js:168
+Viewer.Play -> App.Messages  # viewer/src/play.js:169
+Viewer.Play -> App.Input  # viewer/src/play.js:170 (+8 more)
+Viewer.Play -> App.EditDialog  # viewer/src/play.js:211
+Viewer.Play -> Core.Layout  # viewer/src/play.js:238
+Viewer.Play -> Core.Model  # viewer/src/play.js:262 (+1 more)
+Viewer.Play -> Viewer.Sample  # viewer/src/play.js:271
+Viewer.Play -> App.Modals  # viewer/src/play.js:275
+Viewer.Play -> Core.Bindings  # viewer/src/play.js:298
+Viewer.Play -> Viewer.Bindings  # viewer/src/play.js:298

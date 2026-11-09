@@ -130,6 +130,7 @@ notes.sbtel: 1 binding, 1 not allowed, 0 explained
 | `sbtel diff <a> <b>` | what changed between two specs |
 | `sbtel open <spec> [--session id]` | open the diagram in the browser, or push a new version to it |
 | `sbtel open-diff <a> <b>` | open a visual diff |
+| `sbtel export <spec> [-o out.html] [--readonly] [--embed] [--bindings f] [--title t]` | one self-contained HTML file of the diagram to share: no server, no network, nothing to install |
 | `sbtel inbox <session> [--wait]` | what the human sent: reviews (message, comments and a proposed spec), comments sent on their own, saves |
 | `sbtel reply <session> <id> <text>` | answer a comment (`c2`, `c7.1`) or a review (`r7`) in the open tab |
 | `sbtel sessions` / `sbtel close <session>` | list or end sessions |
@@ -195,6 +196,26 @@ same-origin parent (target origin `'/'`); a page on another origin gets nothing 
 
 [docs/DESIGN.md §6.9](docs/DESIGN.md) has the details. A copy of the page with `<meta name="sbtel-home"
 content="…">` points the playground's "sbtel" link at that address.
+
+## Sharing a diagram
+
+`sbtel export` writes the viewer as one HTML file with the spec baked in, for people without sbtel:
+email it, commit it, or host it anywhere. It opens from disk, makes no network request, and stays
+interactive; edits, undo and comments live in the reader's browser, kept per spec.
+
+```console
+$ sbtel export notes.sbtel --bindings edges.txt
+edges.txt:1: Notes.Store -> Notes.Editor: upward: Notes.Store (level 1 "Storage" of Notes) binds upward to Notes.Editor (level 2 "Editing")  (src/store.ts:40)
+notes.sbtel: 1 binding, 1 not allowed, 0 explained
+sbtel export: wrote notes.html (598463 bytes, 585 KiB)
+```
+
+`--readonly` turns editing off, `--embed` gives the chromeless layout of `?embed` for an iframe (its
+**Open full view ↗** opens the same file with every panel), `--bindings` shows the edges' violations in
+the checks, as `sbtel open --bindings` does (stderr shows what `sbtel check` says, or only its summary
+when every violation is explained), and `--title` names the page. The spec is linted first: warnings go
+to stderr and the file is still written; a spec that does not parse writes nothing (exit 2). `-o -`
+writes to stdout.
 
 ## Claude Code plugin
 
