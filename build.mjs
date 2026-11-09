@@ -12,12 +12,19 @@
 //    [spec="hide"]>hint</sbtel-demo> becomes a live embed of play/examples/name.sbtel, and
 //    <sbtel-spec example="name"></sbtel-spec> its text, so a shown spec is always the embedded one.
 //    <sbtel-code file="path">…</sbtel-code> shows a site file verbatim (edges files, outputs).
+//    Each embed starts at the aspect ratio of its diagram, measured here by running the repository's core
+//    layout (core/core.js, contentBox) in node with an approximate text measurer, so the page hardly moves
+//    when the viewer reports its real size (sbtel:size; assets/docs.js sets the height). height="…" is the
+//    fallback when the core cannot be run. focus="Block" adds &focus=Block (the viewer fits that block).
+//    The pages take their <title> ("Guide · sbtel") and meta description from the source's
+//    <!-- title: … --> and <!-- description: … --> comments.
 //
 // Node 18 or later; no dependencies. The markdown reader covers what LANGUAGE.md uses: headings, paragraphs,
 // lists, tables, fenced code, rules, and inline code, links, bold and italics.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 
 const here = dirname(fileURLToPath(import.meta.url));
 let arg = process.argv[2] || process.env.SBTEL_REPO;
@@ -177,7 +184,7 @@ function page({ path, title, desc, toc, body, source, kind }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(title)}: sbtel</title>
+<title>${esc(title)} · sbtel</title>
 <meta name="description" content="${esc(desc)}">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="${up}assets/favicon.svg" type="image/svg+xml">
@@ -235,10 +242,50 @@ ${body}
     desc: 'The sbtel language reference: every form, every rule and every lint and check message.', toc: r.toc, body, source: 'docs/LANGUAGE.md' }));
 }
 
+// ---------- the natural size of an embed ----------
+// The viewer's embed mode (viewer/src/play.js) at a desktop docs column (about 780 px): layout width 980
+// (1.25 x the frame); on a phone (a frame under 450 px) the layout's least width, 560. Each with
+// the file's top-level blocks open, the box from contentBox with 12 px around it and 52 px for the dock.
+// Text is measured approximately (an average glyph width per font size), which is close enough for a
+// starting height; the viewer's own report replaces it.
+const core = (() => {
+  const f = join(repo, 'core/core.js');
+  if (!existsSync(f)) return null;
+  try {
+    const api = vm.runInContext(read(f) + '\n;({ parse, layout, topBlocks, contentBox: typeof contentBox === "function" ? contentBox : null })', vm.createContext(Object.create(null)), { filename: 'core.js' });
+    return api.contentBox ? api : null;
+  } catch (e) { console.error('build.mjs: core/core.js does not run in node (' + e.message + '); embeds use their height'); return null; }
+})();
+const M = {
+  em: f => { const px = +((/([\d.]+)px/.exec(f) || [])[1] || 14); return px * (/Mono/.test(f) ? .6 : .52); },
+  tw: (t, f) => t.length * M.em(f),
+  wrap(text, f, width) {
+    if (text.includes('\n\n')) { const ps = text.split('\n\n').map(p => M.wrap(p, f, width)).filter(Boolean); return ps.length ? ps.reduce((a, b) => a + b, 0) + ps.length - 1 : 0; }
+    const words = text.split(/\s+/).filter(Boolean); if (!words.length) return 0;
+    const sp = M.em(f); let lines = 1, cur = 0;
+    for (const w of words) { const ww = M.tw(w, f); if (!cur) cur = ww; else if (cur + sp + ww <= width) cur += sp + ww; else { lines++; cur = ww; } }
+    return lines;
+  },
+};
+function naturalSize(text, { readonly, focus }, width) {
+  if (!core) return null;
+  try {
+    const model = core.parse(text), open = new Set(core.topBlocks(model).map(b => b.id));
+    const n = focus ? model.node(focus) || model.blocks.find(b => b.name === focus) : null;
+    if (n) for (let p = n.parent; p && !p.virtual; p = p.parent) open.add(p.id);
+    const lay = core.layout(model, { wrap: 'keep', vlink: 'same', expandWidth: 'fit', childDots: true, width, animate: false, allDetails: false,
+      open, drawers: new Map(), expanded: new Set(), details: new Set() }, M);
+    const B = core.contentBox(lay, n ? n.id : null, !readonly);
+    return B ? { w: Math.ceil(B.w + 24), h: Math.ceil(B.h + 12 + 52) } : null;
+  } catch (e) { console.error('build.mjs: could not lay out an example (' + e.message + ')'); return null; }
+}
+
 // ---------- 3. the Guide and the Viewer manual ----------
 function manual(srcFile, path, kind) {
   let src = read(join(here, 'src', srcFile));
-  const meta = k => (src.match(new RegExp(`<!-- ${k}: (.*?) -->`)) || [])[1] || '';
+  const metas = Object.fromEntries(['title', 'description'].map(k => [k, (src.match(new RegExp(`<!-- ${k}: (.*?) -->`)) || [])[1] || '']));
+  const meta = k => metas[k];
+  if (!metas.title || !metas.description) { console.error(`build.mjs: src/${srcFile} needs <!-- title: … --> and <!-- description: … -->`); process.exit(1); }
   const up = '../'.repeat(path.split('/').length - 1);
   const ex = name => { const f = join(here, 'play/examples', name + '.sbtel'); if (!existsSync(f)) { console.error('build.mjs: no example ' + name); process.exit(1); } return read(f).replace(/\n+$/, ''); };
   const attrs = a => Object.fromEntries([...a.matchAll(/([\w-]+)="([^"]*)"/g)].map(m => [m[1], m[2]]));
@@ -250,10 +297,13 @@ function manual(srcFile, path, kind) {
   });
   src = src.replace(/<sbtel-demo ([^>]*)>([\s\S]*?)<\/sbtel-demo>/g, (_, a, hint) => {
     const o = attrs(a), name = o.example, h = +(o.height || 360);
-    ex(name); // must exist
-    const q = o.mode === 'readonly' ? '?embed=readonly' : '?embed';
+    const how = { readonly: o.mode === 'readonly', focus: o.focus };
+    const nat = naturalSize(ex(name), how, 980), natp = nat && naturalSize(ex(name), how, 560);
+    const q = (o.mode === 'readonly' ? '?embed=readonly' : '?embed') + (o.focus ? '&focus=' + encodeURIComponent(o.focus) : '');
     const url = `${up}play/${q}#example=${name}`, open = `${up}play/#example=${name}`;
-    const embed = `<div class="embed" style="--h:${h}px">
+    // Same rule as assets/docs.js, without the window: room for 60% zoom up to 820 px, else 720 px at most.
+    const hmax = nat && Math.max(720, Math.min(820, Math.round(.6 * (nat.h - 64) + 64)));
+    const embed = `<div class="embed${nat ? ' ar' : ''}" style="--h:${h}px${nat ? `;--ar:${nat.w}/${nat.h};--nh:${nat.h}px;--hmax:${hmax}px` : ''}${natp ? `;--arp:${natp.w}/${natp.h};--nhp:${natp.h}px` : ''}">
       <iframe data-src="${url}" title="Live diagram of ${esc(name)}.sbtel${o.mode === 'readonly' ? ' (view only)' : ''}" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="${open}">Open ${esc(name)}.sbtel in the playground</a></noscript>
