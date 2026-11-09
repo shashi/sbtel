@@ -50,9 +50,9 @@ Sbtel.Server.Core -> Sbtel.State  # internal/server/server.go:46 (+1 more)
 Sbtel.Server.Core -> Sbtel.Server.Sessions  # internal/server/server.go:52 (+1 more)
 Sbtel.Server.Lifecycle -> Sbtel.Server.Core  # internal/server/server.go:99 (+32 more)
 Sbtel.Server.Lifecycle -> Sbtel.State  # internal/server/server.go:107 (+10 more)
-Sbtel.Server.Lifecycle -> Sbtel.Server.Client  # internal/server/server.go:132
-Sbtel.Server.Lifecycle -> Sbtel.Server.Sessions  # internal/server/server.go:186
-Sbtel.Server.Lifecycle -> Sbtel.Server.Fanout  # internal/server/server.go:190
+Sbtel.Server.Lifecycle -> Sbtel.Server.Client  # internal/server/server.go:138
+Sbtel.Server.Lifecycle -> Sbtel.Server.Sessions  # internal/server/server.go:192
+Sbtel.Server.Lifecycle -> Sbtel.Server.Fanout  # internal/server/server.go:196
 Sbtel.Server.Sessions -> Sbtel.State  # internal/server/sessions.go:19 (+119 more)
 Sbtel.Server.Sessions -> Sbtel.Server.Fanout  # internal/server/sessions.go:24 (+9 more)
 Sbtel.Server.Sessions -> Sbtel.Server.Core  # internal/server/sessions.go:38 (+72 more)
