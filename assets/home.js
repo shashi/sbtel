@@ -180,25 +180,25 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   // Where each block sits in the tangle, as fractions of the frame, and its tilt.
   const T = { Shell:[.52,.80,-3], Editor:[.80,.26,4], Preview:[.20,.58,-2], Sync:[.70,.58,3], Search:[.16,.24,-4],
               Store:[.46,.20,2], Markdown:[.84,.84,-3], Index:[.30,.88,3] };
-  let beat = 1, red = 0, fix = 0, tw = null, auto = null;
+  // Three progress values, 0 to 1: red marks the two problems, thin fades the allowed arrows (the levels say
+  // them now), fix applies the fix. Pending timers belong to the current beat and are cleared on a change.
+  const P = { red: 0, thin: 0, fix: 0 };
+  let beat = 1, auto = null, timers = [], tws = {};
   const blks = Object.values(B);
+  const later = $('#hero-cap .later');
 
   function draw() {
-    const bx = id => box(B[id], svg);
-    let s = E.map(([a, b, o]) => arrowSVG(arrow(bx(a), bx(b), o))).join('');
+    const bx = id => box(B[id], svg), { red, thin, fix } = P;
+    let s = '';
+    // The allowed bindings: the raw edges file in the tangle; once levels say it, they fade.
+    if (thin < 1) s += E.map(([a, b, o]) => arrowSVG(arrow(bx(a), bx(b), o), '', 1 - thin)).join('');
     const bad = red > 0.5 ? 'bad' : '';
     const side = arrow(bx(SIDE[0]), bx(SIDE[1])), up = arrow(bx(UP[0]), bx(UP[1]), UP[2]);
     if (fix < 1) s += arrowSVG(side, bad, 1 - fix) + arrowSVG(up, bad, 1 - fix);
     if (fix > 0) {
+      // The viewer's adjacency line: one plain line between the two cards, at their middle.
       const e = bx('Editor'), p = bx('Preview');
-      s = `<g opacity="${fix.toFixed(2)}">${braid([e.r, e.cy], [p.x, p.cy])}</g>` + s;
-      // The message route: out of Store's bottom ear, round the left, into Editor's top ear.
-      const o = box(outEar, svg), i = box(inEar, svg), X = fr.clientWidth < 520 ? 5 : 11, r = 10;
-      const yb = o.b + 12, yt = i.y - 9, tx = i.cx, ty = i.y - 1;
-      const d = `M${o.cx} ${o.b}V${yb - r}Q${o.cx} ${yb} ${o.cx - r} ${yb}H${X + r}Q${X} ${yb} ${X} ${yb - r}V${yt + 8}Q${X} ${yt} ${X + 8} ${yt}H${tx - 8}Q${tx} ${yt} ${tx} ${yt + 8}V${ty - 8}`;
-      s += `<g class="route" opacity="${fix.toFixed(2)}"><path d="${d}" style="stroke:var(--m3)"/><path class="head" style="fill:var(--m3)" d="M${tx} ${ty}L${tx - 4} ${ty - 8.5}L${tx + 4} ${ty - 8.5}Z"/></g>` +
-        `<text class="rlab" x="${(X + o.cx) / 2}" y="${yb - 6}" text-anchor="middle" opacity="${fix.toFixed(2)}">NoteSaved</text>` +
-        `<circle class="pkt" r="5.5" cx="${o.cx}" cy="${o.b}" style="fill:var(--m3);opacity:0"/>`;
+      s = `<line class="adj" x1="${e.r}" y1="${e.cy}" x2="${p.x}" y2="${p.cy}" opacity="${fix.toFixed(2)}"/>` + s;
     }
     svg.innerHTML = s;
     const showTags = red > 0.5 && fix < 0.5;
@@ -217,47 +217,61 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     });
     if (!animate) { fr.offsetWidth; blks.forEach(b => { b.style.transition = ''; }); }
   }
-  // Tween one of the two progress values, redrawing as it goes.
+  // Tween one progress value, redrawing as it goes; tweens of different values run side by side.
   function tween(key, to, ms, delay = 0) {
-    if (tw) cancelAnimationFrame(tw.raf);
-    const from = key === 'red' ? red : fix;
-    if (reduce || !ms) { if (key === 'red') red = to; else fix = to; draw(); return; }
+    if (tws[key]) cancelAnimationFrame(tws[key]);
+    const from = P[key];
+    if (reduce || !ms) { P[key] = to; draw(); return; }
     const t0 = performance.now() + delay;
     const step = t => {
       const k = clamp((t - t0) / ms, 0, 1), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-      const v = from + (to - from) * e; if (key === 'red') red = v; else fix = v;
-      draw(); if (k < 1) tw.raf = requestAnimationFrame(step); else tw = null;
+      P[key] = from + (to - from) * e; draw();
+      tws[key] = k < 1 ? requestAnimationFrame(step) : null;
     };
-    tw = { raf: requestAnimationFrame(step) };
+    tws[key] = requestAnimationFrame(step);
   }
-  function sendPacket() {
-    if (reduce) return;
-    const t0 = performance.now() + 150, D = 1300;
-    const step = t => {
-      const route = svg.querySelector('.route path'), c = svg.querySelector('.pkt'); if (!route || !c) return;
-      const k = clamp((t - t0) / D, 0, 1), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-      const pt = route.getPointAtLength(e * route.getTotalLength()); c.setAttribute('cx', pt.x); c.setAttribute('cy', pt.y);
-      c.style.opacity = k > 0 && k < 1 ? 1 : 0; if (k < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const clearPending = () => { timers.forEach(clearTimeout); timers = []; Object.values(tws).forEach(r => r && cancelAnimationFrame(r)); tws = {}; partner(false); };
+  // The viewer's port-hover partner highlight: Store's NoteSaved port is the source (dashed), Editor, which
+  // can take it, the partner (solid), and both dots ringed. Shown once when the fix lands, then it settles.
+  function partner(on) {
+    B.Store.classList.toggle('talk-src', on); B.Editor.classList.toggle('talk', on);
+    $$('.ear .pdot', fr).forEach(d => d.classList.toggle('hot', on));
   }
   const LABEL = { 1: 'Arrange into levels', 2: 'Fix it', 3: 'Start over' };
   function go(n, animate = !reduce) {
     const prev = beat; beat = n;
+    clearPending();
     demo.dataset.beat = n;
     $$('.beats button', demo).forEach(b => { if (+b.dataset.b === n) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
     $$('[data-for]', demo).forEach(e => { e.hidden = +e.dataset.for !== n; });
     next.textContent = LABEL[n]; reset.hidden = n === 1 || n === 3;
     fr.classList.toggle('tangled', n === 1);
     fr.classList.toggle('fixed', n === 3);
+    if (later) later.hidden = !(n === 2 && !animate);
     if (n === 1) {
-      fix = 0; red = 0; placeTangle(animate);
+      P.fix = 0; P.red = 0; P.thin = 0; placeTangle(animate);
       animate ? during(1500, draw) : draw();
-    } else {
-      blks.forEach((b, i) => { b.style.transitionDelay = animate && prev === 1 ? (i * 45) + 'ms' : '0ms'; if (!animate) b.style.transition = 'none'; b.style.transform = ''; });
-      if (!animate) { fr.offsetWidth; blks.forEach(b => { b.style.transition = ''; }); }
-      if (n === 2) { fix = 0; if (animate && prev === 1) { red = 0; during(1500, draw); setTimeout(() => tween('red', 1, 500), 1400); } else { red = 1; animate ? tween('fix', 0, 400) : draw(); } }
-      if (n === 3) { red = 1; if (animate) { during(prev === 1 ? 1500 : 0, draw); tween('fix', 1, 900, prev === 1 ? 1300 : 0); setTimeout(sendPacket, (prev === 1 ? 1300 : 0) + 950); } else { fix = 1; draw(); } }
+      return;
+    }
+    const arranging = animate && prev === 1;
+    blks.forEach((b, i) => { b.style.transitionDelay = arranging ? (i * 45) + 'ms' : '0ms'; if (!animate) b.style.transition = 'none'; b.style.transform = ''; });
+    if (!animate) { fr.offsetWidth; blks.forEach(b => { b.style.transition = ''; }); }
+    if (!animate) { P.red = 1; P.thin = 1; P.fix = n === 3 ? 1 : 0; draw(); return; }
+    if (n === 2) {
+      // The blocks settle with every arrow still drawn, so most visibly point down and two turn red. After a
+      // pause the allowed ones fade, since the levels already say them, and the caption says so.
+      P.fix = 0;
+      if (arranging) { P.red = 0; P.thin = 0; during(1500, draw); at(1400, () => tween('red', 1, 500)); }
+      else tween('fix', 0, 400);
+      if (P.thin < 1) at(arranging ? 3400 : 1500, () => { if (later) later.hidden = false; tween('thin', 1, 700); });
+      else if (later) later.hidden = false;
+    }
+    if (n === 3) {
+      const d = arranging ? 1300 : 0;
+      if (arranging) during(1500, draw);
+      P.red = 1; tween('thin', 1, 500, d); tween('fix', 1, 900, d);
+      at(d + 900, () => partner(true)); at(d + 2700, () => partner(false));
     }
   }
   const stopAuto = () => { if (auto) { clearTimeout(auto); auto = null; } };

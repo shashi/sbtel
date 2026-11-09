@@ -86,8 +86,8 @@
       </ol>
       <div class="beatcap" id="hero-cap" aria-live="polite">
         <p data-for="1">How the code actually connects: who calls whom in a small notes app. Two of these arrows are design problems. In a hairball, you can&rsquo;t see which.</p>
-        <p data-for="2" hidden>In levels, the problems have nowhere to hide. <b>Store</b> reaches up into Editor to refresh it after a save. <b>Preview</b> reaches sideways into a peer it was never declared to know.</p>
-        <p data-for="3" hidden>Store now sends a <code>NoteSaved</code> message, and Shell routes it to Editor: neither names the other. Editor and Preview are declared <b>adjacent</b>, a coupling you meant, now visible. <b class="em">Every arrow points down.</b></p>
+        <p data-for="2" hidden>In levels, the problems have nowhere to hide. <b>Store</b> reaches up into Editor to refresh it after a save. <b>Preview</b> reaches sideways into a peer it was never declared to know. <span class="later" hidden>Once arranged, the levels say who may use whom. Only the problems are left to draw.</span></p>
+        <p data-for="3" hidden>Store now sends a <code>NoteSaved</code> message, and Shell routes it to Editor: neither names the other. Editor and Preview are declared <b>adjacent</b>, a coupling you meant, now visible. <b class="em">Every dependency points down.</b></p>
       </div>
       <div class="beatbtns">
         <button class="btn primary" type="button" id="hero-next">Arrange into levels</button>
