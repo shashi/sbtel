@@ -278,10 +278,9 @@ shop.sbtel: 7 bindings, <span class="hl-ok">0 not allowed</span></pre>
   <h2 class="term" id="t-msg">Messages</h2>
   <div class="pair">
     <div class="txt">
-      <p class="lead">Messages let you slot in other blocks without depending on them explicitly.</p>
-      <p>Think of a jigsaw. A message type is the shape of a tab, and of the blank it fits. Two pieces work together when their shapes match, and neither needs to know which piece is on the other side. The ears on a card are those shapes: what it takes on top, what it sends below.</p>
-      <p>For example, a block can take an abstract type, or a callback that a higher level implements: that is messaging. Messages can also stand for actual messages passing through a system. A message does not need a message channel as such; it is just a way to keep two implementations from knowing about each other.</p>
-      <p>Here Store sends a <code>NoteSaved</code>, Editor takes one, and something else connects them.</p>
+      <p class="lead">Messages allow slotting in other blocks without depending on them explicitly.</p>
+      <p>For example, a block can take an abstract type or a callback that a higher level implements: this is messaging. Messages can also represent actual messages passing through a system. Note that a message does not need a message channel per se; it&rsquo;s just a means to keep two implementations from knowing about each other.</p>
+      <p>A message type is like the shape of a jigsaw piece&rsquo;s tab, and of the blank it fits: the two must match for the pieces to work together. A block takes messages in through ports on top of its card and sends them out from the bottom. Store sends a <code>NoteSaved</code>, Editor takes one, and something else connects them.</p>
       <p>Point at a type to see everywhere that data travels. A <code>NoteSaved</code> carries a <code>Note</code>, drawn as a dot on its lower ear, so a note&rsquo;s text goes wherever a <code>NoteSaved</code> goes. Where an assumption about some data lives, you can see all of it at once.</p>
 <details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(message Note (~ A note's title and text. ~))
