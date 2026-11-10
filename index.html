@@ -34,8 +34,6 @@
     <div class="hero-main">
       <h1 id="h1">Untangle code and systems together with AI.</h1>
       <p class="tag">sbtel is a language to design, understand, and collaborate on systems at any granularity.</p>
-    </div>
-    <div class="hero-side">
       <div class="inst-tabs" role="tablist" aria-label="How to install">
         <button type="button" role="tab" id="tab-go" aria-selected="true" aria-controls="pane-go" data-k="go">Go binary</button>
         <button type="button" role="tab" id="tab-cc" aria-selected="false" aria-controls="pane-cc" data-k="cc" tabindex="-1">Claude Code</button>
@@ -50,7 +48,7 @@
       <div class="inst-pane" role="tabpanel" id="pane-cc" aria-labelledby="tab-cc" hidden>
         <div class="install">
           <code id="inst-cc" class="multi">/plugin marketplace add shashi/sbtel
-/plugin install sbtel@sbtel</code>
+  /plugin install sbtel@sbtel</code>
           <button type="button" class="copy" aria-describedby="inst-cc">Copy</button>
         </div>
         <p class="alt">The skills use the sbtel binary, so install that too.</p>
@@ -63,85 +61,28 @@
         <a class="btn" href="docs/">Read the core concepts</a>
       </div>
     </div>
-  </div>
 
-  <div class="demo" id="demo" data-beat="1">
-    <figure class="fig">
-      <div class="frame dgm" id="hero">
-        <div class="fh">Notes</div>
-        <div class="lvl"><div class="lname"><span>The app</span></div>
-          <div class="row"><div class="blk" data-id="Shell">Shell</div></div></div>
-        <div class="lvl"><div class="lname"><span>Notes as text</span></div>
-          <div class="row"><div class="blk" data-id="Editor"><span class="ear top"><span class="pdot" style="background:var(--m3)"></span></span>Editor</div><span class="gapb"></span><div class="blk" data-id="Preview">Preview</div><div class="blk" data-id="Sync">Sync</div><div class="blk" data-id="Search">Search</div></div></div>
-        <div class="lvl"><div class="lname"><span>Stored notes</span></div>
-          <div class="row"><div class="blk" data-id="Store">Store<span class="ear bot"><span class="pdot" style="background:var(--m3)"></span></span></div><div class="blk" data-id="Markdown">Markdown</div><div class="blk" data-id="Index">Index</div></div></div>
-        <svg class="edges" aria-hidden="true"></svg>
-      </div>
-      <script>document.getElementById('hero').classList.add('tangled')</script>
-    </figure>
-
-    <div class="panel">
-      <ol class="beats" aria-label="Steps">
-        <li><button type="button" data-b="1" aria-current="step">The tangle</button></li>
-        <li><button type="button" data-b="2">Levels</button></li>
-        <li><button type="button" data-b="3">The fix</button></li>
-      </ol>
-      <div class="beatcap" id="hero-cap" aria-live="polite">
-        <p data-for="1">How the code actually connects: who calls whom in a small notes app. Two of these arrows are design problems. In a hairball, you can&rsquo;t see which.</p>
-        <p data-for="2" hidden>In levels, the problems have nowhere to hide. <b>Store</b> reaches up into Editor to refresh it after a save. <b>Preview</b> reaches sideways into a peer it was never declared to know. <span class="later" hidden>Once arranged, the levels say who may use whom. Only the problems are left to draw.</span></p>
-        <p data-for="3" hidden>Store now sends a <code>NoteSaved</code> message, and Shell routes it to Editor: neither names the other. Editor and Preview are declared <b>adjacent</b>, a coupling you meant, now visible. <b class="em">Every dependency points down.</b></p>
-      </div>
-      <div class="beatbtns">
-        <button class="btn primary" type="button" id="hero-next">Arrange into levels</button>
-        <button class="btn quiet" type="button" id="hero-reset" hidden>Start over</button>
-      </div>
-<pre class="code wrapline term-out" id="hero-term" data-for="1"><span class="hl-prompt">$ </span>cat edges.txt   <span class="cmt"># who names whom, from the code</span>
-Shell -&gt; Editor        <span class="cmt"># src/shell.ts:12</span>
-Shell -&gt; Preview       <span class="cmt"># src/shell.ts:13</span>
-Shell -&gt; Sync          <span class="cmt"># src/shell.ts:14</span>
-Shell -&gt; Search        <span class="cmt"># src/shell.ts:15</span>
-Editor -&gt; Store        <span class="cmt"># src/editor.ts:40</span>
-Preview -&gt; Markdown    <span class="cmt"># src/preview.ts:9</span>
-Preview -&gt; Editor      <span class="cmt"># src/preview.ts:31</span>
-Sync -&gt; Store          <span class="cmt"># src/sync.ts:22</span>
-Search -&gt; Index        <span class="cmt"># src/search.ts:7</span>
-Store -&gt; Editor        <span class="cmt"># src/store.ts:58</span></pre>
-<pre class="code wrapline term-out" data-for="2" hidden><span class="hl-prompt">$ </span>sbtel check notes.sbtel --bindings edges.txt
-edges.txt:7: Preview -&gt; Editor: <span class="hl-warn">same-level</span>: Preview and Editor share level 2 "Notes as text" of Notes but are not adjacent  (<span class="hl-loc">src/preview.ts:31</span>)
-edges.txt:10: Store -&gt; Editor: <span class="hl-warn">upward</span>: Store (level 1 "Stored notes" of Notes) binds upward to Editor (level 2 "Notes as text")  (<span class="hl-loc">src/store.ts:58</span>)
-notes.sbtel: 10 bindings, <span class="hl-warn">2 not allowed</span>, 0 explained</pre>
-      <div data-for="3" hidden>
-<pre class="code wrapline term-out"><span class="hl-prompt">$ </span>sbtel check notes.sbtel --bindings edges.txt
-notes.sbtel: 9 bindings, <span class="hl-ok">0 not allowed</span></pre>
-        <p class="cbl">The whole fix, in the spec:</p>
-<pre class="code diff" id="hero-diff" aria-label="Diff of notes.sbtel"><span class="ctx"> (block Notes</span>
-<span class="add">+  (message NoteSaved (~ A note reached the disk. ~))</span>
-<span class="ctx">   (level :name "The app"</span>
-<span class="ctx">     (block Shell))</span>
-<span class="ctx">   (level :name "Notes as text"</span>
-<span class="del">-    (block Editor)</span>
-<span class="del">-    (block Preview)</span>
-<span class="add">+    (adjacent (~ The preview scrolls with the editor. ~)</span>
-<span class="add">+      (block Editor (port :in NoteSaved))</span>
-<span class="add">+      (block Preview))</span>
-<span class="ctx">     (block Sync) (block Search))</span>
-<span class="ctx">   (level :name "Stored notes"</span>
-<span class="del">-    (block Store)</span>
-<span class="add">+    (block Store (port :out NoteSaved))</span>
-<span class="ctx">     (block Markdown) (block Index)))</span></pre>
-        <details>
-          <summary>The spec before the fix</summary>
-<pre class="code" data-lang="sbtel">(block Notes
-  (level :name "The app"
-    (block Shell))
-  (level :name "Notes as text"
-    (block Editor)
-    (block Preview)
-    (block Sync) (block Search))
-  (level :name "Stored notes"
-    (block Store)
-    (block Markdown) (block Index)))</pre>
-        </details>
+    <div class="demo" id="demo" data-state="tangle">
+      <figure class="fig">
+        <div class="frame dgm" id="hero">
+          <div class="fh">Notes</div>
+          <div class="lvl"><div class="lname"><span>The app</span></div>
+            <div class="row"><div class="blk" data-id="Shell">Shell</div></div></div>
+          <div class="lvl"><div class="lname"><span>Notes as text</span></div>
+            <div class="row"><div class="blk" data-id="Editor"><span class="ear top"><span class="pdot" style="background:var(--m3)"></span></span>Editor</div><span class="gapb"></span><div class="blk" data-id="Preview">Preview</div><div class="blk" data-id="Sync">Sync</div><div class="blk" data-id="Search">Search</div></div></div>
+          <div class="lvl"><div class="lname"><span>Stored notes</span></div>
+            <div class="row"><div class="blk" data-id="Store">Store<span class="ear bot"><span class="pdot" style="background:var(--m3)"></span></span></div><div class="blk" data-id="Markdown">Markdown</div><div class="blk" data-id="Index">Index</div></div></div>
+          <svg class="edges" aria-hidden="true"></svg>
+        </div>
+        <script>document.getElementById('hero').classList.add('tangled')</script>
+      </figure>
+      <div class="hero-bar">
+        <div class="seg" role="group" aria-label="Which picture to show">
+          <button type="button" data-s="tangle" aria-pressed="true">The code today</button>
+          <button type="button" data-s="design" aria-pressed="false">The design</button>
+        </div>
+        <p class="herocap" data-for="tangle">A small notes app, as its code connects today. Each arrow is one part calling another.</p>
+        <p class="herocap" data-for="design" hidden>The same eight parts, designed top-down. Each level uses only what is below it. Editor and Preview are joined on purpose, and Store sends a message where it used to call up into Editor.</p>
       </div>
     </div>
   </div>
@@ -193,8 +134,10 @@ notes.sbtel: 9 bindings, <span class="hl-ok">0 not allowed</span></pre>
       <p class="lead">A block is one part of the system: it can be a feature, a service, a file, or a function.</p>
       <p>A block can contain levels and other blocks, so you can progressively expand it with AI, from a subsystem down to a function. Its sketch is one plain sentence about what it is for. If the sentence needs an &ldquo;and&rdquo;, it is two blocks: one strand per block.</p>
       <p><code>:type</code> says what it is in the code.</p>
+<details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel" id="bk-src">(block Store :type "Module"
   (~ Keeps notes on disk, so they survive a restart. ~))</pre>
+</details>
     </div>
     <figure class="fig">
       <div class="frame" id="bk">
@@ -227,6 +170,7 @@ notes.sbtel: 9 bindings, <span class="hl-ok">0 not allowed</span></pre>
       <p class="lead">Each level is a vocabulary built from the level below. A block may use what is below it, never what is above.</p>
       <p>In a small shop, pages are made of shopping, shopping of prices, and prices of what is stored. Each line is a barrier: a page talks about carts and checkouts, never about tables and rows. This is the stratified design of <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/full-text/book/book-Z-H-14.html"><abbr title="Structure and Interpretation of Computer Programs">SICP</abbr></a>.</p>
       <p>Levels run top to bottom. Level 1 is the lowest, and knows nothing of the rest.</p>
+<details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(block Shop
   (level :name "Pages"
     (block Storefront))
@@ -236,6 +180,7 @@ notes.sbtel: 9 bindings, <span class="hl-ok">0 not allowed</span></pre>
     (block Pricing) (block Tax))
   (level :name "Storage"
     (block Database)))</pre>
+</details>
     </div>
     <figure class="fig">
       <div class="frame dgm" id="lv">
@@ -274,11 +219,13 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
     <div class="txt">
       <p class="lead">Adjacent blocks use each other&rsquo;s internals, working as a single unit.</p>
       <p>Other blocks in a level stay independent. A design is simple when its strands are not braided together (<a href="https://www.infoq.com/presentations/Simple-Made-Easy/">&ldquo;Simple Made Easy&rdquo;</a>); declaring two blocks adjacent makes their braid explicit, drawn in the picture with a sentence that says why.</p>
+<details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(level :name "Notes as text"
   (adjacent (~ The preview scrolls with the editor. ~)
     (block Editor)
     (block Preview))
   (block Sync))</pre>
+</details>
     </div>
     <figure class="fig">
       <div class="frame dgm" id="adj">
@@ -288,8 +235,8 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
         <svg class="edges" aria-hidden="true"></svg>
       </div>
       <div class="capline">
-        <span class="grow" id="adj-cap" aria-live="polite">Preview calls into Editor. The braid allows it.</span>
-        <button class="btn" type="button" id="adj-btn" aria-pressed="false">Remove the braid</button>
+        <span class="grow" id="adj-cap" aria-live="polite">Preview calls into Editor. Being adjacent allows it.</span>
+        <button class="btn" type="button" id="adj-btn" aria-pressed="false">Remove the link</button>
       </div>
     </figure>
   </div>
@@ -303,11 +250,13 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
       <p class="lead">When neither side should name the other, they exchange a message.</p>
       <p>A message type is data. Inputs are ports on top of a card, outputs on the bottom. Keymap sends a <code>KeyChord</code>, Palette takes one, and something else connects them. Flow that goes upward, like an event or a callback, is always a message.</p>
       <p><code>refines</code> declares a subtype: a port that takes <code>Event</code> also takes a <code>Click</code>. A <code>behavior</code> is shared vocabulary, like a trait: a set of ports that many blocks promise.</p>
+<details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(message KeyChord (~ A normalized key combination. ~))
 (level :name "Surfaces"
   (block Palette (port :in KeyChord)))
 (level :name "Services"
   (block Keymap (port :out KeyChord)))</pre>
+</details>
     </div>
     <figure class="fig">
       <div class="frame dgm" id="msg">
@@ -334,6 +283,7 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
     <div class="txt">
       <p class="lead">Point at a type to see everywhere that data travels.</p>
       <p><code>carries</code> says one type holds others: a <code>Snapshot</code> carries a <code>Selection</code> and a <code>Camera</code>, drawn as their dots on its lower ear. So a <code>Camera</code> travels wherever a <code>Snapshot</code> goes, and every block that handles one sees it. Where an assumption about some data lives, you can see all of it at once.</p>
+<details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(message Selection (~ The selected ids. ~))
 (message Camera (~ Pan and zoom. ~))
 (message Snapshot (carries Selection Camera) (~ What undo restores. ~))
@@ -343,6 +293,7 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
 (level :name "Drawing"
   (block Canvas (port :out Camera :as view))
   (block Picker (port :out Selection :as picked)))</pre>
+</details>
     </div>
     <figure class="fig">
       <div class="frame dgm" id="car">
@@ -377,9 +328,11 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
       <p class="lead">The picture can&rsquo;t silently lie.</p>
       <p>List who names whom in the real code, one edge per line with its file and line. <code>sbtel check</code> reports every upward, sideways or out-of-scope dependency, and points at the line.</p>
       <p>When a break is deliberate, a <code># VIOLATION:</code> comment above the edge says why, and the report carries the reason.</p>
+<details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(block Notes
   (level :name "Editing" (block Editor))
   (level :name "Storage" (block Store)))</pre>
+</details>
     </div>
     <figure class="fig">
 <pre class="code wrapline term-out" aria-label="Terminal output of sbtel check"><span class="hl-prompt">$ </span>cat edges.txt

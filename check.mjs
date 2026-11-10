@@ -1,5 +1,5 @@
 // Quick look at the home page: `node check.mjs [outdir]`. Prints where each section starts on a laptop and a
-// phone, checks that the hero plays through its three beats, and saves first-screen screenshots.
+// phone, checks that the hero plays from the tangle to the design, and saves first-screen screenshots.
 // Needs playwright for node (a preinstalled tool, not a dependency of this site).
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
@@ -19,11 +19,12 @@ for (const [name, opts] of [['laptop', { viewport: { width: 1280, height: 720 } 
     hero: Math.round(document.querySelector('#hero').getBoundingClientRect().top + scrollY),
     secs: [...document.querySelectorAll('section[id]')].map(s => s.id + '@' + Math.round(s.getBoundingClientRect().top + scrollY)) }));
   await p.evaluate(() => document.querySelector('#hero').scrollIntoView({ block: 'center' }));
-  await p.waitForFunction(() => document.getElementById('demo').dataset.beat === '3', null, { timeout: 16000 }).catch(() => {});
-  const beat = await p.evaluate(() => document.getElementById('demo').dataset.beat);
-  await p.screenshot({ path: join(out, name + '-fix.png') });
-  const ok = beat === '3' && !m.overflow && !errs.length; if (!ok) bad++;
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}: page ${m.h}px, screen ${m.vh}px, hero diagram at ${m.hero}px, autoplay reached beat ${beat}` +
+  await p.waitForFunction(() => document.getElementById('demo').dataset.state === 'design', null, { timeout: 9000 }).catch(() => {});
+  const beat = await p.evaluate(() => document.getElementById('demo').dataset.state);
+  await p.waitForTimeout(5600); // the design, settled
+  await p.screenshot({ path: join(out, name + '-design.png') });
+  const ok = beat === 'design' && !m.overflow && !errs.length; if (!ok) bad++;
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}: page ${m.h}px, screen ${m.vh}px, hero diagram at ${m.hero}px, autoplay reached "${beat}"` +
     (m.overflow ? ', horizontal overflow' : '') + (errs.length ? ', errors: ' + errs.join('; ') : '') + `\n     ${m.secs.join('  ')}`);
   await p.close();
 }

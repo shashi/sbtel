@@ -80,21 +80,6 @@ function finish(p0, c1, c2, tip) {
     at: t => bez(p0, c1, c2, tip, t),
   };
 }
-// Two strands twisted around the segment p-q: adjacency is a declared braid.
-function braid(p, q) {
-  const dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-  const twists = Math.max(2, Math.round(L / 13)), A = 3.2, N = 48;
-  const strand = s => {
-    let d = '';
-    for (let i = 0; i <= N; i++) {
-      const t = i / N, e = Math.sin(Math.PI * t); // the strands meet at both ends
-      const o = s * A * Math.sin(Math.PI * twists * t) * Math.min(1, e * 3);
-      d += (i ? 'L' : 'M') + (p[0] + dx * t + nx * o).toFixed(1) + ' ' + (p[1] + dy * t + ny * o).toFixed(1);
-    }
-    return `<path d="${d}"/>`;
-  };
-  return `<g class="braid">${strand(1)}${strand(-1)}</g>`;
-}
 const arrowSVG = (a, cls = '', op = 1) => `<g class="${cls}"${op < 1 ? ` opacity="${op.toFixed(2)}"` : ''}><path d="${a.d}"/><path class="head" d="${a.head}"/></g>`;
 function tagAt(frame, key, xy, text, cls) {
   let t = frame.querySelector(`.tagl[data-k="${key}"]`);
@@ -167,44 +152,36 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   });
 })();
 
-// ---------- hero: a tangle, then levels that expose two problems, then the fix ----------
+// ---------- hero: the code as a tangle, and the same parts as a design in levels ----------
 (() => {
   const fr = $('#hero'), demo = $('#demo'); if (!fr) return;
-  const svg = $('svg.edges', fr), next = $('#hero-next'), reset = $('#hero-reset');
+  const svg = $('svg.edges', fr);
   const B = Object.fromEntries($$('.blk', fr).map(e => [e.dataset.id, e]));
-  const inEar = $('[data-id="Editor"] .ear', fr), outEar = $('[data-id="Store"] .ear', fr);
-  // The bindings in edges.txt, in its order. Two are problems: Preview -> Editor and Store -> Editor.
+  // Who calls whom in the code. The design keeps E. It replaces SIDE with adjacency and UP with a message.
   const E = [['Shell','Editor',{ ft: 0, off: -26 }],['Shell','Preview',{ ft: 0 }],['Shell','Sync'],['Shell','Search'],
     ['Editor','Store',{ off: 6 }],['Preview','Markdown'],['Sync','Store'],['Search','Index']];
   const SIDE = ['Preview','Editor'], UP = ['Store','Editor',{ off: -14 }];
   // Where each block sits in the tangle, as fractions of the frame, and its tilt.
   const T = { Shell:[.52,.80,-3], Editor:[.80,.26,4], Preview:[.20,.58,-2], Sync:[.70,.58,3], Search:[.16,.24,-4],
               Store:[.46,.20,2], Markdown:[.84,.84,-3], Index:[.30,.88,3] };
-  // Three progress values, 0 to 1: red marks the two problems, thin fades the allowed arrows (the levels say
-  // them now), fix applies the fix. Pending timers belong to the current beat and are cleared on a change.
+  // Three progress values, 0 to 1: red marks the two calls the levels forbid, fix replaces them (an adjacency
+  // line; the ports' dots), thin fades the calls the levels already say. Timers belong to the current state.
   const P = { red: 0, thin: 0, fix: 0 };
-  let beat = 1, auto = null, timers = [], tws = {};
+  let state = 'tangle', timers = [], tws = {};
   const blks = Object.values(B);
-  const later = $('#hero-cap .later');
+  // A block's level, top first, and its place in it: the design arrives top-down.
+  const order = new Map(); $$('.lvl', fr).forEach((l, li) => $$('.blk', l).forEach((b, bi) => order.set(b, li * 300 + bi * 45)));
 
   function draw() {
     const bx = id => box(B[id], svg), { red, thin, fix } = P;
     let s = '';
-    // The allowed bindings: the raw edges file in the tangle; once levels say it, they fade.
     if (thin < 1) s += E.map(([a, b, o]) => arrowSVG(arrow(bx(a), bx(b), o), '', 1 - thin)).join('');
-    const bad = red > 0.5 ? 'bad' : '';
-    const side = arrow(bx(SIDE[0]), bx(SIDE[1])), up = arrow(bx(UP[0]), bx(UP[1]), UP[2]);
-    if (fix < 1) s += arrowSVG(side, bad, 1 - fix) + arrowSVG(up, bad, 1 - fix);
-    if (fix > 0) {
-      // The viewer's adjacency line: one plain line between the two cards, at their middle.
+    if (fix < 1) { const bad = red > 0.5 ? 'bad' : ''; s += arrowSVG(arrow(bx(SIDE[0]), bx(SIDE[1])), bad, 1 - fix) + arrowSVG(arrow(bx(UP[0]), bx(UP[1]), UP[2]), bad, 1 - fix); }
+    if (fix > 0) { // the viewer's adjacency line: one plain line between the two cards, at their middle
       const e = bx('Editor'), p = bx('Preview');
       s = `<line class="adj" x1="${e.r}" y1="${e.cy}" x2="${p.x}" y2="${p.cy}" opacity="${fix.toFixed(2)}"/>` + s;
     }
     svg.innerHTML = s;
-    const showTags = red > 0.5 && fix < 0.5;
-    const e = bx('Editor'), p = bx('Preview');
-    tagAt(fr, 'side', [(e.r + p.x) / 2, Math.min(e.y, p.y) - 13], showTags ? (fr.clientWidth < 520 ? 'same-level' : 'same-level: not adjacent') : '', 'bad');
-    tagAt(fr, 'up', up.at(0.12), showTags ? 'upward' : '', 'bad lefty');
   }
   function placeTangle(animate) {
     if (!animate) blks.forEach(b => { b.style.transition = 'none'; });
@@ -218,11 +195,11 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     if (!animate) { fr.offsetWidth; blks.forEach(b => { b.style.transition = ''; }); }
   }
   // Tween one progress value, redrawing as it goes; tweens of different values run side by side.
-  function tween(key, to, ms, delay = 0) {
+  function tween(key, to, ms) {
     if (tws[key]) cancelAnimationFrame(tws[key]);
     const from = P[key];
     if (reduce || !ms) { P[key] = to; draw(); return; }
-    const t0 = performance.now() + delay;
+    const t0 = performance.now();
     const step = t => {
       const k = clamp((t - t0) / ms, 0, 1), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
       P[key] = from + (to - from) * e; draw();
@@ -231,66 +208,54 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     tws[key] = requestAnimationFrame(step);
   }
   const at = (ms, fn) => timers.push(setTimeout(fn, ms));
-  const clearPending = () => { timers.forEach(clearTimeout); timers = []; Object.values(tws).forEach(r => r && cancelAnimationFrame(r)); tws = {}; partner(false); };
-  // The viewer's port-hover partner highlight: Store's NoteSaved port is the source (dashed), Editor, which
-  // can take it, the partner (solid), and both dots ringed. Shown once when the fix lands, then it settles.
+  // The viewer's port highlight, for a moment: Store's port is the source (dashed) and Editor can take it.
   function partner(on) {
     B.Store.classList.toggle('talk-src', on); B.Editor.classList.toggle('talk', on);
     $$('.ear .pdot', fr).forEach(d => d.classList.toggle('hot', on));
   }
-  const LABEL = { 1: 'Arrange into levels', 2: 'Fix it', 3: 'Start over' };
-  function go(n, animate = !reduce) {
-    const prev = beat; beat = n;
-    clearPending();
-    demo.dataset.beat = n;
-    $$('.beats button', demo).forEach(b => { if (+b.dataset.b === n) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
-    $$('[data-for]', demo).forEach(e => { e.hidden = +e.dataset.for !== n; });
-    next.textContent = LABEL[n]; reset.hidden = n === 1 || n === 3;
-    fr.classList.toggle('tangled', n === 1);
-    fr.classList.toggle('fixed', n === 3);
-    if (later) later.hidden = !(n === 2 && !animate);
-    if (n === 1) {
-      P.fix = 0; P.red = 0; P.thin = 0; placeTangle(animate);
-      animate ? during(1500, draw) : draw();
+  const clearPending = () => { timers.forEach(clearTimeout); timers = []; Object.values(tws).forEach(r => r && cancelAnimationFrame(r)); tws = {}; partner(false); };
+  function go(s, animate = !reduce) {
+    state = s; clearPending();
+    demo.dataset.state = s;
+    $$('.seg button', demo).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === s)));
+    $$('[data-for]', demo).forEach(e => { e.hidden = e.dataset.for !== s; });
+    fr.classList.toggle('tangled', s === 'tangle'); fr.classList.toggle('fixed', s === 'design');
+    if (s === 'tangle') {
+      placeTangle(animate);
+      if (!animate) { P.red = P.thin = P.fix = 0; draw(); return; }
+      P.red = 0; tween('fix', 0, 350); tween('thin', 0, 600); during(1500, draw);
       return;
     }
-    const arranging = animate && prev === 1;
-    blks.forEach((b, i) => { b.style.transitionDelay = arranging ? (i * 45) + 'ms' : '0ms'; if (!animate) b.style.transition = 'none'; b.style.transform = ''; });
-    if (!animate) { fr.offsetWidth; blks.forEach(b => { b.style.transition = ''; }); }
-    if (!animate) { P.red = 1; P.thin = 1; P.fix = n === 3 ? 1 : 0; draw(); return; }
-    if (n === 2) {
-      // The blocks settle with every arrow still drawn, so most visibly point down and two turn red. After a
-      // pause the allowed ones fade, since the levels already say them, and the caption says so.
-      P.fix = 0;
-      if (arranging) { P.red = 0; P.thin = 0; during(1500, draw); at(1400, () => tween('red', 1, 500)); }
-      else tween('fix', 0, 400);
-      if (P.thin < 1) at(arranging ? 3400 : 1500, () => { if (later) later.hidden = false; tween('thin', 1, 700); });
-      else if (later) later.hidden = false;
-    }
-    if (n === 3) {
-      const d = arranging ? 1300 : 0;
-      if (arranging) during(1500, draw);
-      P.red = 1; tween('thin', 1, 500, d); tween('fix', 1, 900, d);
-      at(d + 900, () => partner(true)); at(d + 2700, () => partner(false));
-    }
+    blks.forEach(b => { b.style.transitionDelay = animate ? order.get(b) + 'ms' : '0ms'; if (!animate) b.style.transition = 'none'; b.style.transform = ''; });
+    if (!animate) { fr.offsetWidth; blks.forEach(b => { b.style.transition = ''; }); P.red = 0; P.thin = P.fix = 1; draw(); return; }
+    // The blocks settle level by level with every call still drawn: most point down, two do not. Those two
+    // turn red, then give way to the adjacency line and the message's ports; last, the calls the levels
+    // already say fade out.
+    during(2200, draw);
+    at(1900, () => tween('red', 1, 250));
+    at(2700, () => tween('fix', 1, 800));
+    at(3300, () => partner(true)); at(4900, () => partner(false));
+    at(4300, () => tween('thin', 1, 900));
   }
-  const stopAuto = () => { if (auto) { clearTimeout(auto); auto = null; } };
-  next.addEventListener('click', () => { stopAuto(); go(beat === 3 ? 1 : beat + 1); });
-  reset.addEventListener('click', () => { stopAuto(); go(1); });
-  $$('.beats button', demo).forEach(b => b.addEventListener('click', () => { stopAuto(); if (+b.dataset.b !== beat) go(+b.dataset.b); }));
-  demo.addEventListener('pointerdown', stopAuto); demo.addEventListener('keydown', stopAuto);
-  observeResize(fr, () => { if (beat === 1) placeTangle(false); draw(); });
-  if (reduce) { go(1, false); return; }
-  go(1, false);
-  // Gentle autoplay: once a quarter of the tangle is in view, arrange it after a beat, then show the fix if
-  // the picture is still on screen. It plays once and any interaction stops it.
-  let seen = false;
-  const step = (ms, from) => { auto = setTimeout(() => { auto = null; if (beat !== from || !seen) return; go(from + 1); if (from === 1) step(8000, 2); }, ms); };
+  // It goes back and forth by itself while it is on screen, waits while it is pointed at or has the focus,
+  // and stops for good once a picture is chosen by hand.
+  const HOLD = { tangle: 3000, design: 10500 };
+  let loop = null, seen = false, held = false, manual = false;
+  function schedule() {
+    clearTimeout(loop); if (manual || reduce) return;
+    loop = setTimeout(() => { if (seen && !held) go(state === 'tangle' ? 'design' : 'tangle'); schedule(); }, HOLD[state]);
+  }
+  $$('.seg button', demo).forEach(b => b.addEventListener('click', () => { manual = true; clearTimeout(loop); if (b.dataset.s !== state) go(b.dataset.s); }));
+  demo.addEventListener('pointerenter', () => { held = true; }); demo.addEventListener('pointerleave', () => { held = false; });
+  demo.addEventListener('focusin', () => { held = true; }); demo.addEventListener('focusout', () => { held = false; });
+  observeResize(fr, () => { if (state === 'tangle') placeTangle(false); draw(); });
+  if (reduce) { go('design', false); return; } // no motion: the design, and the switch still works
+  go('tangle', false);
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
     placeTangle(false); draw();
-    if (!('IntersectionObserver' in window)) { seen = true; return step(2600, 1); }
+    if (!('IntersectionObserver' in window)) { seen = true; return schedule(); }
     let started = false;
-    const io = new IntersectionObserver(es => { seen = es[es.length - 1].isIntersecting; if (seen && !started) { started = true; step(2600, 1); } }, { threshold: .25 });
+    const io = new IntersectionObserver(es => { seen = es[es.length - 1].isIntersecting; if (seen && !started) { started = true; schedule(); } }, { threshold: .25 });
     io.observe(fr);
   });
 })();
@@ -431,7 +396,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   draw(); report();
 })();
 
-// ---------- adjacency: a declared braid ----------
+// ---------- adjacency: a declared link, drawn as the viewer draws it (one plain line) ----------
 (() => {
   const fr = $('#adj'); if (!fr) return;
   const svg = $('svg.edges', fr), btn = $('#adj-btn'), why = $('#adj-why'), cap = $('#adj-cap');
@@ -441,7 +406,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     const e = box(ed, svg), p = box(pv, svg);
     const s0 = [p.x + Math.min(22, p.w / 3), p.y], t0 = [e.r - Math.min(22, e.w / 3), p.y - 1];
     const ar = finish(s0, [s0[0], s0[1] - 50], [t0[0], t0[1] - 50], t0);
-    svg.innerHTML = (braided ? braid([e.r, e.cy], [p.x, p.cy]) : '') + arrowSVG(ar, braided ? '' : 'bad');
+    svg.innerHTML = (braided ? `<line class="adj" x1="${e.r}" y1="${e.cy}" x2="${p.x}" y2="${p.cy}"/>` : '') + arrowSVG(ar, braided ? '' : 'bad');
     tagAt(fr, 'a', [ar.mid[0], ar.mid[1] - 2], braided ? 'adjacent: allowed' : 'same-level: not allowed', braided ? 'ok' : 'bad');
     why.style.left = ((e.r + p.x) / 2) + 'px'; why.style.top = (e.b + 14) + 'px';
   }
@@ -449,9 +414,9 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     braided = !braided;
     fr.classList.toggle('unbraided', !braided);
     btn.setAttribute('aria-pressed', String(!braided));
-    btn.textContent = braided ? 'Remove the braid' : 'Restore the braid';
-    cap.textContent = braided ? 'Preview calls into Editor. The braid allows it.'
-                              : 'Without the braid, Preview calling Editor is a sideways dependency.';
+    btn.textContent = braided ? 'Remove the link' : 'Restore the link';
+    cap.textContent = braided ? 'Preview calls into Editor. Being adjacent allows it.'
+                              : 'Without the link, Preview calling Editor is a sideways dependency.';
     draw();
   });
   observeResize(fr, draw);
