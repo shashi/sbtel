@@ -260,3 +260,60 @@ details.spec { margin-top:18px; }
 details.spec > summary { cursor:pointer; font-size:14.5px; color:var(--accent-ink); width:max-content; max-width:100%; }
 details.spec > summary:hover { text-decoration:underline; }
 details.spec > pre.code { margin-top:10px; }
+
+/* ---------- Why: one design, the agent's view and yours, and the loop between them ---------- */
+.flow { margin:40px 0 48px; display:grid; grid-template-columns:minmax(0, 5fr) 70px minmax(0, 7fr); gap:0 18px; align-items:start; }
+.flow-h { display:flex; align-items:center; gap:10px; margin:0 0 12px; font-size:16px; font-weight:600; color:var(--ink); }
+.flow .who { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 11px; border-radius:13px; font:650 13px/1 var(--ff-ui); letter-spacing:.01em; }
+.flow .who::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+.flow .who.agent { background:var(--accent-soft); color:var(--accent-ink); }
+.flow .who.you { background:var(--you); color:var(--you-ink); }
+.flow-agent { position:relative; }
+.flow-agent pre.code { font-size:13px; line-height:1.75; padding:16px 18px 56px; }
+.flow-agent .ln { display:block; margin:0 -8px; padding:0 8px; border-radius:4px; transition:background-color .5s ease; }
+.flow-agent .ln.new { background:var(--ok-soft); animation:flow-in .45s ease both; }
+.flow-agent .ln.new.kept { background:transparent; }
+@keyframes flow-in { from { opacity:0; transform:translateY(-4px); } }
+.flow .fx { opacity:0; transform:translateY(5px); transition:opacity .35s ease, transform .35s ease; pointer-events:none; }
+.flow .fx.on { opacity:1; transform:none; }
+.think { position:absolute; right:14px; bottom:14px; display:flex; align-items:center; gap:8px; padding:6px 12px 6px 8px; border-radius:18px; background:var(--accent-soft); color:var(--accent-ink); }
+.think svg { fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.think svg .dot { fill:currentColor; stroke:none; }
+.think .dots { display:inline-flex; gap:4px; }
+.think .dots i { width:6px; height:6px; border-radius:50%; background:currentColor; animation:flow-dot 1s ease-in-out infinite; }
+.think .dots i:nth-child(2) { animation-delay:.16s; } .think .dots i:nth-child(3) { animation-delay:.32s; }
+@keyframes flow-dot { 0%, 70%, 100% { opacity:.25; transform:none; } 35% { opacity:1; transform:translateY(-3px); } }
+.flow-arrow { width:70px; height:40px; margin-top:120px; overflow:visible; }
+.flow-arrow path { fill:none; stroke:var(--ink-2); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+.flow-you .frame { padding-bottom:62px; }
+.flow-you .row { justify-content:flex-start; padding-left:5%; }
+.flow-you .cb { position:absolute; top:-9px; right:-9px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:var(--accent); color:#fff; font:700 11.5px/20px var(--ff-ui); text-align:center; box-shadow:0 0 0 2px var(--surface); }
+.flow-you .blk.ghost { border-style:dashed; border-color:var(--ok); box-shadow:0 0 0 3px var(--ok-soft); transition:opacity .35s ease, transform .35s ease, border-color .5s ease, box-shadow .5s ease; }
+.flow-you .blk.ghost.kept { border-style:solid; border-color:var(--frame-line); box-shadow:none; }
+.flow-you .newtag { position:absolute; top:-10px; right:-12px; padding:0 6px; border-radius:8px; background:var(--ok); color:#fff; font:700 10.5px/17px var(--ff-ui); letter-spacing:.03em; transition:opacity .4s ease; }
+.flow-you .ghost.kept .newtag { opacity:0; }
+.flow-you .chat { position:absolute; z-index:5; right:14px; top:40px; width:min(250px, 52%); padding:10px 12px 12px; border-radius:12px; background:var(--surface); border:1px solid var(--panel-line); box-shadow:0 10px 30px rgba(0,0,0,.14); font-size:14px; line-height:1.4; }
+.flow-you .chat p { margin:0; }
+.flow-you .chat .k { font-size:10.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+.flow-you .chat .me { min-height:2.8em; padding:7px 9px; border:1px solid var(--panel-line); border-radius:9px; color:var(--ink); }
+.flow-you .chat .caret { display:inline-block; width:1.5px; height:1em; margin-left:1px; vertical-align:-2px; background:var(--ink); animation:flow-caret 1s steps(1) infinite; }
+.flow-you .chat.done .caret { display:none; }
+@keyframes flow-caret { 50% { opacity:0; } }
+.flow-you .chat .st { margin-top:5px; font-size:11.5px; font-weight:600; color:var(--ok); }
+.flow-you .chat .re { animation:flow-in .4s ease both; margin-top:7px; padding:7px 9px; border-radius:9px; background:var(--accent-soft); color:var(--ink); }
+.flow-you .chat .re b { display:block; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-ink); margin-bottom:2px; }
+.flow-you .vbar { position:absolute; z-index:4; left:50%; bottom:16px; transform:translate(-50%, 5px); display:flex; align-items:center; gap:10px; white-space:nowrap; padding:7px 8px 7px 14px; border-radius:11px; background:var(--ink); color:var(--surface); font-size:13.5px; box-shadow:0 8px 24px rgba(0,0,0,.2); }
+.flow-you .vbar.on { transform:translate(-50%, 0); }
+.flow-you .vbar .b { padding:5px 10px; border-radius:7px; background:color-mix(in srgb, var(--surface) 16%, transparent); font-weight:600; transition:transform .12s ease, box-shadow .2s ease; }
+.flow-you .vbar .b.primary { background:var(--accent); color:#fff; }
+.flow-you .vbar .b.press { transform:scale(.93); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 40%, transparent); }
+.flow-cap { grid-column:1 / -1; margin:16px 0 0; font-size:15px; color:var(--muted); min-height:1.5em; text-align:center; }
+@media (max-width: 960px) {
+  .flow { grid-template-columns:minmax(0, 1fr); gap:0; }
+  .flow-arrow { margin:10px auto 6px; transform:rotate(90deg); }
+}
+@media (max-width: 720px) {
+  .flow-you .chat { right:8px; width:min(230px, 62%); font-size:13px; }
+  .flow-you .vbar { font-size:12.5px; gap:6px; padding-left:10px; }
+  .flow-you .vbar span:first-child { display:none; }
+}

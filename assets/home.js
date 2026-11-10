@@ -260,6 +260,56 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   });
 })();
 
+// ---------- why: the agent's text and your picture, and one turn of the loop between them ----------
+(() => {
+  const fig = $('#flow'); if (!fig) return;
+  const el = id => $('#flow-' + id), on = (id, v = true) => el(id).classList.toggle('on', v);
+  const TEXT = 'Keep older versions of a note too.';
+  const CAP = ['One design, two views of it.', 'You point at a block and say what you want.', 'Your agent reads the comment and thinks.',
+    'It edits the text, answers you, and proposes the change.', 'You look at what changed and accept it.'];
+  let timers = [];
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const cap = i => { el('cap').textContent = CAP[i]; };
+  function reset() {
+    timers.forEach(clearTimeout); timers = [];
+    ['cb', 'hist', 'chat', 'sent', 'bar', 'think'].forEach(k => on(k, false)); el('reply').hidden = true;
+    el('typed').textContent = ''; el('chat').classList.remove('done');
+    el('new').hidden = true; el('new').classList.remove('kept'); el('hist').classList.remove('kept');
+    el('last').textContent = '    (block Store)))'; el('accept').classList.remove('press');
+    cap(0);
+  }
+  // The proposal as it stands before Accept: also what is shown when motion is off.
+  function proposed() {
+    on('chat'); el('chat').classList.add('done'); el('typed').textContent = TEXT; on('sent'); on('cb'); el('reply').hidden = false;
+    el('last').textContent = '    (block Store)'; el('new').hidden = false; on('hist'); on('bar');
+  }
+  function play() {
+    reset();
+    at(1300, () => { cap(1); on('chat'); });                                   // you comment on Store
+    [...TEXT].forEach((_, i) => at(1900 + i * 42, () => { el('typed').textContent = TEXT.slice(0, i + 1); }));
+    const sent = 1900 + TEXT.length * 42 + 450;
+    at(sent, () => { el('chat').classList.add('done'); on('sent'); on('cb'); });
+    at(sent + 700, () => { cap(2); on('think'); });                            // the agent thinks
+    at(sent + 3000, () => { cap(3); on('think', false); el('last').textContent = '    (block Store)'; el('new').hidden = false; });
+    at(sent + 3500, () => { el('reply').hidden = false; });
+    at(sent + 4100, () => { on('hist'); on('bar'); });                         // the proposal, as a diff on the picture
+    at(sent + 6900, () => { cap(4); el('accept').classList.add('press'); });   // you accept it
+    at(sent + 7250, () => { el('accept').classList.remove('press'); on('bar', false); el('hist').classList.add('kept'); el('new').classList.add('kept'); });
+    at(sent + 8200, () => on('chat', false));
+    at(sent + 11400, play);
+  }
+  if (reduce) { reset(); proposed(); cap(3); return; }
+  reset();
+  if (!('IntersectionObserver' in window)) { play(); return; }
+  // Play while it is on screen; start over when it comes back.
+  let running = false;
+  new IntersectionObserver(es => {
+    const vis = es[es.length - 1].isIntersecting;
+    if (vis && !running) { running = true; play(); }
+    if (!vis && running) { running = false; reset(); }
+  }, { threshold: .35 }).observe(fig);
+})();
+
 // ---------- blocks: :type grounds a block ----------
 (() => {
   const g = $('#bk .seg'); if (!g) return;

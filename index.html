@@ -93,6 +93,39 @@
   <h2 class="term" id="t-why">Why</h2>
   <div class="why-txt">
     <p class="whylead">sbtel gives you an opinionated, WYSIWYG view of any system at any level of granularity, so you can collaborate with AI on design, understanding, and architectural bug fixes. It comes with a linter the AI can use to make sure the code matches the picture.</p>
+  </div>
+
+  <figure class="flow" id="flow" aria-label="The same design twice: the text your agent reads and writes, and the diagram you see. You comment on the Store block, the agent thinks, replies and proposes a new History block, and you accept the change.">
+    <div class="flow-side flow-agent">
+      <p class="flow-h"><span class="who agent">Agent</span>Your agent sees</p>
+<pre class="code" aria-hidden="true"><span class="ln">(block Notes</span><span class="ln">  (level :name "Notes as text"</span><span class="ln">    (block Editor)</span><span class="ln">    (block Preview))</span><span class="ln">  (level :name "Stored notes"</span><span class="ln" id="flow-last">    (block Store)))</span><span class="ln new" id="flow-new" hidden>    (block History)))</span></pre>
+      <div class="think fx" id="flow-think" aria-hidden="true">
+        <svg viewBox="0 0 28 28" width="28" height="28"><path d="M14 3v4"/><circle cx="14" cy="2.6" r="1.6" class="dot"/><rect x="4.5" y="7" width="19" height="15" rx="5"/><circle cx="10.5" cy="14" r="1.7" class="dot"/><circle cx="17.5" cy="14" r="1.7" class="dot"/><path d="M11 18.2h6"/></svg>
+        <span class="dots"><i></i><i></i><i></i></span>
+      </div>
+    </div>
+    <svg class="flow-arrow" viewBox="0 0 70 40" aria-hidden="true"><path d="M4 22 C 18 10, 38 10, 60 20"/><path d="M50 12 C 54 15, 58 18, 61.5 20.5 C 57 23, 53 26, 49 30"/></svg>
+    <div class="flow-side flow-you">
+      <p class="flow-h"><span class="who you">You</span>You see</p>
+      <div class="frame dgm" aria-hidden="true">
+        <div class="fh">Notes</div>
+        <div class="lvl"><div class="lname"><span>Notes as text</span></div>
+          <div class="row"><div class="blk">Editor</div><div class="blk">Preview</div></div></div>
+        <div class="lvl"><div class="lname"><span>Stored notes</span></div>
+          <div class="row"><div class="blk" id="flow-store">Store<span class="cb fx" id="flow-cb">1</span></div><div class="blk ghost fx" id="flow-hist">History<span class="newtag">new</span></div></div></div>
+        <div class="chat fx" id="flow-chat">
+          <p class="k">Comments on Store</p>
+          <p class="me"><span id="flow-typed"></span><span class="caret"></span></p>
+          <p class="st fx" id="flow-sent">Sent to the agent</p>
+          <p class="re" id="flow-reply" hidden><b>Agent</b>Added History beside Store. It keeps every saved version.</p>
+        </div>
+        <div class="vbar fx" id="flow-bar"><span>Version 2 from your agent</span><span class="b">See changes</span><span class="b primary" id="flow-accept">Accept</span></div>
+      </div>
+    </div>
+    <figcaption class="flow-cap" id="flow-cap" aria-hidden="true">One design, two views of it.</figcaption>
+  </figure>
+
+  <div class="why-txt">
     <p>Design usually starts on a whiteboard. It&rsquo;s our room to think. You can take a picture of it and show it to your agent, but after eight hours of feature engineering in a chat, it&rsquo;s hard to feel you still know what the AI has built.</p>
     <p>On larger projects written by AI, trying to understand the system by prompting the AI again brings you back to the one-dimensional bandwidth of chat. The cost of going back to the drawing board is high. You can ask it to draw a diagram, but then you still have to talk to it through prompts.</p>
     <p>Subtler problems get simpler with a 2D view: duplicated invariants causing bugs, a tangled mess of dependencies. They&rsquo;re easy to untangle in 2D, and the AI knows better which code to use, change, or build on next time. And if you care about this kind of thing, it gives you peace of mind that you understand what just happened!</p>
