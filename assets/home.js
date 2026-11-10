@@ -383,7 +383,9 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   const svg = $('svg.edges', fr), out = $('#lv-out');
   const rows = $$('.row', fr), blks = $$('.blk', fr);
   const B = Object.fromEntries(blks.map(e => [e.dataset.id, e]));
-  blks.forEach(b => { b.dataset.home = rows.indexOf(b.parentElement); });
+  blks.forEach(b => { b.dataset.home = rows.indexOf(b.parentElement); b.dataset.ord = [...b.parentElement.children].indexOf(b); });
+  // A block that comes back to its own level takes its old place in it; anywhere else it goes to the end.
+  const put = (el, ri) => { const after = ri === +el.dataset.home ? [...rows[ri].children].find(x => x !== el && +x.dataset.home === ri && +x.dataset.ord > +el.dataset.ord) : null; rows[ri].insertBefore(el, after || null); };
   // edges.txt, in its order: who uses whom in the shop's code.
   const E = [['Storefront','Cart'],['Storefront','Checkout'],['Cart','Pricing'],['Checkout','Tax'],['Pricing','Database'],['Tax','Database']];
   const say = $('#lv-say');
@@ -416,7 +418,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
         const bottom = Math.max(...blks.filter(x => rowOf(x.dataset.id) === ri).map(x => box(x, svg).b));
         xy = [xs.reduce((u, v) => u + v, 0) / xs.length, bottom + 16];
       }
-      tagAt(fr, 'r' + ri, xy, k.src.size ? [...k.rules].join(', ') + ': not allowed' : '', 'bad');
+      tagAt(fr, 'r' + ri, xy, k.src.size ? [...k.rules].map(r => r === 'upward' ? 'reaches up' : 'same level').join(', ') + ': not allowed' : '', 'bad');
     });
   }
   function report() {
@@ -440,7 +442,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   // leaves the picture too: the diagram and the check output always describe the same spec.
   const prune = () => rows.forEach(r => { r.parentElement.hidden = !r.querySelector('.blk'); });
   function moveTo(el, ri, focus) {
-    flip(blks, () => { rows[ri].appendChild(el); prune(); if (focus) el.focus({ preventScroll: true }); }, draw);
+    flip(blks, () => { put(el, ri); prune(); if (focus) el.focus({ preventScroll: true }); }, draw);
     draw(); report();
   }
   function rowAt(y) {
@@ -490,6 +492,77 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   observeResize(fr, draw);
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(draw);
   draw(); report();
+
+  // It plays by itself until someone touches it: the pointer picks Cart and the picture says what Cart may
+  // use; then it drags Cart to the bottom level, where Cart would reach up, and puts it back.
+  const cur = $('#lv-cur'), lvls = rows.map(r => r.parentElement);
+  let auto = false, timers = [], raf = 0;
+  const at = (ms, fn) => timers.push(setTimeout(() => { if (auto) fn(); }, ms));
+  function point(e, fx = .6, fy = .65, glide = true) {
+    const f = fr.getBoundingClientRect(), r = e ? e.getBoundingClientRect() : null;
+    cur.style.transition = glide ? '' : 'none';
+    cur.style.transform = `translate(${(r ? r.left - f.left + r.width * fx : f.width - 46).toFixed(1)}px, ${(r ? r.top - f.top + r.height * fy : f.height - 40).toFixed(1)}px)`;
+  }
+  const click = () => { cur.classList.remove('click'); cur.offsetWidth; cur.classList.add('click'); };
+  function reach(id) { // what a block may use: everything below its level, nothing above it
+    const at0 = id ? rows.indexOf(B[id].parentElement) : -1;
+    lvls.forEach((l, i) => { l.classList.toggle('can', id != null && i > at0); l.classList.toggle('cant', id != null && i < at0); });
+    rows.forEach((r, i) => { if (id != null && i !== at0) r.dataset.note = i > at0 ? `${id} can use this` : `${id} can never use this`; else delete r.dataset.note; });
+    blks.forEach(b => b.classList.toggle('sel', b.dataset.id === id));
+  }
+  function autoDrag(el, ri, ms) {
+    const a = el.getBoundingClientRect(), z = rows[ri].getBoundingClientRect();
+    const dy = z.top + z.height / 2 - (a.top + a.height / 2) - 8, dx = ri > rows.indexOf(el.parentElement) ? 54 : 0;
+    el.classList.add('drag'); drag = { el, row: rows.indexOf(el.parentElement) };
+    const t0 = performance.now();
+    const step = t => {
+      if (!auto) return;
+      const k = clamp((t - t0) / ms, 0, 1), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      el.style.transform = `translate(${(dx * e).toFixed(1)}px, ${(dy * e).toFixed(1)}px)`;
+      const r = el.getBoundingClientRect(); drag.row = rowAt(r.top + r.height / 2);
+      const bad = E.some(([p, q]) => (p === el.dataset.id || q === el.dataset.id) && rule(p, q) !== 'ok');
+      rows.forEach((x, i) => { x.classList.toggle('over', i === drag.row); x.classList.toggle('no', i === drag.row && bad); });
+      draw(); point(el, .6, .65, false);
+      if (k < 1) { raf = requestAnimationFrame(step); return; }
+      const to = drag.row; drag = null; el.classList.remove('drag'); rows.forEach(x => x.classList.remove('over', 'no'));
+      moveTo(el, to, false);
+    };
+    raf = requestAnimationFrame(step);
+  }
+  function home(animate) {
+    blks.forEach(b => { b.classList.remove('drag'); b.style.transform = ''; }); drag = null; rows.forEach(r => r.classList.remove('over', 'no')); reach(null);
+    if (blks.some(b => rows.indexOf(b.parentElement) !== +b.dataset.home)) {
+      if (animate) flip(blks, () => { blks.forEach(b => rows[+b.dataset.home].appendChild(b)); prune(); }, draw);
+      else { blks.forEach(b => rows[+b.dataset.home].appendChild(b)); prune(); }
+    }
+    draw(); report();
+  }
+  function play() {
+    timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf);
+    home(true); cur.style.opacity = 1; point(null);
+    at(900, () => point(B.Cart));
+    at(1750, () => { click(); reach('Cart'); });
+    at(4700, () => reach(null));
+    at(5100, () => { click(); autoDrag(B.Cart, 3, 1150); });
+    at(9300, () => { click(); autoDrag(B.Cart, 1, 1050); });
+    at(10700, () => point(null));
+    at(13600, play);
+  }
+  function stop() { // a person takes over: the picture is theirs from here
+    if (!auto) return; auto = false;
+    timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); cur.style.opacity = 0;
+    blks.forEach(b => { b.classList.remove('drag'); b.style.transform = ''; }); drag = null; rows.forEach(r => r.classList.remove('over', 'no')); reach(null); draw(); report();
+  }
+  let manual = false;
+  const take = e => { if (e.isTrusted) { manual = true; stop(); } };
+  fr.addEventListener('pointerdown', take, true); fr.addEventListener('keydown', take, true); $('#lv-reset').addEventListener('click', take, true);
+  cur.style.opacity = 0;
+  if (reduce || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(es => {
+    const vis = es[es.length - 1].isIntersecting; if (manual) return;
+    if (vis && !auto) { auto = true; play(); }
+    if (!vis && auto) { auto = false; timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); home(false); cur.style.opacity = 0; }
+  }, { threshold: .4 }).observe(fr);
 })();
 
 // ---------- adjacency: a declared link, drawn as the viewer draws it (one plain line) ----------
