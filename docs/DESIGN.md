@@ -808,6 +808,12 @@ two blocks' texts joined by a blank line).
 - `comments/<spec file>.jsonl`: every comment, reply and review event of every session on that spec,
   appended as it is written to the session's events.jsonl (a proposal's path is left out).
 
+Each line of the comment log also carries `session`, the session it was said in. A new session on a spec
+file reads that file's log and appends its comments, reviews (without `proposal`) and replies to its own
+events, renumbered as its own (`c<seq>`, `r<seq>`, `c<seq>.<k>`) and marked `old: true`, with `origins`
+mapping each new id to its `session/id` in the log. `sbtel inbox` skips old events. A reply to an old
+comment is logged under the original session and id, so the next session restores it too.
+
 `sbtel open` on a file looks for a `.git` at or above the spec's directory; when it finds one and the
 repository's top `.gitignore` has no line that ignores `.sbtel`, it appends `.sbtel/` and reports
 `added .sbtel/ to <path>` on stderr. The server does the same before it first writes a file.

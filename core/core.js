@@ -705,7 +705,7 @@ function layout(model, opts, M) {
     const placed = [];
     b.levels.forEach((L, i) => { const r = layoutLevel(L, inner, depth + 1); placed.push({ L, r, y }); y += r.h; if (i < b.levels.length - 1) y += K.LEVELGAP; });
     const levelsEnd = y;
-    const bands = [bandOf(b.behaviorDecls, inner, depth + 1, 'Behaviors'), bandOf(b.messageDecls, inner, depth + 1, 'Message types')].filter(Boolean);
+    const bands = [bandOf(b.behaviorDecls, inner, depth + 1, 'Behaviors'), bandOf(b.messageDecls, inner, depth + 1, 'Shapes')].filter(Boolean);
     if (bands.length) { if (placed.length) y += K.BANDGAP; bands.forEach((bd, i) => { bd.y = y; y += bd.h + (i < bands.length - 1 ? 24 : 0); }); }
     y += 6; const outY = y;
     const H = y + (b.virtual ? 16 : K.PAD);

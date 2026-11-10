@@ -42,7 +42,7 @@ func TestEnsureIgnored(t *testing.T) {
 func TestAppendProjectComment(t *testing.T) {
 	spec := filepath.Join(t.TempDir(), "a.sbtel")
 	for _, text := range []string{"one", "two"} {
-		if err := AppendProjectComment(spec, Event{Seq: 1, Kind: "comment", Text: text}); err != nil {
+		if err := AppendProjectComment(spec, "s1", Event{Seq: 1, Kind: "comment", Text: text}); err != nil {
 			t.Fatal(err)
 		}
 	}

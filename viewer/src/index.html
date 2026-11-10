@@ -287,7 +287,9 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .brand b { font-weight:700; }
 .brand .nm { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .help { left:max(14px, env(safe-area-inset-left, 0px)); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 48px); border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.5; max-width:min(360px, calc(100vw - 28px)); }
-.help ul { margin:0; padding-left:16px; }
+.help ul { margin:0; padding-left:16px; padding-right:22px; }
+.help #helpX { position:absolute; top:6px; right:6px; width:28px; height:28px; font-size:18px; line-height:1; color:var(--muted); }
+.help #helpX:hover { color:var(--ink); }
 .help li { margin:2px 0; }
 .dock { left:50%; transform:translateX(-50%); bottom:max(14px, env(safe-area-inset-bottom, 0px)); border-radius:14px; padding:6px; display:flex; align-items:center; gap:2px;
   max-width:calc(100vw - 24px); overflow-x:auto; scrollbar-width:none; }
@@ -515,6 +517,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 <div class="float brand" id="brand"><b>sbtel</b><span class="nm" id="specName"></span>
   <button class="xbtn" id="helpBtn" aria-expanded="false" aria-controls="help" title="How to use">?</button></div>
 <div class="float help" id="help" hidden>
+  <button class="xbtn" id="helpX" aria-label="Close" title="Close">×</button>
   <ul>
     <li><b>sbtel</b> is a language to design, understand, and collaborate on a system's architecture with AI. This page draws a system as blocks in levels, from text you can edit.</li>
     <li>Drag the canvas to pan. Pinch, or ⌘/Ctrl + scroll, to zoom.</li>
@@ -2565,6 +2568,7 @@ $('zOut').onclick = () => zoomAt(1 / 1.2, innerWidth / 2, innerHeight / 2);
 $('fit').onclick = () => fit(true);
 $('expAll').onclick = () => { state.model.blocks.forEach(b => { if (hasInside(b)) state.open.add(b.id); }); render(); fit(true); };
 $('colAll').onclick = () => { state.open = new Set(); render(); fit(true); };
+$('helpX').onclick = () => $('helpBtn').click();
 $('helpBtn').onclick = () => { const h = $('help'); h.hidden = !h.hidden; $('helpBtn').setAttribute('aria-expanded', !h.hidden); store.set('sbtel-help-seen', true); };
 
 // @sbtel end App.Input

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -264,5 +265,60 @@ func TestSentFrom(t *testing.T) {
 	}
 	if n := len(heard(parent)); n != 1 {
 		t.Errorf("the map hears %d things, want 1", n)
+	}
+}
+
+// A new session on a spec file starts with what was said about it in earlier sessions, renumbered and
+// marked old; no inbox delivers it again, and a reply to it works.
+func TestCommentsRestored(t *testing.T) {
+	h := start(t, Options{})
+	dir := t.TempDir()
+	file := filepath.Join(dir, "x.sbtel")
+	src := "(block A)\n"
+	os.WriteFile(file, []byte(src), 0o644)
+	first := h.create(src, &file)
+	post := func(id, route, body string) {
+		t.Helper()
+		if r, b := h.req("POST", "/s/"+id+"/"+route, body, nil); r.StatusCode != 200 {
+			t.Fatalf("%s: %d %s", route, r.StatusCode, b)
+		}
+	}
+	post(first, "comment", `{"target":"block:A","targetLabel":"block A","text":"first thing","version":1,"source":""}`)
+	post(first, "review", `{"message":"overall","version":1,"comments":[{"target":"block:A","targetLabel":"block A","text":"in a review","source":""}]}`)
+	for to, text := range map[string]string{"c2": "answer one", "c3.1": "answer two"} {
+		if err := h.c.Do("POST", "/control/sessions/"+first+"/reply", map[string]string{"to": to, "text": text}, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	second := h.create(src, &file)
+	evs, _ := state.ReadEvents(h.s.paths, second)
+	var got []string
+	for _, e := range evs[1:] {
+		if !e.Old || e.IsUser() {
+			t.Errorf("restored event is not old, or an inbox would deliver it: %+v", e)
+		}
+		switch e.Kind {
+		case "comment":
+			got = append(got, e.ID+" "+e.Text)
+		case "review":
+			got = append(got, e.ID+" "+e.Message+" ["+e.Comments[0].ID+" "+e.Comments[0].Text+"]")
+		case "reply":
+			got = append(got, "->"+e.To+" "+e.Text)
+		}
+	}
+	sort.Strings(got[2:]) // the two replies were sent in map order
+	want := "c2 first thing|r3 overall [c3.1 in a review]|->c2 answer one|->c3.1 answer two"
+	if strings.Join(got, "|") != want {
+		t.Errorf("restored: %s\nwant:     %s", strings.Join(got, "|"), want)
+	}
+	// New things continue the numbering, and are logged once: a third session has five old events.
+	post(second, "comment", `{"target":"block:A","targetLabel":"block A","text":"new","version":1,"source":""}`)
+	if err := h.c.Do("POST", "/control/sessions/"+second+"/reply", map[string]string{"to": "c2", "text": "late answer"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	third := h.create(src, &file)
+	evs, _ = state.ReadEvents(h.s.paths, third)
+	if len(evs) != 1+6 {
+		t.Errorf("third session has %d events, want 7", len(evs))
 	}
 }

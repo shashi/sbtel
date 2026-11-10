@@ -3,34 +3,10 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
-## 0.4.0 (2026-11-09)
-
-### Breaking
-
-- **`shape` replaces `message`.** `(shape NoteSaved)` declares what a port takes or gives. The word
-  "message" suggested a queue; a shape is only what two ports must share to fit.
-- **`takes` and `gives` replace `port`.** `(takes NoteSaved)` and `(gives Note :as text)`, where 0.3
-  wrote `(port :in NoteSaved)` and `(port :out Note :as text)`.
-- **No compatibility with 0.3 or 0.2 specs.** Nothing was released on them, so `(port …)`, `(message …)`
-  and the older `(layer …)` and `(either …)` are simply unknown forms now, and `sbtel fmt` (which only
-  migrated ports) is gone.
-- Lint, check, query and diff say "shape" where they said "message type". JSON output keeps its keys
-  (`messages`, `"kind": "message"`) and the `μ:` and `msg:` id prefixes.
-- The code anchor is `@sbtel shape Name`.
+## 0.4.1 (2026-11-10)
 
 ### Added
 
-- **`ref`.** `(ref src/store.ts:40-60 (~ why ~))` in a block, a behavior or a shape names a file it
-  stands for or rests on: a path beside or below the spec, with optional lines or a `#heading`, or a URL.
-  A card with refs shows a count at its lower right corner; it opens the file in a modal that closes
-  only with Close or Escape, with the named lines highlighted. The server serves a file only when the
-  pushed spec names it, only from inside the spec's directory (no `..`, no dot-files, no links out), and
-  only as text or an image, never as a page. A standalone page or an export shows the paths. The
-  language has twelve forms.
-- **Unread replies.** A reply that arrives while its chat is closed puts a dot on the block's comment
-  count until you open the chat. What you have read is remembered per session.
-- **See changes.** The new-version toast has a second button beside Reload: it shows the diff between
-  the version you have and the one that arrived, over the page, with Back and Reload.
 - **Attach a file.** Drop a file on a block and the block gets a `ref` to it, as an edit in your draft.
   Drop or paste a file into a comment, or use the paperclip in the comment box (the way to attach on a
   phone), and the comment's text gets the `ref`. The file is stored in `.sbtel/files/` beside the spec,
@@ -61,11 +37,50 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   in the same callout a block's comments use, above the toolbar; on a phone it is the bottom sheet. It
   was only in the canvas's right-click menu before.
 - **The version in Settings.** The Settings panel ends with the sbtel version that built the page.
+- **Comments come back.** A new session on a spec file starts with what was said about that file in
+  earlier sessions, from `.sbtel/comments/`: the comments, the reviews (without their proposed specs) and
+  the replies, under ids of the new session. They are marked old, so `sbtel inbox` does not deliver them
+  again; a reply to one works as to any comment.
+- **The help panel has a Close button.**
+- **A starting example for a hosted page.** `<meta name="sbtel-example" content="notes-tour">` in the
+  standalone page makes `examples/notes-tour.sbtel` what it opens with, where the built-in Shell sample
+  was; the Sample button then loads it too. The project's playground uses it.
 
 ### Changed
 
 - **Paragraphs in a sketch sit half a line apart** on a card, where a whole blank line stood between
   them. A sketch too long for its card is clipped to whole lines without the breaks.
+
+## 0.4.0 (2026-11-09)
+
+### Breaking
+
+- **`shape` replaces `message`.** `(shape NoteSaved)` declares what a port takes or gives. The word
+  "message" suggested a queue; a shape is only what two ports must share to fit.
+- **`takes` and `gives` replace `port`.** `(takes NoteSaved)` and `(gives Note :as text)`, where 0.3
+  wrote `(port :in NoteSaved)` and `(port :out Note :as text)`.
+- **No compatibility with 0.3 or 0.2 specs.** Nothing was released on them, so `(port …)`, `(message …)`
+  and the older `(layer …)` and `(either …)` are simply unknown forms now, and `sbtel fmt` (which only
+  migrated ports) is gone.
+- Lint, check, query and diff say "shape" where they said "message type". JSON output keeps its keys
+  (`messages`, `"kind": "message"`) and the `μ:` and `msg:` id prefixes.
+- The code anchor is `@sbtel shape Name`.
+
+### Added
+
+- **`ref`.** `(ref src/store.ts:40-60 (~ why ~))` in a block, a behavior or a shape names a file it
+  stands for or rests on: a path beside or below the spec, with optional lines or a `#heading`, or a URL.
+  A card with refs shows a count at its lower right corner; it opens the file in a modal that closes
+  only with Close or Escape, with the named lines highlighted. The server serves a file only when the
+  pushed spec names it, only from inside the spec's directory (no `..`, no dot-files, no links out), and
+  only as text or an image, never as a page. A standalone page or an export shows the paths. The
+  language has twelve forms.
+- **Unread replies.** A reply that arrives while its chat is closed puts a dot on the block's comment
+  count until you open the chat. What you have read is remembered per session.
+- **See changes.** The new-version toast has a second button beside Reload: it shows the diff between
+  the version you have and the one that arrived, over the page, with Back and Reload.
+
+### Changed
 
 - **The skills are rewritten** as short operational guidance: what a view shows and how deep to go by
   task, and a counting step in design and recovery (a lower-level block is used by most of what is

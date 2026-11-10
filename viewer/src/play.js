@@ -71,6 +71,12 @@ SBTEL.modes.standalone = (() => {
       try { return { text: decode(P.src) }; }
       catch (e) { return { text: '', raw: 'src:' + P.src, error: 'The spec in the URL (#src=…) is not base64url-encoded UTF-8 text.' }; }
     }
+    // A hosted page may name the example it starts with (<meta name="sbtel-example">), where the built-in
+    // sample would be; if it cannot be fetched, the sample is.
+    const start = P.example === null ? (document.querySelector('meta[name="sbtel-example"]')?.getAttribute('content') || '').trim() : '';
+    if (start && /^[\w-]+(?:\/[\w-]+)*$/.test(start)) {
+      try { const r = await fetch('examples/' + start + '.sbtel'); if (r.ok) return { text: await r.text(), start: true }; } catch (e) {}
+    }
     if (P.example !== null) {
       const name = dec(P.example), path = 'examples/' + name + '.sbtel';
       if (!/^[\w-]+(?:\/[\w-]+)*$/.test(name)) return { text: '', raw: 'example:' + name, error: `#example=${name} is not an example name: letters, digits, - and _, with / between folders.` };
@@ -268,7 +274,8 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
 
   async function boot() {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
-    const got = await fromURL(), text = got ? got.text : SAMPLE, exported = !!(got && got.exported);
+    let got = await fromURL(); const text = got ? got.text : SAMPLE, exported = !!(got && got.exported);
+    if (got && got.start) { got = null; $('sample').onclick = () => { state.open = new Set(); state.seenTop = new Set(); setSource(text); fit(true); }; } // the page's own sample: handled as the built-in one is
     const key = got || P.embed ? ':' + (P.embed ? 'embed-' : 'spec-') + digest(got && got.error ? got.raw : text) : '';
     if (key) loadPrefs(key);
     if (P.theme) state.opts.theme = P.theme; else if (P.embed) state.opts.theme = 'system';

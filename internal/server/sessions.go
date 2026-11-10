@@ -102,12 +102,70 @@ func (s *Server) append(ss *session, e state.Event) (state.Event, error) {
 	ss.meta.Updated = e.At
 	// What was said also goes to the project's own log, beside the spec (state.AppendProjectComment).
 	if (e.Kind == "comment" || e.Kind == "reply" || e.Kind == "review") && ss.meta.Spec != nil && ss.meta.Spec.Path != nil {
-		if err := state.AppendProjectComment(*ss.meta.Spec.Path, e); err != nil {
+		le, sid := e, ss.meta.ID
+		if e.Kind == "reply" { // an answer to something restored is logged against its first session and id
+			evs, _ := state.ReadEvents(s.paths, ss.meta.ID)
+			for _, o := range evs {
+				if at := strings.SplitN(o.Origins[e.To], "/", 2); len(at) == 2 {
+					sid, le.To = at[0], at[1]
+				}
+			}
+		}
+		if err := state.AppendProjectComment(*ss.meta.Spec.Path, sid, le); err != nil {
 			s.logf("session %s: project comment log: %v", ss.meta.ID, err)
 		}
 	}
 	s.mirror(ss, e)
 	return e, nil
+}
+
+// restore brings what was said about a spec file in earlier sessions into a new session on it, from the
+// project's comment log (DESIGN.md §4.4). Each comment and review gets an id of this session, and the
+// replies follow their comments; all are marked old, so no inbox delivers them again. A review's
+// proposed spec is not kept. The events are written directly: they are in the project log already.
+func (s *Server) restore(ss *session) {
+	if ss.meta.Kind != "spec" || ss.meta.Spec == nil || ss.meta.Spec.Path == nil {
+		return
+	}
+	ids := map[string]string{}
+	for _, o := range state.ReadProjectComments(*ss.meta.Spec.Path) {
+		n := strconv.Itoa(ss.seq + 1)
+		e := state.Event{Seq: ss.seq + 1, Kind: o.Kind, By: o.By, At: o.At, Old: true}
+		switch o.Kind {
+		case "comment":
+			e.ID = "c" + n
+			e.Target, e.TargetLabel, e.Text, e.Source, e.Version, e.Hash = o.Target, o.TargetLabel, o.Text, o.Source, 1, ss.meta.Base
+			ids[o.Session+"/"+o.ID] = e.ID
+			e.Origins = map[string]string{e.ID: o.Session + "/" + o.ID}
+		case "review":
+			e.ID = "r" + n
+			e.Message, e.Version, e.Hash = o.Message, 1, ss.meta.Base
+			ids[o.Session+"/"+o.ID] = e.ID
+			e.Origins = map[string]string{e.ID: o.Session + "/" + o.ID}
+			for k, c := range o.Comments {
+				old := c.ID
+				c.ID = "c" + n + "." + strconv.Itoa(k+1)
+				ids[o.Session+"/"+old] = c.ID
+				e.Origins[c.ID] = o.Session + "/" + old
+				e.Comments = append(e.Comments, c)
+			}
+		case "reply":
+			if e.To = ids[o.Session+"/"+o.To]; e.To == "" {
+				continue
+			}
+			e.Text = o.Text
+		default:
+			continue
+		}
+		if e.At == "" {
+			e.At = state.Now()
+		}
+		if err := state.AppendEvent(s.paths, ss.meta.ID, e); err != nil {
+			s.logf("session %s: restoring comments: %v", ss.meta.ID, err)
+			return
+		}
+		ss.seq = e.Seq
+	}
 }
 
 // mirror copies an event to the session whose page sent it (DESIGN.md §4.3, ref): a comment, review or
@@ -259,6 +317,7 @@ func (s *Server) create(in SessionIn) (map[string]any, error) {
 	if _, err := s.append(ss, ev); err != nil {
 		return fail(err)
 	}
+	s.restore(ss)
 	if err := s.writeMeta(ss); err != nil {
 		return fail(err)
 	}

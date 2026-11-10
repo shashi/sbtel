@@ -79,7 +79,8 @@ func EnsureIgnored(specPath string) (string, error) {
 
 // AppendProjectComment appends one comment, reply or review to `.sbtel/comments/<spec file>.jsonl` beside
 // the spec, as one JSON line. The line is the session's event without what is private to the session.
-func AppendProjectComment(specPath string, e Event) error {
+func AppendProjectComment(specPath, session string, e Event) error {
+	e.Session = session
 	dir := filepath.Join(ProjectDir(specPath), "comments")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -100,4 +101,25 @@ func AppendProjectComment(specPath string, e Event) error {
 	defer f.Close()
 	_, err = f.Write(append(b, '\n'))
 	return err
+}
+
+// ReadProjectComments reads the log AppendProjectComment writes for a spec: every complete line that
+// parses, oldest first, at most the last 2000. A missing file is no comments.
+func ReadProjectComments(specPath string) []Event {
+	b, err := os.ReadFile(filepath.Join(ProjectDir(specPath), "comments", filepath.Base(specPath)+".jsonl"))
+	if err != nil {
+		return nil
+	}
+	var out []Event
+	for _, line := range strings.Split(string(b), "\n") {
+		var e Event
+		if strings.TrimSpace(line) == "" || json.Unmarshal([]byte(line), &e) != nil {
+			continue
+		}
+		out = append(out, e)
+	}
+	if len(out) > 2000 {
+		out = out[len(out)-2000:]
+	}
+	return out
 }

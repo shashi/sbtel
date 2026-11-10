@@ -254,6 +254,13 @@ type Event struct {
 	Session string `json:"session,omitempty"`
 	File    string `json:"file,omitempty"`
 	Ref     *Event `json:"ref,omitempty"`
+
+	// Old marks a comment, review or reply brought into a new session from the project's comment log
+	// (ReadProjectComments): it was said, and heard, in an earlier session.
+	Old bool `json:"old,omitempty"`
+	// Origins, on an old comment or review: for its id and its comments' ids here, the "session/id" they
+	// have in the project log, so a reply made here is logged against what it answers.
+	Origins map[string]string `json:"origins,omitempty"`
 }
 
 // ReviewComment is one comment of a review: the fields of a comment event, with the id c<seq>.<k>.
@@ -310,6 +317,15 @@ func (e Event) MarshalJSON() ([]byte, error) {
 	if e.From != "" {
 		m["from"] = e.From
 	}
+	if e.Old {
+		m["old"] = true
+		if len(e.Origins) > 0 {
+			m["origins"] = e.Origins
+		}
+	}
+	if e.Session != "" && e.Kind != "ref" { // the project log says which session each line is from
+		m["session"] = e.Session
+	}
 	return json.Marshal(m)
 }
 
@@ -320,7 +336,7 @@ func (e Event) IsUser() bool {
 	if e.Kind == "ref" {
 		return e.Ref != nil && e.Ref.By == "user"
 	}
-	return (e.Kind == "comment" || e.Kind == "save" || e.Kind == "review") && e.From == ""
+	return (e.Kind == "comment" || e.Kind == "save" || e.Kind == "review") && e.From == "" && !e.Old
 }
 
 // ReadEvents reads every complete line of events.jsonl. A trailing line without its newline
