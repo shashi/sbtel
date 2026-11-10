@@ -351,3 +351,7 @@ details.spec > pre.code { margin-top:10px; }
 /* A renamed level, while it is a proposal: the viewer's word diff. */
 .flow-you .lname del { color:var(--warn); text-decoration-thickness:1.5px; }
 .flow-you .lname ins { color:var(--ok); text-decoration:none; font-weight:600; background:var(--ok-soft); border-radius:4px; padding:0 4px; }
+/* What a block can stand for: three short rows. */
+.kinds { display:grid; grid-template-columns:max-content minmax(0, 1fr); gap:6px 18px; margin:0 0 18px; font-size:17px; line-height:1.5; }
+.kinds dt { font-weight:600; color:var(--ink); }
+.kinds dd { margin:0; color:var(--ink-2); }
