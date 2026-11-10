@@ -50,6 +50,9 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 - **All comments in one list.** A Comments button in the toolbar, with a dot when a reply is unread,
   lists every thread of the session, unread first; choosing one goes to its block and opens the chat.
   The `C` key opens the list, or the comment box of the selected block.
+- **Chat about the whole file.** A Chat button in the toolbar opens the comments on the file as a whole,
+  in the same callout a block's comments use, above the toolbar; on a phone it is the bottom sheet. It
+  was only in the canvas's right-click menu before.
 - **The version in Settings.** The Settings panel ends with the sbtel version that built the page.
 
 ### Changed

@@ -478,6 +478,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .thread .cm { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12px; color:var(--muted); }
 /* A reply nobody has read yet: a dot on the count. */
 .cbub.unread::after { content:""; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--canvas); }
+/* The whole-file chat sits above the toolbar, at its right end, not over it. */
+@media (min-width: 760px) { .pop.chat.filechat { left:auto !important; top:auto !important; right:16px; bottom:76px; max-height:calc(100vh - 150px); } }
 @media (max-width: 759px) {
   .pop.chat { left:8px !important; right:8px; top:auto !important; bottom:calc(8px + var(--kb, 0px)); width:auto; }
   .pop.chat .keys { display:none; }
@@ -2273,6 +2275,7 @@ function openChat(key, anchor, focus) {
     <ul class="thread" aria-live="polite"></ul>
     <div class="composer"><textarea id="cmtText" rows="2" placeholder="${key === 'block:' ? 'Say anything about the whole file.' : 'What should change, or what is unclear?'}" aria-label="Comment on ${esc(targetLabel(key))}"></textarea><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><input type="file" multiple hidden></div>
     <div class="acts"><span class="keys">${mac ? '⌘' : 'Ctrl+'}Enter sends · Shift+Enter: ${esc(keep.label.toLowerCase())}</span><button class="btn" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div>`, 'chat');
+  el.classList.toggle('filechat', key === 'block:');
   chat = { key, el };
   const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
   refreshChat(); placeNear(el, a.getBoundingClientRect());
