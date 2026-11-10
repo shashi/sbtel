@@ -80,8 +80,7 @@ language.
   it sits higher).
 - **Ports.** `(takes NoteSaved)` is named `noteSaved`: the type's name with its first letter
   lowercased (§3.5). Write `:as name` only when that name is taken, as when two ports have one type:
-  `(takes Item :as backlog)`. Port names are unique per block, inherited ports included. The 0.2
-  forms `(port name in Type)` (0.2) and `(port :in Type)`, `(message Name)` (0.3) are reported; `sbtel fmt --migrate` rewrites them.
+  `(takes Item :as backlog)`. Port names are unique per block, inherited ports included.
 - **`:type`** grounds a block, a behavior or a shape in code: what it is there (a module, a
   trait, a struct…). It shows as a pill. Keep the kinds consistent within a spec.
 - **Names** are any run of characters without whitespace, `(`, `)`, `"` or `;`, so a path
@@ -89,8 +88,7 @@ language.
   names. No style is required: name a block what its reader would call it. Duplicate block names get ids `Name#2`, `Name#3`… and a warning.
 
 **Checks** (`sbtel lint`): parse errors; model warnings (duplicates, two ports with one name, bad port
-direction, `adjacent` with fewer than 2 members, empty level, the old `(layer …)`, `(either …)` and
-0.2 port forms); structure warnings
+direction, `adjacent` with fewer than 2 members, empty level); structure warnings
 (unknown or misplaced forms and keywords, stray words, malformed ports, levels and `carries`, second
 sketches, blocks, levels and declarations inside a behavior…); six rules: every implemented behavior is
 declared, behaviors are used in scope, every port's type is declared, shapes are used in scope,
@@ -195,9 +193,7 @@ the opener (§7.1).
 
 Every form is a parenthesised list whose first item is a symbol naming the form. The twelve forms are
 `block`, `level`, `adjacent`, `takes`, `gives`, `shape`, `refines`, `carries`, `behavior`, `implements`,
-`ref` and `sketch`. The 0.3 forms `(port :in|:out Type)` and `(message Name)` still read; lint reports each with the
-way to write it now, and `sbtel fmt --migrate` rewrites them. Anything else is reported by lint (§7.3) and otherwise ignored. 0.2 renamed `layer` to
-`level` and removed `either`; both are reported with what to write instead (§7.2).
+`ref` and `sketch`. Anything else is reported by lint (§7.3) and otherwise ignored.
 
 Positions in messages are `line:col`, both 1-based; `col` counts UTF-16 code units, so for ASCII it is
 the byte column.
@@ -365,11 +361,6 @@ change with its type.
 A block's ports are its own ports followed by the ports of every behavior it implements, sketches
 included.
 
-**The 0.2 form.** sbtel 0.2 wrote the name first: `(port chord in KeyChord)`. 0.3 removed it. Lint
-reports it with the 0.3 text to write (§7.3), and the viewer still draws it (and writes the 0.3 form
-when it edits the port). `sbtel fmt --migrate-ports spec.sbtel` rewrites every 0.2 port in place, with
-`:as` only where the name is not the default one.
-
 ### 3.6 `message`, `refines`, `carries`
 
 ```lisp
@@ -379,7 +370,7 @@ when it edits the port). `sbtel fmt --migrate-ports spec.sbtel` rewrites every 0
 A shape is a kind of data. Two relations between types, and only these two:
 
 - **is-a**: `(refines Super)` makes `Name` a subtype of `Super`: a port that takes `Super` also takes
-  `Name`. A union is a supertype that each alternative refines (0.1's `either` is gone).
+  `Name`. A union is a supertype that each alternative refines .
 - **has-a**: `(carries A B …)` says a value of `Name` holds values of `A`, `B`…: types only, no field
   names or counts (the sketch says those). A subtype carries what its supertype carries. Recursion and
   cycles are fine (a `Turn` may carry `Turn`s). `carries` never changes what a port accepts.
@@ -593,22 +584,6 @@ spec.sbtel:2:3: error: Unterminated (~: no closing ~)
 
 ### 7.2 Model warnings
 
-The forms 0.2 renamed or removed. `(layer …)` is now `(level …)`, with no alias; a union is a supertype
-that each alternative refines. The viewer shows these too:
-
-```sbtel fails
-(block A
-  (layer (block B)))
-(shape Input (either Click Key))
-```
-
-```text
-spec.sbtel:2:3: warning: unknown form (layer) in block A (did you mean level?)
-spec.sbtel:3:14: warning: either was removed in 0.2; declare each alternative with (refines Union) instead
-spec.sbtel:3:1: info: Input is never used.
-spec.sbtel: 2 problems (1 block, 0 behaviors, 1 shape)
-```
-
 A duplicate block name (the second block's id becomes `A#2`):
 
 ```sbtel fails
@@ -636,39 +611,6 @@ spec.sbtel:4:1: warning: Duplicate behavior B
 spec.sbtel:2:1: info: M is never used.
 spec.sbtel:4:1: info: B is never used.
 spec.sbtel: 2 problems (0 blocks, 1 behavior, 1 shape)
-```
-
-A port direction other than `:in` or `:out` (a bare `in` or `out` adds `(write :in, not in)`):
-
-```sbtel fails
-(shape M)
-(block A (port :sideways M))
-```
-
-```text
-spec.sbtel:2:10: warning: (port …) is the 0.3 form and needs :in or :out; write (takes Shape) or (gives Shape)
-spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
-spec.sbtel: 1 problem (1 block, 0 behaviors, 1 shape)
-```
-
-A port in the 0.2 form, with the 0.3 text to write (`:as` only when the name is not the default one,
-and `…` for the sketch or anything else after the type). The diagram still draws it;
-`sbtel fmt --migrate-ports` rewrites it (§3.5):
-
-```sbtel fails
-(shape KeyChord)
-(shape Intent)
-(block Palette
-  (port chord in KeyChord (~ Opens the palette. ~))
-  (port intent out Intent))
-```
-
-```text
-spec.sbtel:4:3: warning: (port chord in KeyChord …) is the 0.2 form; write (takes KeyChord :as chord …)
-spec.sbtel:5:3: warning: (port intent out Intent) is the 0.2 form; write (gives Intent)
-spec.sbtel:1:1: info: KeyChord is declared at the top level but only used within Palette; it could live there.
-spec.sbtel:2:1: info: Intent is declared at the top level but only used within Palette; it could live there.
-spec.sbtel: 2 problems (1 block, 0 behaviors, 2 shapes)
 ```
 
 Two ports of one block or behavior with the same name: its own ports, its own and one it gets from a
@@ -817,20 +759,19 @@ spec.sbtel:1:10: warning: keyword :type of block A needs a value
 spec.sbtel: 1 problem (1 block, 0 behaviors, 0 shapes)
 ```
 
-A block, message or behavior without a name:
+A block, shape or behavior without a name:
 
 ```sbtel fails
 (block)
-(message)
+(shape)
 (behavior)
 ```
 
 ```text
-spec.sbtel:2:1: warning: (message ?) is the 0.3 form; write (shape Name)
 spec.sbtel:1:1: warning: block needs a name
 spec.sbtel:2:1: warning: shape needs a name
 spec.sbtel:3:1: warning: behavior needs a name, or (Name Param ...)
-spec.sbtel: 4 problems (1 block, 1 behavior, 1 shape)
+spec.sbtel: 3 problems (1 block, 1 behavior, 1 shape)
 ```
 
 A port without a type, an extra item after the type (a single word gets a hint), an unknown keyword,
@@ -839,7 +780,7 @@ A port without a type, an extra item after the type (a single word gets a hint),
 ```sbtel fails
 (shape M)
 (block A
-  (port :in)
+  (takes)
   (gives M :as y extra)
   (takes M :as w :sort 1)
   (takes M :as)
@@ -847,7 +788,6 @@ A port without a type, an extra item after the type (a single word gets a hint),
 ```
 
 ```text
-spec.sbtel:3:3: warning: (port :in) is the 0.3 form; write (takes Shape)
 spec.sbtel:7:3: warning: block A has two ports named m; tell them apart with :as
 spec.sbtel:3:3: warning: takes needs a shape: (takes Shape [:as name])
 spec.sbtel:4:18: warning: port y has extra items after its shape
@@ -855,7 +795,7 @@ spec.sbtel:5:18: warning: unknown keyword :sort in a port; a port takes only :as
 spec.sbtel:6:12: warning: keyword :as of a port needs a name
 spec.sbtel:7:12: warning: port m has extra items after its shape (to name it, write :as source)
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
-spec.sbtel: 7 problems (1 block, 0 behaviors, 1 shape)
+spec.sbtel: 6 problems (1 block, 0 behaviors, 1 shape)
 ```
 
 A second `:as` counts once too (`port w has more than one :as; only the first counts`).
@@ -1267,7 +1207,7 @@ anchors, and no others:
 | `@sbtel Name` | the next declaration (function, class, type, constant…) belongs to block `Name`, or to behavior `Name` when it is an interface, trait, protocol or typedef that the behavior stands for (`beh:Name` when a block has that name too). One per declaration: a second one before the same declaration is an error |
 | `@sbtel begin Name` … `@sbtel end Name` | the region between belongs to `Name`. Regions nest; the innermost wins. The `end` name must match its `begin` |
 | `@sbtel file Name` | from here to the end of the file belongs to `Name` |
-| `@sbtel message Name` | anchor: where shape `Name`'s shape is defined in code. It owns no code |
+| `@sbtel shape Name` | anchor: where shape `Name` is defined in code. It owns no code |
 | `@sbtel port Block.port` | anchor: where port `port` of block `Block` is handled; `port` is the port's name, the default one when it has no `:as` (`Shell.Router.intent` for `(takes Intent)`). It owns no code |
 
 An anchor changes no ownership: the lines after it belong to whoever owned them anyway, and an
@@ -1342,7 +1282,6 @@ violation and `sbtel open --bindings` shows it beside it (§8). [DESIGN.md §8](
 | `sbtel query spec.sbtel Id… [--with-deps]` | print the named elements (ids: block ids, `beh:Name`, `msg:Name`; headers print these as `β:Name` and `μ:Name`, which are accepted too) as a fragment that lints clean on its own, with the behaviors and shapes they use (carried ones too); a shape's header line says which types carry it and which blocks' ports use those; `--with-deps` adds the blocks they may bind to as collapsed stubs. An unknown id is exit 2 |
 | `sbtel check spec.sbtel --bindings edges.txt` | judge code bindings (§8) |
 | `sbtel diff a.sbtel b.sbtel` | what changed between two versions |
-| `sbtel fmt --migrate-ports spec.sbtel` | rewrite 0.2 ports in the 0.3 form, in place (§3.5); `--check` only reports |
 | `sbtel open spec.sbtel` | open the diagram for the human; prints a session id |
 | `sbtel inbox <id> --wait` | wait for, then print, what the human sent: reviews, comments, saves |
 | `sbtel reply <id> <comment-id> "text"` | answer a comment (`c7`, `c7.1`) or a review (`r7`) in the open tab |

@@ -15,7 +15,7 @@ docs/DESIGN.md section 8. There are no others:
   @sbtel begin Name       a region starts; regions nest, the innermost wins
   @sbtel end Name         the region ends; the name must match its begin
   @sbtel file Name        from here to the end of the file
-  @sbtel shape Name       anchor: where shape Name is defined; owns no code (0.3 wrote `message Name`)
+  @sbtel shape Name       anchor: where shape Name is defined; owns no code
   @sbtel port Block.port  anchor: where a port of Block is handled; owns no code
 
 A Name is a block, or a behavior: `@sbtel Durable` above an interface, trait, protocol or typedef
@@ -157,24 +157,18 @@ def read_spec(src):
     word = lambda k: toks[k] if k < len(toks) and toks[k] not in '()' else None
     # (behavior (Name P ...) ...) and (implements (Name Arg ...)): the name is the first word of the list.
     named = lambda k: word(k) or (word(k + 1) if k < len(toks) and toks[k] == '(' else None)
-    def port_name(k, verb=False):
-        # (takes Shape [:as name] ...) and (gives ...) (sbtel 0.4), or the 0.3 form (port :in Shape [:as name]):
-        # the :as name, or the default one; the 0.2 form (port name in Shape), which lint reports, by its name.
-        if verb:
-            k -= 1  # the shape sits where :in|:out's argument would
-        if verb or word(k) in (':in', ':out'):
-            j = k + 2
-            while word(j) and word(j).startswith(':'):
-                if word(j) == ':as' and word(j + 1) and not word(j + 1).startswith(':'):
-                    return word(j + 1)
-                j += 2
-            return default_port_name(word(k + 1)) if word(k + 1) and not word(k + 1).startswith(':') else None
-        return word(k)
+    def port_name(k):
+        # (takes Shape [:as name] ...) and (gives Shape ...): the :as name, or the default one. k is the shape.
+        j = k + 1
+        while word(j) and word(j).startswith(':'):
+            if word(j) == ':as' and word(j + 1) and not word(j + 1).startswith(':'):
+                return word(j + 1)
+            j += 2
+        return default_port_name(word(k)) if word(k) and not word(k).startswith(':') else None
     for i, t in enumerate(toks):
         if t == '(':
             head = toks[i + 1] if i + 1 < len(toks) else ''
-            verb = head in ('takes', 'gives')
-            head = 'message' if head == 'shape' else 'port' if verb else head
+            head = 'message' if head == 'shape' else 'port' if head in ('takes', 'gives') else None if head in ('message', 'port') else head
             name = named(i + 2) if head in ('block', 'message', 'behavior') else None
             # The nearest enclosing block or behavior, and whether a message form intervenes.
             owner = next(((f[0], f[1]) for f in reversed(stack) if f[0] in ('block', 'behavior', 'message')), (None, None))
@@ -186,8 +180,8 @@ def read_spec(src):
                 messages.add(name)
             elif head == 'behavior' and name:
                 behaviors.add(name)
-            elif head == 'port' and owner[1] and port_name(i + 2, verb):
-                (own_ports if owner[0] == 'block' else beh_ports if owner[0] == 'behavior' else {}).setdefault(owner[1], set()).add(port_name(i + 2, verb))
+            elif head == 'port' and owner[1] and port_name(i + 2):
+                (own_ports if owner[0] == 'block' else beh_ports if owner[0] == 'behavior' else {}).setdefault(owner[1], set()).add(port_name(i + 2))
             elif head == 'implements' and owner[0] in ('block', 'behavior') and named(i + 2):
                 (implements if owner[0] == 'block' else beh_impl).setdefault(owner[1], set()).add(named(i + 2))
             stack.append((head, name))
@@ -241,7 +235,7 @@ def owners(path, lines, spec, errors):
 
     def anchor(n, kw, name):
         """`message Name` or `port Block.port`: checked, owns nothing."""
-        if kw in ('shape', 'message'):  # `message` is the 0.3 spelling
+        if kw == 'shape':
             if valid(n, name, 'shape') and name not in spec.messages:
                 err(n, 'unknown shape %s' % name)
             return
@@ -272,7 +266,7 @@ def owners(path, lines, spec, errors):
         if m:
             ann_lines.add(n)
             words = CLOSE.sub('', m.group(1)).split()
-            if len(words) == 2 and words[0] in ('shape', 'message', 'port'):
+            if len(words) == 2 and words[0] in ('shape', 'port'):
                 anchor(n, words[0], words[1])
             elif len(words) == 2 and words[0] in ('begin', 'end', 'file'):
                 kw, name = words

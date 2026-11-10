@@ -21,7 +21,7 @@ An annotation is the token `@sbtel` in a line comment of the code's own syntax (
 | `@sbtel file Name` | from here to the end of the file belongs to Name (the common case) |
 | `@sbtel begin Name` … `@sbtel end Name` | a region; regions nest, and the innermost wins |
 | `@sbtel Name` | the next declaration belongs to Name (one per declaration) |
-| `@sbtel message Name` | anchor: where a shape's shape is defined; owns no code |
+| `@sbtel shape Name` | anchor: where a shape is defined; owns no code |
 | `@sbtel port Block.port` | anchor: where a block's port is handled (its name: the `:as` name, or the type's with the first letter lowercased); owns no code |
 
 Names are leaf blocks: code owned only by a container block is an error, and so is code in no block.

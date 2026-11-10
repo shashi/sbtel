@@ -213,6 +213,9 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
   background:var(--surface); color:var(--ink-2); font:600 11px/1 var(--ff-ui); display:inline-flex; align-items:center; justify-content:center; gap:3px; cursor:pointer; }
 .refb:hover { border-color:var(--accent); color:var(--accent-ink); }
 .refb svg.i { width:11px; height:11px; }
+.refc { display:inline-flex; align-items:center; gap:4px; vertical-align:baseline; border:1px solid var(--panel-line); background:var(--surface); color:var(--accent-ink); border-radius:7px; padding:0 6px; font:500 .88em var(--ff-mono); cursor:pointer; }
+.refc:hover { border-color:var(--accent); }
+.refc svg.i { width:11px; height:11px; }
 /* The file modal. It closes with its Close button or Escape, never by a click outside it. */
 .codep.refp { display:flex; flex-direction:column; left:50%; top:5vh; transform:translateX(-50%); width:min(920px, calc(100vw - 24px)); height:90vh; }
 .refp .reflist { display:flex; flex-wrap:wrap; gap:6px; padding:10px 14px 0 18px; }
@@ -2218,7 +2221,7 @@ let chatRowBtns = c => (c.status === 'saved' ? `<button class="tiny" data-t="sen
 let chatReplies = c => '';
 function chatRow(c) {
   const [cls, text, title] = chatStatus(c);
-  return `<li data-id="${esc(c.id)}"><div class="ct">${esc(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
+  return `<li data-id="${esc(c.id)}"><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
 const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || chat.key === key));
 // Draw the open chat's thread again and show its end; the popover and what is typed in it stay.
@@ -2512,12 +2515,25 @@ function highlight(t) {
   }
   return o + esc(t.slice(last));
 }
+// @sbtel end App.Code
+// @sbtel begin App.Files
 // ---------- Files: what a block's (ref …) forms name ----------
 // How a file's text is fetched: nothing here (a page on its own has no access to files); server mode
 // reassigns it (§6.5) and returns { text } | { image, src } | { binary } | { tooLarge } | null.
 let loadRef = async r => null;
-function openRefs(id, first) {
-  const n = state.model.node(id); if (!n || !n.refs || !n.refs.length) return;
+// A comment's or a reply's text, with the files it names as buttons: (ref path), as in a spec, or a Markdown
+// link [label](path). A link with a scheme is a link; anything else opens the file modal.
+function richText(s) {
+  return esc(s).replace(/\(ref\s+(?:&quot;((?:[^&]|&(?!quot;))*)&quot;|([^\s()&;]+))\)|\[([^\]\n]+)\]\(([^()\s]+)\)/g, (all, q, bare, label, href) => {
+    const path = q != null ? q : bare != null ? bare : href; if (!path) return all;
+    const un = path.replace(/&amp;/g, '&');
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(un)) return `<a href="${path}" target="_blank" rel="noopener noreferrer">${label || path}</a>`;
+    return `<button type="button" class="refc" data-ref="${path}">${ICON.code}${label || path}</button>`;
+  });
+}
+document.addEventListener('click', e => { const b = e.target.closest('.refc[data-ref]'); if (b) { e.stopPropagation(); openRefs(null, 0, { name:'Files', refs:[{ path:b.dataset.ref, sketch:'', ...refParts(b.dataset.ref) }] }); } }, true);
+function openRefs(id, first, given) {
+  const n = given || state.model.node(id); if (!n || !n.refs || !n.refs.length) return;
   const scrim = document.createElement('div'); scrim.className = 'scrim';
   const p = document.createElement('div'); p.className = 'codep refp'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); p.setAttribute('aria-label', 'Files of ' + n.name);
   p.innerHTML = `<header><b>${esc(n.name)}</b><span>${n.refs.length} file${n.refs.length === 1 ? '' : 's'}</span><span class="spacer"></span><button class="btn" data-k="close">Close</button></header>` +
@@ -2552,6 +2568,8 @@ function openRefs(id, first) {
   p.querySelector('[data-k="close"]').focus();
   show(first || 0);
 }
+// @sbtel end App.Files
+// @sbtel begin App.Code
 function openCode(id) {
   const b = state.model.node(id), el = state.elems.get(id); if (!b || !el) return;
   const text = sliceAt(state.src, b, 0);

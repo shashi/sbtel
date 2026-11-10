@@ -129,7 +129,6 @@ notes.sbtel: 1 binding, 1 not allowed, 0 explained
 | `sbtel query <spec> <id>… [--with-deps]` | print elements as a fragment that lints clean on its own; `--with-deps` adds the blocks they may bind to as stubs |
 | `sbtel check <spec> --bindings <edges.txt>` | code bindings that the levels forbid |
 | `sbtel diff <a> <b>` | what changed between two specs |
-| `sbtel fmt --migrate <spec>…` | rewrite the 0.2 and 0.3 forms (`(port …)`, `(message …)`) as `(takes …)`, `(gives …)` and `(shape …)`, in place (`--check` only reports) |
 | `sbtel open <spec> [--session id]` | open the diagram in the browser, or push a new version to it |
 | `sbtel open-diff <a> <b>` | open a visual diff |
 | `sbtel export <spec> [-o out.html] [--readonly] [--embed] [--bindings f] [--title t]` | one self-contained HTML file of the diagram to share: no server, no network, nothing to install |

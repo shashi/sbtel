@@ -122,7 +122,9 @@
         (block App.Popovers
           ; VIOLATION (viewer.edges.txt): the info-card handlers here read pointer state and open the
           ; message table.
-          (sketch "Floating popovers placed next to an anchor, including type and behavior info cards.")))
+          (sketch "Floating popovers placed next to an anchor, including type and behavior info cards."))
+        (block App.Files
+          (~ The file modal: what a block's refs and a comment's links open. ~)))
       (level
         (block App.Camera
           ; VIOLATION (viewer.edges.txt): goTo() navigates, so it reaches up to render, select, closePop

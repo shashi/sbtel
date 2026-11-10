@@ -1,4 +1,4 @@
-; v0.4: (shape Name …), (takes Shape [:as name] [sketch]) and (gives Shape …). Default names, :as, the 0.3 and 0.2 forms (read, and reported), clashes.
+; (shape Name …), (takes Shape [:as name] [sketch]), (gives Shape …) and (ref path [sketch]). Default names, :as, clashes.
 (shape NoteSaved (~ A note reached the disk. ~))
 (shape Item)
 (shape URL)
@@ -22,15 +22,7 @@
       (takes Élan)
       (takes Item :as item2 (sketch "Named explicitly."))))
   (level
-    (block Notes.Store (implements (Store Item)) (gives NoteSaved) (takes Item :as feed))
-    (block Notes.Legacy
-      (port chord in Item)
-      (port item out Item (~ Same name as the default. ~))
-      (port saved in NoteSaved))
-    (block Notes.Old
-      (port :in Item)
-      (port :out NoteSaved :as done (~ The 0.3 form, with a name and a sketch. ~)))))
-(message OldShape (~ The 0.3 name for a shape. ~))
+    (block Notes.Store (implements (Store Item)) (gives NoteSaved) (takes Item :as feed))))
 (block Clash
   (takes Item)
   (gives Item)
@@ -40,8 +32,6 @@
 (block Bad
   (takes)
   (gives :as x)
-  (port in Item)
-  (port :sideways Item)
   (takes Item extra)
   (takes Item :as x (sketch "a") (sketch "b")))
 (block Files

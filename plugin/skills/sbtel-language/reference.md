@@ -113,9 +113,6 @@ placement notes (`file:L:C: info: …`), then a summary line. A parse error prin
 - `Duplicate message X`
 - `Duplicate behavior X`
 - `port direction must be :in or :out` (with ` (write :in, not in)` for a bare `in` or `out`)
-- `(port chord in KeyChord) is the 0.2 form; write (takes KeyChord :as chord)`: `:as` only when the
-  name is not the default one, `…` before the `)` when the port has a sketch (`sbtel fmt
-  --migrate-ports spec.sbtel` rewrites them all)
 - `block X has two ports named p; tell them apart with :as`, `block X has two ports named p: its own and
   one from behavior B; tell them apart with :as`, `block X has two ports named p, from behaviors B and C;
   tell them apart with :as` (likewise `behavior X`; a clash inside a behavior is reported only there)
@@ -207,7 +204,7 @@ These are all the forms, inside any line comment (`//`, `#`, `--`, `;`, `%`, `'`
 - `@sbtel begin Name` … `@sbtel end Name`: a region. Regions nest, the innermost wins, and the names
   must match.
 - `@sbtel file Name`: from here to the end of the file.
-- `@sbtel message Name`: anchor where shape Name's shape is defined. It owns no code.
+- `@sbtel shape Name`: anchor where shape Name is defined. It owns no code.
 - `@sbtel port Block.port`: anchor where a block's port is handled (its `:as` name, or the default one). It owns no code.
 
 An anchor changes no ownership, and a pending `@sbtel Name` above it still applies to the next

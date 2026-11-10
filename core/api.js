@@ -204,10 +204,10 @@ var __api = (function () {
   // The core drops what it does not understand (an unknown form, a stray word, a port without a type).
   // These walk the reader's output and report each such thing as a warning, after the core's own.
   var ALLOWED = {
-    file: ['block', 'level', 'adjacent', 'shape', 'message', 'behavior'],
-    block: ['block', 'level', 'adjacent', 'takes', 'gives', 'port', 'shape', 'message', 'behavior', 'implements', 'sketch', 'ref'],
+    file: ['block', 'level', 'adjacent', 'shape', 'behavior'],
+    block: ['block', 'level', 'adjacent', 'takes', 'gives', 'shape', 'behavior', 'implements', 'sketch', 'ref'],
     level: ['block', 'adjacent', 'sketch'], adjacent: ['block', 'adjacent', 'sketch'], port: ['sketch'],
-    message: ['sketch', 'refines', 'carries', 'ref'], behavior: ['takes', 'gives', 'port', 'sketch', 'implements', 'ref'], ref: ['sketch']
+    message: ['sketch', 'refines', 'carries', 'ref'], behavior: ['takes', 'gives', 'sketch', 'implements', 'ref'], ref: ['sketch']
   };
   function formWarnings(src) {
     var out = [], starts = lineStarts(src);
@@ -227,7 +227,6 @@ var __api = (function () {
         }
         var h = x.list[0];
         if (!isSym(h)) { warn((x.list.length ? 'a form must start with its name' : 'empty form ()') + ' in ' + where, x.s); continue; }
-        if (h.v === 'layer' || h.v === 'either') continue;  // the core reports both (renamed, removed in 0.2)
         if (!FORMS.has(h.v)) { warn('unknown form (' + h.v + ') in ' + where, x.s); continue; }
         if (ctx === 'behavior' && NOT_IN_BEHAVIOR[h.v]) continue;  // the core reports it: declare it beside the behavior
         if (ALLOWED[ctx].indexOf(h.v) < 0) { warn('(' + h.v + ') is not allowed in ' + where, x.s); continue; }
@@ -251,8 +250,7 @@ var __api = (function () {
     }
     function form(h, x, inAdjacent) {
       var it = x.list.slice(1), nm = it[0];
-      // (takes Shape …) and (gives Shape …) are checked as ports; the 0.3 (port :in|:out …) and (message …)
-      // still are, and the core says how to write them now.
+      // (takes Shape …) and (gives Shape …) are checked as one thing, a port with a direction.
       var verb = h === 'takes' || h === 'gives' ? h : null;
       if (verb) { it = [{ t: 'sym', v: verb === 'takes' ? ':in' : ':out', s: x.s, e: x.s }].concat(it); h = 'port'; }
       if (h === 'shape') h = 'message';
@@ -279,7 +277,6 @@ var __api = (function () {
         // (port :in|:out Type [:as name] [sketch]). The core reports the 0.2 form, a bad direction and two
         // ports with one name.
         var pp = portParts(it);
-        if (pp.legacy || (pp.dir !== 'in' && pp.dir !== 'out')) return;
         var vb = pp.dir === 'in' ? 'takes' : 'gives';
         if (!isName(it[1])) { warn(vb + ' needs a shape: (' + vb + ' Shape [:as name])', x.s); return; }
         var pn = 'port ' + pp.name, j = 2, named = false;
@@ -589,43 +586,6 @@ var __api = (function () {
     return J({ exit: exit, stdout: out, stderr: err });
   }
 
-  // ---------- fmt --migrate: older forms rewritten in the 0.4 ones (docs/DESIGN.md §3.15) ----------
-  // (port name in|out Type …) (0.2) and (port :in|:out Type [:as name] …) (0.3) become (takes Type [:as name] …)
-  // or (gives …), with :as only when the name is not the type's default one; (message Name …) becomes
-  // (shape Name …). Only the head of each form changes: its sketch, comments, spacing and the rest of the
-  // file stay byte for byte. Works on the reader's output, so it needs a file that reads (balanced
-  // parentheses, closed strings) but not one that lints. Returns { error, src, ports: [{ line, col, from,
-  // to }] } (ports: every rewrite, whatever its form; the name is the 0.3 one, kept for callers).
-  function migratePorts(src) {
-    var forms;
-    try { forms = readAll(src); } catch (e) { return { error: errorOf(e), src: src, ports: [] }; }
-    var reps = [], starts = lineStarts(src);
-    (function walk(xs) {
-      xs.forEach(function (x) {
-        if (!x.list) return;
-        var it = x.list, h = it[0];
-        if (h && h.t === 'sym' && h.v === 'message' && !x.tilde) {
-          var at0 = posOf(starts, x.s), nm0 = it[1] && it[1].t === 'sym' ? ' ' + it[1].v : '', more0 = it.length > 2 ? ' …)' : ')';
-          reps.push({ s: h.s, e: h.e, t: 'shape', line: at0.line, col: at0.col, from: '(message' + nm0 + more0, to: '(shape' + nm0 + more0 });
-        }
-        if (h && h.t === 'sym' && h.v === 'port' && !x.tilde) {
-          var p = portParts(it.slice(1)), last = p.legacy ? it[3] : it[p.body], ok = p.legacy ? !!it[3] : (p.dir === 'in' || p.dir === 'out') && !!p.kind;
-          if (ok) {
-            var typeIt = p.legacy ? it[3] : it[2], end = p.legacy ? it[3].e : it[p.body].e;
-            var head = (p.dir === 'in' ? 'takes' : 'gives') + ' ' + src.slice(typeIt.s, typeIt.e) + (p.name !== defaultPortName(p.kind) ? ' :as ' + p.name : '');
-            var more = it.length > (p.legacy ? 4 : p.body + 1) ? ' …)' : ')', at = posOf(starts, x.s);
-            reps.push({ s: h.s, e: end, t: head, line: at.line, col: at.col, from: '(' + src.slice(h.s, end).replace(/\s+/g, ' ') + more, to: '(' + head + more });
-          }
-        }
-        walk(it);
-      });
-    })(forms);
-    var out = src;
-    reps.slice().sort(function (a, b) { return b.s - a.s; }).forEach(function (r) { out = out.slice(0, r.s) + r.t + out.slice(r.e); });
-    reps.sort(function (a, b) { return a.s - b.s; });
-    return { error: null, src: out, ports: reps.map(function (r) { return { line: r.line, col: r.col, from: r.from, to: r.to }; }) };
-  }
-
   // ---------- Conformance: viewer edits round-trip (tests only) ----------
   // One sketch (or level name) edit, as the viewer makes it, then a fresh parse of the result. c.on names
   // what to edit: block:Id, beh:Name, msg:Name, port:Owner.port (Owner a block id or β:Name), level:Id|i
@@ -698,7 +658,6 @@ var __api = (function () {
     diffText: function (d) { return diffText(typeof d === 'string' ? JSON.parse(d) : d); },
     // The file's top-level blocks, in source order (v0.2.5): `sbtel export` titles a page with the first.
     topBlocks: function (src) { var L = load(src); return J({ error: L.error, blocks: L.model ? topBlocks(L.model).map(function (b) { return { id: b.id, name: b.name }; }) : [] }); },
-    migratePorts: function (src) { return J(migratePorts(String(src))); },
     carriers: function (src, name) { var L = load(src); return J(L.error ? { error: L.error } : carriers(L.model, String(name).replace(/^(μ|msg):/, ''))); },
     cli: cli,
     conformance: conformance,

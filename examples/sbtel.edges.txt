@@ -35,14 +35,12 @@ Sbtel.Cli.SessionCommands -> Sbtel.Server.Lifecycle  # cmd/sbtel/cmd_b.go:699 (+
 Sbtel.Cli.ExportCommand -> Sbtel.Assets  # cmd/sbtel/cmd_export.go:46 (+2 more)
 Sbtel.Cli.ExportCommand -> Sbtel.Engine  # cmd/sbtel/cmd_export.go:89 (+15 more)
 Sbtel.Cli.ExportCommand -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_export.go:108 (+27 more)
-Sbtel.Cli.SpecCommands -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_fmt.go:36 (+16 more)
-Sbtel.Cli.SpecCommands -> Sbtel.Engine  # cmd/sbtel/cmd_fmt.go:51 (+10 more)
 Sbtel.Cli.SpecCommands -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_lint.go:6 (+6 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.Kit  # cmd/sbtel/main.go:30 (+15 more)
-Sbtel.Cli.Dispatch -> Sbtel.Cli.SpecCommands  # cmd/sbtel/main.go:45 (+4 more)
+Sbtel.Cli.Dispatch -> Sbtel.Cli.SpecCommands  # cmd/sbtel/main.go:45 (+3 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.SessionCommands  # cmd/sbtel/main.go:53 (+6 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.ExportCommand  # cmd/sbtel/main.go:65
-Sbtel.Cli.Dispatch -> Sbtel.Assets  # cmd/sbtel/main.go:155 (+2 more)
+Sbtel.Cli.Dispatch -> Sbtel.Assets  # cmd/sbtel/main.go:153 (+2 more)
 Sbtel.Engine -> Sbtel.Assets  # internal/engine/engine.go:26
 Sbtel.Server.Launch -> Sbtel.Server.Detach  # internal/server/browser.go:37
 Sbtel.Server.Client -> Sbtel.State  # internal/server/client.go:32 (+21 more)
@@ -52,9 +50,9 @@ Sbtel.Server.Routes -> Sbtel.State  # internal/server/http.go:70 (+21 more)
 Sbtel.Server.Routes -> Sbtel.Server.Sessions  # internal/server/http.go:101 (+27 more)
 Sbtel.Server.Routes -> Sbtel.Server.Fanout  # internal/server/http.go:133 (+1 more)
 Sbtel.Server.Routes -> Sbtel.Server.Lifecycle  # internal/server/http.go:251
-Sbtel.Server.Routes -> Sbtel.Server.Core  # internal/server/ref.go:81
-Sbtel.Server.Routes -> Sbtel.Server.Sessions  # internal/server/ref.go:81 (+2 more)
-Sbtel.Server.Routes -> Sbtel.State  # internal/server/ref.go:84 (+1 more)
+Sbtel.Server.Routes -> Sbtel.Server.Core  # internal/server/ref.go:63 (+2 more)
+Sbtel.Server.Routes -> Sbtel.State  # internal/server/ref.go:65 (+6 more)
+Sbtel.Server.Routes -> Sbtel.Server.Sessions  # internal/server/ref.go:114 (+2 more)
 Sbtel.Server.Core -> DiffsSpecs  # internal/server/server.go:40
 Sbtel.Server.Core -> Sbtel.State  # internal/server/server.go:52 (+1 more)
 # VIOLATION: the Server struct holds map[string]*session (and New makes it), so the shared core names the

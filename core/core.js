@@ -6,11 +6,11 @@ const FONT = {
   htitle:'600 20px "Hanken Grotesk"', hsketch:'400 14.5px "Hanken Grotesk"',
   chip:'500 12px "JetBrains Mono"', pill:'600 11.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
 };
-// 0.4 names: (shape …), (takes …) and (gives …). The 0.3 names (message) and (port :in|:out) still read, with a
-// warning that says how to write them now; a model node keeps the forms 'message' and 'port' either way.
-const FORMS = new Set(['block','level','adjacent','takes','gives','shape','behavior','implements','sketch','refines','carries','ref','port','message']);
+// The twelve forms. A model node of (takes …) or (gives …) has form 'port', and one of (shape …) has form
+// 'message': the names the model has always used for them.
+const FORMS = new Set(['block','level','adjacent','takes','gives','shape','behavior','implements','sketch','refines','carries','ref']);
 // Forms a behavior does not contain (it is a set of ports, not a part of the system), and what to declare instead.
-const NOT_IN_BEHAVIOR = { block:'the block', level:'the level', adjacent:'the adjacent group', message:'the shape', shape:'the shape', behavior:'the behavior' };
+const NOT_IN_BEHAVIOR = { block:'the block', level:'the level', adjacent:'the adjacent group', shape:'the shape', behavior:'the behavior' };
 
 // @sbtel end Core.Constants
 // @sbtel begin Core.Reader
@@ -88,15 +88,11 @@ function defaultPortName(kind) {
 }
 // The source text of a port: :as only when the name is not the default one.
 function portForm(name, dir, kind) { return `(${dir === 'in' ? 'takes' : 'gives'} ${kind}${name && name !== defaultPortName(kind) ? ' :as ' + name : ''})`; }
-// A (port …) form's reader items (after `port`): { dir, kind, as, name, legacy, body (index of the
-// first item after the head) }. The 0.2 form (port name in|out Type) is recognised as legacy.
+// A port's reader items after its direction: { dir, kind, as, name, body (index of the first item after
+// the head) }. items[0] is the direction (:in for takes, :out for gives), put there by the parser.
 function portParts(items) {
   const sym = x => x && x.t === 'sym' ? x.v : null, kw = x => { const v = sym(x); return v !== null && v.startsWith(':'); };
-  const a = sym(items[0]), b = sym(items[1]);
-  if (a !== null && !kw(items[0]) && (b === 'in' || b === 'out')) {
-    const kind = items[2] && items[2].list ? sym(items[2].list[0]) : sym(items[2]);
-    return { dir:b, kind, as:a, name:a, legacy:true, body:3 };
-  }
+  const a = sym(items[0]);
   const dir = a === ':in' || a === ':out' ? a.slice(1) : null;
   const kind = items[1] && !kw(items[1]) ? (items[1].list ? sym(items[1].list[0]) : sym(items[1])) : null;
   let i = kind !== null || (items[1] && !kw(items[1])) ? 2 : 1, as = null;
@@ -105,10 +101,8 @@ function portParts(items) {
     if (items[i].v === ':as' && as === null && ok) as = v.v;
     i += ok || (v && v.t === 'str') ? 2 : 1;
   }
-  return { dir, kind, as, name: as || defaultPortName(kind) || null, legacy:false, body:i };
+  return { dir, kind, as, name: as || defaultPortName(kind) || null, body:i };
 }
-// How lint quotes a 0.2 port: (port chord in KeyChord), with … when it has more after the type.
-function legacyPortText(p, more) { return `(port ${p.as} ${p.dir}${p.kind ? ' ' + p.kind : ''}${more ? ' …' : ''})`; }
 // A ref's path, taken apart: { file, from, to, anchor, url }. A URL is kept whole. `path:40-60` names lines
 // (a Windows drive letter is not a line number), and `path#heading` a place in a document.
 function refParts(path) {
@@ -131,10 +125,6 @@ function parse(src) {
     const node = { form: FORMS.has(h) ? (h === 'takes' || h === 'gives' ? 'port' : h === 'shape' ? 'message' : h) : 'raw', s:sx.s, e:sx.e, children:[] };
     let items = sx.list.slice(1);
     const at = { toString: () => ' (line ' + lineCol(src, sx.s) + ')' };
-    // v0.2 renamed (layer …) to (level …), with no alias: say so here, so the viewer shows it too.
-    if (h === 'layer') ctx.warnings.push('unknown form (layer) in ' + (where || 'the file') + ' (did you mean level?)' + at);
-    // v0.2 removed (either …): a union is a supertype that each alternative refines.
-    if (h === 'either') ctx.warnings.push('either was removed in 0.2; declare each alternative with (refines Union) instead' + at);
     switch (h) {
       case 'block': {
         node.name = symOf(items[0]) || '?'; node.parent = owner || null;
@@ -161,38 +151,18 @@ function parse(src) {
         if (h === 'level' && !node.children.some(c => c.form === 'block' || c.form === 'adjacent')) ctx.warnings.push('level needs at least one block' + at);
         break;
       }
-      case 'takes': case 'gives': case 'port': {
+      case 'takes': case 'gives': {
         // (takes Shape [:as name] [sketch]) and (gives Shape …): the shape, an optional name, a sketch last.
         // Without :as the name is defaultPortName(Shape). node.as is the name as written (or null); node.name
-        // is the effective name, the one everything else uses. node.typeAt is where the shape sits in the
-        // form's items (1 here, 2 in the 0.3 form (port :in Shape), 3 in the 0.2 form (port name in Shape)).
-        const verb = h !== 'port';
-        if (verb) items = [{ t:'sym', v: h === 'takes' ? ':in' : ':out', s:sx.s, e:sx.s }, ...items];
+        // is the effective name, the one everything else uses.
+        items = [{ t:'sym', v: h === 'takes' ? ':in' : ':out', s:sx.s, e:sx.s }, ...items];
         const p = portParts(items);
-        node.dir = p.dir; node.kind = p.kind; node.as = p.as; node.name = p.name; node.typeAt = verb ? 1 : p.legacy ? 3 : 2;
-        if (verb && p.legacy) { node.dir = h === 'takes' ? 'in' : 'out'; node.kind = null; node.as = null; node.name = null; p.body = 1; } // (takes x in T): not a port form at all
-        else if (!verb && !p.legacy && (p.dir === 'in' || p.dir === 'out')) {
-          // The 0.3 form: read as it was meant, and reported with the way to write it now.
-          node.old = true;
-          const more = items.length > p.body, fix = portForm(p.name, p.dir, p.kind || 'Shape');
-          ctx.warnings.push(`(port :${p.dir}${p.kind ? ' ' + p.kind : ''}${p.as ? ' :as ' + p.as : ''}${more ? ' …' : ''}) is the 0.3 form; write ${more ? fix.slice(0, -1) + ' …)' : fix}` + at);
-        }
-        if (verb) { /* its problems are the lint walker's (api.js) */ }
-        else if (p.legacy) {
-          // The 0.2 form (port name in Type): read as it was meant, so the diagram still draws, and reported.
-          node.legacy = true;
-          const more = items.length > 3, fix = portForm(p.name, p.dir, p.kind || 'Shape');
-          ctx.warnings.push(`${legacyPortText(p, more)} is the 0.2 form; write ${more ? fix.slice(0, -1) + ' …)' : fix}` + at);
-        } else if (p.dir !== 'in' && p.dir !== 'out') {
-          const bare = items[0] && items[0].t === 'sym' && (items[0].v === 'in' || items[0].v === 'out') ? items[0].v : null;
-          ctx.warnings.push('(port …) is the 0.3 form and needs :in or :out; write (takes Shape) or (gives Shape)' + (bare ? ` (${bare === 'in' ? 'takes' : 'gives'}, for ${bare})` : '') + at);
-        }
+        node.dir = p.dir; node.kind = p.kind; node.as = p.as; node.name = p.name;
         node.children = items.slice(p.body).map(x => conv(x, owner, 'port ' + (node.name || '?'))).filter(Boolean); node.sketch = sketchOf(node);
         break;
       }
-      case 'shape': case 'message':
+      case 'shape':
         node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(declHead(node, items)).map(x => conv(x, owner, 'shape ' + node.name)).filter(Boolean);
-        if (h === 'message') { node.old = true; ctx.warnings.push(`(message ${node.name || '?'}${items.length > 1 ? ' …' : ''}) is the 0.3 form; write (shape ${node.name || 'Name'}${items.length > 1 ? ' …' : ''})` + at); }
         if (ctx.messages.has(node.name)) ctx.warnings.push('Duplicate shape ' + node.name + at);
         ctx.messages.set(node.name, node); break;
       case 'behavior': {
@@ -1031,7 +1001,7 @@ function applyEdit(src, model, act) {
       // default drops it). A 0.2 port the edit touches is rewritten in the 0.3 form.
       const portText = q => portForm(q.name, q.dir, q.kind).slice(0, -1) + portSk(q) + ')';
       const skChanged = q => q.sketch != null && sketchNorm(q.sketch, q.node.children.find(c => c.form === 'sketch')) !== (q.node.sketch || '');
-      act.ports.forEach(q => { if (q.node && (q.node.legacy || q.node.old || q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
+      act.ports.forEach(q => { if (q.node && (q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
       insert(['port', 'implements'], act.ports.filter(q => !q.node).map(portText));
     }
     [...gone].filter(c => c.form !== 'sketch').forEach(c => cuts.push(cutRep(c)));
@@ -1041,7 +1011,7 @@ function applyEdit(src, model, act) {
       const visit = c => {
         if (c.form === 'implements' && n.form === 'behavior' && c.name === old) sym(itemsOf(src, c)[1]);
         else if (c.form === 'implements' && n.form === 'message' && (c.args || []).includes(old)) { const arg = itemsOf(src, c)[1]; arg.list.slice(1).forEach(sym); }
-        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[c.typeAt]);
+        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[1]);
         else if ((c.form === 'refines' || c.form === 'carries') && (c.names || []).includes(old)) itemsOf(src, c).slice(1).forEach(sym);
         c.children.forEach(visit);
       };

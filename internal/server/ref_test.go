@@ -67,6 +67,22 @@ func TestRefRoute(t *testing.T) {
 			t.Errorf("a link out of the directory: want 404, got %d %s", c, b)
 		}
 	}
+	// A file named in a comment becomes readable too, as (ref …) or as a Markdown link; still nothing outside.
+	if c, _, _ := get("unlisted.txt", ""); c != 404 {
+		t.Fatalf("before the comment: %d", c)
+	}
+	body := `{"target":"block:A","targetLabel":"block A","text":"See (ref unlisted.txt:1) and [the page](page.html), not [this](../secret.txt) or (ref .env).","version":1,"source":""}`
+	if r, b := h.req("POST", "/s/"+id+"/comment", body, nil); r.StatusCode != 200 {
+		t.Fatalf("comment: %d %s", r.StatusCode, b)
+	}
+	if c, _, b := get("unlisted.txt", ""); c != 200 || !strings.Contains(b, "not named in the spec") {
+		t.Errorf("a file named in a comment: %d %s", c, b)
+	}
+	for _, p := range []string{"../secret.txt", ".env"} {
+		if c, _, _ := get(p, ""); c != 404 {
+			t.Errorf("%q named in a comment: want 404, got %d", p, c)
+		}
+	}
 	// A spec from stdin has no directory: nothing is served.
 	id2 := h.create(`(block A (ref src/store.ts))`+"\n", nil)
 	if r, _ := h.req("GET", "/s/"+id2+"/ref?path=src/store.ts", "", nil); r.StatusCode != 404 {

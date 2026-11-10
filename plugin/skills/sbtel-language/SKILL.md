@@ -44,7 +44,6 @@ Run `sbtel version` first. If it is missing: `curl -fsSL https://raw.githubuserc
 - A `ref` is a path beside or below the spec (`file`, `file:40-60`, `"a file.md#heading"`) or a URL. Use
   it for the code a block maps to, and for evidence: an eval output, a log, a document. The human
   reads it in the viewer once you push the version that names it.
-- `(port :in T)`, `(port :out T)` and `(message T)` are the 0.3 forms: `sbtel fmt --migrate spec.sbtel`.
 
 Grammar, every lint message and the binding table: [reference.md](reference.md).
 

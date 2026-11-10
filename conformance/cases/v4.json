@@ -49,14 +49,6 @@
      "sketch": "Written."
     },
     {
-     "on": "port:Notes.Legacy.chord",
-     "sketch": "Opens the palette."
-    },
-    {
-     "on": "port:Notes.Legacy.saved",
-     "name": "noteSaved"
-    },
-    {
      "on": "attach:Notes.Store",
      "dir": "in",
      "kind": "Item"
@@ -78,14 +70,6 @@
     {
      "on": "msg:Item",
      "name": "Entry"
-    },
-    {
-     "on": "port:Notes.Old.item",
-     "sketch": "Rewritten in the 0.4 form."
-    },
-    {
-     "on": "port:Notes.Old.done",
-     "name": "saved"
     }
    ]
   }

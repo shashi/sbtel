@@ -155,7 +155,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     const ind0 = (pos, b) => indentAt(src, pos) ?? childIndent(src, b);
     const textOf = (n, name) => n.form === 'block'
       ? `(block ${name}${n.type ? ' :type ' + quoteStr(n.type) : ''}${n.sketch ? ' (sketch ' + quoteStr(n.sketch) + ')' : ''})`
-      : `(${n.form} ${name}${n.sketch ? ' (sketch ' + quoteStr(n.sketch) + ')' : ''})`;
+      : `(${n.form === 'message' ? 'shape' : n.form} ${name}${n.sketch ? ' (sketch ' + quoteStr(n.sketch) + ')' : ''})`; // a model node of (shape …) has form 'message'
     const levelOfB = (H, n) => H.levels.findIndex(L => L.units.some(u => u.blocks.includes(n)));
     const unitOfB = (L, n) => L.units.find(u => u.blocks.includes(n));
     const newLevels = new Map();

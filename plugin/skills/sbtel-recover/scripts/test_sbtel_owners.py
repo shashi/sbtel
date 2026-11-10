@@ -123,19 +123,19 @@ class Anchors(unittest.TestCase):
     def test_message_anchor_owns_no_code(self):
         code, out, err = run_owners({'m.js': (
             '// @sbtel file App.Ui\n'
-            '// @sbtel message Req\n'
+            '// @sbtel shape Req\n'
             'const Req = {};\n'
-            '/* @sbtel message Reply */\n'
+            '/* @sbtel shape Reply */\n'
             'const Reply = {};\n')})
         self.assertEqual((code, err), (0, ''))
         self.assertEqual(ranges(out), [('m.js', '1', '6', 'App.Ui')])
 
-    def test_port_names_v03(self):
-        # sbtel 0.3: (takes Type [:as name]); the name defaults to the type's, first letter lowercased.
+    def test_port_names(self):
+        # (takes Shape [:as name]); the name defaults to the type's, first letter lowercased.
         self.assertEqual([so.default_port_name(k) for k in ('NoteSaved', 'URL', 'shell.Intent', 'pkg::Item', 'List<Item>', 'T')],
                          ['noteSaved', 'uRL', 'intent', 'item', 'list', 't'])
-        sp = so.read_spec('(shape Item) (block A (takes Item) (gives Item :as feed (~ x ~)) (port old in Item))')
-        self.assertEqual(sp.ports['A'], {'item', 'feed', 'old'})
+        sp = so.read_spec('(shape Item) (block A (takes Item) (gives Item :as feed (~ x ~)))')
+        self.assertEqual(sp.ports['A'], {'item', 'feed'})
 
     def test_port_anchor_owns_no_code(self):
         code, out, err = run_owners({'p.js': (
@@ -148,11 +148,11 @@ class Anchors(unittest.TestCase):
         self.assertEqual(ranges(out), [('p.js', '1', '6', 'App.Ui')])
 
     def test_anchor_between_name_and_declaration(self):
-        # As in core/core.js: `@sbtel MessageIndex` then `@sbtel message MessageRows` then the code.
+        # As in core/core.js: `@sbtel MessageIndex` then `@sbtel shape MessageRows` then the code.
         code, out, err = run_owners({'a.js': (
             '// @sbtel file App.Ui\n'
             '// @sbtel App.Api\n'
-            '// @sbtel message Req\n'
+            '// @sbtel shape Req\n'
             '// @sbtel port App.Api.req\n'
             'function handle(req) {\n'
             '  return req;\n'
@@ -164,7 +164,7 @@ class Anchors(unittest.TestCase):
     def test_anchor_inside_region_keeps_region(self):
         code, out, err = run_owners({'r.js': (
             '// @sbtel begin App.Store\n'
-            '// @sbtel message Req\n'
+            '// @sbtel shape Req\n'
             'x();\n'
             '// @sbtel end App.Store\n')})
         self.assertEqual((code, err), (0, ''))
@@ -173,7 +173,7 @@ class Anchors(unittest.TestCase):
     def test_anchor_errors(self):
         code, _, err = run_owners({'e.js': (
             '// @sbtel file App.Ui\n'
-            '// @sbtel message Nope\n'
+            '// @sbtel shape Nope\n'
             '// @sbtel port App.Ui.nope\n'
             '// @sbtel port Missing.x\n'
             '// @sbtel port nodot\n'
@@ -192,7 +192,7 @@ class Anchors(unittest.TestCase):
         ])
 
     def test_anchors_alone_leave_code_unowned(self):
-        code, _, err = run_owners({'u.js': '// @sbtel message Req\nconst Req = 1;\n'})
+        code, _, err = run_owners({'u.js': '// @sbtel shape Req\nconst Req = 1;\n'})
         self.assertEqual(code, 1)
         self.assertEqual(err, 'u.js:2: code in no block\n')
 
@@ -258,7 +258,7 @@ class Edges(unittest.TestCase):
 
     def test_edges(self):
         files = {'ui.js': '// @sbtel file App.Ui\nimport s from "./s.js";\ns.save();\n',
-                 's.js': '// @sbtel file App.Store\n// @sbtel message Req\nexport function save() {}\n'}
+                 's.js': '// @sbtel file App.Store\n// @sbtel shape Req\nexport function save() {}\n'}
         code, out, err = run_owners(files, stdin='ui.js:2 s.js:1\nui.js:3 s.js:3\nui.js:3 s.js:3\nui.js:2 ui.js:3\nbad line\nui.js:9 s.js:1\n')
         self.assertEqual(code, 1)
         self.assertEqual(out, 'App.Ui -> App.Store  # ui.js:2\nApp.Ui -> App.Store  # ui.js:3\n')

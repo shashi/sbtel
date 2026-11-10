@@ -48,7 +48,7 @@ sub='---------------------------------------------------------------------------
     sed -e 's/[[:space:]]*$//' "$lic"
   done
   for f in viewer/fonts/*.woff2; do
-    font=$(basename "$f" | sed 's/-\(latin\|latin-ext\|greek\|cyrillic\|cyrillic-ext\|vietnamese\)-wght-normal\.woff2$//')
+    font=$(basename "$f" | sed -E 's/-(latin-ext|latin|greek|cyrillic-ext|cyrillic|vietnamese)-wght-normal\.woff2$//')
     [ -f "viewer/fonts/$font-OFL.txt" ] || { echo "third-party-notices: no license file viewer/fonts/$font-OFL.txt for $f" >&2; exit 1; }
   done
   printf '\n%s\nThe Go standard library and runtime (Go %s)\n' "$rule" "$(sed -n 's/^go \([0-9.]*\).*/\1/p' go.mod)"

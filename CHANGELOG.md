@@ -3,7 +3,7 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
-## Unreleased (0.4.0)
+## 0.4.0 (2026-11-09)
 
 ### Breaking
 
@@ -11,12 +11,12 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   "message" suggested a queue; a shape is only what two ports must share to fit.
 - **`takes` and `gives` replace `port`.** `(takes NoteSaved)` and `(gives Note :as text)`, where 0.3
   wrote `(port :in NoteSaved)` and `(port :out Note :as text)`.
-- The 0.3 forms still read and still draw. Lint reports each one with the way to write it now, and
-  `sbtel fmt --migrate spec.sbtel` rewrites a file in place (`--migrate-ports` still works). The 0.2
-  port form is rewritten too.
+- **No compatibility with 0.3 or 0.2 specs.** Nothing was released on them, so `(port …)`, `(message …)`
+  and the older `(layer …)` and `(either …)` are simply unknown forms now, and `sbtel fmt` (which only
+  migrated ports) is gone.
 - Lint, check, query and diff say "shape" where they said "message type". JSON output keeps its keys
   (`messages`, `"kind": "message"`) and the `μ:` and `msg:` id prefixes.
-- The code anchor is `@sbtel shape Name`; `@sbtel message Name` still works.
+- The code anchor is `@sbtel shape Name`.
 
 ### Added
 
@@ -27,15 +27,16 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   pushed spec names it, only from inside the spec's directory (no `..`, no dot-files, no links out), and
   only as text or an image, never as a page. A standalone page or an export shows the paths. The
   language has twelve forms.
+- **Unread replies.** A reply that arrives while its chat is closed puts a dot on the block's comment
+  count until you open the chat. What you have read is remembered per session.
+- **See changes.** The new-version toast has a second button beside Reload: it shows the diff between
+  the version you have and the one that arrived, over the page, with Back and Reload.
 
 ### Changed
 
 - **The skills are rewritten** as short operational guidance: what a view shows and how deep to go by
   task, and a counting step in design and recovery (a lower-level block is used by most of what is
   above it; one used by a single block moves inside it).
-
-### Changed
-
 - **Comments are a chat.** A block's comments and the box to write one are now a single popover: the
   thread, scrolled to its newest message, over an input. It stays open after you send, and the agent's
   replies appear in it as they arrive. ⌘/Ctrl+Enter sends the comment now; Shift+Enter adds it to your
@@ -48,13 +49,6 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   view. No other origin can frame it.
 - Skills and reference: block names need no particular style. A directory or file is best named by its
   path; the sbtel-language skill no longer tells agents to use dotted names.
-
-### Added
-
-- **Unread replies.** A reply that arrives while its chat is closed puts a dot on the block's comment
-  count until you open the chat. What you have read is remembered per session.
-- **See changes.** The new-version toast has a second button beside Reload: it shows the diff between
-  the version you have and the one that arrived, over the page, with Back and Reload.
 
 ## 0.3.0 (2026-11-08)
 

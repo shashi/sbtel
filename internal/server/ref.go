@@ -8,13 +8,16 @@ import (
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/shashi/sbtel/internal/state"
 )
 
 // GET /s/<id>/ref?path=…  (DESIGN.md §5.9, v0.4): the text of a file that the session's spec names in a
 // (ref …) form, for the viewer's file modal. It is the one route that reads a file the user did not hand
 // to sbtel, so it is narrow on purpose:
 //
-//   - only a path the current spec text names in a (ref …), never one the page merely asks for;
+//   - only a path the current spec text names in a (ref …), or that a comment, a reply or a review of the
+//     session names as (ref …) or as a Markdown link; never one the page merely asks for;
 //   - relative to the spec file's directory, with no "..", no absolute path and no dot-file or dot-directory;
 //   - inside that directory after symbolic links are resolved; a regular file of at most refMaxBytes;
 //   - answered as JSON text ({path, text, size}), or, with raw=1 and an image extension, as that image.
@@ -23,6 +26,9 @@ const refMaxBytes = 2 << 20
 
 var refForm = regexp.MustCompile(`\(ref\s+(?:"((?:[^"\\]|\\.)*)"|([^\s()";]+))`)
 var refLines = regexp.MustCompile(`^(.+?):\d+(?:-\d+)?$`)
+
+// In a comment or a reply a file is named as in a spec, (ref path), or as a Markdown link, [label](path).
+var refLink = regexp.MustCompile(`\]\(([^()\s]+)\)`)
 var refImages = map[string]string{".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp"}
 
 // refFile is the file part of a ref's path as written: without `#anchor` and without `:line` or `:from-to`.
@@ -36,15 +42,42 @@ func refFile(p string) string {
 	return p
 }
 
-// refsIn lists the files a spec's (ref …) forms name.
+// refsIn lists the files that (ref …) forms name in a spec, or in the text of a comment or a reply.
 func refsIn(src []byte) map[string]bool {
 	out := map[string]bool{}
+	refsInto(out, src)
+	return out
+}
+
+func refsInto(out map[string]bool, src []byte) {
 	for _, m := range refForm.FindAllSubmatch(src, -1) {
 		p := string(m[2])
 		if len(m[1]) > 0 {
 			p = strings.NewReplacer(`\"`, `"`, `\\`, `\`).Replace(string(m[1]))
 		}
 		out[refFile(p)] = true
+	}
+}
+
+// refsSaid lists the files named in what was said in a session: comments, replies and reviews.
+func (s *Server) refsSaid(id string) map[string]bool {
+	out := map[string]bool{}
+	evs, err := state.ReadEvents(s.paths, id)
+	if err != nil {
+		return out
+	}
+	add := func(text string) {
+		refsInto(out, []byte(text))
+		for _, m := range refLink.FindAllStringSubmatch(text, -1) {
+			out[refFile(m[1])] = true
+		}
+	}
+	for _, e := range evs {
+		add(e.Text)
+		add(e.Message)
+		for _, c := range e.Comments {
+			add(c.Text)
+		}
 	}
 	return out
 }
@@ -81,7 +114,7 @@ func resolveRef(root, rel string) string {
 func (s *Server) serveRef(w http.ResponseWriter, r *http.Request, ss *session) {
 	m := &ss.meta
 	rel := r.URL.Query().Get("path")
-	if m.Spec == nil || m.Spec.Path == nil || !refsIn(ss.src)[rel] {
+	if m.Spec == nil || m.Spec.Path == nil || !(refsIn(ss.src)[rel] || s.refsSaid(m.ID)[rel]) {
 		notFound(w)
 		return
 	}
