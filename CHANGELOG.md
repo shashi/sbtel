@@ -40,10 +40,17 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   every comment, reply and review about that spec (`comments/<spec file>.jsonl`, one JSON event per
   line). When the spec is inside a git repository, `sbtel open` adds `.sbtel/` to the repository's
   `.gitignore` if it is not ignored there yet, and says so on stderr.
-- **A ref to another spec opens as a diagram.** `(ref projects/site.sbtel)` on a block shows an arrow at
-  the card's corner; it, or the same ref in a comment, opens that spec in a new tab as a session of its
-  own (the one already showing that file, else a new one). The rule is the one for reading a file: named
-  in the spec or in a comment, inside the spec's folder. One spec can so be the map of many.
+- **A ref to another spec opens as a diagram, over the page.** `(ref projects/site.sbtel)` on a block
+  shows an arrow at the card's corner; it, or the same ref in a comment, opens that spec over the page
+  you are on. The header is a trail (`all.sbtel › site.sbtel`): a spec opened from inside moves the
+  same overlay on and lengthens the trail, and "Open in a tab" gives it a tab of its own. The spec has
+  its own session (the one already showing that file, else a new one), so one file has one thread. The
+  rule is the one for reading a file: named in the spec or in a comment, inside the spec's folder.
+- **What you send says where you sent it from.** A comment, review or save made in a spec shown over
+  another spec's page records that page's session (`from`). `sbtel inbox` of that session shows it,
+  headed `in <file> (session <id>; answer with sbtel reply <id> …)`; the inbox of the spec's own session
+  does not, so two agents never get the same comment. When the agent replies, the first page says so
+  and the block's arrow shows a dot until you open it.
 - **Drag a file from a comment onto a block.** A file named in a comment or a reply is a chip you can
   drag onto a block; the block gets the `ref` as an edit in your draft. The file viewer opened from a
   chat has an "Add to <block>" button that does the same, which is the way on a phone.

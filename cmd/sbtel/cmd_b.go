@@ -308,6 +308,12 @@ func indent(s, pre string) string {
 
 func printEvent(w io.Writer, p state.Paths, id string, ev state.Event) {
 	switch ev.Kind {
+	case "ref": // sent from this session's page, about the spec a ref names: answer in that session
+		if ev.Ref == nil {
+			return
+		}
+		fmt.Fprintf(w, "in %s (session %s; answer with `sbtel reply %s <id> <text>`):\n", ev.File, ev.Session, ev.Session)
+		printEvent(w, p, ev.Session, *ev.Ref)
 	case "comment":
 		what := ev.TargetLabel
 		if what == "" {

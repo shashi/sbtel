@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/shashi/sbtel/internal/state"
 )
 
 // The ref route serves a file only when the spec names it, and only from inside the spec's directory.
@@ -201,5 +203,66 @@ func TestOpenRef(t *testing.T) {
 		if code, _ := open(p); code != 404 {
 			t.Errorf("%q: %d, want 404", p, code)
 		}
+	}
+}
+
+// A comment sent from another session's page stays in the session of the spec it is about, tagged with
+// the sender; the sender gets a copy for its inbox and page, and a copy of the agent's reply.
+func TestSentFrom(t *testing.T) {
+	h := start(t, Options{})
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "projects"), 0o755)
+	mapFile, siteFile := filepath.Join(dir, "all.sbtel"), filepath.Join(dir, "projects", "site.sbtel")
+	os.WriteFile(mapFile, []byte("(block All (ref projects/site.sbtel))\n"), 0o644)
+	os.WriteFile(siteFile, []byte("(block Site)\n"), 0o644)
+	parent := h.create("(block All (ref projects/site.sbtel))\n", &mapFile)
+	child := h.create("(block Site)\n", &siteFile)
+	say := func(text, from string) {
+		t.Helper()
+		if r, b := h.req("POST", "/s/"+child+"/comment", `{"target":"block:Site","targetLabel":"block Site","text":"`+text+`","version":1,"source":"","from":"`+from+`"}`, nil); r.StatusCode != 200 {
+			t.Fatalf("comment: %d %s", r.StatusCode, b)
+		}
+	}
+	say("from the map", parent)
+	say("from its own page", "")
+	say("from nowhere real", "0123456789abcdef0123456789abcdef")
+	say("from itself", child)
+	heard := func(id string) (out []string) {
+		evs, err := state.ReadEvents(h.s.paths, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, e := range evs {
+			if !e.IsUser() {
+				continue
+			}
+			if e.Kind == "ref" {
+				out = append(out, e.File+"@"+e.Session[:4]+":"+e.Ref.ID+":"+e.Ref.Text)
+			} else {
+				out = append(out, e.Text)
+			}
+		}
+		return out
+	}
+	if got := strings.Join(heard(child), "|"); got != "from its own page|from nowhere real|from itself" {
+		t.Errorf("the spec's own inbox: %s", got)
+	}
+	if got, want := strings.Join(heard(parent), "|"), "projects/site.sbtel@"+child[:4]+":c2:from the map"; got != want {
+		t.Errorf("the map's inbox: %s, want %s", got, want)
+	}
+	// The reply goes to the child session; the map's page hears of it.
+	if err := h.c.Do("POST", "/control/sessions/"+child+"/reply", map[string]string{"to": "c2", "text": "done"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.c.Do("POST", "/control/sessions/"+child+"/reply", map[string]string{"to": "c3", "text": "own"}, nil); err != nil {
+		t.Fatal(err)
+	}
+	evs, _ := state.ReadEvents(h.s.paths, parent)
+	last := evs[len(evs)-1]
+	if last.Kind != "ref" || last.By != "agent" || last.Ref == nil || last.Ref.Kind != "reply" || last.Ref.Text != "done" || last.IsUser() {
+		t.Errorf("the map's copy of the reply: %+v", last)
+	}
+	if n := len(heard(parent)); n != 1 {
+		t.Errorf("the map hears %d things, want 1", n)
 	}
 }

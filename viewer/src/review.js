@@ -274,7 +274,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     computeEdits();
     const list = pending(), E = R.edits, edits = !!(E && E.has), msg = R.message.replace(/\s+$/, '');
     if (!list.length && !edits && !msg.trim()) { toast('Nothing to send: add comments, edits or a message.'); return; }
-    const body = { message:msg, version:o.version(), comments:list.map(c => ({ target:c.target, targetLabel:targetLabel(c.target), text:c.text, source:targetSource(c.target) })),
+    const body = { from: sentFrom, message:msg, version:o.version(), comments:list.map(c => ({ target:c.target, targetLabel:targetLabel(c.target), text:c.text, source:targetSource(c.target) })),
       proposal: edits ? { src:state.src, base:E.base.hash, baseVersion:E.base.version } : null, supersedes: edits && E.supersedes ? E.supersedes : '' };
     const json = JSON.stringify(body), src = state.src;
     if (new Blob([json]).size > 64 * 1024 * 1024) { toast('Not sent: the review is larger than the 64 MiB the server accepts.'); return; }

@@ -910,10 +910,18 @@ is the session's `tabs`.
   `{path: ".sbtel/files/<name>", size}`. A stdin spec answers 409.
 - `GET /s/<id>/ref?path=…` serves `.sbtel/files/<name>` (one level, no dot-file) without the spec or a
   comment naming it; every other dot-directory stays refused.
-- `GET /s/<id>/open?path=…` (v0.4) opens a ref to another spec: the path must end in `.sbtel` and pass
-  the tests of `/ref` (named in the spec or in a comment, inside the spec's directory, a regular file).
-  The answer is `303` to the page of a session on that file: the most recently used session that already
-  shows it, else a new one labelled with the file's name. Anything else is 404.
+- `GET /s/<id>/open?path=…[&via=<session>]` (v0.4) opens a ref to another spec: the path must end in
+  `.sbtel` and pass the tests of `/ref` (named in the spec or in a comment, inside the spec's directory, a
+  regular file). The answer is `303` to the page of a session on that file: the most recently used
+  session that already shows it, else a new one labelled with the file's name. With `via`, the page's URL
+  carries `?via=<session>`: the page is shown inside that session's page and sends `from: <session>` with
+  each comment, review and save. Anything else is 404.
+- **Sent from (v0.4).** A comment, review or save event whose `from` names another live spec session
+  stays in its own session's log with that field, and the server appends to the sender's log
+  `{kind:"ref", by, session, file, ref}`: the session and file it happened in (the file relative to the
+  sender's spec) and the event itself. A reply to such a comment or review is copied the same way. The
+  sender's tabs get the copy as SSE `ref`. `sbtel inbox` shows a `ref` whose event is the user's, and
+  skips a comment, review or save that has `from`: each agent hears what was sent from its own page.
 - `/` lists nothing (404).
 - Control bodies (§5.3) are limited to 64 MiB, like browser writes. (Before the integration pass browser
   writes had a 4 MiB limit, so a tab could not save a big spec an agent had pushed; §11, entry 27.)

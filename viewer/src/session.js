@@ -64,7 +64,7 @@ function sessionComments({ version, closed }) {
       const was = c.status;
       c.status = 'sending'; refreshChat();
       try {
-        const res = await fetch(SBTEL.base + 'comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target: c.target, targetLabel: targetLabel(c.target), text: c.text, version: version(), source: targetSource(c.target) }) });
+        const res = await fetch(SBTEL.base + 'comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target: c.target, targetLabel: targetLabel(c.target), from: sentFrom, text: c.text, version: version(), source: targetSource(c.target) }) });
         if (!res.ok) throw new Error(await errText(res));
         const j = await res.json();
         c.status = 'sent'; c.sid = c.id = j.id; c.replies = c.replies || []; sent++;

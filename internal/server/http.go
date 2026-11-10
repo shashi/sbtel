@@ -163,6 +163,9 @@ func (s *Server) browser(w http.ResponseWriter, r *http.Request, id, route strin
 			notFound(w)
 			return
 		}
+		if via := r.URL.Query().Get("via"); state.ValidID(via) { // shown inside that session's page: it is the sender
+			u += "?via=" + via
+		}
 		w.Header().Set("Cache-Control", "no-store")
 		http.Redirect(w, r, u, http.StatusSeeOther)
 		return

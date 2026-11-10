@@ -88,6 +88,11 @@ func (s *Server) url(id, kind string) string {
 }
 
 func (s *Server) append(ss *session, e state.Event) (state.Event, error) {
+	if e.From != "" { // only another live spec session counts as a sender
+		if o, err := s.get(e.From); err != nil || e.From == ss.meta.ID || o.meta.Kind != "spec" {
+			e.From = ""
+		}
+	}
 	e.Seq = ss.seq + 1
 	e.At = state.Now()
 	if err := state.AppendEvent(s.paths, ss.meta.ID, e); err != nil {
@@ -101,7 +106,59 @@ func (s *Server) append(ss *session, e state.Event) (state.Event, error) {
 			s.logf("session %s: project comment log: %v", ss.meta.ID, err)
 		}
 	}
+	s.mirror(ss, e)
 	return e, nil
+}
+
+// mirror copies an event to the session whose page sent it (DESIGN.md §4.3, ref): a comment, review or
+// save made in a spec shown inside another spec's page, and the agent's reply to one. That session's
+// inbox and page then have it, tagged with the file it is about. Caller holds s.mu.
+func (s *Server) mirror(ss *session, e state.Event) {
+	from := e.From
+	if e.Kind == "reply" {
+		evs, _ := state.ReadEvents(s.paths, ss.meta.ID)
+		from = senderOf(evs, e.To)
+	}
+	if from == "" || e.Kind == "ref" {
+		return
+	}
+	parent, err := s.get(from)
+	if err != nil {
+		return
+	}
+	file := ss.meta.Label
+	if ss.meta.Spec != nil && ss.meta.Spec.Path != nil {
+		file = filepath.Base(*ss.meta.Spec.Path)
+		if parent.meta.Spec != nil && parent.meta.Spec.Path != nil {
+			if rel, err := filepath.Rel(filepath.Dir(*parent.meta.Spec.Path), *ss.meta.Spec.Path); err == nil && !strings.HasPrefix(rel, "..") {
+				file = filepath.ToSlash(rel)
+			}
+		}
+	}
+	pe, err := s.append(parent, state.Event{Kind: "ref", By: e.By, Session: ss.meta.ID, File: file, Ref: &e})
+	if err != nil {
+		s.logf("session %s: copy to %s: %v", ss.meta.ID, from, err)
+		return
+	}
+	_ = s.writeMeta(parent)
+	s.broadcast(parent, sseMsg{id: pe.Seq, event: "ref", data: mustJSON(pe)}, nil)
+}
+
+// senderOf is the session a comment or review was sent from: its own, "" (see Event.From).
+func senderOf(evs []state.Event, id string) string {
+	for _, e := range evs {
+		if (e.Kind == "comment" || e.Kind == "review") && e.ID == id {
+			return e.From
+		}
+		if e.Kind == "review" {
+			for _, c := range e.Comments {
+				if c.ID == id {
+					return e.From
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func (s *Server) writeMeta(ss *session) error {
@@ -360,6 +417,7 @@ type saveIn struct {
 	Src   *string `json:"src"`
 	Tab   string  `json:"tab,omitempty"`
 	Force bool    `json:"force,omitempty"` // write even when base is not the current version (the tab asked)
+	From  string  `json:"from,omitempty"`  // the session whose page sent it, when not this one
 }
 
 // conflict is a 409 on save: the current version, and who made it (agent, user or disk).
@@ -420,7 +478,7 @@ func (s *Server) save(ss *session, in saveIn, from *sub) (map[string]any, error)
 	if err := state.WriteAtomic(s.paths.Version(m.ID, n), src, 0o600); err != nil {
 		return nil, err
 	}
-	e, err := s.append(ss, state.Event{Kind: "save", By: "user", Version: n, Hash: h, Prev: prev, Path: m.Spec.Path, Force: forced})
+	e, err := s.append(ss, state.Event{Kind: "save", By: "user", Version: n, Hash: h, Prev: prev, Path: m.Spec.Path, Force: forced, From: in.From})
 	if err != nil {
 		return nil, err
 	}
@@ -436,6 +494,7 @@ type commentIn struct {
 	Text        string `json:"text"`
 	Version     int    `json:"version"`
 	Source      string `json:"source"`
+	From        string `json:"from"` // the session whose page sent it, when not this one (Event.From)
 }
 
 func (s *Server) comment(ss *session, in commentIn) (map[string]any, error) {
@@ -452,7 +511,7 @@ func (s *Server) comment(ss *session, in commentIn) (map[string]any, error) {
 			h = state.Hash(b)
 		}
 	}
-	e := state.Event{Kind: "comment", By: "user", Target: in.Target, TargetLabel: in.TargetLabel, Text: in.Text, Version: v, Hash: h, Source: in.Source}
+	e := state.Event{Kind: "comment", By: "user", Target: in.Target, TargetLabel: in.TargetLabel, Text: in.Text, Version: v, Hash: h, Source: in.Source, From: in.From}
 	e.ID = "c" + strconv.Itoa(ss.seq+1)
 	e, err := s.append(ss, e)
 	if err != nil {
@@ -542,6 +601,7 @@ type reviewIn struct {
 	Proposal   *reviewProposalIn `json:"proposal"`
 	Supersedes string            `json:"supersedes"`
 	Version    int               `json:"version"` // diff sessions: the diff.json version the review is on
+	From       string            `json:"from"`    // the session whose page sent it, when not this one
 }
 
 // review handles POST /s/<id>/review: one event with the message, the comments and, for a spec
@@ -601,7 +661,7 @@ func (s *Server) review(id string, in reviewIn) (map[string]any, error) {
 	}
 	m := &ss.meta
 	seq := ss.seq + 1
-	e := state.Event{Kind: "review", By: "user", ID: "r" + strconv.Itoa(seq), Message: in.Message, Version: m.Version, Hash: m.Base, Supersedes: in.Supersedes}
+	e := state.Event{Kind: "review", By: "user", ID: "r" + strconv.Itoa(seq), Message: in.Message, Version: m.Version, Hash: m.Base, Supersedes: in.Supersedes, From: in.From}
 	ids := []string{}
 	for k, c := range in.Comments {
 		rc := state.ReviewComment{ID: "c" + strconv.Itoa(seq) + "." + strconv.Itoa(k+1), Target: c.Target, TargetLabel: c.TargetLabel, Text: c.Text, Source: c.Source}

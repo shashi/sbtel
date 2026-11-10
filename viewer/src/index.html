@@ -219,6 +219,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .refc:hover { border-color:var(--accent); }
 .refc[draggable] { -webkit-user-drag:element; }
 .refc.spec { background:var(--accent-soft); }
+.refb.unread::after { content:""; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
 .refc svg.i { width:11px; height:11px; }
 /* The file modal. It closes with its Close button or Escape, never by a click outside it. */
 .codep.refp { display:flex; flex-direction:column; left:50%; top:5vh; transform:translateX(-50%); width:min(920px, calc(100vw - 24px)); height:90vh; }
@@ -979,7 +980,7 @@ function fillBlock(el, B, counts) {
   el.style.zIndex = B.kind === 'frame' ? 10 + B.depth * 2 : (dr && (dr.top || dr.bot) ? 800 : 500) + B.depth;
   el.innerHTML = (B.kind === 'card' ? cardHTML(B) : frameHTML(B)) +
     (counts[key] ? `<button class="cbub" data-thread="${esc(key)}" aria-label="${counts[key]} comment${counts[key] === 1 ? '' : 's'}">${ICON.comment}${counts[key]}</button>` : '') +
-    (B.node && B.node.refs && B.node.refs.length ? `<button class="refb" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.code + B.node.refs.length}</button>` : '');
+    (B.node && B.node.refs && B.node.refs.length ? `<button class="refb${B.node.refs.some(r => isSpec(r.path) && refUnread(r.file)) ? ' unread' : ''}" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.code + B.node.refs.length}</button>` : '');
 }
 // Opening a drawer never resizes the card: the row it sits in makes room instead.
 function setDrawer(id, side, open) {
@@ -2593,16 +2594,20 @@ function richText(s) {
     const path = q != null ? q : bare != null ? bare : href; if (!path) return all;
     const un = path.replace(/&amp;/g, '&');
     if (/^[a-z][a-z0-9+.-]*:\/\//i.test(un)) return `<a href="${path}" target="_blank" rel="noopener noreferrer">${label || path}</a>`;
-    return `<button type="button" class="refc${isSpec(un) ? ' spec' : ''}" draggable="true" data-ref="${path}" title="${isSpec(un) ? 'Open this diagram in a new tab' : 'Open'}. Drag it onto a block to add it there.">${isSpec(un) ? ICON.go : ICON.code}${label || path}</button>`;
+    return `<button type="button" class="refc${isSpec(un) ? ' spec' : ''}" draggable="true" data-ref="${path}" title="${isSpec(un) ? 'Open this diagram' : 'Open'}. Drag it onto a block to add it there.">${isSpec(un) ? ICON.go : ICON.code}${label || path}</button>`;
   });
 }
 // A ref to another spec is a diagram: it opens in a new tab, as a session of its own (the session's page
 // sets specURL; a page on its own cannot open files).
 const isSpec = path => /\.sbtel$/i.test(refParts(path).file || '');
-let specURL = null;
+// It opens over this page (showSpec), so what is said in it is sent from this page's session (sentFrom:
+// a page shown inside another carries that session's id as ?via=, and its comments, reviews and saves
+// name it). refUnread says whether a reply is waiting inside the spec a ref names.
+let specURL = null, showSpec = null, refUnread = file => false;
+const sentFrom = new URLSearchParams(location.search).get('via') || undefined;
 function openSpec(r) {
-  if (!specURL) { toast('Opening another diagram needs a session: open the spec with sbtel open.'); return; }
-  window.open(specURL(r), '_blank', 'noopener');
+  if (!specURL || !showSpec) { toast('Opening another diagram needs a session: open the spec with sbtel open.'); return; }
+  showSpec(r);
 }
 // The block a file opened from a comment can be added to (the comments say: the open chat's block).
 let refAddTo = () => null;

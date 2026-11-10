@@ -245,6 +245,15 @@ type Event struct {
 	Comments   []ReviewComment `json:"comments,omitempty"`
 	Proposal   *Proposal       `json:"proposal,omitempty"`
 	Supersedes string          `json:"supersedes,omitempty"` // the review whose proposal this one replaces
+
+	// From is the session whose page sent a comment, review or save, when that is not this session: a
+	// spec shown inside another spec's page (a ref to an .sbtel file). That session's inbox gets it.
+	From string `json:"from,omitempty"`
+	// ref: an event of another session, copied here because it was sent from this session's page (or
+	// answers something that was). Session and File say where it happened; Ref is the event there.
+	Session string `json:"session,omitempty"`
+	File    string `json:"file,omitempty"`
+	Ref     *Event `json:"ref,omitempty"`
 }
 
 // ReviewComment is one comment of a review: the fields of a comment event, with the id c<seq>.<k>.
@@ -295,13 +304,24 @@ func (e Event) MarshalJSON() ([]byte, error) {
 		if e.Supersedes != "" {
 			m["supersedes"] = e.Supersedes
 		}
+	case "ref":
+		m["session"], m["file"], m["ref"] = e.Session, e.File, e.Ref
+	}
+	if e.From != "" {
+		m["from"] = e.From
 	}
 	return json.Marshal(m)
 }
 
 // IsUser reports whether the event is one `inbox` shows: something the user sent (a comment sent on its
 // own, a review or a save). A draft review lives in the tab only, so nothing pending is ever an event.
-func (e Event) IsUser() bool { return e.Kind == "comment" || e.Kind == "save" || e.Kind == "review" }
+// What was sent from another session's page is that session's to hear (it has a ref event for it), not this one's.
+func (e Event) IsUser() bool {
+	if e.Kind == "ref" {
+		return e.Ref != nil && e.Ref.By == "user"
+	}
+	return (e.Kind == "comment" || e.Kind == "save" || e.Kind == "review") && e.From == ""
+}
 
 // ReadEvents reads every complete line of events.jsonl. A trailing line without its newline
 // (a write in progress) is ignored. A missing file is no events.
