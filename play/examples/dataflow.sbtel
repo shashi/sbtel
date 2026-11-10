@@ -1,9 +1,9 @@
-(message Selection (~ The selected ids. ~))
-(message Camera (~ Pan and zoom. ~))
-(message Snapshot (carries Selection Camera) (~ What undo restores. ~))
+(shape Selection (~ The selected ids. ~))
+(shape Camera (~ Pan and zoom. ~))
+(shape Snapshot (carries Selection Camera) (~ What undo restores. ~))
 (level :name "Snapshots"
-  (block History (port :in Snapshot :as undo))
-  (block Autosave (port :in Snapshot :as save)))
+  (block History (takes Snapshot :as undo))
+  (block Autosave (takes Snapshot :as save)))
 (level :name "Drawing"
-  (block Canvas (port :out Camera :as view))
-  (block Picker (port :out Selection :as picked)))
+  (block Canvas (gives Camera :as view))
+  (block Picker (gives Selection :as picked)))

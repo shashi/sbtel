@@ -1,7 +1,7 @@
 <!-- title: Core concepts -->
-<!-- description: The three ideas behind sbtel: stratified design, generic blocks, and levels that communicate with messages, each with a live example. -->
+<!-- description: The three ideas behind sbtel: stratified design, generic blocks, and levels that connect through ports, each with a live example. -->
 <h1>Core concepts</h1>
-<p class="intro">sbtel rests on three ideas: a system is built in levels, a block can stand for any part of it, and levels talk to each other with messages. This page explains each one with the small Notes app from the <a href="../">home page</a>. Every diagram here is the real viewer: click one to use it, or <span class="nowrap">&#8599;</span> to open it in the playground.</p>
+<p class="intro">sbtel rests on three ideas: a system is built in levels, a block can stand for any part of it, and levels connect through ports. This page explains each one with the small Notes app from the <a href="../">home page</a>. Every diagram here is the real viewer: click one to use it, or <span class="nowrap">&#8599;</span> to open it in the playground.</p>
 
 <h2 id="stratified-design">Stratified design</h2>
 <p>Stratified design is a simple concept that applies to any level of a system. A low level builds the language in which a higher level is written.</p>
@@ -28,7 +28,7 @@
 <sbtel-code file="src/out/notes-levels.edges.txt" label="edges.txt" lang="edges"></sbtel-code>
 <sbtel-code file="src/out/notes-levels.check.txt" label="sbtel check notes.sbtel --bindings edges.txt"></sbtel-code>
 </div>
-<p>Store refreshes the editor after a save, and Preview reaches into Editor, a peer it was never declared to know. The first is fixed with a message, as the rest of this page shows. The second may be a coupling you want: <a href="language/#adjacent">The sbtel language</a> shows how to declare it.</p>
+<p>Store refreshes the editor after a save, and Preview reaches into Editor, a peer it was never declared to know. The first is fixed with a port, as the rest of this page shows. The second may be a coupling you want: <a href="language/#adjacent">The sbtel language</a> shows how to declare it.</p>
 <aside class="note">
   <p>The idea is old. <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/full-text/book/book-Z-H-14.html"><cite>Structure and Interpretation of Computer Programs</cite></a> draws a package for rational numbers as levels separated by abstraction barriers, and later calls the approach stratified design: a complex system structured as a sequence of levels, each described in its own language.</p>
 </aside>
@@ -39,15 +39,15 @@
 <p>Blocks contain levels. That lets you expand a design progressively, for example with an AI agent: start with a subsystem, ask for one block to be opened into its parts, and go on down to a function. Here Store is a module, the module is two files, and one file is three functions. The same level rule applies inside each block.</p>
 <sbtel-demo example="notes-expand">Click the triangle on Store, or on <code>store.ts</code>, to close and open it.</sbtel-demo>
 
-<h2 id="messages">Levels communicate with messages</h2>
-<p>Store has to tell the editor when a note reaches the disk, but Store is in a lower level and may not name Editor. This is where messages come in.</p>
-<p>Messages define interfaces by the types of values that get passed around. A block declares the values it sends with <code>(port :out T)</code> and the values it takes with <code>(port :in T)</code>, where <code>T</code> is a message type:</p>
+<h2 id="ports">Levels connect through ports</h2>
+<p>Store has to tell the editor when a note reaches the disk, but Store is in a lower level and may not name Editor. This is where ports come in.</p>
+<p>Ports define interfaces by the shapes of the values that get passed around. A block declares what it gives with <code>(gives T)</code> and what it takes with <code>(takes T)</code>, where <code>T</code> is a shape. Two ports fit when their shapes match, like the tab and the blank of two jigsaw pieces:</p>
 <sbtel-demo example="notes-message">Click Store&rsquo;s lower ear to open its outputs, then point at <code>noteSaved</code>: Editor lights up, because it takes that type.</sbtel-demo>
-<p>Store has <code>(port :out NoteSaved)</code> and Editor has <code>(port :in NoteSaved)</code>. Neither names the other. A port&rsquo;s name defaults to its type&rsquo;s name with a lowercase first letter, so these ports are both called <code>noteSaved</code>.</p>
+<p>Store has <code>(gives NoteSaved)</code> and Editor has <code>(takes NoteSaved)</code>. Neither names the other. A port&rsquo;s name defaults to its type&rsquo;s name with a lowercase first letter, so these ports are both called <code>noteSaved</code>.</p>
 
-<h3 id="not-a-wire">A message is not a wire</h3>
-<p>A message does not mean there is a communication channel in the sense of a wire. A wire itself would be a block in sbtel: a queue, a bus or a socket is a part of the system, with its own place in a level.</p>
-<p>What a message denotes is independence of existence. One block has <code>:out NoteSaved</code>, another has <code>:in NoteSaved</code>, and either could exist without the other. How the value gets from one to the other is implementation, not architecture: a callback, an event emitter, a channel, Elixir&rsquo;s <code>send</code> and <code>receive</code>. In TypeScript, a callback might do it:</p>
+<h3 id="not-a-wire">A port is not a wire</h3>
+<p>A pair of matching ports does not mean there is a communication channel in the sense of a wire. A wire itself would be a block in sbtel: a queue, a bus or a socket is a part of the system, with its own place in a level.</p>
+<p>What matching ports denote is independence of existence. One block <code>gives NoteSaved</code>, another <code>takes NoteSaved</code>, and either could exist without the other. How the value gets from one to the other is implementation, not architecture: a callback, an event emitter, a channel, Elixir&rsquo;s <code>send</code> and <code>receive</code>. In TypeScript, a callback might do it:</p>
 <div class="spec"><div class="cbl">store.ts and shell.ts</div><pre class="code" data-lang="ts"><span class="hl-com">// store.ts: knows nothing of the editor</span>
 export function save(note: Note, onSaved: (s: NoteSaved) =&gt; void) {
   write(note);
@@ -56,10 +56,10 @@ export function save(note: Note, onSaved: (s: NoteSaved) =&gt; void) {
 
 <span class="hl-com">// shell.ts: the one place that knows both</span>
 store.save(note, saved =&gt; editor.markSaved(saved));</pre></div>
-<p>The callback is one way to build the wire, so there is no <code>Callback</code> type to model. The value it carries is the message. If a callback returns something the lower part goes on to use, such as a conflict handler that returns the version to keep, that is a second message flowing back: an <code>:out</code> on the higher block and an <code>:in</code> on the lower one.</p>
+<p>The callback is one way to build the wire, so there is no <code>Callback</code> type to model. The value it carries is the shape. If a callback returns something the lower part goes on to use, such as a conflict handler that returns the version to keep, that is a second shape flowing back: a <code>gives</code> on the higher block and a <code>takes</code> on the lower one.</p>
 
 <h3 id="data-shapes">Data shapes: <code>refines</code> and <code>carries</code></h3>
-<p>Message types have two relations, and only two. <code>(refines Edit)</code> is is-a: a <code>RemoteEdit</code> is an <code>Edit</code>, so a port that takes edits also takes remote edits. <code>(carries Note)</code> is has-a: a <code>NoteSaved</code> holds a <code>Note</code>. It never changes what a port takes, but it lets you follow one piece of data through the whole system.</p>
+<p>Shapes have two relations, and only two. <code>(refines Edit)</code> is is-a: a <code>RemoteEdit</code> is an <code>Edit</code>, so a port that takes edits also takes remote edits. <code>(carries Note)</code> is has-a: a <code>NoteSaved</code> holds a <code>Note</code>. It never changes what a port takes, but it lets you follow one piece of data through the whole system.</p>
 <sbtel-demo example="notes-data">Point at the <code>Note</code> type in the band at the bottom: every type that carries it lights up, and so does every block that sends or takes one.</sbtel-demo>
 
 <h3 id="interfaces">Interfaces</h3>
@@ -87,7 +87,7 @@ store.save(note, saved =&gt; editor.markSaved(saved));</pre></div>
 
   def start_link(_), do: GenServer.start_link(__MODULE__, 0, name: __MODULE__)
   def init(n), do: {:ok, n}
-  def handle_info(:tick, n), do: {:noreply, n + 1} <span class="hl-com"># (port :in Tick)</span>
+  def handle_info(:tick, n), do: {:noreply, n + 1} <span class="hl-com"># (takes Tick)</span>
 end</pre></div>
 <sbtel-demo example="elixir-clock">Point at <code>GenServer</code> in the band: both processes implement it. Open Clock.Ticker&rsquo;s lower ear and point at <code>tick</code>: Clock.Counter, beside it, takes it.</sbtel-demo>
 <div class="pair-out">
@@ -97,7 +97,7 @@ end</pre></div>
 <p><code>gen_server -&gt; GenServer</code> is the loop calling back into your modules through the behaviour, which <code>abstraction</code> allows. The application is the supervisor that starts both processes and hands the ticker the counter&rsquo;s name, so it binds both.</p>
 
 <div class="rule">
-  <p><strong>Rule of thumb.</strong> Callbacks are messages, interfaces are behaviors. Either way, the lower code never names the higher.</p>
+  <p><strong>Rule of thumb.</strong> Callbacks are ports, interfaces are behaviors. Either way, the lower code never names the higher.</p>
 </div>
 
 <h2 id="next">Next</h2>

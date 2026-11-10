@@ -1,9 +1,9 @@
-(message NoteSaved (~ A note reached the disk. ~))
-(message Note (~ A title and a body. ~))
+(shape NoteSaved (~ A note reached the disk. ~))
+(shape Note (~ A title and a body. ~))
 (level
-  (block Editor (port :in NoteSaved))
+  (block Editor (takes NoteSaved))
   (block Sync
-    (port :in Note :as local)
-    (port :out Note :as remote (~ Only notes that changed since the last sync. ~))))
+    (takes Note :as local)
+    (gives Note :as remote (~ Only notes that changed since the last sync. ~))))
 (level
-  (block Store (port :out NoteSaved) (port :out Note)))
+  (block Store (gives NoteSaved) (gives Note)))

@@ -1,8 +1,8 @@
-(message Note :type "struct" (~ A title and a body. ~))
-(message Edit (carries Note) (~ A change to one note. ~))
-(message RemoteEdit (refines Edit) (~ An edit made on another device. ~))
+(shape Note :type "struct" (~ A title and a body. ~))
+(shape Edit (carries Note) (~ A change to one note. ~))
+(shape RemoteEdit (refines Edit) (~ An edit made on another device. ~))
 (level
-  (block Editor (port :out Edit) (port :in RemoteEdit))
-  (block Sync (port :out RemoteEdit)))
+  (block Editor (gives Edit) (takes RemoteEdit))
+  (block Sync (gives RemoteEdit)))
 (level
-  (block Store (port :in Edit)))
+  (block Store (takes Edit)))

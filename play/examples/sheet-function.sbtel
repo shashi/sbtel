@@ -1,10 +1,10 @@
 ; The Function interface: the Evaluator calls functions only through it.
 ; The built-in Functions and the AddIns implement it.
-(message Arguments (~ The values a call passes, like A1:A9 in =SUM(A1:A9). ~))
-(message Result (~ What the function gives back. ~))
+(shape Arguments (~ The values a call passes, like A1:A9 in =SUM(A1:A9). ~))
+(shape Result (~ What the function gives back. ~))
 (behavior Function :type "TypeScript interface"
-  (port :in Arguments)
-  (port :out Result)
+  (takes Arguments)
+  (gives Result)
   (~ Anything a formula can call by name: =SUM(…), =MYADDIN(…). ~))
 (level :name "The app"
   (block Main :type "module" (~ Starts everything and wires the parts together. ~)))

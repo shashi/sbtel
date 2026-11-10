@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Core concepts · sbtel</title>
-<meta name="description" content="The three ideas behind sbtel: stratified design, generic blocks, and levels that communicate with messages, each with a live example.">
+<meta name="description" content="The three ideas behind sbtel: stratified design, generic blocks, and levels that connect through ports, each with a live example.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="../assets/fonts/hanken-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -28,11 +28,11 @@
 <div class="docs">
   <aside class="toc" aria-label="On this page">
     <details open id="tocd"><summary>On this page <span class="ver">sbtel 0.3.0</span></summary>
-    <nav><ol><li class="t2"><a href="#stratified-design">Stratified design</a></li><li class="t3"><a href="#you-already-do-this">You already do this</a></li><li class="t3"><a href="#when-it-goes-wrong">When it goes wrong</a></li><li class="t3"><a href="#levels">Levels</a></li><li class="t2"><a href="#generic-blocks">Generic blocks</a></li><li class="t2"><a href="#messages">Levels communicate with messages</a></li><li class="t3"><a href="#not-a-wire">A message is not a wire</a></li><li class="t3"><a href="#data-shapes">Data shapes: <code>refines</code> and <code>carries</code></a></li><li class="t3"><a href="#interfaces">Interfaces</a></li><li class="t3"><a href="#elixir">An example in Elixir</a></li><li class="t2"><a href="#next">Next</a></li></ol></nav></details>
+    <nav><ol><li class="t2"><a href="#stratified-design">Stratified design</a></li><li class="t3"><a href="#you-already-do-this">You already do this</a></li><li class="t3"><a href="#when-it-goes-wrong">When it goes wrong</a></li><li class="t3"><a href="#levels">Levels</a></li><li class="t2"><a href="#generic-blocks">Generic blocks</a></li><li class="t2"><a href="#ports">Levels connect through ports</a></li><li class="t3"><a href="#not-a-wire">A port is not a wire</a></li><li class="t3"><a href="#data-shapes">Data shapes: <code>refines</code> and <code>carries</code></a></li><li class="t3"><a href="#interfaces">Interfaces</a></li><li class="t3"><a href="#elixir">An example in Elixir</a></li><li class="t2"><a href="#next">Next</a></li></ol></nav></details>
   </aside>
   <article id="doc" class="doc">
 <h1>Core concepts</h1>
-<p class="intro">sbtel rests on three ideas: a system is built in levels, a block can stand for any part of it, and levels talk to each other with messages. This page explains each one with the small Notes app from the <a href="../">home page</a>. Every diagram here is the real viewer: click one to use it, or <span class="nowrap">&#8599;</span> to open it in the playground.</p>
+<p class="intro">sbtel rests on three ideas: a system is built in levels, a block can stand for any part of it, and levels connect through ports. This page explains each one with the small Notes app from the <a href="../">home page</a>. Every diagram here is the real viewer: click one to use it, or <span class="nowrap">&#8599;</span> to open it in the playground.</p>
 
 <h2 id="stratified-design"><a class="anchor" href="#stratified-design" aria-hidden="true" tabindex="-1">#</a>Stratified design</h2>
 <p>Stratified design is a simple concept that applies to any level of a system. A low level builds the language in which a higher level is written.</p>
@@ -90,7 +90,7 @@ Store -&gt; Editor       <span class="hl-com"> # src/store.ts:58</span></pre></d
 edges.txt:10: Store -&gt; Editor: <span class="hl-warn">upward</span>: Store (level 1 &quot;Stored notes&quot; of Notes) binds upward to Editor (level 2 &quot;Notes as text&quot;)  (src/store.ts:58)
 notes.sbtel: 10 bindings, 2 not allowed, 0 explained</pre></div>
 </div>
-<p>Store refreshes the editor after a save, and Preview reaches into Editor, a peer it was never declared to know. The first is fixed with a message, as the rest of this page shows. The second may be a coupling you want: <a href="language/#adjacent">The sbtel language</a> shows how to declare it.</p>
+<p>Store refreshes the editor after a save, and Preview reaches into Editor, a peer it was never declared to know. The first is fixed with a port, as the rest of this page shows. The second may be a coupling you want: <a href="language/#adjacent">The sbtel language</a> shows how to declare it.</p>
 <aside class="note">
   <p>The idea is old. <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/full-text/book/book-Z-H-14.html"><cite>Structure and Interpretation of Computer Programs</cite></a> draws a package for rational numbers as levels separated by abstraction barriers, and later calls the approach stratified design: a complex system structured as a sequence of levels, each described in its own language.</p>
 </aside>
@@ -125,26 +125,26 @@ notes.sbtel: 10 bindings, 2 not allowed, 0 explained</pre></div>
         (<span class="hl-kw">block</span> atomic.ts <span class="hl-key">:type</span> <span class="hl-str">&quot;file&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> Writes a temporary file, then renames it, so a crash never leaves half a note. </span><span class="hl-kw">~</span>))))))</pre></div>
   </figure>
 
-<h2 id="messages"><a class="anchor" href="#messages" aria-hidden="true" tabindex="-1">#</a>Levels communicate with messages</h2>
-<p>Store has to tell the editor when a note reaches the disk, but Store is in a lower level and may not name Editor. This is where messages come in.</p>
-<p>Messages define interfaces by the types of values that get passed around. A block declares the values it sends with <code>(port :out T)</code> and the values it takes with <code>(port :in T)</code>, where <code>T</code> is a message type:</p>
+<h2 id="ports"><a class="anchor" href="#ports" aria-hidden="true" tabindex="-1">#</a>Levels connect through ports</h2>
+<p>Store has to tell the editor when a note reaches the disk, but Store is in a lower level and may not name Editor. This is where ports come in.</p>
+<p>Ports define interfaces by the shapes of the values that get passed around. A block declares what it gives with <code>(gives T)</code> and what it takes with <code>(takes T)</code>, where <code>T</code> is a shape. Two ports fit when their shapes match, like the tab and the blank of two jigsaw pieces:</p>
 <figure class="demo" id="demo-notes-message">
     <div class="embed ar" style="--h:360px;--ar:421/662;--nh:662px;--hmax:720px;--arp:421/662;--nhp:662px">
       <iframe data-src="../play/?embed#example=notes-message" title="Live diagram of notes-message.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-message">Open notes-message.sbtel in the playground</a></noscript>
     </div><figcaption>Click Store&rsquo;s lower ear to open its outputs, then point at <code>noteSaved</code>: Editor lights up, because it takes that type.</figcaption><div class="spec"><div class="cbl">notes-message.sbtel</div><pre class="code" data-lang="sbtel">(<span class="hl-kw">block</span> Notes
-  (<span class="hl-kw">message</span> NoteSaved (<span class="hl-kw">~</span><span class="hl-str"> A note reached the disk. </span><span class="hl-kw">~</span>))
+  (<span class="hl-kw">shape</span> NoteSaved (<span class="hl-kw">~</span><span class="hl-str"> A note reached the disk. </span><span class="hl-kw">~</span>))
   (<span class="hl-kw">level</span> <span class="hl-key">:name</span> <span class="hl-str">&quot;Notes as text&quot;</span>
-    (<span class="hl-kw">block</span> Editor (<span class="hl-kw">port</span> <span class="hl-key">:in</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> The text area. </span><span class="hl-kw">~</span>)))
+    (<span class="hl-kw">block</span> Editor (<span class="hl-kw">takes</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> The text area. </span><span class="hl-kw">~</span>)))
   (<span class="hl-kw">level</span> <span class="hl-key">:name</span> <span class="hl-str">&quot;Stored notes&quot;</span>
-    (<span class="hl-kw">block</span> Store (<span class="hl-kw">port</span> <span class="hl-key">:out</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> Keeps notes on disk. </span><span class="hl-kw">~</span>))))</pre></div>
+    (<span class="hl-kw">block</span> Store (<span class="hl-kw">gives</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> Keeps notes on disk. </span><span class="hl-kw">~</span>))))</pre></div>
   </figure>
-<p>Store has <code>(port :out NoteSaved)</code> and Editor has <code>(port :in NoteSaved)</code>. Neither names the other. A port&rsquo;s name defaults to its type&rsquo;s name with a lowercase first letter, so these ports are both called <code>noteSaved</code>.</p>
+<p>Store has <code>(gives NoteSaved)</code> and Editor has <code>(takes NoteSaved)</code>. Neither names the other. A port&rsquo;s name defaults to its type&rsquo;s name with a lowercase first letter, so these ports are both called <code>noteSaved</code>.</p>
 
-<h3 id="not-a-wire"><a class="anchor" href="#not-a-wire" aria-hidden="true" tabindex="-1">#</a>A message is not a wire</h3>
-<p>A message does not mean there is a communication channel in the sense of a wire. A wire itself would be a block in sbtel: a queue, a bus or a socket is a part of the system, with its own place in a level.</p>
-<p>What a message denotes is independence of existence. One block has <code>:out NoteSaved</code>, another has <code>:in NoteSaved</code>, and either could exist without the other. How the value gets from one to the other is implementation, not architecture: a callback, an event emitter, a channel, Elixir&rsquo;s <code>send</code> and <code>receive</code>. In TypeScript, a callback might do it:</p>
+<h3 id="not-a-wire"><a class="anchor" href="#not-a-wire" aria-hidden="true" tabindex="-1">#</a>A port is not a wire</h3>
+<p>A pair of matching ports does not mean there is a communication channel in the sense of a wire. A wire itself would be a block in sbtel: a queue, a bus or a socket is a part of the system, with its own place in a level.</p>
+<p>What matching ports denote is independence of existence. One block <code>gives NoteSaved</code>, another <code>takes NoteSaved</code>, and either could exist without the other. How the value gets from one to the other is implementation, not architecture: a callback, an event emitter, a channel, Elixir&rsquo;s <code>send</code> and <code>receive</code>. In TypeScript, a callback might do it:</p>
 <div class="spec"><div class="cbl">store.ts and shell.ts</div><pre class="code" data-lang="ts"><span class="hl-com">// store.ts: knows nothing of the editor</span>
 export function save(note: Note, onSaved: (s: NoteSaved) =&gt; void) {
   write(note);
@@ -153,25 +153,25 @@ export function save(note: Note, onSaved: (s: NoteSaved) =&gt; void) {
 
 <span class="hl-com">// shell.ts: the one place that knows both</span>
 store.save(note, saved =&gt; editor.markSaved(saved));</pre></div>
-<p>The callback is one way to build the wire, so there is no <code>Callback</code> type to model. The value it carries is the message. If a callback returns something the lower part goes on to use, such as a conflict handler that returns the version to keep, that is a second message flowing back: an <code>:out</code> on the higher block and an <code>:in</code> on the lower one.</p>
+<p>The callback is one way to build the wire, so there is no <code>Callback</code> type to model. The value it carries is the shape. If a callback returns something the lower part goes on to use, such as a conflict handler that returns the version to keep, that is a second shape flowing back: a <code>gives</code> on the higher block and a <code>takes</code> on the lower one.</p>
 
 <h3 id="data-shapes"><a class="anchor" href="#data-shapes" aria-hidden="true" tabindex="-1">#</a>Data shapes: <code>refines</code> and <code>carries</code></h3>
-<p>Message types have two relations, and only two. <code>(refines Edit)</code> is is-a: a <code>RemoteEdit</code> is an <code>Edit</code>, so a port that takes edits also takes remote edits. <code>(carries Note)</code> is has-a: a <code>NoteSaved</code> holds a <code>Note</code>. It never changes what a port takes, but it lets you follow one piece of data through the whole system.</p>
+<p>Shapes have two relations, and only two. <code>(refines Edit)</code> is is-a: a <code>RemoteEdit</code> is an <code>Edit</code>, so a port that takes edits also takes remote edits. <code>(carries Note)</code> is has-a: a <code>NoteSaved</code> holds a <code>Note</code>. It never changes what a port takes, but it lets you follow one piece of data through the whole system.</p>
 <figure class="demo" id="demo-notes-data">
     <div class="embed ar" style="--h:360px;--ar:597/858;--nh:858px;--hmax:720px;--arp:584/858;--nhp:858px">
       <iframe data-src="../play/?embed#example=notes-data" title="Live diagram of notes-data.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-data">Open notes-data.sbtel in the playground</a></noscript>
     </div><figcaption>Point at the <code>Note</code> type in the band at the bottom: every type that carries it lights up, and so does every block that sends or takes one.</figcaption><div class="spec"><div class="cbl">notes-data.sbtel</div><pre class="code" data-lang="sbtel">(<span class="hl-kw">block</span> Notes
-  (<span class="hl-kw">message</span> Note <span class="hl-key">:type</span> <span class="hl-str">&quot;struct&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> A title and a body. </span><span class="hl-kw">~</span>))
-  (<span class="hl-kw">message</span> Edit (<span class="hl-kw">carries</span> Note) (<span class="hl-kw">~</span><span class="hl-str"> A change to one note. </span><span class="hl-kw">~</span>))
-  (<span class="hl-kw">message</span> RemoteEdit (<span class="hl-kw">refines</span> Edit) (<span class="hl-kw">~</span><span class="hl-str"> An edit made on another device. </span><span class="hl-kw">~</span>))
-  (<span class="hl-kw">message</span> NoteSaved (<span class="hl-kw">carries</span> Note) (<span class="hl-kw">~</span><span class="hl-str"> A note reached the disk. </span><span class="hl-kw">~</span>))
+  (<span class="hl-kw">shape</span> Note <span class="hl-key">:type</span> <span class="hl-str">&quot;struct&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> A title and a body. </span><span class="hl-kw">~</span>))
+  (<span class="hl-kw">shape</span> Edit (<span class="hl-kw">carries</span> Note) (<span class="hl-kw">~</span><span class="hl-str"> A change to one note. </span><span class="hl-kw">~</span>))
+  (<span class="hl-kw">shape</span> RemoteEdit (<span class="hl-kw">refines</span> Edit) (<span class="hl-kw">~</span><span class="hl-str"> An edit made on another device. </span><span class="hl-kw">~</span>))
+  (<span class="hl-kw">shape</span> NoteSaved (<span class="hl-kw">carries</span> Note) (<span class="hl-kw">~</span><span class="hl-str"> A note reached the disk. </span><span class="hl-kw">~</span>))
   (<span class="hl-kw">level</span> <span class="hl-key">:name</span> <span class="hl-str">&quot;Notes as text&quot;</span>
-    (<span class="hl-kw">block</span> Editor (<span class="hl-kw">port</span> <span class="hl-key">:out</span> Edit) (<span class="hl-kw">port</span> <span class="hl-key">:in</span> RemoteEdit) (<span class="hl-kw">port</span> <span class="hl-key">:in</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> The text area. </span><span class="hl-kw">~</span>))
-    (<span class="hl-kw">block</span> Sync (<span class="hl-kw">port</span> <span class="hl-key">:out</span> RemoteEdit) (<span class="hl-kw">port</span> <span class="hl-key">:in</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> Exchanges edits with the cloud copy. </span><span class="hl-kw">~</span>)))
+    (<span class="hl-kw">block</span> Editor (<span class="hl-kw">gives</span> Edit) (<span class="hl-kw">takes</span> RemoteEdit) (<span class="hl-kw">takes</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> The text area. </span><span class="hl-kw">~</span>))
+    (<span class="hl-kw">block</span> Sync (<span class="hl-kw">gives</span> RemoteEdit) (<span class="hl-kw">takes</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> Exchanges edits with the cloud copy. </span><span class="hl-kw">~</span>)))
   (<span class="hl-kw">level</span> <span class="hl-key">:name</span> <span class="hl-str">&quot;Stored notes&quot;</span>
-    (<span class="hl-kw">block</span> Store (<span class="hl-kw">port</span> <span class="hl-key">:in</span> Edit) (<span class="hl-kw">port</span> <span class="hl-key">:out</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> Keeps notes on disk. </span><span class="hl-kw">~</span>))))</pre></div>
+    (<span class="hl-kw">block</span> Store (<span class="hl-kw">takes</span> Edit) (<span class="hl-kw">gives</span> NoteSaved) (<span class="hl-kw">~</span><span class="hl-str"> Keeps notes on disk. </span><span class="hl-kw">~</span>))))</pre></div>
   </figure>
 
 <h3 id="interfaces"><a class="anchor" href="#interfaces" aria-hidden="true" tabindex="-1">#</a>Interfaces</h3>
@@ -189,10 +189,10 @@ store.save(note, saved =&gt; editor.markSaved(saved));</pre></div>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-repo">Open notes-repo.sbtel in the playground</a></noscript>
     </div><figcaption>Point at <code>Repo</code> in the band at the bottom: its implementers are outlined. Open DiskStore&rsquo;s ears: its ports came from <code>Repo</code>.</figcaption><div class="spec"><div class="cbl">notes-repo.sbtel</div><pre class="code" data-lang="sbtel">(<span class="hl-kw">block</span> Notes <span class="hl-key">:type</span> <span class="hl-str">&quot;app&quot;</span>
-  (<span class="hl-kw">message</span> Note <span class="hl-key">:type</span> <span class="hl-str">&quot;struct&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> A title and a body. </span><span class="hl-kw">~</span>))
+  (<span class="hl-kw">shape</span> Note <span class="hl-key">:type</span> <span class="hl-str">&quot;struct&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> A title and a body. </span><span class="hl-kw">~</span>))
   (<span class="hl-kw">behavior</span> Repo <span class="hl-key">:type</span> <span class="hl-str">&quot;TypeScript interface&quot;</span>
-    (<span class="hl-kw">port</span> <span class="hl-key">:in</span> Note <span class="hl-key">:as</span> save)
-    (<span class="hl-kw">port</span> <span class="hl-key">:out</span> Note <span class="hl-key">:as</span> load)
+    (<span class="hl-kw">takes</span> Note <span class="hl-key">:as</span> save)
+    (<span class="hl-kw">gives</span> Note <span class="hl-key">:as</span> load)
     (<span class="hl-kw">~</span><span class="hl-str"> Keeps notes and gives them back. </span><span class="hl-kw">~</span>))
   (<span class="hl-kw">level</span> <span class="hl-key">:name</span> <span class="hl-str">&quot;The app&quot;</span>
     (<span class="hl-kw">block</span> Shell <span class="hl-key">:type</span> <span class="hl-str">&quot;module&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> Makes a store and hands it to the editor. </span><span class="hl-kw">~</span>)))
@@ -216,11 +216,11 @@ Editor -&gt; Repo      <span class="hl-com"> # src/editor.ts:7  this.repo.save(n
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-split">Open notes-split.sbtel in the playground</a></noscript>
     </div><figcaption>HtmlFormat and PdfFormat implement <code>Format</code> and call ExportKit below them. Nothing in ExportKit knows they exist.</figcaption><div class="spec"><div class="cbl">notes-split.sbtel</div><pre class="code" data-lang="sbtel">(<span class="hl-kw">block</span> Export <span class="hl-key">:type</span> <span class="hl-str">&quot;package&quot;</span>
-  (<span class="hl-kw">message</span> Note <span class="hl-key">:type</span> <span class="hl-str">&quot;class&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> A title and a body. </span><span class="hl-kw">~</span>))
-  (<span class="hl-kw">message</span> Document <span class="hl-key">:type</span> <span class="hl-str">&quot;byte[]&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> The exported file. </span><span class="hl-kw">~</span>))
+  (<span class="hl-kw">shape</span> Note <span class="hl-key">:type</span> <span class="hl-str">&quot;class&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> A title and a body. </span><span class="hl-kw">~</span>))
+  (<span class="hl-kw">shape</span> Document <span class="hl-key">:type</span> <span class="hl-str">&quot;byte[]&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> The exported file. </span><span class="hl-kw">~</span>))
   (<span class="hl-kw">behavior</span> Format <span class="hl-key">:type</span> <span class="hl-str">&quot;Java interface&quot;</span>
-    (<span class="hl-kw">port</span> <span class="hl-key">:in</span> Note)
-    (<span class="hl-kw">port</span> <span class="hl-key">:out</span> Document)
+    (<span class="hl-kw">takes</span> Note)
+    (<span class="hl-kw">gives</span> Document)
     (<span class="hl-kw">~</span><span class="hl-str"> Turns one note into one file. </span><span class="hl-kw">~</span>))
   (<span class="hl-kw">level</span> <span class="hl-key">:name</span> <span class="hl-str">&quot;Formats&quot;</span>
     (<span class="hl-kw">block</span> HtmlFormat <span class="hl-key">:type</span> <span class="hl-str">&quot;class&quot;</span> (<span class="hl-kw">implements</span> Format) (<span class="hl-kw">~</span><span class="hl-str"> A standalone web page. </span><span class="hl-kw">~</span>))
@@ -236,7 +236,7 @@ Editor -&gt; Repo      <span class="hl-com"> # src/editor.ts:7  this.repo.save(n
 
   def start_link(_), do: GenServer.start_link(__MODULE__, 0, name: __MODULE__)
   def init(n), do: {:ok, n}
-  def handle_info(:tick, n), do: {:noreply, n + 1} <span class="hl-com"># (port :in Tick)</span>
+  def handle_info(:tick, n), do: {:noreply, n + 1} <span class="hl-com"># (takes Tick)</span>
 end</pre></div>
 <figure class="demo" id="demo-elixir-clock">
     <div class="embed ar" style="--h:360px;--ar:597/1212;--nh:1212px;--hmax:753px;--arp:584/1212;--nhp:1212px">
@@ -246,14 +246,14 @@ end</pre></div>
     </div><figcaption>Point at <code>GenServer</code> in the band: both processes implement it. Open Clock.Ticker&rsquo;s lower ear and point at <code>tick</code>: Clock.Counter, beside it, takes it.</figcaption><div class="spec"><div class="cbl">elixir-clock.sbtel</div><pre class="code" data-lang="sbtel"><span class="hl-com">; An Elixir app: a GenServer, and two processes that message each other.</span>
 (<span class="hl-kw">block</span> Clock <span class="hl-key">:type</span> <span class="hl-str">&quot;Mix project&quot;</span>
   (<span class="hl-kw">~</span><span class="hl-str"> Counts ticks. </span><span class="hl-kw">~</span>)
-  (<span class="hl-kw">message</span> Tick <span class="hl-key">:type</span> <span class="hl-str">&quot;process message&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> :tick, sent once a second. </span><span class="hl-kw">~</span>))
+  (<span class="hl-kw">shape</span> Tick <span class="hl-key">:type</span> <span class="hl-str">&quot;process message&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> :tick, sent once a second. </span><span class="hl-kw">~</span>))
   (<span class="hl-kw">behavior</span> GenServer <span class="hl-key">:type</span> <span class="hl-str">&quot;Elixir behaviour&quot;</span>
     (<span class="hl-kw">~</span><span class="hl-str"> init/1, handle_call/3, handle_info/2: what the OTP loop calls back. </span><span class="hl-kw">~</span>))
   (<span class="hl-kw">level</span> <span class="hl-key">:name</span> <span class="hl-str">&quot;The app&quot;</span>
     (<span class="hl-kw">block</span> Clock.Application <span class="hl-key">:type</span> <span class="hl-str">&quot;module&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> Starts both processes and tells the ticker where to send. </span><span class="hl-kw">~</span>)))
   (<span class="hl-kw">level</span> <span class="hl-key">:name</span> <span class="hl-str">&quot;Processes&quot;</span>
-    (<span class="hl-kw">block</span> Clock.Counter <span class="hl-key">:type</span> <span class="hl-str">&quot;module&quot;</span> (<span class="hl-kw">implements</span> GenServer) (<span class="hl-kw">port</span> <span class="hl-key">:in</span> Tick) (<span class="hl-kw">~</span><span class="hl-str"> Keeps the count. </span><span class="hl-kw">~</span>))
-    (<span class="hl-kw">block</span> Clock.Ticker <span class="hl-key">:type</span> <span class="hl-str">&quot;module&quot;</span> (<span class="hl-kw">implements</span> GenServer) (<span class="hl-kw">port</span> <span class="hl-key">:out</span> Tick) (<span class="hl-kw">~</span><span class="hl-str"> Sends a tick every second to the process it was given. </span><span class="hl-kw">~</span>)))
+    (<span class="hl-kw">block</span> Clock.Counter <span class="hl-key">:type</span> <span class="hl-str">&quot;module&quot;</span> (<span class="hl-kw">implements</span> GenServer) (<span class="hl-kw">takes</span> Tick) (<span class="hl-kw">~</span><span class="hl-str"> Keeps the count. </span><span class="hl-kw">~</span>))
+    (<span class="hl-kw">block</span> Clock.Ticker <span class="hl-key">:type</span> <span class="hl-str">&quot;module&quot;</span> (<span class="hl-kw">implements</span> GenServer) (<span class="hl-kw">gives</span> Tick) (<span class="hl-kw">~</span><span class="hl-str"> Sends a tick every second to the process it was given. </span><span class="hl-kw">~</span>)))
   (<span class="hl-kw">level</span> <span class="hl-key">:name</span> <span class="hl-str">&quot;OTP&quot;</span>
     (<span class="hl-kw">block</span> gen_server <span class="hl-key">:type</span> <span class="hl-str">&quot;Erlang module&quot;</span> (<span class="hl-kw">~</span><span class="hl-str"> Receives messages and calls your callbacks. </span><span class="hl-kw">~</span>))))</pre></div>
   </figure>
@@ -268,7 +268,7 @@ gen_server -&gt; GenServer             <span class="hl-com"> # the OTP loop call
 <p><code>gen_server -&gt; GenServer</code> is the loop calling back into your modules through the behaviour, which <code>abstraction</code> allows. The application is the supervisor that starts both processes and hands the ticker the counter&rsquo;s name, so it binds both.</p>
 
 <div class="rule">
-  <p><strong>Rule of thumb.</strong> Callbacks are messages, interfaces are behaviors. Either way, the lower code never names the higher.</p>
+  <p><strong>Rule of thumb.</strong> Callbacks are ports, interfaces are behaviors. Either way, the lower code never names the higher.</p>
 </div>
 
 <h2 id="next"><a class="anchor" href="#next" aria-hidden="true" tabindex="-1">#</a>Next</h2>

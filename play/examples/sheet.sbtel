@@ -3,39 +3,39 @@
 ; values -> formulas and addresses -> a document of sheets -> the app you click.
 (block Suite :type "suite"
   (behavior Function :type "interface")
-  (message Range)
-  (message Text)
-  (message Edit (carries Range Text))
-  (message CellsChanged (carries Range))
+  (shape Range)
+  (shape Text)
+  (shape Edit (carries Range Text))
+  (shape CellsChanged (carries Range))
 
   (level :name "Apps"
     (block Spreadsheet :type "app"
-      (message SelectionChanged (carries Range))
+      (shape SelectionChanged (carries Range))
       (level (block Main :type "module" (~ Starts everything and wires the parts together. ~)))
       (level
         (block Toolbar :type "module"
-          (port :in SelectionChanged)
+          (takes SelectionChanged)
           (block SortTool :type "module")
           (block ChartTool :type "module"))
         (block AddIns :type "module" (implements Function)))
       (level
         (adjacent (~ They show the same selection, so each reads the other's. ~)
           (block Grid :type "module"
-            (port :in CellsChanged) (port :out Edit) (port :out SelectionChanged)
+            (takes CellsChanged) (gives Edit) (gives SelectionChanged)
             (~ Draws the cells and turns typing into edits. ~))
           (block FormulaBar :type "module"
-            (port :in SelectionChanged) (port :out Edit)
+            (takes SelectionChanged) (gives Edit)
             (~ Shows and edits the selected cell's formula. ~))))))
 
   (level :name "Documents"
     (adjacent (~ A document reaches into its sheets, and sheets know their document. ~)
       (block Document :type "folder"
-        (level (block Workbook :type "module" (port :in Edit) (~ Applies each edit to the right sheet. ~)))
+        (level (block Workbook :type "module" (takes Edit) (~ Applies each edit to the right sheet. ~)))
         (level
           (block Undo :type "module")
           (block Files :type "module")))
       (block Sheet :type "folder"
-        (level (block Recalc :type "module" (port :out CellsChanged) (~ Recomputes what an edit affected, in order. ~)))
+        (level (block Recalc :type "module" (gives CellsChanged) (~ Recomputes what an edit affected, in order. ~)))
         (level
           (adjacent (~ A cell and the graph of who reads it must never disagree. ~)
             (block Cells :type "module")

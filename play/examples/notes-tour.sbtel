@@ -1,19 +1,19 @@
 ; The Notes app: levels, an adjacent pair and messages.
 (block Notes :type "app"
   (~ Write notes, see them rendered, keep them on disk. ~)
-  (message Note :type "struct" (~ A title and a body. ~))
-  (message Edit (carries Note) (~ A change to one note. ~))
-  (message NoteSaved (carries Note) (~ A note reached the disk. ~))
+  (shape Note :type "struct" (~ A title and a body. ~))
+  (shape Edit (carries Note) (~ A change to one note. ~))
+  (shape NoteSaved (carries Note) (~ A note reached the disk. ~))
   (level :name "The app"
     (block Shell :type "module" (~ Wires the parts together. ~)))
   (level :name "Notes as text"
     (adjacent (~ The preview scrolls with the editor, line for line. ~)
-      (block Editor :type "module" (port :out Edit) (port :in NoteSaved) (~ The text area. ~))
+      (block Editor :type "module" (gives Edit) (takes NoteSaved) (~ The text area. ~))
       (block Preview :type "module" (~ Renders the note beside the editor. ~)))
-    (block Sync :type "service" (port :out Edit) (port :in NoteSaved) (~ Exchanges edits with the cloud copy. ~))
+    (block Sync :type "service" (gives Edit) (takes NoteSaved) (~ Exchanges edits with the cloud copy. ~))
     (block Search :type "module" (~ Finds notes by their words. ~)))
   (level :name "Stored notes"
     (~ Notes as values on disk. Nothing here knows about editing. ~)
-    (block Store :type "module" (port :in Edit) (port :out NoteSaved) (~ Keeps notes on disk. ~))
+    (block Store :type "module" (takes Edit) (gives NoteSaved) (~ Keeps notes on disk. ~))
     (block Markdown :type "module" (~ Turns text into a document tree. ~))
     (block Index :type "module" (~ Maps words to notes. ~))))

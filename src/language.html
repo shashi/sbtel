@@ -8,15 +8,15 @@
 <thead><tr><th>Form</th><th>What it says</th></tr></thead>
 <tbody>
 <tr><td><code>(block Name &hellip;)</code></td><td>A part of the system: a feature, a service, a file, a function. It may hold levels of its own.</td></tr>
-<tr><td><code>:type "&hellip;"</code></td><td>What a block, behavior or message type is in code. Shown as a pill.</td></tr>
+<tr><td><code>:type "&hellip;"</code></td><td>What a block, behavior or shape is in code. Shown as a pill.</td></tr>
 <tr><td><code>(sketch "&hellip;")</code>, <code>(~ &hellip; ~)</code></td><td>One plain sentence about an element. The tilde form needs no quoting.</td></tr>
 <tr><td><code>(level :name "&hellip;" &hellip;)</code></td><td>One level of a block. Levels run top to bottom; each is built from the ones below. <code>:name</code> is the vocabulary it offers upward.</td></tr>
 <tr><td><code>(adjacent &hellip;)</code></td><td>Blocks in one level that may name each other, with a sketch that says why.</td></tr>
-<tr><td><code>(port :in T)</code>, <code>(port :out T)</code></td><td>A value of message type <code>T</code> that a block takes or sends. The port is named after the type: <code>noteSaved</code> for <code>NoteSaved</code>.</td></tr>
-<tr><td><code>(port :in T :as name)</code></td><td>The same port with a name of its own, for when the type&rsquo;s name is not enough.</td></tr>
-<tr><td><code>(message Name &hellip;)</code></td><td>A type of value that blocks exchange without naming each other.</td></tr>
-<tr><td><code>(refines T)</code></td><td>Inside a message: is-a. A port that takes <code>T</code> takes this type too.</td></tr>
-<tr><td><code>(carries A B)</code></td><td>Inside a message: has-a. A value of this type holds values of <code>A</code> and <code>B</code>.</td></tr>
+<tr><td><code>(takes T)</code>, <code>(gives T)</code></td><td>A value of shape <code>T</code> that a block takes or sends. The port is named after the type: <code>noteSaved</code> for <code>NoteSaved</code>.</td></tr>
+<tr><td><code>(takes T :as name)</code></td><td>The same port with a name of its own, for when the type&rsquo;s name is not enough.</td></tr>
+<tr><td><code>(shape Name &hellip;)</code></td><td>A type of value that blocks exchange without naming each other.</td></tr>
+<tr><td><code>(refines T)</code></td><td>Inside a shape: is-a. A port that takes <code>T</code> takes this type too.</td></tr>
+<tr><td><code>(carries A B)</code></td><td>Inside a shape: has-a. A value of this type holds values of <code>A</code> and <code>B</code>.</td></tr>
 <tr><td><code>(behavior Name &hellip;)</code></td><td>An interface: a named set of ports and a sketch of what holds.</td></tr>
 <tr><td><code>(implements Name)</code></td><td>A block, or another behavior, takes on a behavior&rsquo;s ports.</td></tr>
 </tbody></table></div>
@@ -35,18 +35,18 @@
 <p>Blocks in a level are independent unless you say otherwise. <code>adjacent</code> says otherwise: these blocks know each other, and its sketch says why.</p>
 <sbtel-demo example="lang-adjacent">Point at the line between Editor and Preview to read why they are joined.</sbtel-demo>
 
-<h3 id="ports">Ports and messages</h3>
-<p>A port is a value a block takes (<code>:in</code>, on the card&rsquo;s top ear) or sends (<code>:out</code>, on its bottom ear). Its type is a message type in scope. The name comes from the type, so most ports need nothing more. Write <code>:as</code> when a block has two ports of one type, or when a name says more than the type does. A sketch after the type adds what the type alone does not say.</p>
-<sbtel-demo example="lang-port">Click Sync&rsquo;s top ear to open its inputs, then point at <code>local</code>: Store lights up, the block that sends a <code>Note</code>.</sbtel-demo>
+<h3 id="ports">Ports and shapes</h3>
+<p>A port is something a block takes (<code>takes</code>, on the card&rsquo;s top ear) or gives (<code>gives</code>, on its bottom ear). What it takes or gives is a shape in scope. The name comes from the type, so most ports need nothing more. Write <code>:as</code> when a block has two ports of one type, or when a name says more than the type does. A sketch after the type adds what the type alone does not say.</p>
+<sbtel-demo example="lang-port">Click Sync&rsquo;s top ear to open its inputs, then point at <code>local</code>: Store lights up, the block that gives a <code>Note</code>.</sbtel-demo>
 
 <h3 id="types"><code>refines</code> and <code>carries</code></h3>
-<p>Two relations between message types: <code>refines</code> for is-a and <code>carries</code> for has-a. Store takes <code>Edit</code>, so it takes <code>RemoteEdit</code> too. <a href="../#data-shapes">Core concepts</a> has more on both.</p>
+<p>Two relations between shapes: <code>refines</code> for is-a and <code>carries</code> for has-a. Store takes <code>Edit</code>, so it takes <code>RemoteEdit</code> too. <a href="../#data-shapes">Core concepts</a> has more on both.</p>
 <sbtel-demo example="lang-types">Open Store&rsquo;s top ear and point at <code>edit</code>: Editor and Sync both light up.</sbtel-demo>
 
 <h3 id="behavior">Behaviors and <code>implements</code></h3>
 <p>A behavior is an interface: ports, a sketch, and a <code>:type</code> that says what it is in code (an interface, a trait, a protocol). A block that implements it gets its ports. A behavior can implement another behavior to extend it.</p>
 <sbtel-demo example="lang-behavior">Point at <code>Repo</code> in the band: both stores are outlined. Open a store&rsquo;s ears to see the ports it gained.</sbtel-demo>
-<p>Message types and behaviors are scoped: declared in a block, they can be used in that block and anything inside it. Declared at the top of the file, they can be used everywhere.</p>
+<p>Shapes and behaviors are scoped: declared in a block, they can be used in that block and anything inside it. Declared at the top of the file, they can be used everywhere.</p>
 
 <h2 id="writing">Writing a spec, step by step</h2>
 <p>This is one way to write a spec from nothing, using the Notes app. <a href="../">Core concepts</a> explains the reasons for each step.</p>
@@ -59,24 +59,24 @@
 <p>Ask what is written in terms of that vocabulary, and put it in a level above. Then do the same again. Name each level for what it offers upward: &ldquo;Stored notes&rdquo; is what Editor, Preview, Sync and Search are written in, and &ldquo;Notes as text&rdquo; is what Shell is written in.</p>
 <sbtel-spec example="step-2"></sbtel-spec>
 
-<h3 id="step-messages">3. Declare messages</h3>
-<p>Look for places where a lower block has to tell a higher one something, or where two peers exchange data. Each one is a message type with an <code>:out</code> on one side and an <code>:in</code> on the other. Here Store says when a note has been saved, and Editor and Sync listen.</p>
+<h3 id="step-shapes">3. Declare shapes</h3>
+<p>Look for places where a lower block has to tell a higher one something, or where two peers exchange data. Each one is a shape with a <code>gives</code> on one side and a <code>takes</code> on the other. Here Store says when a note has been saved, and Editor and Sync listen.</p>
 <sbtel-spec example="step-3"></sbtel-spec>
 
 <h3 id="step-adjacent">4. Declare adjacency where two parts really are one unit</h3>
-<p>Sometimes two peers are one cooperation split for clarity. The preview scrolls with the editor line for line, and making them talk through messages would only hide that. Put them in an <code>adjacent</code> group and say why in its sketch. The coupling is then a decision anyone can see in the picture, and <code>sbtel check</code> allows it.</p>
+<p>Sometimes two peers are one cooperation split for clarity. The preview scrolls with the editor line for line, and making them talk through ports would only hide that. Put them in an <code>adjacent</code> group and say why in its sketch. The coupling is then a decision anyone can see in the picture, and <code>sbtel check</code> allows it.</p>
 <sbtel-demo example="step-4">The finished spec. Point at the line between Editor and Preview, then at Store&rsquo;s lower ear.</sbtel-demo>
 
 <h3 id="step-check">5. Lint it, then check the code</h3>
-<p>Run <code>sbtel lint</code> after every edit. When there is code, list who names whom in an edges file and run <code>sbtel check</code>. With the message and the adjacent pair in place, Store no longer names Editor, and the link from Preview to Editor is a coupling the spec declares:</p>
+<p>Run <code>sbtel lint</code> after every edit. When there is code, list who names whom in an edges file and run <code>sbtel check</code>. With the shape and the adjacent pair in place, Store no longer names Editor, and the link from Preview to Editor is a coupling the spec declares:</p>
 <sbtel-code file="src/out/step-4.check.txt" label="output"></sbtel-code>
 <p>An edge that still breaks the levels on purpose can be explained in place: a <code># VIOLATION: reason</code> line right above it in the edges file. <code>sbtel check</code> still counts it, and prints the reason with it.</p>
 
 <h2 id="checks">The checks you will meet</h2>
 <p><code>sbtel lint</code> reads the spec on its own. These are the reports you are most likely to see, in plain words.</p>
 <dl class="keys checks">
-  <dt>An undeclared type</dt><dd>A port uses a message type that is not declared, or not in scope where the block is. Declare it, or fix the typo.</dd>
-  <dt>Out of scope</dt><dd>A message type or behavior is used outside the block that declares it. Move the declaration up to the smallest block that holds every use.</dd>
+  <dt>An undeclared type</dt><dd>A port uses a shape that is not declared, or not in scope where the block is. Declare it, or fix the typo.</dd>
+  <dt>Out of scope</dt><dd>A shape or behavior is used outside the block that declares it. Move the declaration up to the smallest block that holds every use.</dd>
   <dt>Two ports with one name</dt><dd>A block has two ports of the same type, so both got the same name. Give one or both a name with <code>:as</code>.</dd>
   <dt>An unknown form</dt><dd>Usually a typo, such as <code>skecth</code> for <code>sketch</code>.</dd>
   <dt>Placement notes</dt><dd>Information, never a failure: a declaration could live lower, closer to where it is used, or nothing uses it.</dd>

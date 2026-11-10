@@ -1,13 +1,13 @@
 (block Notes
-  (message NoteSaved (~ A note reached the disk. ~))
+  (shape NoteSaved (~ A note reached the disk. ~))
   (level :name "The app"
     (block Shell (~ Opens the window and wires the parts together. ~)))
   (level :name "Notes as text"
-    (block Editor (port :in NoteSaved) (~ The text area. ~))
+    (block Editor (takes NoteSaved) (~ The text area. ~))
     (block Preview (~ Renders the note beside the editor. ~))
-    (block Sync (port :in NoteSaved) (~ Exchanges edits with the cloud copy. ~))
+    (block Sync (takes NoteSaved) (~ Exchanges edits with the cloud copy. ~))
     (block Search (~ Finds notes by their words. ~)))
   (level :name "Stored notes"
-    (block Store (port :out NoteSaved) (~ Keeps notes on disk. ~))
+    (block Store (gives NoteSaved) (~ Keeps notes on disk. ~))
     (block Markdown (~ Turns text into a document tree. ~))
     (block Index (~ Maps words to notes. ~))))

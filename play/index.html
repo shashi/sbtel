@@ -419,11 +419,28 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 
 .strip { position:fixed; z-index:1100; display:flex; gap:2px; padding:4px; border-radius:11px; background:var(--panel); border:1px solid var(--panel-line); box-shadow:0 8px 24px var(--shadow); }
 .strip .tb { height:30px; min-width:30px; font-size:12.5px; padding:0 8px; }
-.composer textarea { width:min(300px, calc(100vw - 60px)); min-height:84px; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:8px; padding:8px 10px; font:inherit; font-size:13.5px; background:var(--surface); color:var(--ink); resize:vertical; display:block; }
-.thread { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow:auto; }
+/* Comments on one target: a chat. The thread scrolls, newest at the bottom, over the input. Its copy is a size
+   up from the cards' sketches, since the popover does not zoom with the canvas. */
+.pop.chat { width:min(380px, calc(100vw - 24px)); max-width:none; box-sizing:border-box; padding:10px 12px 12px; font-size:15px; }
+.pop.chat .chh { display:flex; align-items:center; gap:8px; }
+.pop.chat .chh .xbtn { width:28px; height:28px; margin:-4px -6px -4px auto; }
+.composer textarea { width:100%; min-height:64px; max-height:30vh; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:8px; padding:8px 10px; font:inherit; font-size:15px; line-height:1.45; background:var(--surface); color:var(--ink); resize:vertical; display:block; margin-top:8px; }
+.composer textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+@media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
+.pop.chat .acts { align-items:center; justify-content:flex-end; }
+.pop.chat .keys { margin-right:auto; font-size:11.5px; color:var(--muted); white-space:nowrap; }
+.thread { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; max-height:min(44vh, 420px); overflow:auto; overscroll-behavior:contain; }
 .thread li { border:1px solid var(--panel-line); border-radius:9px; padding:8px 10px; background:var(--surface); }
-.thread .ct { white-space:pre-wrap; }
-.thread .cm { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:11.5px; color:var(--muted); }
+.thread li.none { border:0; background:none; padding:2px 0; color:var(--muted); font-size:13.5px; }
+.thread .ct { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.45; }
+.thread .cm { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12px; color:var(--muted); }
+/* A reply nobody has read yet: a dot on the count. */
+.cbub.unread::after { content:""; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--canvas); }
+@media (max-width: 759px) {
+  .pop.chat { left:8px !important; right:8px; top:auto !important; bottom:calc(8px + var(--kb, 0px)); width:auto; }
+  .pop.chat .keys { display:none; }
+  .thread { max-height:32vh; }
+}
 .st-saved { color:var(--accent); font-weight:600; }
 .st-sent { color:var(--ok); font-weight:600; }
 .tiny { border:0; background:none; color:var(--muted); cursor:pointer; font-size:11.5px; padding:2px 4px; border-radius:5px; }
@@ -462,7 +479,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
     <li>Point at a port in a drawer to see its sketch and outline every block it can talk to; click it to edit the port. The arrow goes to the type's card.</li>
     <li>Point at a level's name, or a line between adjacent blocks, to read its sketch; click to edit it.</li>
     <li>Drag a block to move it (on a touch screen, tap it first, then drag it). Drop it between two linked blocks to join their group.</li>
-    <li>Shift-drag a behavior onto a block, or a message type onto an ear, to attach it.</li>
+    <li>Shift-drag a behavior onto a block, or a shape onto an ear, to attach it.</li>
     <li>Select something and choose Edit to rename it or change its type and sketch.</li>
     <li>⌘/Ctrl-click a block or line to comment on it.</li>
   </ul>
@@ -480,18 +497,18 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
   <button class="tb hide-sm" id="expAll" title="Open every block"><span>Open all</span></button>
   <button class="tb hide-sm" id="colAll" title="Close every block"><span>Close all</span></button>
   <span class="sep"></span>
-  <button class="tb" id="msgBtn" aria-expanded="false" aria-controls="msgSheet"><svg class="i" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M6.5 6.5V13"/></svg><span class="lbl">Messages</span></button>
+  <button class="tb" id="msgBtn" aria-expanded="false" aria-controls="msgSheet"><svg class="i" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M6.5 6.5V13"/></svg><span class="lbl">Shapes</span></button>
   <button class="tb" id="srcBtn" aria-expanded="false" aria-controls="srcSheet"><svg class="i" viewBox="0 0 16 16"><path d="M6 4L2 8l4 4M10 4l4 4-4 4"/></svg><span class="lbl">Source</span></button>
   <button class="tb chkpill" id="chkBtn" title="Layout and spec checks"></button>
   <button class="tb sendbtn" id="sendBtn" hidden title="Send saved comments to an agent"><svg class="i" viewBox="0 0 16 16"><path d="M2.5 8L13.5 2.5 10 13.5 7.5 9z"/><path d="M7.5 9L13.5 2.5"/></svg><span id="sendN"></span></button>
   <button class="tb icon" id="setBtn" title="Settings" aria-label="Settings"><svg class="i" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4L5 11M11 5l1.4-1.4"/></svg></button>
 </div>
 
-<aside class="float sheet right closed" id="msgSheet" aria-label="Message types">
-  <header><h2>Message types</h2><span class="sub" id="msgCount"></span><span class="spacer"></span>
-    <button class="xbtn" id="msgClose" aria-label="Close message types"><svg class="i" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></header>
+<aside class="float sheet right closed" id="msgSheet" aria-label="Shapes">
+  <header><h2>Shapes</h2><span class="sub" id="msgCount"></span><span class="spacer"></span>
+    <button class="xbtn" id="msgClose" aria-label="Close shapes"><svg class="i" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></header>
   <div class="body">
-    <input class="search" id="msgQ" type="search" placeholder="Search names, sketches, blocks" aria-label="Search message types">
+    <input class="search" id="msgQ" type="search" placeholder="Search names, sketches, blocks" aria-label="Search shapes">
     <div class="tctl"><span>Sort by</span><div class="seg" role="group" aria-label="Sort"><button id="sortName" class="on">Name</button><button id="sortUses">Uses</button></div><span id="ownerFilter"></span></div>
     <table class="mt"><thead><tr><th>Name</th><th class="n">Uses</th><th>Declared in</th></tr></thead><tbody id="msgRows"></tbody></table>
   </div>
@@ -534,9 +551,11 @@ const FONT = {
   htitle:'600 20px "Hanken Grotesk"', hsketch:'400 14.5px "Hanken Grotesk"',
   chip:'500 12px "JetBrains Mono"', pill:'600 11.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
 };
-const FORMS = new Set(['block','level','adjacent','port','message','behavior','implements','sketch','refines','carries']);
+// 0.4 names: (shape …), (takes …) and (gives …). The 0.3 names (message) and (port :in|:out) still read, with a
+// warning that says how to write them now; a model node keeps the forms 'message' and 'port' either way.
+const FORMS = new Set(['block','level','adjacent','takes','gives','shape','behavior','implements','sketch','refines','carries','port','message']);
 // Forms a behavior does not contain (it is a set of ports, not a part of the system), and what to declare instead.
-const NOT_IN_BEHAVIOR = { block:'the block', level:'the level', adjacent:'the adjacent group', message:'the message type', behavior:'the behavior' };
+const NOT_IN_BEHAVIOR = { block:'the block', level:'the level', adjacent:'the adjacent group', message:'the shape', shape:'the shape', behavior:'the behavior' };
 
 // @sbtel end Core.Constants
 // @sbtel begin Core.Reader
@@ -613,7 +632,7 @@ function defaultPortName(kind) {
   const c = String.fromCodePoint(t.codePointAt(0)); return c.toLowerCase() + t.slice(c.length);
 }
 // The source text of a port: :as only when the name is not the default one.
-function portForm(name, dir, kind) { return `(port :${dir} ${kind}${name && name !== defaultPortName(kind) ? ' :as ' + name : ''})`; }
+function portForm(name, dir, kind) { return `(${dir === 'in' ? 'takes' : 'gives'} ${kind}${name && name !== defaultPortName(kind) ? ' :as ' + name : ''})`; }
 // A (port …) form's reader items (after `port`): { dir, kind, as, name, legacy, body (index of the
 // first item after the head) }. The 0.2 form (port name in|out Type) is recognised as legacy.
 function portParts(items) {
@@ -643,8 +662,8 @@ function parse(src) {
   function conv(sx, owner, where) {
     if (!sx.list) return null;
     const head = sx.list[0]; const h = head && head.t === 'sym' ? head.v : null;
-    const node = { form: FORMS.has(h) ? h : 'raw', s:sx.s, e:sx.e, children:[] };
-    const items = sx.list.slice(1);
+    const node = { form: FORMS.has(h) ? (h === 'takes' || h === 'gives' ? 'port' : h === 'shape' ? 'message' : h) : 'raw', s:sx.s, e:sx.e, children:[] };
+    let items = sx.list.slice(1);
     const at = { toString: () => ' (line ' + lineCol(src, sx.s) + ')' };
     // v0.2 renamed (layer …) to (level …), with no alias: say so here, so the viewer shows it too.
     if (h === 'layer') ctx.warnings.push('unknown form (layer) in ' + (where || 'the file') + ' (did you mean level?)' + at);
@@ -676,27 +695,39 @@ function parse(src) {
         if (h === 'level' && !node.children.some(c => c.form === 'block' || c.form === 'adjacent')) ctx.warnings.push('level needs at least one block' + at);
         break;
       }
-      case 'port': {
-        // (port :in Type [:as name] [sketch]): the direction keyword, the message type, an optional name, a
-        // sketch last. Without :as the name is defaultPortName(Type). node.as is the name as written (or
-        // null); node.name is the effective name, the one everything else uses.
+      case 'takes': case 'gives': case 'port': {
+        // (takes Shape [:as name] [sketch]) and (gives Shape …): the shape, an optional name, a sketch last.
+        // Without :as the name is defaultPortName(Shape). node.as is the name as written (or null); node.name
+        // is the effective name, the one everything else uses. node.typeAt is where the shape sits in the
+        // form's items (1 here, 2 in the 0.3 form (port :in Shape), 3 in the 0.2 form (port name in Shape)).
+        const verb = h !== 'port';
+        if (verb) items = [{ t:'sym', v: h === 'takes' ? ':in' : ':out', s:sx.s, e:sx.s }, ...items];
         const p = portParts(items);
-        node.dir = p.dir; node.kind = p.kind; node.as = p.as; node.name = p.name;
-        if (p.legacy) {
+        node.dir = p.dir; node.kind = p.kind; node.as = p.as; node.name = p.name; node.typeAt = verb ? 1 : p.legacy ? 3 : 2;
+        if (verb && p.legacy) { node.dir = h === 'takes' ? 'in' : 'out'; node.kind = null; node.as = null; node.name = null; p.body = 1; } // (takes x in T): not a port form at all
+        else if (!verb && !p.legacy && (p.dir === 'in' || p.dir === 'out')) {
+          // The 0.3 form: read as it was meant, and reported with the way to write it now.
+          node.old = true;
+          const more = items.length > p.body, fix = portForm(p.name, p.dir, p.kind || 'Shape');
+          ctx.warnings.push(`(port :${p.dir}${p.kind ? ' ' + p.kind : ''}${p.as ? ' :as ' + p.as : ''}${more ? ' …' : ''}) is the 0.3 form; write ${more ? fix.slice(0, -1) + ' …)' : fix}` + at);
+        }
+        if (verb) { /* its problems are the lint walker's (api.js) */ }
+        else if (p.legacy) {
           // The 0.2 form (port name in Type): read as it was meant, so the diagram still draws, and reported.
           node.legacy = true;
-          const more = items.length > 3, fix = portForm(p.name, p.dir, p.kind || 'Type');
+          const more = items.length > 3, fix = portForm(p.name, p.dir, p.kind || 'Shape');
           ctx.warnings.push(`${legacyPortText(p, more)} is the 0.2 form; write ${more ? fix.slice(0, -1) + ' …)' : fix}` + at);
         } else if (p.dir !== 'in' && p.dir !== 'out') {
           const bare = items[0] && items[0].t === 'sym' && (items[0].v === 'in' || items[0].v === 'out') ? items[0].v : null;
-          ctx.warnings.push('port direction must be :in or :out' + (bare ? ` (write :${bare}, not ${bare})` : '') + at);
+          ctx.warnings.push('(port …) is the 0.3 form and needs :in or :out; write (takes Shape) or (gives Shape)' + (bare ? ` (${bare === 'in' ? 'takes' : 'gives'}, for ${bare})` : '') + at);
         }
         node.children = items.slice(p.body).map(x => conv(x, owner, 'port ' + (node.name || '?'))).filter(Boolean); node.sketch = sketchOf(node);
         break;
       }
-      case 'message':
-        node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(declHead(node, items)).map(x => conv(x, owner, 'message ' + node.name)).filter(Boolean);
-        if (ctx.messages.has(node.name)) ctx.warnings.push('Duplicate message ' + node.name + at);
+      case 'shape': case 'message':
+        node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(declHead(node, items)).map(x => conv(x, owner, 'shape ' + node.name)).filter(Boolean);
+        if (h === 'message') { node.old = true; ctx.warnings.push(`(message ${node.name || '?'}${items.length > 1 ? ' …' : ''}) is the 0.3 form; write (shape ${node.name || 'Name'}${items.length > 1 ? ' …' : ''})` + at); }
+        if (ctx.messages.has(node.name)) ctx.warnings.push('Duplicate shape ' + node.name + at);
         ctx.messages.set(node.name, node); break;
       case 'behavior': {
         // A behavior is read with a block's grammar (declHead: name, :type), and its body takes what has a
@@ -886,7 +917,7 @@ function countText(b) {
   // Every block inside, at any depth: how much the block holds. Nesting depth says little, so it is not shown.
   if (s.n) parts.push(`${s.n} block${s.n === 1 ? '' : 's'}`);
   if (b.behaviorDecls.length) parts.push(`${b.behaviorDecls.length} behavior${b.behaviorDecls.length === 1 ? '' : 's'}`);
-  if (b.messageDecls.length) parts.push(`${b.messageDecls.length} message type${b.messageDecls.length === 1 ? '' : 's'}`);
+  if (b.messageDecls.length) parts.push(`${b.messageDecls.length} shape${b.messageDecls.length === 1 ? '' : 's'}`);
   return parts.join(' · ');
 }
 function hasInside(b) { return b.form === 'block' && (b.levels.length > 0 || b.behaviorDecls.length > 0 || b.messageDecls.length > 0); }
@@ -996,17 +1027,17 @@ function scopeFailures(model) {
   const impls = (n, who, where) => n.impl.forEach(x => { const bh = model.behaviors.get(x); if (!bh) return;
     if (!inScope(bh, where)) add('scope', who, 'behavior', x, bh.owner.name, `${who} uses ${x}, declared in ${bh.owner.name}`);
     (n.implArgs[x] || []).forEach(t => { const m = n.form === 'behavior' && n.params.includes(t) ? null : model.messages.get(t);
-      if (m && !inScope(m, where)) add('mscope', who, 'message type', t, m.owner.name, `${who} passes ${t} to ${x}, declared in ${m.owner.name}`); }); });
+      if (m && !inScope(m, where)) add('mscope', who, 'shape', t, m.owner.name, `${who} passes ${t} to ${x}, declared in ${m.owner.name}`); }); });
   model.blocks.forEach(b => {
     impls(b, b.name, b);
-    b.ownPorts.forEach(p => { const m = model.messages.get(p.kind); if (m && !inScope(m, b)) add('mscope', b.name, 'message type', p.kind, m.owner.name, `${b.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); });
+    b.ownPorts.forEach(p => { const m = model.messages.get(p.kind); if (m && !inScope(m, b)) add('mscope', b.name, 'shape', p.kind, m.owner.name, `${b.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); });
   });
   model.behaviors.forEach(bh => bh.ports.forEach(p => { const m = bh.params.includes(p.kind) ? null : model.messages.get(p.kind);
-    if (m && !inScope(m, bh.owner)) add('mscope', bh.name, 'message type', p.kind, m.owner.name, `${bh.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); }));
+    if (m && !inScope(m, bh.owner)) add('mscope', bh.name, 'shape', p.kind, m.owner.name, `${bh.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); }));
   model.behaviors.forEach(bh => impls(bh, bh.name, bh.owner));
   // A carried type must be visible where the carrying message is declared, as a port's type must.
   model.messages.forEach(m => m.carries.forEach(t => { const d = model.messages.get(t);
-    if (d && !inScope(d, m.owner)) add('mscope', m.name, 'message type', t, d.owner.name, `${m.name} carries ${t}, declared in ${d.owner.name}`); }));
+    if (d && !inScope(d, m.owner)) add('mscope', m.name, 'shape', t, d.owner.name, `${m.name} carries ${t}, declared in ${d.owner.name}`); }));
   return out;
 }
 // Why an edit that turns src0's model into m1 would break the spec, or '' if it breaks nothing new.
@@ -1019,7 +1050,7 @@ function newFailureText(m0, m1, moved) {
     const before = new Set(lintSpec(m0).flatMap(c => c.f)), added = lintSpec(m1).flatMap(c => c.f).filter(t => !before.has(t));
     return added.length ? `That would break a spec check: ${added[0]}.${added.length > 1 ? ` (+${added.length - 1} more)` : ''}` : '';
   }
-  const f = fresh[0], dep = f.kind === 'behavior' ? `depends on behavior ${f.name}` : `uses message type ${f.name}`;
+  const f = fresh[0], dep = f.kind === 'behavior' ? `depends on behavior ${f.name}` : `uses shape ${f.name}`;
   const isDecl = moved && moved.form !== 'block' && moved.name === f.name && (moved.form === 'behavior') === (f.kind === 'behavior');
   const text = isDecl ? `${f.who} ${dep}, which would be out of its reach in ${f.owner}. Keep ${f.name} in a block that holds ${f.who}.`
     : `${f.who} ${dep} (declared in ${f.owner}). Move ${f.name} first.`;
@@ -1050,8 +1081,8 @@ function lintSpec(model) {
   return [
     { k:'beh', label:'Every implemented behavior is declared', f:unknownBeh },
     { k:'scope', label:'Behaviors are used only inside the block that declares them', f:scope },
-    { k:'msg', label:'Every port uses a declared message type', f:unknownMsg },
-    { k:'mscope', label:'Message types are used only inside the block that declares them', f:mscope },
+    { k:'msg', label:'Every port uses a declared shape', f:unknownMsg },
+    { k:'mscope', label:'Shapes are used only inside the block that declares them', f:mscope },
     { k:'rel', label:'refines and carries name declared types', f:badRel },
     { k:'cycle', label:'No behavior implements itself', f:cycles },
   ];
@@ -1252,7 +1283,7 @@ function layout(model, opts, M) {
         const rowIts = bd.items.map((it, i) => ({ it, b:its[i].box })).filter(q => q.it.row === lastIt.row);
         const cy = (Math.min(...rowIts.map(q => q.b.y + q.it.t)) + Math.max(...rowIts.map(q => q.b.y + q.it.t + q.it.sub.h))) / 2;
         out.plus.push({ x: Math.min(lb.x + lb.w + 22, x2 + (b.virtual ? -11 : K.PAD / 2)), y: cy,
-          act:{ t:'decl', block:b, form }, title: form === 'behavior' ? 'Add a behavior' : 'Add a message type' });
+          act:{ t:'decl', block:b, form }, title: form === 'behavior' ? 'Add a behavior' : 'Add a shape' });
       });
     } };
   }
@@ -1438,11 +1469,11 @@ function applyEdit(src, model, act) {
   }
   if (act.t === 'decl') {
     // New behavior or message type, placed after the block's last declaration of that kind.
-    const b = act.block, isB = act.form === 'behavior', base = isB ? 'NewBehavior' : 'NewMessage', pool = isB ? model.behaviors : model.messages;
+    const b = act.block, isB = act.form === 'behavior', base = isB ? 'NewBehavior' : 'NewShape', pool = isB ? model.behaviors : model.messages;
     let i = 1; while (pool.has(base + i)) i++; const nm = base + i;
     const same = b.children.filter(c => c.form === act.form), ref = same[same.length - 1] || b.children[0];
     const ind = (ref && indentAt(src, ref.s)) ?? childIndent(src, b);
-    const text = isB ? `(behavior ${nm}\n${ind}  (sketch "What a block promises when it implements this."))` : `(message ${nm} (sketch "What this data carries."))`;
+    const text = isB ? `(behavior ${nm}\n${ind}  (sketch "What a block promises when it implements this."))` : `(shape ${nm} (sketch "What this data carries."))`;
     if (same.length) return { src: splice(ref.e, ref.e, '\n' + ind + text), name:nm };
     if (ref) return { src: splice(ref.s, ref.s, text + '\n' + ind), name:nm };
     const at = endIn(src, b); return { src: splice(at, at, (at ? '\n' : '') + ind + text), name:nm };
@@ -1525,7 +1556,7 @@ function applyEdit(src, model, act) {
       // default drops it). A 0.2 port the edit touches is rewritten in the 0.3 form.
       const portText = q => portForm(q.name, q.dir, q.kind).slice(0, -1) + portSk(q) + ')';
       const skChanged = q => q.sketch != null && sketchNorm(q.sketch, q.node.children.find(c => c.form === 'sketch')) !== (q.node.sketch || '');
-      act.ports.forEach(q => { if (q.node && (q.node.legacy || q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
+      act.ports.forEach(q => { if (q.node && (q.node.legacy || q.node.old || q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
       insert(['port', 'implements'], act.ports.filter(q => !q.node).map(portText));
     }
     [...gone].filter(c => c.form !== 'sketch').forEach(c => cuts.push(cutRep(c)));
@@ -1535,7 +1566,7 @@ function applyEdit(src, model, act) {
       const visit = c => {
         if (c.form === 'implements' && n.form === 'behavior' && c.name === old) sym(itemsOf(src, c)[1]);
         else if (c.form === 'implements' && n.form === 'message' && (c.args || []).includes(old)) { const arg = itemsOf(src, c)[1]; arg.list.slice(1).forEach(sym); }
-        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[c.legacy ? 3 : 2]);
+        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[c.typeAt]);
         else if ((c.form === 'refines' || c.form === 'carries') && (c.names || []).includes(old)) itemsOf(src, c).slice(1).forEach(sym);
         c.children.forEach(visit);
       };
@@ -1721,7 +1752,7 @@ function attachCandidates(model, id, visibleIds) {
   const out = [];
   for (const b of model.blocks.values()) {
     if (!visibleIds.has(b.id)) continue;
-    const why = d.owner && !isWithin(b, d.owner) ? `${b.name} can't ${d.form === 'behavior' ? 'implement ' + d.name : 'use message type ' + d.name}: ${d.name} is declared in ${d.owner.name}, and ${b.name} is outside it.` : '';
+    const why = d.owner && !isWithin(b, d.owner) ? `${b.name} can't ${d.form === 'behavior' ? 'implement ' + d.name : 'use shape ' + d.name}: ${d.name} is declared in ${d.owner.name}, and ${b.name} is outside it.` : '';
     if (d.form === 'behavior') { if (!b.impl.includes(d.name)) out.push({ t:'implements', block:b, name:d.name, why }); }
     else ['in', 'out'].forEach(dir => out.push({ t:'port', block:b, dir, kind:d.name, name:freePortName(b, d.name), why }));
   }
@@ -1757,7 +1788,7 @@ function portsProblem(model, node, ports, impl) {
     const p = ports[i], label = p.name ? `Port ${p.name}` : `Port ${i + 1}`;
     if (!NAME_RE.test(p.name || '')) return `${label}: a port name cannot be empty or contain spaces, parentheses, quotes or semicolons.`;
     if (p.dir !== 'in' && p.dir !== 'out') return `${label}: direction must be in or out.`;
-    if (!p.kind) return `${label}: choose a message type.`;
+    if (!p.kind) return `${label}: choose a shape.`;
     if (!types.has(p.kind)) return `${label}: ${p.kind} is not in scope here.`;
     if (own.has(p.name)) return `Two ports are named ${p.name}.`;
     if (from.has(p.name)) return `Port ${p.name} clashes with the ${p.name} port from ${from.get(p.name)}.`;
@@ -1771,7 +1802,7 @@ function nameClash(model, node, name) {
   if (name === node.name) return '';
   if ([...model.blocks.values()].some(b => b !== node && b.name === name)) return `${name} is already the name of a block.`;
   if (model.behaviors.has(name) && model.behaviors.get(name) !== node) return `${name} is already the name of a behavior.`;
-  if (model.messages.has(name) && model.messages.get(name) !== node) return `${name} is already the name of a message type.`;
+  if (model.messages.has(name) && model.messages.get(name) !== node) return `${name} is already the name of a shape.`;
   return '';
 }
 // @sbtel end Core.Scope
@@ -1810,7 +1841,7 @@ function randomSpec(seed) {
     return t + ')';
   }
   const head = '(block System\n  :type "Module"\n  (sketch "A randomly generated system for testing layout rules.")\n' +
-    kinds.map(m => '  (message ' + m + ' (sketch "A ' + m.toLowerCase() + '."))').join('\n') +
+    kinds.map(m => '  (shape ' + m + ' (sketch "A ' + m.toLowerCase() + '."))').join('\n') +
     '\n  (behavior Durable (port :in Event :as keep) (sketch "Retains events until acknowledged."))' +
     '\n  (behavior Observable (port :out Snapshot :as metric) (sketch "Reports its own health."))';
   total = 0; let body = '';
@@ -2060,19 +2091,19 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
 (block Shell
   :type "Module"
   (sketch "The UI shell user interacts via.")
-  (message Intent (sketch "A command id plus its arguments."))
-  (message Frame (sketch "A rendered view-model for one surface."))
-  (message SessionEvent (sketch "A turn was added, edited or removed."))
+  (shape Intent (sketch "A command id plus its arguments."))
+  (shape Frame (sketch "A rendered view-model for one surface."))
+  (shape SessionEvent (sketch "A turn was added, edited or removed."))
   ; Notice, TurnAdded and Scrollable sit above their one user on purpose: the playground shows
   ; attaching across blocks and refusing it out of scope. sbtel lint says where each could live.
-  (message Notice (sketch "A short message for the user, with a severity."))
-  (message KeyChord (sketch "A normalized key combination."))
+  (shape Notice (sketch "A short message for the user, with a severity."))
+  (shape KeyChord (sketch "A normalized key combination."))
   (behavior Surface
-    (port :in Frame)
-    (port :out Intent)
+    (takes Frame)
+    (gives Intent)
     (sketch "A behavior shared by surfaces."))
   (behavior Durable
-    (port :in SessionEvent :as event)
+    (takes SessionEvent :as event)
     (sketch "Retains every accepted event until it is acknowledged."))
 
   (level :name "Surfaces"
@@ -2080,7 +2111,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
       (block Shell.Notification
         :type "Process"
         (implements Surface)
-        (port :in Notice)
+        (takes Notice)
         (sketch "Shows transient notices above the session.")
         (level
           (adjacent
@@ -2093,11 +2124,11 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
       (block Shell.SessionView
         :type "Process"
         (implements Surface)
-        (port :in SessionEvent :as events)
+        (takes SessionEvent :as events)
         (sketch "View of the Session")
-        (message TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
+        (shape TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
         (behavior Scrollable
-          (port :out Frame :as position)
+          (gives Frame :as position)
           (sketch "Keeps a scroll position and reports what is visible."))
         (level
           (adjacent
@@ -2109,7 +2140,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
               (level
                 (adjacent
                   (block Shell.Turn
-                    (port :in TurnAdded :as added)
+                    (takes TurnAdded :as added)
                     (sketch "One user or agent turn.")
                     (level
                       (adjacent
@@ -2118,7 +2149,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
                         (block Shell.ToolCall (sketch "Collapsible tool invocation and its result.")))))
                   (block Shell.TurnActions (sketch "Copy, retry and edit controls.")))))
             (block Shell.Composer
-              (port :out Intent :as submit)
+              (gives Intent :as submit)
               (sketch "Multiline input with attachments and slash commands."))))
         (level
           (block Shell.ScrollAnchor
@@ -2127,18 +2158,18 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
         (implements Surface)
         (sketch "Recent sessions and the project switcher.")))
     (block Shell.CommandPalette
-      (port :in KeyChord :as chord (~ Opens the palette. ~))
-      (port :out Intent :as run)
+      (takes KeyChord :as chord (~ Opens the palette. ~))
+      (gives Intent :as run)
       (sketch "Fuzzy search over every command.")))
 
   (level :name "Services"
     (block Shell.Theme (sketch "Resolves design tokens for light and dark."))
     (adjacent (~ Clipboard and keymap shortcuts route as intents. ~)
       (block Shell.Router
-        (port :in Intent)
+        (takes Intent)
         (sketch "Maps intents to handlers; unknown intents become notices."))
       (block Shell.Keymap
-        (port :out KeyChord :as chord)
+        (gives KeyChord :as chord)
         (sketch "Turns raw key events into chords."))
       (block Shell.Clipboard (sketch "Copy and paste with rich formats."))))
 
@@ -2151,7 +2182,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
     (block Shell.SessionStore
       :type "Store"
       (implements Durable)
-      (port :out SessionEvent :as events)
+      (gives SessionEvent :as events)
       (sketch "Keeps session events on disk and replays them on launch."))))
 `;
 
@@ -2191,7 +2222,7 @@ const ICON = {
 // @sbtel end App.Kit
 // @sbtel begin App.Document
 // glyphFor sits among the canvas helpers, but it is a query on the page's model (a behavior's glyph by
-// its declaration order) that the canvas, the popovers and the message table all use.
+// its declaration order) that the canvas, the popovers and the shape table all use.
 function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.behaviorOrder.indexOf(name)) % GLYPH.length; return { g:GLYPH[i], c:GCOL[i] }; }
 
 // @sbtel end App.Document
@@ -2367,7 +2398,7 @@ function paint(lay, keep) {
     lay.connectors.map((c, i) => `<path class="hit" data-ci="${i}" d="${d(c.pts)}"><title>${esc(c.a)} — ${esc(c.b)}${c.bad ? ' (not adjacent!)' : ''}</title></path><path class="vis ${c.bad ? 'bad' : ''}" data-key="${esc(c.a + '|' + c.b)}" d="${d(c.pts)}"/>`).join('');
   if (world.classList.contains('anim')) { svg.classList.add('fading'); clearTimeout(render._t); render._t = setTimeout(() => svg.classList.remove('fading'), 330); }
 
-  // The file's own appendix (top-level behaviors and message types): tint and band labels on the canvas.
+  // The file's own appendix (top-level behaviors and shapes): tint and band labels on the canvas.
   world.querySelectorAll('.cvx').forEach(n => n.remove());
   if (lay.canvas && lay.canvas.appendixY != null) {
     const cx = document.createElement('div'); cx.className = 'cvx';
@@ -2485,7 +2516,7 @@ function tabsHTML(n) {
       (card ? `<button class="dgo" data-gocard="${esc(p.kind)}" title="Go to the ${esc(p.kind)} card" aria-label="Go to the ${esc(p.kind)} card">${ICON.go}</button>` : '') + `</div>`;
   }).join('');
   const mini = side => `<div class="dmin"><button class="dminb" data-dmin="${side}" title="Close" aria-label="Close ${side === 'top' ? 'inputs' : 'outputs'}">−</button></div>`;
-  const tab = (side, list, label) => list.length ? `<div class="tab ${side}${dr[side] ? ' open' : ''}"${dr[side] ? ` style="height:${drawerH(list.length)}px"` : ''} data-drawer="${side}" role="button" tabindex="0" aria-expanded="${!!dr[side]}" aria-label="${label}: ${list.length} message type${list.length === 1 ? '' : 's'}">${dr[side] ? (side === 'top' ? mini(side) + rows(list, side) : rows(list, side) + mini(side)) : plain(list, side)}</div>` : '';
+  const tab = (side, list, label) => list.length ? `<div class="tab ${side}${dr[side] ? ' open' : ''}"${dr[side] ? ` style="height:${drawerH(list.length)}px"` : ''} data-drawer="${side}" role="button" tabindex="0" aria-expanded="${!!dr[side]}" aria-label="${label}: ${list.length} shape${list.length === 1 ? '' : 's'}">${dr[side] ? (side === 'top' ? mini(side) + rows(list, side) : rows(list, side) + mini(side)) : plain(list, side)}</div>` : '';
   return tab('top', d.in, 'Inputs') + tab('bot', d.out, 'Outputs');
 }
 // A message card's ear: one dot per type it carries (its own, then inherited from what it refines, dimmed).
@@ -2740,7 +2771,7 @@ vp.addEventListener('pointerout', e => { if (e.target.closest('[data-msg], [data
 // ---------- Selection, handles, action strip ----------
 function connectorKey(c) { return c.a + '|' + c.b; }
 function targetKey(id) { return id.startsWith('β:') ? 'beh:' + id.slice(2) : id.startsWith('μ:') ? 'msg:' + id.slice(2) : 'block:' + id; }
-// ---------- Who can talk to whom over one message type ----------
+// ---------- Who can talk to whom over one shape ----------
 function talkTargets(t) {
   const m = state.model, hits = [];
   state.lay.blocks.forEach(B => {
@@ -2807,7 +2838,7 @@ function renderStrip() {
   } else if (state.sel) {
     const n = state.model.node(state.sel), isFrame = state.lay.blocks.find(b => b.id === state.sel)?.kind === 'frame';
     const isM = n && n.form === 'message';
-    strip.innerHTML = (isM ? `<button class="tb" data-a="table" title="Open in the message table">${ICON.details}<span class="lbl">Table</span></button>` : '') + 
+    strip.innerHTML = (isM ? `<button class="tb" data-a="table" title="Open in the shape table">${ICON.details}<span class="lbl">Table</span></button>` : '') + 
       `<button class="tb" data-a="edit" title="Edit name and sketch">${ICON.edit}<span class="lbl">Edit</span></button>` +
       `<button class="tb" data-a="code" title="Show source">${ICON.code}<span class="lbl">Code</span></button>` +
       `<button class="tb" data-a="comment" title="Comment (⌘-click)">${ICON.comment}<span class="lbl">Comment</span></button>` +
@@ -2840,7 +2871,6 @@ function placeStrip() {
   y = Math.max(64, Math.min(y, innerHeight - h - 76));
   x = Math.max(12, Math.min(x, innerWidth - w - 12));
   strip.style.left = x + 'px'; strip.style.top = y + 'px';
-  if (composerPop && composerPop.isConnected) placeNear(composerPop, r);
 }
 function cutSelected() {
   const c = state.selLine && state.lay.connectors.find(c => connectorKey(c) === state.selLine); if (!c) return;
@@ -2932,7 +2962,7 @@ function moveZones(id) {
     let r, sp; try { r = applyEdit(state.src, state.model, act); if (seen.has(r.src)) continue; seen.add(r.src); sp = specLayout(r.src); } catch (_) { continue; }
     const noop = r.src === state.src;
     // Drops that would leave the source broken (parse warnings, failing layout checks) are not offered.
-    // A drop that would break a spec check (the block, or something in it, uses a behavior or message type
+    // A drop that would break a spec check (the block, or something in it, uses a behavior or shape
     // that would be out of its scope there) stays a zone, marked `bad` with the reason: it previews as
     // usual, and releasing on it bounces the block back with that reason in a toast.
     if (!noop && (sp.m.warnings.length || sp.lay.checks.some(c => c.f.length))) continue;
@@ -3136,7 +3166,7 @@ function containerItems(P, wy, visible) {
   if (li >= 0) items.push({ label:'Add a block to this level', act:{ t:'append', L:P.levels[li] }, ...open },
     { label:'Insert a level above', act:{ t:'level', block:P, at:li }, ...open }, { label:'Insert a level below', act:{ t:'level', block:P, at:li + 1 }, ...open });
   else items.push({ label: P.levels.length ? 'Add a block inside' : 'Add a level', act:{ t:'level', block:P, at:P.levels.length }, ...open });
-  items.push({ label:'Add a behavior', act:{ t:'decl', block:P, form:'behavior' }, ...open }, { label:'Add a message type', act:{ t:'decl', block:P, form:'message' }, ...open });
+  items.push({ label:'Add a behavior', act:{ t:'decl', block:P, form:'behavior' }, ...open }, { label:'Add a shape', act:{ t:'decl', block:P, form:'message' }, ...open });
   return items;
 }
 function menuItems(target, wy) {
@@ -3150,7 +3180,7 @@ function menuItems(target, wy) {
     if (hasInside(n)) items.push({ label: isFrame ? 'Close' : 'Open', run:() => toggle(n.id) });
     items.push(...containerItems(n, wy, isFrame), '-');
   }
-  if (n.form === 'message') items.push({ label:'Open in the message table', run:() => openMessages({ open:n.name }) });
+  if (n.form === 'message') items.push({ label:'Open in the shape table', run:() => openMessages({ open:n.name }) });
   items.push({ label:'Edit', run:() => openEdit(n.id) }, { label:'Code', run:() => openCode(n.id) },
     { label:'Comment', run:() => openComposer(targetKey(n.id)) }, { label:'Delete', danger:true, run:() => askDelete(n.id) });
   return { title:n.name, items };
@@ -3212,13 +3242,13 @@ function followKind(nameEl, kindEl, ev) {
 }
 function openEdit(id) {
   const n = state.model.node(id); if (!n) return;
-  const isBlk = n.form === 'block', kind = isBlk ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
+  const isBlk = n.form === 'block', kind = isBlk ? 'block' : n.form === 'behavior' ? 'behavior' : 'shape';
   const md = modal(`Edit ${n.name}`, `<form class="editf" autocomplete="off">
     <label class="fld"><span>Name</span><input name="name" value="${esc(n.name)}" spellcheck="false"></label>
     <label class="fld"><span>Type</span><input name="type" value="${esc(n.type || '')}" placeholder="${isBlk ? 'None' : n.form === 'behavior' ? 'None (an interface, a trait, a protocol…)' : 'None (a struct, a record, a schema…)'}" spellcheck="false"></label>
     <label class="fld"><span>Sketch</span><textarea name="sketch" rows="4">${esc(n.sketch || '')}</textarea></label>
     ${n.form !== 'message' ? editBehaviorsHTML(n) : ''}
-    ${n.form === 'message' ? `<label class="fld"><span>Carries</span><input name="carries" value="${esc(n.carries.join(' '))}" placeholder="Message types a value of ${esc(n.name)} holds" spellcheck="false" list="edCarry"><datalist id="edCarry">${typesInScope(state.model, n).map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>` : ''}
+    ${n.form === 'message' ? `<label class="fld"><span>Carries</span><input name="carries" value="${esc(n.carries.join(' '))}" placeholder="Shapes a value of ${esc(n.name)} holds" spellcheck="false" list="edCarry"><datalist id="edCarry">${typesInScope(state.model, n).map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>` : ''}
     ${isBlk || n.form === 'behavior' ? `<fieldset class="fset"><legend>Ports</legend><div class="prows"></div><div class="pinh"></div>
       <button type="button" class="btn small" data-m="addport">Add port</button></fieldset>` : ''}
     <p class="merr" role="alert" hidden></p>
@@ -3235,7 +3265,7 @@ function openEdit(id) {
     const opts = (p.kind && !types.includes(p.kind) ? [p.kind] : []).concat(types);
     row.innerHTML = `<input class="pname" aria-label="Port name" value="${esc(p.name || '')}" spellcheck="false">
       <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${p.dir === 'in'}">in</button><button type="button" data-dir="out" aria-pressed="${p.dir === 'out'}">out</button></span>
-      <select class="pkind" aria-label="Message type"><option value="">Type…</option>${opts.map(t => `<option${t === p.kind ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
+      <select class="pkind" aria-label="Shape"><option value="">Type…</option>${opts.map(t => `<option${t === p.kind ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
       <button type="button" class="pdel" aria-label="Remove port" title="Remove port">${ICON.close}</button>
       <textarea class="psk" rows="1" aria-label="Port sketch" placeholder="Sketch: what this port promises (optional)">${esc(p.sketch || '')}</textarea>`;
     row.dataset.dir = p.dir;
@@ -3268,7 +3298,7 @@ function openEdit(id) {
     if (n.form === 'message') {
       act.carries = [...new Set(f.elements.carries.value.split(/\s+/).filter(Boolean))];
       const scope = new Set(typesInScope(state.model, n)), out = act.carries.find(t => !scope.has(t));
-      if (out) { err.textContent = `${out} is not a message type in scope here.`; err.hidden = false; f.elements.carries.focus(); return; }
+      if (out) { err.textContent = `${out} is not a shape in scope here.`; err.hidden = false; f.elements.carries.focus(); return; }
     }
     if (hasPorts) {
       act.ports = readRows();
@@ -3324,11 +3354,11 @@ function msgInfoHTML(name, withActs) {
   const m = state.model.messages.get(name);
   const info = messageIndex(state.model).find(x => x.name === name);
   if (!m) return `<h3><i class="d" style="width:9px;height:9px;border-radius:50%;background:${msgColor(name)}"></i>${esc(name)}</h3><p class="meta">Not declared anywhere. The spec checks flag this.</p>`;
-  return `<div class="kind">Message type</div><h3><i style="width:9px;height:9px;border-radius:50%;background:${msgColor(name)};display:inline-block"></i>${esc(name)}</h3>` +
+  return `<div class="kind">Shape</div><h3><i style="width:9px;height:9px;border-radius:50%;background:${msgColor(name)};display:inline-block"></i>${esc(name)}</h3>` +
     (m.sketch ? `<p>${esc(m.sketch)}</p>` : '') +
     (m.refines ? `<div class="meta">refines ${esc(m.refines)}</div>` : '') +
     `<div class="meta">used by ${info.uses.length} port${info.uses.length === 1 ? '' : 's'} · declared in ${esc(m.owner ? m.owner.name : '—')}</div>` +
-    (withActs ? `<div class="acts"><button class="btn primary" data-pa="table" data-v="${esc(name)}">Open in message table</button></div>` : `<div class="tip">Click to open it in the message table.</div>`);
+    (withActs ? `<div class="acts"><button class="btn primary" data-pa="table" data-v="${esc(name)}">Open in shape table</button></div>` : `<div class="tip">Click to open it in the shape table.</div>`);
 }
 function behInfoHTML(name, withActs) {
   const b = state.model.behaviors.get(name); const g = glyphFor(name);
@@ -3343,7 +3373,7 @@ function behInfoHTML(name, withActs) {
 }
 function showInfo(t, hover) {
   let html = t.dataset.msg ? msgInfoHTML(t.dataset.msg, !hover) : behInfoHTML(t.dataset.beh, !hover);
-  if (t.classList.contains('drow')) html = html.replace('Click to open it in the message table.', 'Click to outline the blocks that can talk to this one with it.');
+  if (t.classList.contains('drow')) html = html.replace('Click to open it in the shape table.', 'Click to outline the blocks that can talk to this one with it.');
   pop(hover ? 'info-hover' : 'info-pin', t, html, hover ? 'hover' : '');
 }
 function onMsgClick(name, el) { clearTimeout(hoverT); if (lastPointer === 'mouse') { closePop('info'); openMessages({ open:name }); } else showInfo(el, false); }
@@ -3467,7 +3497,7 @@ function portEditor(at, find) {
   const el = showCallout(at.key, find, `<form class="cedit" autocomplete="off">
     <div class="r"><input class="mono" name="name" aria-label="Port name" value="${esc(node.name)}" spellcheck="false">
       <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${node.dir === 'in'}">in</button><button type="button" data-dir="out" aria-pressed="${node.dir === 'out'}">out</button></span></div>
-    <input class="mono" name="kind" aria-label="Message type" value="${esc(node.kind || '')}" list="${lid}" spellcheck="false" placeholder="Message type">
+    <input class="mono" name="kind" aria-label="Shape" value="${esc(node.kind || '')}" list="${lid}" spellcheck="false" placeholder="Shape">
     <datalist id="${lid}">${types.map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist>
     <div class="lab">Sketch</div><textarea name="sketch" rows="3" aria-label="Sketch" placeholder="What this port promises, beyond its type.">${esc(node.sketch || '')}</textarea>
     <p class="merr" role="alert" hidden></p>
@@ -3578,7 +3608,7 @@ function groupEditor(g, focus) {
   if (focus) setTimeout(() => { if (co.el.contains(f)) f.elements.sketch.focus({ preventScroll:true }); }, 0);
 }
 
-// ---------- Carriers: who holds a message type ----------
+// ---------- Carriers: who holds a shape ----------
 // Hovering a type (its card, a chip that names it, or a dot on a card's carries ear) outlines every message
 // type that carries it, transitively, and every block with a port typed with one of those; the drawer rows
 // of those ports light up. The same look as a port's partners. On touch, selecting the type's card does it.
@@ -3675,7 +3705,7 @@ function targetLabel(key) {
   const [kind, rest] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
   if (kind === 'line') { const [a, b] = rest.split('|'); return `the link between ${a} and ${b}`; }
   if (kind === 'block' && !rest) return 'the file';
-  return ({ block:'block', beh:'behavior', msg:'message type' }[kind] || kind) + ' ' + rest;
+  return ({ block:'block', beh:'behavior', msg:'shape' }[kind] || kind) + ' ' + rest;
 }
 function targetSource(key) {
   const kind = key.slice(0, key.indexOf(':')), rest = key.slice(key.indexOf(':') + 1), m = state.model;
@@ -3691,37 +3721,80 @@ function anchorFor(key) {
   if (kind === 'line') return document.querySelector(`#lines path.vis[data-key="${CSS.escape(rest)}"]`);
   if (kind === 'msg') return state.elems.get('μ:' + rest) || document.querySelector(`#msgRows tr[data-name="${CSS.escape(rest)}"]`);
 }
-let composerPop = null;
-function openComposer(key, anchor) {
-  closePop('info');
-  const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 150, innerHeight / 3, 300, 0) };
-  const el = pop('composer', a, `<div class="kind">Comment on ${esc(targetLabel(key))}</div>
-    <div class="composer" style="margin-top:6px"><textarea id="cmtText" placeholder="What should change, or what is unclear?"></textarea></div>
-    <div class="acts" style="justify-content:flex-end"><button class="btn" data-c="cancel">Cancel</button><button class="btn" data-c="save">Save</button><button class="btn primary" data-c="send">Send</button></div>`);
-  composerPop = el;
-  const ta = el.querySelector('textarea'); setTimeout(() => ta.focus(), 30);
-  el.addEventListener('click', e => {
-    const c = e.target.closest('[data-c]')?.dataset.c; if (!c) return;
-    if (c === 'cancel') { closePop('composer'); return; }
-    const text = ta.value.trim(); if (!text) { ta.focus(); return; }
-    const cm = { id:Date.now().toString(36), target:key, text, status:'saved', version:version(), at:Date.now() };
-    state.comments.push(cm); saveComments(); closePop('composer'); render();
-    if (c === 'send') openSend([cm]); else toast('Comment saved. Send it from the toolbar when you are ready.');
-  });
-  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) el.querySelector('[data-c="save"]').click(); });
+// One chat per target: its comments, newest at the bottom, over an input. ⌘/Ctrl+Enter sends the comment now;
+// Shift+Enter keeps it for later (Save here, Add to review in a session). The chat stays open after either,
+// and text that was typed but not sent comes back when the chat is opened again.
+let chat = null; // { key, el }
+const chatDrafts = new Map();
+// What a mode changes (§6.5): the secondary action, what a new comment becomes, and a row's status
+// ([class, text, title]), buttons and replies.
+let chatKeep = () => ({ c:'save', label:'Save', title:'Keep it here and send it later from the toolbar (Shift+Enter)' });
+let chatAdd = (key, text, how) => {
+  const cm = { id:Date.now().toString(36) + Math.random().toString(36).slice(2, 5), target:key, text, status:'saved', version:version(), at:Date.now() };
+  state.comments.push(cm); saveComments(); render();
+  if (how === 'send') openSend([cm]); else toast('Comment saved. Send it from the toolbar when you are ready.');
+};
+let chatStatus = c => c.status === 'sent' ? ['st-sent', 'Sent'] : ['st-saved', 'Saved'];
+let chatRowBtns = c => (c.status === 'saved' ? `<button class="tiny" data-t="send" data-id="${esc(c.id)}">Send</button>` : '') + `<button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>`;
+let chatReplies = c => '';
+function chatRow(c) {
+  const [cls, text, title] = chatStatus(c);
+  return `<li data-id="${esc(c.id)}"><div class="ct">${esc(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
-function openThread(key, anchor) {
-  const list = state.comments.filter(c => c.target === key);
-  const el = pop('thread', anchor, `<div class="kind">Comments on ${esc(targetLabel(key))}</div>
-    <ul class="thread">${list.map(c => `<li><div class="ct">${esc(c.text)}</div><div class="cm"><span class="st-${c.status}">${c.status === 'sent' ? 'Sent' : 'Saved'}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${c.status === 'saved' ? `<button class="tiny" data-t="send" data-id="${c.id}">Send</button>` : ''}<button class="tiny" data-t="del" data-id="${c.id}">Delete</button></div></li>`).join('')}</ul>
-    <div class="acts" style="justify-content:flex-end"><button class="btn" data-t="add">Add comment</button></div>`);
-  el.addEventListener('click', e => {
-    const b = e.target.closest('[data-t]'); if (!b) return;
-    if (b.dataset.t === 'add') { openComposer(key, anchor); return; }
-    const c = state.comments.find(x => x.id === b.dataset.id);
-    if (b.dataset.t === 'del') { state.comments = state.comments.filter(x => x !== c); saveComments(); closePop('thread'); render(); if (key.startsWith('msg:')) renderMsgTable(); }
-    if (b.dataset.t === 'send') { closePop('thread'); openSend([c]); }
+const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || chat.key === key));
+// Draw the open chat's thread again and show its end; the popover and what is typed in it stay.
+function refreshChat() {
+  if (!chatOpen()) { chat = null; return; }
+  const el = chat.el, ul = el.querySelector('ul.thread'), list = state.comments.filter(c => c.target === chat.key);
+  ul.innerHTML = list.map(chatRow).join('') || '<li class="none">No comments here yet.</li>';
+  ul.scrollTop = ul.scrollHeight;
+  const r = el.getBoundingClientRect();
+  if (r.bottom > innerHeight - 8 && innerWidth >= 760) el.style.top = Math.max(8, innerHeight - r.height - 8) + 'px';
+}
+function openChat(key, anchor, focus) {
+  closePop('info');
+  if (chatOpen(key)) { if (focus) chat.el.querySelector('textarea').focus(); return; }
+  const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 190, innerHeight / 3, 380, 0) };
+  const keep = chatKeep(), mac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+  const el = pop('thread', a, `<div class="chh"><span class="kind">Comments on ${esc(targetLabel(key))}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
+    <ul class="thread" aria-live="polite"></ul>
+    <div class="composer"><textarea id="cmtText" rows="2" placeholder="What should change, or what is unclear?" aria-label="Comment on ${esc(targetLabel(key))}"></textarea></div>
+    <div class="acts"><span class="keys">${mac ? '⌘' : 'Ctrl+'}Enter sends · Shift+Enter: ${esc(keep.label.toLowerCase())}</span><button class="btn" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div>`, 'chat');
+  chat = { key, el };
+  const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
+  refreshChat(); placeNear(el, a.getBoundingClientRect());
+  if (focus) setTimeout(() => { if (chatOpen(key)) ta.focus(); }, 30);
+  const submit = how => {
+    const text = ta.value.trim(); if (!text) { ta.focus(); return; }
+    ta.value = ''; chatDrafts.delete(key);
+    chatAdd(key, text, how); refreshChat();
+    if (chatOpen(key)) ta.focus();
+  };
+  ta.addEventListener('input', () => { if (ta.value.trim()) chatDrafts.set(key, ta.value); else chatDrafts.delete(key); });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePop('thread'); return; }
+    if (e.key !== 'Enter' || e.isComposing) return;
+    if (e.metaKey || e.ctrlKey) { e.preventDefault(); submit('send'); }
+    else if (e.shiftKey) { e.preventDefault(); submit('keep'); }
   });
+  el.addEventListener('click', e => {
+    const c = e.target.closest('[data-c]')?.dataset.c; if (c) { submit(c === 'send' ? 'send' : 'keep'); return; }
+    const b = e.target.closest('[data-t]'); if (!b) return;
+    if (b.dataset.t === 'close') { closePop('thread'); return; }
+    const cm = state.comments.find(x => x.id === b.dataset.id); if (!cm) return;
+    if (b.dataset.t === 'del') { state.comments = state.comments.filter(x => x !== cm); saveComments(); render(); refreshChat(); if (key.startsWith('msg:')) renderMsgTable(); }
+    if (b.dataset.t === 'send') openSend([cm]);
+  });
+}
+// Comment on a thing (the input has the focus), or read its thread (on a touch screen the keyboard stays down).
+function openComposer(key, anchor) { openChat(key, anchor, true); }
+function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: coarse)').matches); }
+// Every full render draws the open chat again: a comment was added, sent or answered.
+{ const draw = render; render = (anchorId, pv) => { draw(anchorId, pv); if (!pv) refreshChat(); }; }
+// On a phone the chat is a sheet at the bottom; --kb lifts it above the on-screen keyboard.
+if (window.visualViewport) {
+  const kb = () => document.documentElement.style.setProperty('--kb', Math.max(0, Math.round(innerHeight - visualViewport.height - visualViewport.offsetTop)) + 'px');
+  visualViewport.addEventListener('resize', kb); visualViewport.addEventListener('scroll', kb);
 }
 function renderSendBtn() {
   const n = state.comments.filter(c => c.status === 'saved').length;
@@ -3753,7 +3826,7 @@ function askDelete(id) {
   const m = state.model, n = m.node(id); if (!n) return;
   const loc = state.lay.loc.get(id);
   if (n.form === 'block' && !loc) { toast('Open its parent block first, then delete it.'); return; }
-  const kind = n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
+  const kind = n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'shape';
   let detail;
   if (n.form === 'block') { const s = stats(n); detail = s.n ? `It contains ${s.n} block${s.n === 1 ? '' : 's'}, which will be deleted with it.` : 'It has no blocks inside it.'; }
   else if (n.form === 'behavior') { const users = [...m.blocks.values()].filter(b => b.impl.includes(n.name)).map(b => b.name); detail = users.length ? `${users.length} block${users.length === 1 ? ' implements' : 's implement'} it (${users.slice(0, 3).join(', ')}${users.length > 3 ? ', …' : ''}). Those lines stay and will fail the spec checks until you change them.` : 'No block implements it.'; }
@@ -3776,7 +3849,7 @@ function askDeleteMany(ids) {
   const m = state.model;
   const ns = ids.map(id => m.node(id)).filter(n => n && (n.form !== 'block' || state.lay.loc.has(n.id)));
   if (!ns.length) return; if (ns.length === 1) { askDelete(ns[0].id); return; }
-  const kindOf = n => n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
+  const kindOf = n => n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'shape';
   const inner = ns.reduce((s, n) => s + (n.form === 'block' && !ns.some(o => o !== n && o.form === 'block' && isWithin(n, o)) ? stats(n).n : 0), 0);
   const md = modal(`Delete ${ns.length} items?`, `<p style="margin:0 0 8px;line-height:1.5">This removes from the source:</p>
     <ul style="margin:0 0 8px;padding-left:20px;line-height:1.5">${ns.map(n => `<li><b>${esc(n.name)}</b> <span style="color:var(--muted)">${kindOf(n)}</span></li>`).join('')}</ul>
@@ -3889,7 +3962,7 @@ function renderMsgTable() {
         <h4>Used by</h4>${r.uses.length ? `<div class="uses">${r.uses.map(u => `<button class="ulink" data-go="${esc(u.id)}">${esc(u.name)} <span>${esc(u.port)} ${esc(u.dir)}</span></button>`).join('')}</div>` : '<p class="none">No ports use this type.</p>'}
         <div class="mfoot" style="justify-content:flex-start"><button class="btn" data-go="${esc('μ:' + r.name)}">Show on canvas</button><button class="btn" data-cmsg="${esc(r.name)}">${ICON.comment.replace('class="i"', 'class="i" style="vertical-align:-3px;margin-right:4px"')}Comment</button>${ck ? `<button class="btn" data-tmsg="${esc(r.name)}">View comments</button>` : ''}</div>
       </div></td></tr>` : '');
-  }).join('') : `<tr><td colspan="3" class="none" style="padding:16px 8px">No message types match.</td></tr>`;
+  }).join('') : `<tr><td colspan="3" class="none" style="padding:16px 8px">No shapes match.</td></tr>`;
 }
 $('msgRows').addEventListener('click', e => {
   const go = e.target.closest('[data-go]'); if (go) { goTo(go.dataset.go); return; }
@@ -4019,7 +4092,7 @@ addEventListener('keydown', e => {
 });
 document.addEventListener('pointerdown', e => {
   if (e.target.closest('.pop, .strip, .dock, [data-thread], [data-msg], [data-beh], .ulink, [data-cmsg], [data-tmsg]')) return;
-  ['thread', 'composer', 'checks', 'info-pin', 'menu'].forEach(k => { if (pops[k] && !(k === 'composer' && pops[k].querySelector('textarea').value.trim())) closePop(k); });
+  ['thread', 'checks', 'info-pin', 'menu'].forEach(k => { if (pops[k]) closePop(k); }); // a chat keeps its unsent text (chatDrafts)
 }, true);
 addEventListener('resize', () => placeStrip());
 
@@ -4046,11 +4119,28 @@ const SBTEL = (() => {
 // into its thread as well as a toast. Inlined by viewer/build.mjs after the app and before server.js
 // and diff.js; at load it only defines sessionComments, so standalone mode is untouched.
 function sessionComments({ version, closed }) {
-  const C = { thread: null, seenReplies: new Set(), reviews: [], listeners: [] };
+  const C = { read: null, seenReplies: new Set(), reviews: [], listeners: [] };
   const changed = () => C.listeners.forEach(f => f());
   const CSS = `
-.sb-reply { margin-top:7px; padding:6px 8px; border-radius:7px; background:var(--accent-soft); white-space:pre-wrap; }
-.sb-reply .who { display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:2px; }`;
+.sb-reply { margin-top:7px; overflow-wrap:anywhere; line-height:1.45; padding:6px 8px; border-radius:7px; background:var(--accent-soft); white-space:pre-wrap; }
+.sb-reply .who { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:2px; }`;
+  // Replies read so far: { comment id: how many of its replies the reader has seen }, kept per session, so a
+  // reply that arrived while its chat was closed puts a dot on the count until the chat is opened.
+  const RKEY = SBTEL.session ? 'sbtel-read:' + SBTEL.session : null;
+  const unread = c => !!c.sid && (c.replies || []).length > ((C.read || {})[c.sid] || 0);
+  function markUnread(root) {
+    const u = new Set(state.comments.filter(unread).map(c => c.target));
+    (root || document).querySelectorAll('.cbub[data-thread]').forEach(b => {
+      const on = u.has(b.dataset.thread); if (on === b.classList.contains('unread')) return;
+      b.classList.toggle('unread', on);
+      const l = (b.getAttribute('aria-label') || '').replace(/, new reply$/, ''); if (l) b.setAttribute('aria-label', l + (on ? ', new reply' : ''));
+    });
+  }
+  function markRead(key) {
+    let ch = false; C.read = C.read || {};
+    state.comments.forEach(c => { if (c.target === key && unread(c)) { C.read[c.sid] = c.replies.length; ch = true; } });
+    if (ch) { if (RKEY) store.set(RKEY, C.read); markUnread(); }
+  }
   const errText = async res => { try { return (await res.json()).error || 'HTTP ' + res.status; } catch (e) { return 'HTTP ' + res.status; } };
 
   // state.comments from the log's comment, review and reply events, plus this tab's unsent drafts (the
@@ -4072,6 +4162,8 @@ function sessionComments({ version, closed }) {
       last = Math.max(last, e.seq || 0);
     });
     state.comments = list.concat(drafts);
+    // The first load of a session in this browser: what is already there counts as read.
+    if (!C.read) { C.read = RKEY ? store.get(RKEY, null) : null; if (!C.read) { C.read = {}; list.forEach(c => { C.read[c.sid] = c.replies.length; }); } }
     C.reviews = [...revs.values()];
     changed();
     return last;
@@ -4081,7 +4173,7 @@ function sessionComments({ version, closed }) {
     let sent = 0, failed = '';
     for (const c of list) {
       const was = c.status;
-      c.status = 'sending';
+      c.status = 'sending'; refreshChat();
       try {
         const res = await fetch(SBTEL.base + 'comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target: c.target, targetLabel: targetLabel(c.target), text: c.text, version: version(), source: targetSource(c.target) }) });
         if (!res.ok) throw new Error(await errText(res));
@@ -4089,9 +4181,9 @@ function sessionComments({ version, closed }) {
         c.status = 'sent'; c.sid = c.id = j.id; c.replies = c.replies || []; sent++;
       } catch (e) { c.status = was === 'pending' ? 'pending' : 'saved'; failed = e.message === 'Failed to fetch' ? 'the sbtel server is not answering' : e.message; }
     }
-    saveComments(); render(); renderMsgTableIfOpen();
+    saveComments(); render(); refreshChat(); renderMsgTableIfOpen();
     if (failed) toast(`Could not send ${list.length - sent} comment${list.length - sent === 1 ? '' : 's'}: ${failed}. ${sent ? sent + ' sent.' : 'They are kept in your review.'}`);
-    else toast(`Sent ${sent} comment${sent === 1 ? '' : 's'} to the agent.`);
+    else if (!(list.length === 1 && chatOpen(list[0].target))) toast(`Sent ${sent} comment${sent === 1 ? '' : 's'} to the agent.`); // an open chat already says so
   }
   // SSE `reply`: {seq, to, text, at}.
   function onReply(d) {
@@ -4103,13 +4195,9 @@ function sessionComments({ version, closed }) {
     const c = state.comments.find(x => x.sid === d.to);
     if (!c) return;
     (c.replies = c.replies || []).push({ text: d.text, at: Date.parse(d.at) || Date.now() });
-    render(); changed();
-    toast(`Agent replied on ${targetLabel(c.target)}: ${short}`);
-    if (pops.thread && C.thread && C.thread.key === c.target) {
-      const { left, top } = pops.thread.style;
-      openThread(c.target, C.thread.anchor);
-      if (pops.thread) { pops.thread.style.left = left; pops.thread.style.top = top; }
-    }
+    if (chatOpen(c.target)) markRead(c.target); // it is being read now
+    render(); refreshChat(); markUnread(); changed(); // explicitly: diff mode draws with its own render
+    if (!chatOpen(c.target)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
   }
   // The app hooks (§6.5). Call once, from the mode's boot().
   function hook() {
@@ -4118,20 +4206,15 @@ function sessionComments({ version, closed }) {
     openSend = list => send(list);
     // Sent comments stay visible (their threads carry the agent's replies).
     commentCounts = () => { const c = {}; state.comments.forEach(x => { c[x.target] = (c[x.target] || 0) + 1; }); return c; };
-    const origThread = openThread;
-    openThread = (key, anchor) => {
-      C.thread = { key, anchor };
-      origThread(key, anchor);
-      const el = pops.thread; if (!el) return;
-      const list = state.comments.filter(c => c.target === key);
-      el.querySelectorAll('ul.thread > li').forEach((li, i) => {
-        const c = list[i]; if (!c) return;
-        if (c.status === 'sent') { li.querySelector('[data-t="del"]')?.remove(); const s = li.querySelector('.st-sent'); if (s) s.textContent = c.review ? 'Sent in review ' + c.review : 'Sent to the agent'; }
-        if (c.status === 'sending') { const s = li.querySelector('.st-sending'); if (s) s.textContent = 'Sending…'; }
-        (c.replies || []).forEach(r => li.insertAdjacentHTML('beforeend', `<div class="sb-reply"><span class="who">Agent</span>${esc(r.text)}</div>`));
-      });
-      placeNear(el, anchor && anchor.isConnected !== false && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : el.getBoundingClientRect());
-    };
+    // The chat's rows: a sent comment says how it went, cannot be deleted, and carries the agent's replies.
+    const status0 = chatStatus, btns0 = chatRowBtns;
+    chatStatus = c => c.status === 'sent' ? ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent to the agent'] : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
+    chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
+    chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent</span>${esc(r.text)}</div>`).join('');
+    // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
+    const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
+    const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };
+    const open0 = openChat; openChat = (key, anchor, focus) => { open0(key, anchor, focus); markRead(key); };
   }
   // The reviews sent in this session (from the log, and from this tab), and a listener for changes to
   // them or to the comments' threads (the Review panel's "Sent reviews").
@@ -4242,7 +4325,7 @@ function changesStyle() {
 }
 // A word diff (§7: [{op: '=' | '+' | '-', text}]) as HTML: inserted runs in <ins>, deleted ones in <del>.
 function runsHTML(words) { return words.map(w => w.op === '=' ? esc(w.text) : `<${w.op === '+' ? 'ins' : 'del'} class="d-${w.op === '+' ? 'ins' : 'del'}">${esc(w.text)}</${w.op === '+' ? 'ins' : 'del'}>`).join(' '); }
-const changeKind = e => e === 'block' ? 'block' : e === 'behavior' ? 'behavior' : e === 'file' ? 'top level' : 'message type';
+const changeKind = e => e === 'block' ? 'block' : e === 'behavior' ? 'behavior' : e === 'file' ? 'top level' : 'shape';
 const changePlain = id => id.replace(/^[βμ]:/, '');
 function changePlace(p) { return (p.in ? changePlain(p.in) : 'the top level') + (p.level != null ? ` level ${p.level}` : ''); }
 // What changed in one change, as HTML lines.
@@ -4310,10 +4393,14 @@ function changeListHTML(items) {
 
 // A comparison in a new tab of this page, in diff mode (the page at ?compare=<key>). data has the shape
 // of diff.json, {a: {name, label, src}, b: {…}, label}; the new tab reads it from this one (its opener).
-function openCompare(data) {
+function putCompare(data) {
   const k = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   SBTEL.compares[k] = data;
-  window.sbtelCompares = SBTEL.compares; // the new tab reads it here: a top-level const is not a window property
+  window.sbtelCompares = SBTEL.compares; // the other view reads it here: a top-level const is not a window property
+  return k;
+}
+function openCompare(data) {
+  const k = putCompare(data);
   const w = window.open(location.pathname + '?compare=' + k, '_blank');
   if (!w) toast('The browser blocked the new tab. Allow pop-ups for this page to see the diff.');
   return w;
@@ -4379,13 +4466,13 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     (Array.isArray(d.comments) ? d.comments : []).forEach(c => { if (c && c.target && c.text && !state.comments.some(x => x.id === c.id)) state.comments.push({ id:String(c.id), target:c.target, text:c.text, status:'pending', version:c.version, at:c.at || Date.now() }); });
   }
   // The session is gone (closed, or unknown to the server): drop what this page kept for it.
-  function forget() { R.off = true; clearTimeout(R.t); store.del(KEY); histForget(HKEY); }
+  function forget() { R.off = true; clearTimeout(R.t); store.del(KEY); store.del('sbtel-read:' + o.id); histForget(HKEY); }
   // Drop the kept drafts and histories of sessions the server says do not exist (404 on meta).
   async function prune() {
     const ids = new Set();
-    ['sbtel-draft:', 'sbtel-hist:'].forEach(p => store.keys(p).forEach(k => { const id = k.slice(p.length); if (/^[0-9a-f]{32}$/.test(id) && id !== o.id) ids.add(id); }));
+    ['sbtel-draft:', 'sbtel-hist:', 'sbtel-read:'].forEach(p => store.keys(p).forEach(k => { const id = k.slice(p.length); if (/^[0-9a-f]{32}$/.test(id) && id !== o.id) ids.add(id); }));
     for (const id of [...ids].slice(0, 64)) {
-      try { const r = await fetch('/s/' + id + '/meta', { cache:'no-store' }); if (r.status === 404) { store.del('sbtel-draft:' + id); store.del('sbtel-hist:' + id); } } catch (e) { return; } // server unreachable: keep everything
+      try { const r = await fetch('/s/' + id + '/meta', { cache:'no-store' }); if (r.status === 404) { store.del('sbtel-draft:' + id); store.del('sbtel-hist:' + id); store.del('sbtel-read:' + id); } } catch (e) { return; } // server unreachable: keep everything
     }
   }
 
@@ -4443,7 +4530,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     const el = $('rvComments'); if (!el) return;
     const list = pending();
     el.innerHTML = `<h4>Comments${list.length ? ` <span>(${list.length})</span>` : ''}</h4>` + (list.length ? list.map(c => `<div class="rv-c" data-cid="${esc(c.id)}"><div class="rv-h"><button class="go" data-rv="go" title="Show it">${esc(targetLabel(c.target))}</button><span class="spacer"></span><button class="tiny" data-rv="send" title="Send this comment to the agent now, on its own">Send now</button><button class="tiny" data-rv="del">Delete</button></div><textarea aria-label="Comment on ${esc(targetLabel(c.target))}">${esc(c.text)}</textarea></div>`).join('')
-      : `<p class="rv-note">No pending comments. Select something on the canvas, press Comment and choose <b>Add to review</b>.</p>`);
+      : `<p class="rv-note">No pending comments. Select something on the canvas, press Comment and choose <b>Add to review</b> (Shift+Enter).</p>`);
   }
   function renderSent() {
     const el = $('rvSent'); if (!el) return;
@@ -4513,47 +4600,25 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     renderSendBtn = () => { $('sendBtn').hidden = true; }; // a session has no "saved" comments: they are pending in the review
     const origPaint = paint; paint = (lay, keep) => { origPaint(lay, keep); if (!keep) markPending($('world')); };
     const origFill = fillBlock; fillBlock = (el, B, counts) => { origFill(el, B, counts); markPending(el); };
-    // The composer: Add to review is the primary action, Send now sends this one comment at once.
-    const prevComposer = openComposer;
-    openComposer = (key, anchor) => {
-      if (!SBTEL.session) return prevComposer(key, anchor);
+    // The chat: Send is the primary action (the agent starts on it while you look at something else), and
+    // Add to review keeps the comment for the review. A pending comment says so, with Edit and Send now.
+    const keep0 = chatKeep, add0 = chatAdd, status0 = chatStatus, btns0 = chatRowBtns, composer0 = openComposer;
+    chatKeep = () => SBTEL.session ? { c:'review', label:'Add to review', title:'Keep it in your review and send it with the rest (Shift+Enter)' } : keep0();
+    chatAdd = (key, text, how) => {
+      if (!SBTEL.session) return add0(key, text, how);
       if (o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; }
-      closePop('info');
-      const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 150, innerHeight / 3, 300, 0) };
-      const el = pop('composer', a, `<div class="kind">Comment on ${esc(targetLabel(key))}</div>
-        <div class="composer" style="margin-top:6px"><textarea id="cmtText" placeholder="What should change, or what is unclear?"></textarea></div>
-        <div class="acts" style="justify-content:flex-end"><button class="btn" data-c="cancel">Cancel</button><button class="btn" data-c="send" title="Send this comment to the agent now, on its own">Send now</button><button class="btn primary" data-c="review" title="Keep it in your review and send it with the rest (⌘Enter)">Add to review</button></div>`);
-      composerPop = el;
-      const ta = el.querySelector('textarea'); setTimeout(() => ta.focus(), 30);
-      el.addEventListener('click', e => {
-        const c = e.target.closest('[data-c]')?.dataset.c; if (!c) return;
-        if (c === 'cancel') { closePop('composer'); return; }
-        const text = ta.value.trim(); if (!text) { ta.focus(); return; }
-        closePop('composer');
-        const cm = addPending(key, text);
-        if (c === 'send') openSend([cm]);
-        else toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
-      });
-      ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) el.querySelector('[data-c="review"]').click(); });
+      const cm = addPending(key, text);
+      if (how === 'send') openSend([cm]);
+      else toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
     };
-    // Threads: a pending comment says so and offers Edit (in the Review panel) and Send now.
-    const prevThread = openThread;
-    openThread = (key, anch) => {
-      prevThread(key, anch);
-      const el = pops.thread; if (!el) return;
-      const list = state.comments.filter(c => c.target === key);
-      el.querySelectorAll('ul.thread > li').forEach((li, i) => {
-        const c = list[i]; if (!c || c.status !== 'pending') return;
-        const s = li.querySelector('[class^="st-"]'); if (s) { s.className = 'st-pending'; s.textContent = 'Pending'; s.title = 'In your review: it goes to the agent when you send the review'; }
-        const del = li.querySelector('[data-t="del"]');
-        del?.insertAdjacentHTML('beforebegin', `<button class="tiny" data-t="rvedit" data-id="${esc(c.id)}">Edit</button><button class="tiny" data-t="send" data-id="${esc(c.id)}">Send now</button>`);
-      });
-      el.addEventListener('click', e => {
-        const b = e.target.closest('[data-t="rvedit"]'); if (!b) return;
-        closePop('thread'); toggle(true);
-        setTimeout(() => { const ta = document.querySelector(`#rvComments [data-cid="${CSS.escape(b.dataset.id)}"] textarea`); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ block:'nearest' }); } }, 60);
-      });
-    };
+    chatStatus = c => c.status === 'pending' ? ['st-pending', 'Pending', 'In your review: it goes to the agent when you send the review'] : status0(c);
+    chatRowBtns = c => c.status === 'pending' ? `<button class="tiny" data-t="rvedit" data-id="${esc(c.id)}">Edit</button><button class="tiny" data-t="send" data-id="${esc(c.id)}">Send now</button><button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>` : btns0(c);
+    openComposer = (key, anchor) => { if (SBTEL.session && o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; } composer0(key, anchor); };
+    document.addEventListener('click', e => {
+      const b = e.target.closest('.pop.chat [data-t="rvedit"]'); if (!b) return;
+      closePop('thread'); toggle(true);
+      setTimeout(() => { const ta = document.querySelector(`#rvComments [data-cid="${CSS.escape(b.dataset.id)}"] textarea`); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ block:'nearest' }); } }, 60);
+    });
     // The dock: Review is the primary action, at the end.
     btn = document.createElement('button'); btn.className = 'tb rv-btn'; btn.id = 'rvBtn'; btn.setAttribute('aria-controls', 'rvSheet'); btn.setAttribute('aria-expanded', 'false');
     btn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h10v8H8l-3 3v-3H3z"/><path d="M5.5 6.5l1.6 1.6L10.5 4.8"/></svg><span class="rv-l">Review</span><span class="rv-n" hidden></span>';
@@ -4630,6 +4695,12 @@ SBTEL.modes.server = (() => {
 .sb-vt { position:fixed; left:50%; transform:translateX(-50%); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 46px); z-index:2950; background:var(--panel); color:var(--ink); border:1px solid var(--panel-line); border-left:3px solid var(--accent); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.45; box-shadow:0 14px 40px var(--shadow); width:max-content; max-width:min(460px, calc(100vw - 32px)); box-sizing:border-box; }
 .sb-vt.warn { border-left-color:var(--warn); }
 .sb-vt .acts { display:flex; gap:6px; justify-content:flex-end; margin-top:8px; flex-wrap:wrap; }
+.sb-cmp { position:fixed; inset:0; z-index:2940; background:var(--canvas); display:flex; flex-direction:column; }
+.sb-cmp header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--panel-line); font-size:14px; }
+.sb-cmp header b { font-weight:600; }
+.sb-cmp header .note { color:var(--muted); font-size:12.5px; }
+.sb-cmp header .spacer { flex:1; }
+.sb-cmp iframe { flex:1; width:100%; border:0; min-height:0; }
 .tb.sb-save:disabled { opacity:.55; }
 .sb-ow p { margin:0 0 10px; line-height:1.5; }
 .sb-ow .muted { color:var(--muted); font-size:13px; }
@@ -4645,10 +4716,34 @@ SBTEL.modes.server = (() => {
     barEl.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>`;
   }
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
+  // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.
+  // Nothing is replaced until Reload is pressed there; Back returns to the page as it was, with the toast.
+  let cmpEl = null;
+  function closeChanges() { cmpEl?.remove(); cmpEl = null; }
+  async function seeChanges(info) {
+    let spec;
+    try { spec = await getJSON('spec'); } catch (e) { toast('Could not load the new version: the sbtel server is not answering.'); versionToast(info); return; }
+    if (spec.src === S.loaded) { toast(`Version ${spec.version} has the same text as version ${S.version}.`); versionToast(info); return; }
+    const a = `version ${S.version} (what you have)`, b = `version ${spec.version} (new)`, dirty = unsent();
+    const k = putCompare({ a: { name: a, label: a, src: S.loaded }, b: { name: b, label: b, src: spec.src }, version: spec.version, label: `version ${S.version} → version ${spec.version}` });
+    closeChanges();
+    cmpEl = document.createElement('div'); cmpEl.className = 'sb-cmp'; cmpEl.setAttribute('role', 'dialog'); cmpEl.setAttribute('aria-label', `Changes in version ${spec.version}`);
+    cmpEl.innerHTML = `<header><b>Version ${S.version} → version ${esc(spec.version)}</b>${dirty ? '<span class="note">Your unsent edits are not in this comparison; reloading replaces them (⌘Z brings them back).</span>' : ''}<span class="spacer"></span>
+      <button class="btn" data-x="back">Back</button><button class="btn primary" data-x="reload">${dirty ? 'Discard my edits and reload' : 'Reload version ' + esc(spec.version)}</button></header>
+      <iframe title="What changed in version ${esc(spec.version)}" src="${location.pathname}?compare=${k}"></iframe>`;
+    cmpEl.addEventListener('click', e => {
+      const x = e.target.closest('[data-x]')?.dataset.x; if (!x) return;
+      closeChanges(); if (x === 'reload') reload(); else versionToast(info);
+    });
+    cmpEl.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeChanges(); versionToast(info); } });
+    document.body.appendChild(cmpEl); cmpEl.querySelector('[data-x="reload"]').focus();
+  }
   // The "new version" toast. It never reloads by itself; with unsaved edits it says so and asks.
-  function versionToast({ version, by, conflict }) {
+  function versionToast(info) {
+    const { version, by, conflict } = info;
     if (S.closed) return;
     hideVersionToast();
+    if (cmpEl) closeChanges(); // a still newer version arrived while the changes were open
     const from = by === 'disk' ? ' (the file changed on disk)' : by === 'user' ? ' (saved from another tab)' : '';
     const msg = conflict ? 'Not saved: the spec changed since this page loaded it.' : `A new version${version ? ' (v' + version + ')' : ''} is available${from}.`;
     // Unsent edits: neither saved nor in a sent review. A sent proposal alone is not at risk: it is in the
@@ -4656,10 +4751,10 @@ SBTEL.modes.server = (() => {
     const dirty = unsent(), prop = S.proposal && !dirty;
     vtEl = document.createElement('div'); vtEl.className = 'sb-vt' + (conflict || dirty ? ' warn' : ''); vtEl.setAttribute('role', 'alertdialog');
     vtEl.innerHTML = `<div>${esc(msg)}${dirty ? ' You have edits that are not saved or sent; reloading replaces them (⌘Z brings them back).' : prop ? ` It may hold the edits you proposed in ${esc(S.proposal.id)}; reloading shows it (⌘Z brings your proposal back).` : ''}</div>
-      <div class="acts"><button class="btn" data-v="later">${dirty ? 'Keep editing' : 'Later'}</button><button class="btn primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button></div>`;
+      <div class="acts"><button class="btn" data-v="later">${dirty ? 'Keep editing' : 'Later'}</button><button class="btn" data-v="diff" title="Look at what changed before you reload">See changes</button><button class="btn primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button></div>`;
     vtEl.addEventListener('click', e => {
       const v = e.target.closest('[data-v]')?.dataset.v; if (!v) return;
-      hideVersionToast(); if (v === 'reload') reload();
+      hideVersionToast(); if (v === 'reload') reload(); if (v === 'diff') seeChanges(info);
     });
     document.body.appendChild(vtEl);
   }
@@ -4920,21 +5015,21 @@ SBTEL.modes.diff = (() => {
   // Side b for the dev hook: the playground sample with the edits of conformance/diff/shell-b.sbtel.
   const DEV_EDITS = [
     ['; The Shell from the sketch: one block holding 23 blocks, in three named levels.', '; The Shell, revised: renames, moves, removals and new blocks.'],
-    ['    (port :out Intent)\n    (sketch "A behavior shared by surfaces.")', '    (port :out Intent (~ What the user asked for. ~))\n    (sketch "A behavior shared by surfaces.")'],
+    ['    (gives Intent)\n    (sketch "A behavior shared by surfaces.")', '    (gives Intent (~ What the user asked for. ~))\n    (sketch "A behavior shared by surfaces.")'],
     ['(level :name "Services"', '(level :name "Routing"'],
     ['(~ Clipboard and keymap shortcuts route as intents. ~)', '(~ Keymap and search shortcuts route as intents. ~)'],
     ['(~ Knows nothing of surfaces. ~)', '(~ Knows nothing of the levels above. ~)'],
-    ['(message Notice (sketch "A short message for the user, with a severity."))', '(message Alert (sketch "A short message for the user, with a severity."))'],
-    ['(port :in Notice)', '(port :in Alert :as notice)'],
-    ['(message KeyChord (sketch "A normalized key combination."))', '(message KeyChord (refines Intent) (sketch "A normalized key combination."))'],
-    ['(block Shell.Toast (sketch "One notice with an auto-dismiss timer."))', '(block Shell.Toast\n              (port :in Alert :as notice)\n              (sketch "One notice with an auto-dismiss timer."))'],
+    ['(shape Notice (sketch "A short message for the user, with a severity."))', '(shape Alert (sketch "A short message for the user, with a severity."))'],
+    ['(takes Notice)', '(takes Alert :as notice)'],
+    ['(shape KeyChord (sketch "A normalized key combination."))', '(shape KeyChord (refines Intent) (sketch "A normalized key combination."))'],
+    ['(block Shell.Toast (sketch "One notice with an auto-dismiss timer."))', '(block Shell.Toast\n              (takes Alert :as notice)\n              (sketch "One notice with an auto-dismiss timer."))'],
     ['(block Shell.Banner (sketch "A persistent notice pinned to the top."))', '(block Shell.PinnedBanner (sketch "A persistent notice pinned to the top."))'],
     ['                  (block Shell.TurnActions (sketch "Copy, retry and edit controls.")))))', '                  (block Shell.TurnActions (sketch "Copy, retry and edit controls."))))\n              (level\n                (block Shell.ScrollAnchor\n                  (sketch "Keeps the reading position when content above grows."))))'],
     ['        (level\n          (block Shell.ScrollAnchor\n            (sketch "Keeps the reading position when content above grows."))))\n      (block Shell.Sidebar', '        )\n      (block Shell.Sidebar'],
     ['(sketch "Multiline input with attachments and slash commands.")', '(sketch "Multiline input with attachments, mentions and slash commands.")'],
-    ['    (block Shell.CommandPalette\n      (port :in KeyChord :as chord (~ Opens the palette. ~))\n      (port :out Intent :as run)', '    (block Shell.CommandPalette\n      (port :out Intent :as run)'],
-    ['      (block Shell.Router\n        (port :in Intent)', '      (block Shell.Router\n        :type "Service"\n        (port :in Intent)'],
-    ['        (port :out KeyChord :as chord)', '        (implements Durable)\n        (port :out KeyChord :as chord)'],
+    ['    (block Shell.CommandPalette\n      (takes KeyChord :as chord (~ Opens the palette. ~))\n      (gives Intent :as run)', '    (block Shell.CommandPalette\n      (gives Intent :as run)'],
+    ['      (block Shell.Router\n        (takes Intent)', '      (block Shell.Router\n        :type "Service"\n        (takes Intent)'],
+    ['        (gives KeyChord :as chord)', '        (implements Durable)\n        (gives KeyChord :as chord)'],
     ['      (block Shell.Clipboard (sketch "Copy and paste with rich formats."))))', '      (block Shell.Search (sketch "Full-text search across sessions and files."))))'],
     ['    (block Shell.LowLevelThing (sketch "Low level module thing."))\n', ''],
     [':type "Store"', ':type "Database"'],
@@ -5416,7 +5511,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     const na = D.res.affected.length;
     $('dCount').textContent = n ? `${D.res.changes.length} change${D.res.changes.length === 1 ? '' : 's'}${na ? `, ${na} affected port${na === 1 ? '' : 's'}` : ''}` : '';
     $('dN').textContent = String(D.res.changes.length);
-    if (!n) { body.innerHTML = `<div class="d-empty"><b>No changes.</b><br>Both sides describe the same blocks, behaviors and message types. Formatting, comments and the order of blocks within a level are not changes.</div>`; return; }
+    if (!n) { body.innerHTML = `<div class="d-empty"><b>No changes.</b><br>Both sides describe the same blocks, behaviors and shapes. Formatting, comments and the order of blocks within a level are not changes.</div>`; return; }
     body.innerHTML = changeSummaryHTML(S) + changeListHTML(D.items);
   }
   function highlightItem(id) {
@@ -5632,7 +5727,8 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     // A comparison opened from a spec session's tab (?compare=<key>): the pair comes from that tab.
     if (SBTEL.compare) {
       let data = null;
-      try { const src = window.opener && window.opener.sbtelCompares && window.opener.sbtelCompares[SBTEL.compare]; if (src) data = JSON.parse(JSON.stringify(src)); } catch (e) {}
+      try { const from = window.opener || (window.parent !== window ? window.parent : null); // the tab that opened this one, or the page that frames it
+        const src = from && from.sbtelCompares && from.sbtelCompares[SBTEL.compare]; if (src) data = JSON.parse(JSON.stringify(src)); } catch (e) {}
       if (!data) { versionToast('This comparison was opened from another tab of the session, which has closed or reloaded since. Open it again from there.'); return; }
       open(data);
       return;

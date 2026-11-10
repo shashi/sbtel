@@ -1,9 +1,9 @@
-(message Order (~ A customer's order. ~))
+(shape Order (~ A customer's order. ~))
 (level
   (block Checkout
-    (message CardToken (~ An opaque payment token; it never leaves Checkout. ~))
-    (port :out Order)
-    (level (block Form (port :out CardToken :as token) (~ Collects the card. ~)))
-    (level (block Gateway (port :in CardToken :as token) (~ Charges the card. ~)))))
+    (shape CardToken (~ An opaque payment token; it never leaves Checkout. ~))
+    (gives Order)
+    (level (block Form (gives CardToken :as token) (~ Collects the card. ~)))
+    (level (block Gateway (takes CardToken :as token) (~ Charges the card. ~)))))
 (level
-  (block Fulfilment (port :in Order) (~ Packs and ships. ~)))
+  (block Fulfilment (takes Order) (~ Packs and ships. ~)))

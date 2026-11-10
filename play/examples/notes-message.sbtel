@@ -1,6 +1,6 @@
 (block Notes
-  (message NoteSaved (~ A note reached the disk. ~))
+  (shape NoteSaved (~ A note reached the disk. ~))
   (level :name "Notes as text"
-    (block Editor (port :in NoteSaved) (~ The text area. ~)))
+    (block Editor (takes NoteSaved) (~ The text area. ~)))
   (level :name "Stored notes"
-    (block Store (port :out NoteSaved) (~ Keeps notes on disk. ~))))
+    (block Store (gives NoteSaved) (~ Keeps notes on disk. ~))))

@@ -8,7 +8,7 @@ const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // ---------- sbtel syntax highlighting (the same rules as docs/build.mjs) ----------
-const FORMS = 'block|level|adjacent|port|message|refines|carries|behavior|implements|sketch';
+const FORMS = 'block|level|adjacent|takes|gives|shape|port|message|refines|carries|behavior|implements|sketch';
 const TOK = new RegExp('(;[^\\n]*)|("(?:\\\\.|[^"\\\\])*")|\\((~+)([\\s\\S]*?)\\3\\)|\\((' + FORMS + ')(?=[\\s()])|(:[^\\s()"]+)|\\b(in|out)\\b', 'g');
 function highlight(src) {
   let out = '', last = 0;
@@ -652,7 +652,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   const fr = $('#car'); if (!fr) return;
   const cap = $('#car-cap'), types = $$('[data-type]', fr), blks = $$('[data-ports]', fr);
   const carries = Object.fromEntries(types.map(t => [t.dataset.type, (t.dataset.carries || '').split(' ').filter(Boolean)]));
-  if (matchMedia('(hover: none)').matches) cap.textContent = 'Tap a type.';
+  if (matchMedia('(hover: none)').matches) cap.textContent = 'Tap a shape.';
   const idle = cap.textContent;
   // Every type that holds t, directly or through another type.
   const carriers = t => { const s = new Set(); let grew = true;

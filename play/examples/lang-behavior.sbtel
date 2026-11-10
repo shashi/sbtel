@@ -1,7 +1,7 @@
-(message Note (~ A title and a body. ~))
+(shape Note (~ A title and a body. ~))
 (behavior Repo :type "interface"
-  (port :in Note :as save)
-  (port :out Note :as load)
+  (takes Note :as save)
+  (gives Note :as load)
   (~ Keeps notes and gives them back. ~))
 (level
   (block DiskStore (implements Repo) (~ Notes as files. ~))

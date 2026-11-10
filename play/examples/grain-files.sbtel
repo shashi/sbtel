@@ -1,14 +1,14 @@
 ; A small web app, one block per file.
 (block NotesWeb :type "app"
   (~ A single-page notes app with a JSON API behind it. ~)
-  (message Route (~ The path the user is on. ~))
+  (shape Route (~ The path the user is on. ~))
   (level :name "Page"
     (block index.html :type "file" (~ Loads the app and the styles. ~))
     (block app.js :type "file" (~ Starts the router and mounts the views. ~)))
   (level :name "Views"
-    (block router.js :type "file" (port :out Route) (~ Maps the URL to a view. ~))
-    (block views/list.js :type "file" (port :in Route) (~ The list of notes. ~))
-    (block views/note.js :type "file" (port :in Route) (~ One note, editable. ~)))
+    (block router.js :type "file" (gives Route) (~ Maps the URL to a view. ~))
+    (block views/list.js :type "file" (takes Route) (~ The list of notes. ~))
+    (block views/note.js :type "file" (takes Route) (~ One note, editable. ~)))
   (level :name "Data"
     (block api.js :type "file" (~ Fetches and saves notes over HTTP. ~))
     (block styles.css :type "file" (~ The look. ~))))

@@ -1,12 +1,12 @@
 ; A Go service, one block per package.
 (block notesd :type "service"
   (~ Serves notes over HTTP and keeps them in Postgres. ~)
-  (message Request :type "HTTP request" (~ A JSON request from a client. ~))
+  (shape Request :type "HTTP request" (~ A JSON request from a client. ~))
   (level :name "Entry"
     (block cmd/notesd :type "package" (~ main: reads config, wires the packages, serves. ~)))
   (level :name "Transport"
-    (block internal/http :type "package" (port :in Request :as req) (~ Routes requests to handlers. ~))
-    (block internal/auth :type "package" (port :in Request :as req) (~ Checks the session cookie. ~)))
+    (block internal/http :type "package" (takes Request :as req) (~ Routes requests to handlers. ~))
+    (block internal/auth :type "package" (takes Request :as req) (~ Checks the session cookie. ~)))
   (level :name "Domain"
     (block internal/notes :type "package" (~ Notes, their rules and their history. ~)))
   (level :name "Storage"

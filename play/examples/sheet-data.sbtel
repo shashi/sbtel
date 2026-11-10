@@ -1,25 +1,25 @@
 ; Data shapes: a Range travels inside edits, changed cells and selections.
-(message Range (~ A block of cells like A1:C9. ~))
-(message Text (~ What someone typed. ~))
-(message Edit (carries Range Text) (~ Someone typed into a cell. ~))
-(message CellsChanged (carries Range) (~ These cells have new values. ~))
+(shape Range (~ A block of cells like A1:C9. ~))
+(shape Text (~ What someone typed. ~))
+(shape Edit (carries Range Text) (~ Someone typed into a cell. ~))
+(shape CellsChanged (carries Range) (~ These cells have new values. ~))
 (level :name "Apps"
   (block Spreadsheet :type "app"
-    (message SelectionChanged (carries Range) (~ A different range is selected. ~))
-    (message Paste (refines Edit) (~ Something pasted from the clipboard. ~))
+    (shape SelectionChanged (carries Range) (~ A different range is selected. ~))
+    (shape Paste (refines Edit) (~ Something pasted from the clipboard. ~))
     (adjacent (~ They show the same selection, so each reads the other's. ~)
       (block Grid :type "module"
-        (port :in CellsChanged) (port :out Edit) (port :out Paste) (port :out SelectionChanged)
+        (takes CellsChanged) (gives Edit) (gives Paste) (gives SelectionChanged)
         (~ Draws the cells and turns typing into edits. ~))
       (block FormulaBar :type "module"
-        (port :in SelectionChanged) (port :out Edit) (port :out Paste)
+        (takes SelectionChanged) (gives Edit) (gives Paste)
         (~ Shows and edits the selected cell's formula. ~)))))
 (level :name "Documents"
   (block Document :type "folder"
     (block Workbook :type "module"
-      (port :in Edit)
+      (takes Edit)
       (~ Applies each edit to the right sheet. ~)))
   (block Sheet :type "folder"
     (block Recalc :type "module"
-      (port :out CellsChanged)
+      (gives CellsChanged)
       (~ Recomputes what an edit affected, in order. ~))))

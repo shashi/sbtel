@@ -274,22 +274,22 @@ shop.sbtel: 7 bindings, <span class="hl-ok">0 not allowed</span></pre>
 </section>
 
 <!-- Messages -->
-<section class="sec" id="messages" aria-labelledby="t-msg">
-  <h2 class="term" id="t-msg">Messages</h2>
+<section class="sec" id="ports" aria-labelledby="t-msg">
+  <h2 class="term" id="t-msg">Ports</h2>
   <div class="pair">
     <div class="txt">
-      <p class="lead">Messages allow slotting in other blocks without depending on them explicitly.</p>
-      <p>For example, a block can take an abstract type or a callback that a higher level implements: this is messaging. Messages can also represent actual messages passing through a system. Note that a message does not need a message channel per se; it&rsquo;s just a means to keep two implementations from knowing about each other.</p>
-      <p>A message type is like the shape of a jigsaw piece&rsquo;s tab, and of the blank it fits: the two must match for the pieces to work together. A block takes messages in through ports on top of its card and sends them out from the bottom. Store sends a <code>NoteSaved</code>, Editor takes one, and something else connects them.</p>
-      <p>Point at a type to see everywhere that data travels. A <code>NoteSaved</code> carries a <code>Note</code>, drawn as a dot on its lower ear, so a note&rsquo;s text goes wherever a <code>NoteSaved</code> goes. Where an assumption about some data lives, you can see all of it at once.</p>
+      <p class="lead">Ports allow slotting in other blocks without depending on them explicitly.</p>
+      <p>A block says what it <code>takes</code> and what it <code>gives</code>. For example, a block can take an abstract type or a callback that a higher level implements. A port can also represent actual messages passing through a system. Note that a port does not need a message channel per se; it&rsquo;s just a means to keep two implementations from knowing about each other.</p>
+      <p>What a port takes or gives is a <code>shape</code>, like the shape of a jigsaw piece&rsquo;s tab and of the blank it fits: the two must match for the pieces to work together. What a block takes is on top of its card, and what it gives is on the bottom. Store gives a <code>NoteSaved</code>, Editor takes one, and something else connects them.</p>
+      <p>Point at a shape to see everywhere that data travels. A <code>NoteSaved</code> carries a <code>Note</code>, drawn as a dot on its lower ear, so a note&rsquo;s text goes wherever a <code>NoteSaved</code> goes. Where an assumption about some data lives, you can see all of it at once.</p>
 <details class="spec"><summary>The text your agent writes</summary>
-<pre class="code" data-lang="sbtel">(message Note (~ A note's title and text. ~))
-(message NoteSaved (carries Note) (~ A note reached the disk. ~))
+<pre class="code" data-lang="sbtel">(shape Note (~ A note's title and text. ~))
+(shape NoteSaved (carries Note) (~ A note reached the disk. ~))
 (level :name "App"
-  (block Editor (port :in NoteSaved) (port :out Note))
-  (block Preview (port :in Note)))
+  (block Editor (takes NoteSaved) (gives Note))
+  (block Preview (takes Note)))
 (level :name "Stored and formatted notes"
-  (block Store (port :out NoteSaved))
+  (block Store (gives NoteSaved))
   (block Formatter))</pre>
 </details>
     </div>
@@ -305,7 +305,7 @@ shop.sbtel: 7 bindings, <span class="hl-ok">0 not allowed</span></pre>
             <div class="blk" data-id="Store" data-ports="NoteSaved">Store<span class="ear bot"><span class="pdot" data-p="out-NoteSaved" style="background:var(--m3)" title="out noteSaved: NoteSaved"></span></span></div>
             <div class="blk" data-id="Formatter" data-ports="">Formatter</div>
           </div></div>
-        <div class="band"><div class="lname"><span>Message types</span></div>
+        <div class="band"><div class="lname"><span>Shapes</span></div>
           <div class="types">
             <button type="button" class="blk msg" data-type="NoteSaved" data-c="var(--m3)" data-carries="Note"><span class="nm"><span class="pdot" style="background:var(--m3)"></span>NoteSaved</span><span class="rel">A note reached the disk.</span><span class="ear bot cry" aria-label="Carries Note"><span class="pdot" data-carry="Note" style="background:var(--m1)"></span></span></button>
             <button type="button" class="blk msg" data-type="Note" data-c="var(--m1)"><span class="nm"><span class="pdot" style="background:var(--m1)"></span>Note</span><span class="rel">A note&rsquo;s title and text.</span></button>
@@ -314,7 +314,7 @@ shop.sbtel: 7 bindings, <span class="hl-ok">0 not allowed</span></pre>
         <svg class="edges" aria-hidden="true"></svg>
         <span class="cur" id="car-cur" aria-hidden="true"><svg viewBox="0 0 22 24" width="22" height="24"><path d="M3 2l15.5 9.6-6.9 1.5 4 7.6-3 1.6-4-7.7L3 19.5z"/></svg></span>
       </div>
-      <div class="capline"><span class="grow" id="car-cap" aria-live="polite">Point at a type, or tab to it.</span><a class="btn quiet" href="play/#example=notes-flow">Try it in the viewer</a></div>
+      <div class="capline"><span class="grow" id="car-cap" aria-live="polite">Point at a shape, or tab to it.</span><a class="btn quiet" href="play/#example=notes-flow">Try it in the viewer</a></div>
     </figure>
   </div>
 </section>
@@ -327,7 +327,7 @@ shop.sbtel: 7 bindings, <span class="hl-ok">0 not allowed</span></pre>
   <ul class="more">
     <li><h3>Install</h3><p>In your coding agent, just say: <q>install sbtel from shashi.biz/sbtel</q>.</p></li>
     <li><h3>Get started</h3><p>Check out the <a href="docs/using/">get started guide&nbsp;&rarr;</a></p></li>
-    <li><h3>The language</h3><p>The language mostly relies on English for substance, while enforcing constraints that lead to simpler systems. See <a href="docs/language/">the language guide</a> for all ten forms sbtel has. You really don&rsquo;t need to know them to start using sbtel.</p></li>
+    <li><h3>The language</h3><p>The language mostly relies on English for substance, while enforcing constraints that lead to simpler systems. See <a href="docs/language/">the language guide</a> for all eleven forms sbtel has. You really don&rsquo;t need to know them to start using sbtel.</p></li>
     <li><h3>Playground</h3><p>Try a design in your browser, with nothing to install: <a href="play/">open the playground&nbsp;&rarr;</a></p></li>
   </ul>
 </section>

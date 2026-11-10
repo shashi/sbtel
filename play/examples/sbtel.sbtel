@@ -13,12 +13,12 @@
   (sketch "One static binary and one web page that share a single implementation of the language.")
   ; The kinds of Event stay beside it, though lint finds some used lower or not at all: the server
   ; takes every one of them as an Event.
-  (message Event (sketch "One line of a session's events.jsonl, with a sequence number and a time."))
-  (message Comment (refines Event) (sketch "A human's note on one element, with that element's source."))
-  (message Save (refines Event) (sketch "The human saved an edited spec from the tab."))
-  (message Version (refines Event) (sketch "A new version of the spec, from the agent, the tab or the disk."))
-  (message Reply (refines Event) (sketch "An agent's answer to one comment, or to a review."))
-  (message Review (refines Event)
+  (shape Event (sketch "One line of a session's events.jsonl, with a sequence number and a time."))
+  (shape Comment (refines Event) (sketch "A human's note on one element, with that element's source."))
+  (shape Save (refines Event) (sketch "The human saved an edited spec from the tab."))
+  (shape Version (refines Event) (sketch "A new version of the spec, from the agent, the tab or the disk."))
+  (shape Reply (refines Event) (sketch "An agent's answer to one comment, or to a review."))
+  (shape Review (refines Event)
     (sketch "The human's draft, sent as one: a message, comments and, with edits, a proposed spec that the server stores and never writes to the spec file."))
   (behavior Pure
     (sketch "Same input, same output: no IO, no clock, no DOM, nothing global."))
@@ -32,9 +32,9 @@
   (level
     (block Sbtel.Cli
       :type "Process"
-      (port :in SpecText :as spec)
+      (takes SpecText :as spec)
       (sketch "cmd/sbtel: turns argv into one command's run and its exit code.")
-      (message SpecText (sketch "The text of an sbtel spec: the single source of truth."))
+      (shape SpecText (sketch "The text of an sbtel spec: the single source of truth."))
       (level
         (block Sbtel.Cli.Dispatch
           (sketch "The command table, main() and help: looks up argv[0] and runs that command; also holds the two engine-free commands, version and licenses (main.go).")
@@ -60,15 +60,15 @@
     (block Sbtel.Server
       :type "Process"
       (sketch "internal/server: the shared localhost server for the tabs, and the CLI's means to reach and start it.")
-      (message ControlCall
+      (shape ControlCall
         (sketch "A token-authenticated HTTP request to /control/* (create a session, push a version, reply, close, status, stop) and its JSON answer."))
       (level
         (block Sbtel.Server.Daemon
           (sketch "The server process: one Server value that serves the page and the APIs and keeps the sessions in memory.")
           (level
             (block Sbtel.Server.Routes
-              (port :in ControlCall :as control)
-              (port :in Event :as posted)
+              (takes ControlCall :as control)
+              (takes Event :as posted)
               (sketch "The HTTP handler: host, origin and token checks, then the browser and control APIs, routed to session operations (http.go).")
               ; net/http calls ServeHTTP because Lifecycle passes the Server as the Handler, an interface,
               ; so Lifecycle never names Routes.
@@ -84,7 +84,7 @@
                 ; other's types both ways.
                 )
               (block Sbtel.Server.Fanout
-                (port :out Event :as events)
+                (gives Event :as events)
                 (sketch "The tabs' event streams: subscribes a tab to its session, replays from Last-Event-ID and broadcasts to the session's subscribers (sse.go).")
                 ; VIOLATION (examples/sbtel.edges.txt): the SSE handler calls notFound() from http.go.
                 )))
@@ -95,7 +95,7 @@
               (sketch "The Server value itself: its options, its lock, the session map, logging and the stop signal (server.go, up to touch).")))))
       (level
         (block Sbtel.Server.Client
-          (port :out ControlCall :as control)
+          (gives ControlCall :as control)
           (sketch "The CLI side: probes server.json's server, starts a detached one when needed, sends control requests, stops it (client.go).")
           ; Lifecycle also uses its probe for the start race.
           )
@@ -106,10 +106,10 @@
           (sketch "The OS-specific process attributes that let a child outlive the CLI (detach_unix.go, detach_windows.go)."))))
     (block Sbtel.Viewer
       :type "Page"
-      (port :in Event :as events)
-      (port :out Comment)
-      (port :out Save)
-      (port :out Review)
+      (takes Event :as events)
+      (gives Comment)
+      (gives Save)
+      (gives Review)
       (sketch "viewer/dist/index.html: the diagram, its editor and its comment threads, in one self-contained page.")
       ; beside the Server, not below it: no Go code names the page. examples/viewer.sbtel is this block
       ; in detail, recovered from the code and checked against it (make selfcheck). Its Core is the

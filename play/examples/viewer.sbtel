@@ -16,58 +16,58 @@
 ; Sbtel.Core, shared by the page and the binary.
 (block Viewer
   (sketch "The single-page diagram viewer that sbtel serves for a spec, a session or a diff.")
-  (message TextRun (sketch "A string and a CSS font to measure, with a width when it is to be wrapped."))
-  (message TextSize (sketch "A width in pixels, or a number of wrapped lines."))
-  (message ModeHandler
+  (shape TextRun (sketch "A string and a CSS font to measure, with a width when it is to be wrapped."))
+  (shape TextSize (sketch "A width in pixels, or a number of wrapped lines."))
+  (shape ModeHandler
     (sketch "A { boot } object a page mode registers under its name in SBTEL.modes; Boot runs the one for the URL."))
-  (message CommentBatch (carries Comment)
+  (shape CommentBatch (carries Comment)
     (sketch "The human's saved comments, handed off by the app's openSend for delivery."))
-  (message SessionEvent
+  (shape SessionEvent
     (sketch "A server-sent event from the sbtel server: hello, version, reply or closed."))
-  (message Comment
+  (shape Comment
     (sketch "One comment POSTed to the sbtel server: target, label, text, version and source excerpt."))
-  (message SpecText
+  (shape SpecText
     (sketch "A spec's source with its version and hash, as GET spec returns and POST save sends."))
   ; Dependency inversion: Core.Layout calls the measurer only through MeasuresText (layout's parameter M,
   ; typed by a JSDoc @typedef in core.js), App.Kit's M implements it, and the app passes M in. It is
   ; declared here, where both can see it; lint notes it could live in App.Kit, its one implementer, since
   ; lint does not read the bindings that show Core.Layout calling through it.
   (behavior MeasuresText :type "JSDoc typedef"
-    (port :in TextRun :as run)
-    (port :out TextSize :as size)
+    (takes TextRun :as run)
+    (gives TextSize :as size)
     (sketch "Answers tw(text, font) with a width and wrap(text, font, width) with a line count."))
 
   (level
     (block Viewer.Boot
-      (port :in ModeHandler :as mode)
+      (takes ModeHandler :as mode)
       (sketch "Starts the page: loads fonts, then runs the registered handler for the current mode, or shows the sample.")))
   (level :name "Page modes"
     (block Viewer.Server
-      (port :out ModeHandler :as mode)
-      (port :in SessionEvent :as events)
-      (port :in SpecText :as spec)
-      (port :out SpecText :as save)
+      (gives ModeHandler :as mode)
+      (takes SessionEvent :as events)
+      (takes SpecText :as spec)
+      (gives SpecText :as save)
       ; Braided: loading, live updates, saving and the app hooks share one closure (S).
       ; It also reassigns app functions (setSource, edit, renderChecks, showChecks...).
       (sketch "Server mode: keeps the page in step with one sbtel session over HTTP and SSE."))
     (block Viewer.Diff
-      (port :out ModeHandler :as mode)
-      (port :in SessionEvent :as events)
-      (port :in DiffPair :as diff)
-      (message DiffPair (carries SpecText)
+      (gives ModeHandler :as mode)
+      (takes SessionEvent :as events)
+      (takes DiffPair :as diff)
+      (shape DiffPair (carries SpecText)
         (sketch "Both sides of a diff, as GET diff.json returns them."))
       ; It reassigns app functions (render, edit, fit, menuItems...) to make the app a read-only diff
       ; view, and wraps the measurer's tw and wrap so that cards have room for the change marks.
       (sketch "Diff mode: draws two versions of a spec as one picture with ghosts and a change list."))
     (block Viewer.Play
-      (port :out ModeHandler :as mode)
+      (gives ModeHandler :as mode)
       ; Reads #src, #example, ?embed and &theme (§6.8). In embed mode it reassigns app functions
       ; (openComposer, menuItems, renderStrip; with readonly, edit, pressStart...), as the other modes do.
       (sketch "The standalone page: the sample, or a spec from the URL with its own storage keys; embed mode for docs pages; the home link.")))
   (level
     (block Viewer.Review
-      (port :out Review)
-      (message Review (carries Comment SpecText)
+      (gives Review)
+      (shape Review (carries Comment SpecText)
         (sketch "One review POSTed to the sbtel server: a message, comments and, with edits, the proposed spec and its base."))
       ; Server and Diff each make one (sessionReview) and wire it into the app: it reassigns the
       ; composer, openThread, saveComments, paint and fillBlock, and adds the Review button and panel.
@@ -75,8 +75,8 @@
       (sketch "The draft review: pending comments, a message and the edits, kept in local storage and sent together; and a comparison in a new tab.")))
   (level
     (block Viewer.Session
-      (port :in CommentBatch :as send)
-      (port :out Comment)
+      (takes CommentBatch :as send)
+      (gives Comment)
       ; Server and Diff each wire it into the app (it reassigns openSend, commentCounts and openThread)
       ; and pass it the replies they receive. It also rebuilds the reviews from the log.
       (sketch "Comments in a session: posted to the server, kept with their threads and the agent's replies."))
@@ -100,7 +100,7 @@
         (adjacent
           (block App.Comments
             ; VIOLATION (viewer.edges.txt): comment actions call render() to redraw badges.
-            (port :out CommentBatch :as send)
+            (gives CommentBatch :as send)
             (sketch "Comment drafts and threads on blocks, lines and types; cooperates with the message table, which shows their counts."))
           (block App.Messages
             (sketch "The message-type table sheet; cooperates with comments, whose counts and composer it shows.")))
@@ -148,8 +148,8 @@
       (level
         (block Core.Layout
           (implements Pure)
-          (port :out TextRun :as measure)
-          (port :in TextSize :as size)
+          (gives TextRun :as measure)
+          (takes TextSize :as size)
           ; layout(model, opts, M) takes the measurer as a parameter and never names the page's M: it binds
           ; MeasuresText only (the abstraction rule), the core stays free of the DOM, and diff mode can lend
           ; it a wrapped measurer.

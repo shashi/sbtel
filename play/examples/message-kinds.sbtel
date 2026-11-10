@@ -1,19 +1,19 @@
 ; What a message can be: anything that crosses a boundary without either side naming the other.
 (block Notes :type "system"
-  (message Body :type "struct" (~ A note's title and text. ~))
-  (message SaveRequest :type "HTTP request" (carries Body) (~ POST /notes/:id from the browser. ~))
-  (message NoteSaved :type "event" (carries Body) (~ A note reached the database. ~))
-  (message IndexJob :type "queue item" (carries Body) (~ Work for the search indexer. ~))
-  (message Progress :type "callback" (~ How far an export has got. ~))
-  (message ExportText :type "stdout" (carries Body) (~ What `notes export` prints. ~))
-  (message NoteRow :type "database row" (carries Body) (~ One row of the notes table. ~))
+  (shape Body :type "struct" (~ A note's title and text. ~))
+  (shape SaveRequest :type "HTTP request" (carries Body) (~ POST /notes/:id from the browser. ~))
+  (shape NoteSaved :type "event" (carries Body) (~ A note reached the database. ~))
+  (shape IndexJob :type "queue item" (carries Body) (~ Work for the search indexer. ~))
+  (shape Progress :type "callback" (~ How far an export has got. ~))
+  (shape ExportText :type "stdout" (carries Body) (~ What `notes export` prints. ~))
+  (shape NoteRow :type "database row" (carries Body) (~ One row of the notes table. ~))
   (level :name "Clients"
-    (block Browser :type "app" (port :out SaveRequest :as save) (port :in NoteSaved :as saved))
-    (block CLI :type "binary" (port :in Progress) (port :out ExportText :as stdout))
-    (block Backup :type "shell script" (port :in ExportText :as stdin)))
+    (block Browser :type "app" (gives SaveRequest :as save) (takes NoteSaved :as saved))
+    (block CLI :type "binary" (takes Progress) (gives ExportText :as stdout))
+    (block Backup :type "shell script" (takes ExportText :as stdin)))
   (level :name "Services"
-    (block API :type "service" (port :in SaveRequest :as save) (port :out NoteSaved :as saved) (port :out IndexJob :as job))
-    (block Indexer :type "worker" (port :in IndexJob :as job))
-    (block Exporter :type "library" (port :out Progress) (port :in NoteRow :as row)))
+    (block API :type "service" (takes SaveRequest :as save) (gives NoteSaved :as saved) (gives IndexJob :as job))
+    (block Indexer :type "worker" (takes IndexJob :as job))
+    (block Exporter :type "library" (gives Progress) (takes NoteRow :as row)))
   (level :name "Storage"
-    (block Database :type "Postgres" (port :out NoteRow :as row))))
+    (block Database :type "Postgres" (gives NoteRow :as row))))

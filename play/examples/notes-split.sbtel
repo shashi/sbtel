@@ -1,9 +1,9 @@
 (block Export :type "package"
-  (message Note :type "class" (~ A title and a body. ~))
-  (message Document :type "byte[]" (~ The exported file. ~))
+  (shape Note :type "class" (~ A title and a body. ~))
+  (shape Document :type "byte[]" (~ The exported file. ~))
   (behavior Format :type "Java interface"
-    (port :in Note)
-    (port :out Document)
+    (takes Note)
+    (gives Document)
     (~ Turns one note into one file. ~))
   (level :name "Formats"
     (block HtmlFormat :type "class" (implements Format) (~ A standalone web page. ~))

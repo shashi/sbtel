@@ -1,8 +1,8 @@
-(message Event :type "struct" (~ One state change. ~))
-(message Image :type "struct" (~ Encoded pixels. ~))
+(shape Event :type "struct" (~ One state change. ~))
+(shape Image :type "struct" (~ Encoded pixels. ~))
 (behavior (Store T) :type "trait"
-  (port :in T :as put)
-  (port :out T :as get)
+  (takes T :as put)
+  (gives T :as get)
   (~ Keeps values of T and returns them on request. ~))
 (behavior Durable :type "trait"
   (implements (Store Event))

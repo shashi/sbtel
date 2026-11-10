@@ -75,7 +75,7 @@ function slug(t) {
 }
 
 // ---------- code ----------
-const FORMS = 'block|level|adjacent|port|message|refines|carries|behavior|implements|sketch';
+const FORMS = 'block|level|adjacent|takes|gives|shape|port|message|refines|carries|behavior|implements|sketch';
 const TOK = new RegExp('(;[^\\n]*)|("(?:\\\\.|[^"\\\\])*")|\\((~+)([\\s\\S]*?)\\3\\)|\\((' + FORMS + ')(?=[\\s()])|(:[^\\s()"]+)', 'g');
 function hlSbtel(src) {
   let out = '', last = 0;
