@@ -338,25 +338,43 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   }, { threshold: .35 }).observe(fig);
 })();
 
-// ---------- blocks: :type grounds a block ----------
+// ---------- blocks: one block opens into its levels, and one of those into its functions ----------
 (() => {
-  const g = $('#bk .seg'); if (!g) return;
-  const pill = $('#bk-pill'), src = $('#bk-src'), btns = $$('button', g);
-  const pick = (b, focus) => {
-    btns.forEach(x => { const on = x === b; x.setAttribute('aria-checked', on); x.tabIndex = on ? 0 : -1; });
-    const t = b.dataset.t;
-    pill.textContent = t; pill.dataset.k = t === 'Module' ? 'module' : 'other';
-    src.textContent = `(block Store :type "${t}"\n  (~ Keeps notes on disk, so they survive a restart. ~))`; paint(src);
-    if (focus) b.focus();
-  };
-  btns.forEach((b, i) => {
-    b.tabIndex = i ? -1 : 0;
-    b.addEventListener('click', () => pick(b));
-    b.addEventListener('keydown', e => {
-      const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
-      if (!d) return; e.preventDefault(); pick(btns[(i + d + btns.length) % btns.length], true);
-    });
-  });
+  const fig = $('#bk'); if (!fig) return;
+  const notes = $('#bk-notes'), store = $('#bk-store'), cur = $('#bk-cur'), capEl = $('#bk-cap');
+  const CAP = ['A block can be a whole app.', 'Open it: its levels, and the blocks in them.', 'Open one of those: a module, down to its functions.'];
+  let timers = [];
+  const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+  function point(e, fx = .5, fy = .5) {
+    const f = fig.getBoundingClientRect(), r = e ? e.getBoundingClientRect() : null;
+    const x = r ? r.left - f.left + r.width * fx : f.width - 50, y = r ? r.top - f.top + r.height * fy : f.height - 40;
+    cur.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+  }
+  const click = e => { cur.classList.remove('click'); cur.offsetWidth; cur.classList.add('click'); e.classList.add('sel'); at(450, () => e.classList.remove('sel')); };
+  function reset() {
+    timers.forEach(clearTimeout); timers = [];
+    [notes, store].forEach(e => e.classList.remove('open', 'sel')); capEl.textContent = CAP[0]; point(null);
+  }
+  function play() {
+    reset();
+    at(900, () => point($('.bt', notes), .6, .7));
+    at(1750, () => { click(notes); notes.classList.add('open'); capEl.textContent = CAP[1]; });
+    at(3600, () => point($('.bt', store), .7, .7));
+    at(4450, () => { click(store); store.classList.add('open'); capEl.textContent = CAP[2]; });
+    at(5300, () => point(null));
+    at(9400, () => { store.classList.remove('open'); });
+    at(9800, () => { notes.classList.remove('open'); capEl.textContent = CAP[0]; });
+    at(11400, play);
+  }
+  if (reduce) { notes.classList.add('open'); store.classList.add('open'); capEl.textContent = CAP[2]; cur.style.opacity = 0; return; }
+  reset();
+  if (!('IntersectionObserver' in window)) { play(); return; }
+  let running = false;
+  new IntersectionObserver(es => {
+    const vis = es[es.length - 1].isIntersecting;
+    if (vis && !running) { running = true; play(); }
+    if (!vis && running) { running = false; reset(); }
+  }, { threshold: .4 }).observe(fig);
 })();
 
 // ---------- levels: move a block and a dependency that breaks the order turns red ----------

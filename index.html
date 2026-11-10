@@ -168,29 +168,43 @@
       <p>A block can contain levels and other blocks, so you can progressively expand it with AI, from a subsystem down to a function. Its sketch is one plain sentence about what it is for. If the sentence needs an &ldquo;and&rdquo;, it is two blocks: one strand per block.</p>
       <p><code>:type</code> says what it is in the code.</p>
 <details class="spec"><summary>The text your agent writes</summary>
-<pre class="code" data-lang="sbtel" id="bk-src">(block Store :type "Module"
-  (~ Keeps notes on disk, so they survive a restart. ~))</pre>
+<pre class="code" data-lang="sbtel">(block Notes :type "App"
+  (~ Write notes and keep them. ~)
+  (level :name "App"
+    (block Editor)
+    (block Preview))
+  (level :name "Stored and formatted notes"
+    (block Store :type "Module"
+      (~ Keeps notes on disk. ~)
+      (level :name "Reading and writing"
+        (block save :type "Function")
+        (block load :type "Function")))
+    (block Formatter)))</pre>
 </details>
     </div>
     <figure class="fig">
-      <div class="frame" id="bk">
-        <div class="seg" role="radiogroup" aria-label="What the block maps to">
-          <button type="button" role="radio" aria-checked="true" data-t="Module">Module</button>
-          <button type="button" role="radio" aria-checked="false" data-t="Service">Service</button>
-          <button type="button" role="radio" aria-checked="false" data-t="File">File</button>
-          <button type="button" role="radio" aria-checked="false" data-t="Function">Function</button>
+      <div class="grow" id="bk" aria-label="One block, Notes, opens into two levels of blocks. One of those, Store, opens into its functions.">
+        <div class="blk box" id="bk-notes" aria-hidden="true">
+          <span class="pill">App</span><span class="bt">Notes</span><span class="sk">Write notes and keep them.</span>
+          <div class="kids"><div class="kin">
+            <div class="lvl"><div class="lname"><span>App</span></div>
+              <div class="row"><div class="blk">Editor</div><div class="blk">Preview</div></div></div>
+            <div class="lvl"><div class="lname"><span>Stored and formatted notes</span></div>
+              <div class="row">
+                <div class="blk box" id="bk-store">
+                  <span class="pill" data-k="module">Module</span><span class="bt">Store</span><span class="sk">Keeps notes on disk.</span>
+                  <div class="kids"><div class="kin">
+                    <div class="lvl"><div class="lname"><span>Reading and writing</span></div>
+                      <div class="row"><div class="blk fn"><span class="pill">Function</span>save</div><div class="blk fn"><span class="pill">Function</span>load</div></div></div>
+                  </div></div>
+                </div>
+                <div class="blk">Formatter</div>
+              </div></div>
+          </div></div>
         </div>
-        <div class="stage">
-          <div class="blk"><span class="pill" data-k="module" id="bk-pill">Module</span>Store<span class="sk">Keeps notes on disk, so they survive a restart.</span></div>
-          <div class="nest" aria-label="A block that contains levels">
-            <div class="nt">Notes</div>
-            <div class="lname"><span>Notes as text</span></div>
-            <div class="mini"><span>Editor</span><span>Preview</span><span>Sync</span></div>
-            <div class="lname"><span>Stored notes</span></div>
-            <div class="mini"><span>Store</span><span>Markdown</span></div>
-          </div>
-        </div>
+        <span class="cur" id="bk-cur" aria-hidden="true"><svg viewBox="0 0 22 24" width="22" height="24"><path d="M3 2l15.5 9.6-6.9 1.5 4 7.6-3 1.6-4-7.7L3 19.5z"/></svg></span>
       </div>
+      <figcaption class="grow-cap" id="bk-cap" aria-hidden="true">A block can be a whole app.</figcaption>
     </figure>
   </div>
 </section>
