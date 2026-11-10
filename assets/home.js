@@ -237,11 +237,11 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     at(2700, () => tween('fix', 1, 800));
     at(3300, () => partner(true)); at(4900, () => partner(false));
     at(4300, () => tween('thin', 1, 900));
-    at(5400, () => gasp.classList.add('on')); at(6400, () => gasp.classList.remove('on')); // everything has settled: one second of relief
+    at(5400, () => gasp.classList.add('on')); at(10400, () => gasp.classList.remove('on')); // everything has settled: five seconds of it
   }
   // It goes back and forth by itself while it is on screen, waits while it is pointed at or has the focus,
   // and stops for good once a picture is chosen by hand.
-  const HOLD = { tangle: 3000, design: 10500 };
+  const HOLD = { tangle: 3000, design: 11600 };
   let loop = null, seen = false, held = false, manual = false;
   function schedule() {
     clearTimeout(loop); if (manual || reduce) return;
