@@ -387,12 +387,14 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   // A block that comes back to its own level takes its old place in it; anywhere else it goes to the end.
   const put = (el, ri) => { const after = ri === +el.dataset.home ? [...rows[ri].children].find(x => x !== el && +x.dataset.home === ri && +x.dataset.ord > +el.dataset.ord) : null; rows[ri].insertBefore(el, after || null); };
   // edges.txt, in its order: who uses whom in the shop's code.
-  const E = [['Storefront','Cart'],['Storefront','Checkout'],['Cart','Pricing'],['Checkout','Tax'],['Pricing','Database'],['Tax','Database']];
+  const E = [['Storefront','Cart'],['Storefront','Checkout'],['Cart','Pricing'],['Checkout','Tax'],['Tax','Pricing'],['Pricing','Database'],['Tax','Database']];
   const say = $('#lv-say');
   const names = rows.map(r => r.parentElement.querySelector('.lname span').textContent);
   let drag = null; // { el, row }
   const rowOf = id => drag && drag.el === B[id] ? drag.row : rows.indexOf(B[id].parentElement);
-  const rule = (a, b) => { const ra = rowOf(a), rb = rowOf(b); return ra < rb ? 'ok' : ra === rb ? 'same-level' : 'upward'; };
+  // Pricing and Tax are declared adjacent: while they share a level they may use each other, and a line joins them.
+  const ADJ = ['Pricing', 'Tax'], joined = () => rowOf(ADJ[0]) === rowOf(ADJ[1]);
+  const rule = (a, b) => { const ra = rowOf(a), rb = rowOf(b); return ra < rb ? 'ok' : ra === rb ? (ADJ.includes(a) && ADJ.includes(b) && joined() ? 'ok' : 'same-level') : 'upward'; };
   function draw() {
     let s = '', ok = ''; // the calls the levels allow are implicit: they are drawn only while a block moves
     const broken = rows.map(() => ({ rules: new Set(), src: new Set() })); // per row: the rules its blocks break
@@ -408,6 +410,8 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
       if (r === 'ok') ok += arrowSVG(ar, ''); else s += arrowSVG(ar, 'bad');
       if (r !== 'ok') { const k = broken[rowOf(a)]; k.rules.add(r); k.src.add(a); }
     });
+    if (joined()) { const p = box(B[ADJ[0]], svg), q = box(B[ADJ[1]], svg), l = p.cx < q.cx ? [p, q] : [q, p];
+      s = `<line class="adj" x1="${l[0].r}" y1="${l[0].cy}" x2="${l[1].x}" y2="${l[1].cy}"/>` + s; }
     svg.innerHTML = `<g class="oks">${ok}</g>` + s;
     // One tag per level whose blocks break a rule, under those blocks and below every card in the row,
     // so it never meets a level's name, a card or another tag.

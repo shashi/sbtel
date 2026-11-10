@@ -227,6 +227,7 @@
         <li>Parts organized so they are easy to find when you need them.</li>
       </ol>
       <p><b>One opinionated omission:</b> there is no arrow from every block to each block it depends on. Levels give most of the benefit of those arrows without their noise, because they define which blocks may depend on which.</p>
+      <p><b>Simple means not braided together</b> (Rich Hickey, <a href="https://www.infoq.com/presentations/Simple-Made-Easy/">&ldquo;Simple Made Easy&rdquo;</a>), so the blocks in a level stay independent of each other. When two must work as one, you declare them adjacent and the picture joins them with a line, as with Pricing and Tax here.</p>
 <details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(block Shop
   (level :name "Pages"
@@ -234,7 +235,8 @@
   (level :name "Shopping"
     (block Cart) (block Checkout))
   (level :name "Prices"
-    (block Pricing) (block Tax))
+    (adjacent (~ Tax is worked out on priced lines. ~)
+      (block Pricing) (block Tax)))
   (level :name "Storage"
     (block Database)))</pre>
 </details>
@@ -264,39 +266,8 @@
           <summary>See the real sbtel check output</summary>
           <p class="hint"><code>edges.txt</code> is the list of real dependencies your agent maps from the code.</p>
 <pre class="code wrapline term-out" id="lv-out"><span class="hl-prompt">$ </span>sbtel check shop.sbtel --bindings edges.txt
-shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
+shop.sbtel: 7 bindings, <span class="hl-ok">0 not allowed</span></pre>
         </details>
-      </div>
-    </figure>
-  </div>
-</section>
-
-<!-- Adjacency -->
-<section class="sec" id="simplicity-and-explicit-coupling" aria-labelledby="t-adj">
-  <h2 class="term" id="t-adj">Simplicity and explicit coupling</h2>
-  <div class="pair flip">
-    <div class="txt">
-      <p class="lead">Simple means not braided together.</p>
-      <p>That is Rich Hickey&rsquo;s definition in <a href="https://www.infoq.com/presentations/Simple-Made-Easy/">&ldquo;Simple Made Easy&rdquo;</a>: a simple thing is one strand, and complexity is what you get when strands are twisted into each other. The blocks in a level stay separate strands.</p>
-      <p>Adjacent blocks use each other&rsquo;s internals, working as a single unit. Declaring it makes that one braid explicit: it is drawn in the picture, with a sentence that says why.</p>
-<details class="spec"><summary>The text your agent writes</summary>
-<pre class="code" data-lang="sbtel">(level :name "Notes as text"
-  (adjacent (~ The preview scrolls with the editor. ~)
-    (block Editor)
-    (block Preview))
-  (block Sync))</pre>
-</details>
-    </div>
-    <figure class="fig">
-      <div class="frame dgm" id="adj">
-        <div class="lvl"><div class="lname"><span>Notes as text</span></div>
-          <div class="row"><div class="blk" data-id="Editor">Editor</div><span class="bgap"></span><div class="blk" data-id="Preview">Preview</div><span class="sgap"></span><div class="blk" data-id="Sync">Sync</div></div></div>
-        <div class="why" id="adj-why">The preview scrolls with the editor.</div>
-        <svg class="edges" aria-hidden="true"></svg>
-      </div>
-      <div class="capline">
-        <span class="grow" id="adj-cap" aria-live="polite">Preview calls into Editor. Being adjacent allows it.</span>
-        <button class="btn" type="button" id="adj-btn" aria-pressed="false">Remove the link</button>
       </div>
     </figure>
   </div>

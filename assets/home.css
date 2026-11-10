@@ -370,3 +370,4 @@ details.spec > pre.code { margin-top:10px; }
 .gives li { margin:4px 0; color:var(--ink-2); }
 .txt p b { color:var(--ink); font-weight:600; }
 .check-out details .hint { margin:8px 0; }
+#lv .row .blk[data-id="Pricing"] + .blk[data-id="Tax"] { margin-left:34px; } /* room for the adjacency line */
