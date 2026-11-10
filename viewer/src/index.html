@@ -261,7 +261,9 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .llab.ph { display:none; font-weight:400; font-style:italic; opacity:.55; }
 .lsep:hover .llab.ph, .gutter:hover .llab.ph, .llab.ph:focus-visible { display:block; }
 .ro .llab.ph { display:none !important; }
-.gutter .llab.ph { position:absolute; left:0; top:-1px; margin:0; background:var(--surface); }
+.gutter .llab.ph { position:absolute; left:0; top:-1px; margin:0; }
+/* The insert line starts after the placeholder, so it does not strike through it. */
+.gutter:has(.llab.ph)::before { left:116px; }
 .lsep.gone { opacity:0; }
 .lsep.gone .plus, .lsep.nop .plus { visibility:hidden; }
 .world.pv .lsep { transition: transform .22s cubic-bezier(.3,.7,.2,1), width .22s cubic-bezier(.3,.7,.2,1), opacity .2s ease; }
