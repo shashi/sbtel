@@ -41,9 +41,8 @@ Run `sbtel version` first. If it is missing: `curl -fsSL https://raw.githubuserc
   upward, not across its own level, not its container.
 - A shape or behavior is visible in the block that declares it and everything inside.
 - A `takes U` port fits a `gives T` port when T is U or refines it.
-- A `ref` is a path beside or below the spec (`file`, `file:40-60`, `"a file.md#heading"`) or a URL. Use
-  it for the code a block maps to, and for evidence: an eval output, a log, a document. The human
-  reads it in the viewer once you push the version that names it.
+- A `ref` is a path beside or below the spec (`file`, `file:40-60`, `"a file.md#heading"`) or a URL. Add
+  one when the human asks for it; do not add refs on your own.
 
 Grammar, every lint message and the binding table: [reference.md](reference.md).
 
@@ -80,8 +79,8 @@ sbtel reply "$id" c7.1 "What changed."    # answer each comment; r7 answers a re
 - A **save** means the human wrote the file from the browser. Re-read it before you edit.
 - Keep `--timeout` under your shell's limit; on a timeout, wait again.
 - Reply to every comment with what changed or why nothing did.
-- Put evidence in the reply as `(ref path:from-to)`: it becomes a button that opens the file at those
-  lines. Any file beside or below the spec works; it does not have to be in the spec.
+- When the human asks to see a file or the evidence for something, name it in the reply as
+  `(ref path:from-to)`: it becomes a button that opens the file at those lines. Only when asked.
 
 ## Other commands
 
