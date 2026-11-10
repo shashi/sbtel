@@ -418,11 +418,28 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 
 .strip { position:fixed; z-index:1100; display:flex; gap:2px; padding:4px; border-radius:11px; background:var(--panel); border:1px solid var(--panel-line); box-shadow:0 8px 24px var(--shadow); }
 .strip .tb { height:30px; min-width:30px; font-size:12.5px; padding:0 8px; }
-.composer textarea { width:min(300px, calc(100vw - 60px)); min-height:84px; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:8px; padding:8px 10px; font:inherit; font-size:13.5px; background:var(--surface); color:var(--ink); resize:vertical; display:block; }
-.thread { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow:auto; }
+/* Comments on one target: a chat. The thread scrolls, newest at the bottom, over the input. Its copy is a size
+   up from the cards' sketches, since the popover does not zoom with the canvas. */
+.pop.chat { width:min(380px, calc(100vw - 24px)); max-width:none; box-sizing:border-box; padding:10px 12px 12px; font-size:15px; }
+.pop.chat .chh { display:flex; align-items:center; gap:8px; }
+.pop.chat .chh .xbtn { width:28px; height:28px; margin:-4px -6px -4px auto; }
+.composer textarea { width:100%; min-height:64px; max-height:30vh; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:8px; padding:8px 10px; font:inherit; font-size:15px; line-height:1.45; background:var(--surface); color:var(--ink); resize:vertical; display:block; margin-top:8px; }
+.composer textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+@media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
+.pop.chat .acts { align-items:center; justify-content:flex-end; }
+.pop.chat .keys { margin-right:auto; font-size:11.5px; color:var(--muted); white-space:nowrap; }
+.thread { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; max-height:min(44vh, 420px); overflow:auto; overscroll-behavior:contain; }
 .thread li { border:1px solid var(--panel-line); border-radius:9px; padding:8px 10px; background:var(--surface); }
-.thread .ct { white-space:pre-wrap; }
-.thread .cm { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:11.5px; color:var(--muted); }
+.thread li.none { border:0; background:none; padding:2px 0; color:var(--muted); font-size:13.5px; }
+.thread .ct { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.45; }
+.thread .cm { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12px; color:var(--muted); }
+/* A reply nobody has read yet: a dot on the count. */
+.cbub.unread::after { content:""; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--canvas); }
+@media (max-width: 759px) {
+  .pop.chat { left:8px !important; right:8px; top:auto !important; bottom:calc(8px + var(--kb, 0px)); width:auto; }
+  .pop.chat .keys { display:none; }
+  .thread { max-height:32vh; }
+}
 .st-saved { color:var(--accent); font-weight:600; }
 .st-sent { color:var(--ok); font-weight:600; }
 .tiny { border:0; background:none; color:var(--muted); cursor:pointer; font-size:11.5px; padding:2px 4px; border-radius:5px; }
@@ -2839,7 +2856,6 @@ function placeStrip() {
   y = Math.max(64, Math.min(y, innerHeight - h - 76));
   x = Math.max(12, Math.min(x, innerWidth - w - 12));
   strip.style.left = x + 'px'; strip.style.top = y + 'px';
-  if (composerPop && composerPop.isConnected) placeNear(composerPop, r);
 }
 function cutSelected() {
   const c = state.selLine && state.lay.connectors.find(c => connectorKey(c) === state.selLine); if (!c) return;
@@ -3690,37 +3706,80 @@ function anchorFor(key) {
   if (kind === 'line') return document.querySelector(`#lines path.vis[data-key="${CSS.escape(rest)}"]`);
   if (kind === 'msg') return state.elems.get('μ:' + rest) || document.querySelector(`#msgRows tr[data-name="${CSS.escape(rest)}"]`);
 }
-let composerPop = null;
-function openComposer(key, anchor) {
-  closePop('info');
-  const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 150, innerHeight / 3, 300, 0) };
-  const el = pop('composer', a, `<div class="kind">Comment on ${esc(targetLabel(key))}</div>
-    <div class="composer" style="margin-top:6px"><textarea id="cmtText" placeholder="What should change, or what is unclear?"></textarea></div>
-    <div class="acts" style="justify-content:flex-end"><button class="btn" data-c="cancel">Cancel</button><button class="btn" data-c="save">Save</button><button class="btn primary" data-c="send">Send</button></div>`);
-  composerPop = el;
-  const ta = el.querySelector('textarea'); setTimeout(() => ta.focus(), 30);
-  el.addEventListener('click', e => {
-    const c = e.target.closest('[data-c]')?.dataset.c; if (!c) return;
-    if (c === 'cancel') { closePop('composer'); return; }
-    const text = ta.value.trim(); if (!text) { ta.focus(); return; }
-    const cm = { id:Date.now().toString(36), target:key, text, status:'saved', version:version(), at:Date.now() };
-    state.comments.push(cm); saveComments(); closePop('composer'); render();
-    if (c === 'send') openSend([cm]); else toast('Comment saved. Send it from the toolbar when you are ready.');
-  });
-  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) el.querySelector('[data-c="save"]').click(); });
+// One chat per target: its comments, newest at the bottom, over an input. ⌘/Ctrl+Enter sends the comment now;
+// Shift+Enter keeps it for later (Save here, Add to review in a session). The chat stays open after either,
+// and text that was typed but not sent comes back when the chat is opened again.
+let chat = null; // { key, el }
+const chatDrafts = new Map();
+// What a mode changes (§6.5): the secondary action, what a new comment becomes, and a row's status
+// ([class, text, title]), buttons and replies.
+let chatKeep = () => ({ c:'save', label:'Save', title:'Keep it here and send it later from the toolbar (Shift+Enter)' });
+let chatAdd = (key, text, how) => {
+  const cm = { id:Date.now().toString(36) + Math.random().toString(36).slice(2, 5), target:key, text, status:'saved', version:version(), at:Date.now() };
+  state.comments.push(cm); saveComments(); render();
+  if (how === 'send') openSend([cm]); else toast('Comment saved. Send it from the toolbar when you are ready.');
+};
+let chatStatus = c => c.status === 'sent' ? ['st-sent', 'Sent'] : ['st-saved', 'Saved'];
+let chatRowBtns = c => (c.status === 'saved' ? `<button class="tiny" data-t="send" data-id="${esc(c.id)}">Send</button>` : '') + `<button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>`;
+let chatReplies = c => '';
+function chatRow(c) {
+  const [cls, text, title] = chatStatus(c);
+  return `<li data-id="${esc(c.id)}"><div class="ct">${esc(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
-function openThread(key, anchor) {
-  const list = state.comments.filter(c => c.target === key);
-  const el = pop('thread', anchor, `<div class="kind">Comments on ${esc(targetLabel(key))}</div>
-    <ul class="thread">${list.map(c => `<li><div class="ct">${esc(c.text)}</div><div class="cm"><span class="st-${c.status}">${c.status === 'sent' ? 'Sent' : 'Saved'}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${c.status === 'saved' ? `<button class="tiny" data-t="send" data-id="${c.id}">Send</button>` : ''}<button class="tiny" data-t="del" data-id="${c.id}">Delete</button></div></li>`).join('')}</ul>
-    <div class="acts" style="justify-content:flex-end"><button class="btn" data-t="add">Add comment</button></div>`);
-  el.addEventListener('click', e => {
-    const b = e.target.closest('[data-t]'); if (!b) return;
-    if (b.dataset.t === 'add') { openComposer(key, anchor); return; }
-    const c = state.comments.find(x => x.id === b.dataset.id);
-    if (b.dataset.t === 'del') { state.comments = state.comments.filter(x => x !== c); saveComments(); closePop('thread'); render(); if (key.startsWith('msg:')) renderMsgTable(); }
-    if (b.dataset.t === 'send') { closePop('thread'); openSend([c]); }
+const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || chat.key === key));
+// Draw the open chat's thread again and show its end; the popover and what is typed in it stay.
+function refreshChat() {
+  if (!chatOpen()) { chat = null; return; }
+  const el = chat.el, ul = el.querySelector('ul.thread'), list = state.comments.filter(c => c.target === chat.key);
+  ul.innerHTML = list.map(chatRow).join('') || '<li class="none">No comments here yet.</li>';
+  ul.scrollTop = ul.scrollHeight;
+  const r = el.getBoundingClientRect();
+  if (r.bottom > innerHeight - 8 && innerWidth >= 760) el.style.top = Math.max(8, innerHeight - r.height - 8) + 'px';
+}
+function openChat(key, anchor, focus) {
+  closePop('info');
+  if (chatOpen(key)) { if (focus) chat.el.querySelector('textarea').focus(); return; }
+  const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 190, innerHeight / 3, 380, 0) };
+  const keep = chatKeep(), mac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+  const el = pop('thread', a, `<div class="chh"><span class="kind">Comments on ${esc(targetLabel(key))}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
+    <ul class="thread" aria-live="polite"></ul>
+    <div class="composer"><textarea id="cmtText" rows="2" placeholder="What should change, or what is unclear?" aria-label="Comment on ${esc(targetLabel(key))}"></textarea></div>
+    <div class="acts"><span class="keys">${mac ? '⌘' : 'Ctrl+'}Enter sends · Shift+Enter: ${esc(keep.label.toLowerCase())}</span><button class="btn" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div>`, 'chat');
+  chat = { key, el };
+  const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
+  refreshChat(); placeNear(el, a.getBoundingClientRect());
+  if (focus) setTimeout(() => { if (chatOpen(key)) ta.focus(); }, 30);
+  const submit = how => {
+    const text = ta.value.trim(); if (!text) { ta.focus(); return; }
+    ta.value = ''; chatDrafts.delete(key);
+    chatAdd(key, text, how); refreshChat();
+    if (chatOpen(key)) ta.focus();
+  };
+  ta.addEventListener('input', () => { if (ta.value.trim()) chatDrafts.set(key, ta.value); else chatDrafts.delete(key); });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePop('thread'); return; }
+    if (e.key !== 'Enter' || e.isComposing) return;
+    if (e.metaKey || e.ctrlKey) { e.preventDefault(); submit('send'); }
+    else if (e.shiftKey) { e.preventDefault(); submit('keep'); }
   });
+  el.addEventListener('click', e => {
+    const c = e.target.closest('[data-c]')?.dataset.c; if (c) { submit(c === 'send' ? 'send' : 'keep'); return; }
+    const b = e.target.closest('[data-t]'); if (!b) return;
+    if (b.dataset.t === 'close') { closePop('thread'); return; }
+    const cm = state.comments.find(x => x.id === b.dataset.id); if (!cm) return;
+    if (b.dataset.t === 'del') { state.comments = state.comments.filter(x => x !== cm); saveComments(); render(); refreshChat(); if (key.startsWith('msg:')) renderMsgTable(); }
+    if (b.dataset.t === 'send') openSend([cm]);
+  });
+}
+// Comment on a thing (the input has the focus), or read its thread (on a touch screen the keyboard stays down).
+function openComposer(key, anchor) { openChat(key, anchor, true); }
+function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: coarse)').matches); }
+// Every full render draws the open chat again: a comment was added, sent or answered.
+{ const draw = render; render = (anchorId, pv) => { draw(anchorId, pv); if (!pv) refreshChat(); }; }
+// On a phone the chat is a sheet at the bottom; --kb lifts it above the on-screen keyboard.
+if (window.visualViewport) {
+  const kb = () => document.documentElement.style.setProperty('--kb', Math.max(0, Math.round(innerHeight - visualViewport.height - visualViewport.offsetTop)) + 'px');
+  visualViewport.addEventListener('resize', kb); visualViewport.addEventListener('scroll', kb);
 }
 function renderSendBtn() {
   const n = state.comments.filter(c => c.status === 'saved').length;
@@ -4018,7 +4077,7 @@ addEventListener('keydown', e => {
 });
 document.addEventListener('pointerdown', e => {
   if (e.target.closest('.pop, .strip, .dock, [data-thread], [data-msg], [data-beh], .ulink, [data-cmsg], [data-tmsg]')) return;
-  ['thread', 'composer', 'checks', 'info-pin', 'menu'].forEach(k => { if (pops[k] && !(k === 'composer' && pops[k].querySelector('textarea').value.trim())) closePop(k); });
+  ['thread', 'checks', 'info-pin', 'menu'].forEach(k => { if (pops[k]) closePop(k); }); // a chat keeps its unsent text (chatDrafts)
 }, true);
 addEventListener('resize', () => placeStrip());
 
@@ -4045,11 +4104,28 @@ const SBTEL = (() => {
 // into its thread as well as a toast. Inlined by viewer/build.mjs after the app and before server.js
 // and diff.js; at load it only defines sessionComments, so standalone mode is untouched.
 function sessionComments({ version, closed }) {
-  const C = { thread: null, seenReplies: new Set(), reviews: [], listeners: [] };
+  const C = { read: null, seenReplies: new Set(), reviews: [], listeners: [] };
   const changed = () => C.listeners.forEach(f => f());
   const CSS = `
-.sb-reply { margin-top:7px; padding:6px 8px; border-radius:7px; background:var(--accent-soft); white-space:pre-wrap; }
-.sb-reply .who { display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:2px; }`;
+.sb-reply { margin-top:7px; overflow-wrap:anywhere; line-height:1.45; padding:6px 8px; border-radius:7px; background:var(--accent-soft); white-space:pre-wrap; }
+.sb-reply .who { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:2px; }`;
+  // Replies read so far: { comment id: how many of its replies the reader has seen }, kept per session, so a
+  // reply that arrived while its chat was closed puts a dot on the count until the chat is opened.
+  const RKEY = SBTEL.session ? 'sbtel-read:' + SBTEL.session : null;
+  const unread = c => !!c.sid && (c.replies || []).length > ((C.read || {})[c.sid] || 0);
+  function markUnread(root) {
+    const u = new Set(state.comments.filter(unread).map(c => c.target));
+    (root || document).querySelectorAll('.cbub[data-thread]').forEach(b => {
+      const on = u.has(b.dataset.thread); if (on === b.classList.contains('unread')) return;
+      b.classList.toggle('unread', on);
+      const l = (b.getAttribute('aria-label') || '').replace(/, new reply$/, ''); if (l) b.setAttribute('aria-label', l + (on ? ', new reply' : ''));
+    });
+  }
+  function markRead(key) {
+    let ch = false; C.read = C.read || {};
+    state.comments.forEach(c => { if (c.target === key && unread(c)) { C.read[c.sid] = c.replies.length; ch = true; } });
+    if (ch) { if (RKEY) store.set(RKEY, C.read); markUnread(); }
+  }
   const errText = async res => { try { return (await res.json()).error || 'HTTP ' + res.status; } catch (e) { return 'HTTP ' + res.status; } };
 
   // state.comments from the log's comment, review and reply events, plus this tab's unsent drafts (the
@@ -4071,6 +4147,8 @@ function sessionComments({ version, closed }) {
       last = Math.max(last, e.seq || 0);
     });
     state.comments = list.concat(drafts);
+    // The first load of a session in this browser: what is already there counts as read.
+    if (!C.read) { C.read = RKEY ? store.get(RKEY, null) : null; if (!C.read) { C.read = {}; list.forEach(c => { C.read[c.sid] = c.replies.length; }); } }
     C.reviews = [...revs.values()];
     changed();
     return last;
@@ -4080,7 +4158,7 @@ function sessionComments({ version, closed }) {
     let sent = 0, failed = '';
     for (const c of list) {
       const was = c.status;
-      c.status = 'sending';
+      c.status = 'sending'; refreshChat();
       try {
         const res = await fetch(SBTEL.base + 'comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target: c.target, targetLabel: targetLabel(c.target), text: c.text, version: version(), source: targetSource(c.target) }) });
         if (!res.ok) throw new Error(await errText(res));
@@ -4088,9 +4166,9 @@ function sessionComments({ version, closed }) {
         c.status = 'sent'; c.sid = c.id = j.id; c.replies = c.replies || []; sent++;
       } catch (e) { c.status = was === 'pending' ? 'pending' : 'saved'; failed = e.message === 'Failed to fetch' ? 'the sbtel server is not answering' : e.message; }
     }
-    saveComments(); render(); renderMsgTableIfOpen();
+    saveComments(); render(); refreshChat(); renderMsgTableIfOpen();
     if (failed) toast(`Could not send ${list.length - sent} comment${list.length - sent === 1 ? '' : 's'}: ${failed}. ${sent ? sent + ' sent.' : 'They are kept in your review.'}`);
-    else toast(`Sent ${sent} comment${sent === 1 ? '' : 's'} to the agent.`);
+    else if (!(list.length === 1 && chatOpen(list[0].target))) toast(`Sent ${sent} comment${sent === 1 ? '' : 's'} to the agent.`); // an open chat already says so
   }
   // SSE `reply`: {seq, to, text, at}.
   function onReply(d) {
@@ -4102,13 +4180,9 @@ function sessionComments({ version, closed }) {
     const c = state.comments.find(x => x.sid === d.to);
     if (!c) return;
     (c.replies = c.replies || []).push({ text: d.text, at: Date.parse(d.at) || Date.now() });
-    render(); changed();
-    toast(`Agent replied on ${targetLabel(c.target)}: ${short}`);
-    if (pops.thread && C.thread && C.thread.key === c.target) {
-      const { left, top } = pops.thread.style;
-      openThread(c.target, C.thread.anchor);
-      if (pops.thread) { pops.thread.style.left = left; pops.thread.style.top = top; }
-    }
+    if (chatOpen(c.target)) markRead(c.target); // it is being read now
+    render(); refreshChat(); markUnread(); changed(); // explicitly: diff mode draws with its own render
+    if (!chatOpen(c.target)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
   }
   // The app hooks (§6.5). Call once, from the mode's boot().
   function hook() {
@@ -4117,20 +4191,15 @@ function sessionComments({ version, closed }) {
     openSend = list => send(list);
     // Sent comments stay visible (their threads carry the agent's replies).
     commentCounts = () => { const c = {}; state.comments.forEach(x => { c[x.target] = (c[x.target] || 0) + 1; }); return c; };
-    const origThread = openThread;
-    openThread = (key, anchor) => {
-      C.thread = { key, anchor };
-      origThread(key, anchor);
-      const el = pops.thread; if (!el) return;
-      const list = state.comments.filter(c => c.target === key);
-      el.querySelectorAll('ul.thread > li').forEach((li, i) => {
-        const c = list[i]; if (!c) return;
-        if (c.status === 'sent') { li.querySelector('[data-t="del"]')?.remove(); const s = li.querySelector('.st-sent'); if (s) s.textContent = c.review ? 'Sent in review ' + c.review : 'Sent to the agent'; }
-        if (c.status === 'sending') { const s = li.querySelector('.st-sending'); if (s) s.textContent = 'Sending…'; }
-        (c.replies || []).forEach(r => li.insertAdjacentHTML('beforeend', `<div class="sb-reply"><span class="who">Agent</span>${esc(r.text)}</div>`));
-      });
-      placeNear(el, anchor && anchor.isConnected !== false && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : el.getBoundingClientRect());
-    };
+    // The chat's rows: a sent comment says how it went, cannot be deleted, and carries the agent's replies.
+    const status0 = chatStatus, btns0 = chatRowBtns;
+    chatStatus = c => c.status === 'sent' ? ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent to the agent'] : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
+    chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
+    chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent</span>${esc(r.text)}</div>`).join('');
+    // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
+    const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
+    const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };
+    const open0 = openChat; openChat = (key, anchor, focus) => { open0(key, anchor, focus); markRead(key); };
   }
   // The reviews sent in this session (from the log, and from this tab), and a listener for changes to
   // them or to the comments' threads (the Review panel's "Sent reviews").
@@ -4309,10 +4378,14 @@ function changeListHTML(items) {
 
 // A comparison in a new tab of this page, in diff mode (the page at ?compare=<key>). data has the shape
 // of diff.json, {a: {name, label, src}, b: {…}, label}; the new tab reads it from this one (its opener).
-function openCompare(data) {
+function putCompare(data) {
   const k = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   SBTEL.compares[k] = data;
-  window.sbtelCompares = SBTEL.compares; // the new tab reads it here: a top-level const is not a window property
+  window.sbtelCompares = SBTEL.compares; // the other view reads it here: a top-level const is not a window property
+  return k;
+}
+function openCompare(data) {
+  const k = putCompare(data);
   const w = window.open(location.pathname + '?compare=' + k, '_blank');
   if (!w) toast('The browser blocked the new tab. Allow pop-ups for this page to see the diff.');
   return w;
@@ -4378,13 +4451,13 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     (Array.isArray(d.comments) ? d.comments : []).forEach(c => { if (c && c.target && c.text && !state.comments.some(x => x.id === c.id)) state.comments.push({ id:String(c.id), target:c.target, text:c.text, status:'pending', version:c.version, at:c.at || Date.now() }); });
   }
   // The session is gone (closed, or unknown to the server): drop what this page kept for it.
-  function forget() { R.off = true; clearTimeout(R.t); store.del(KEY); histForget(HKEY); }
+  function forget() { R.off = true; clearTimeout(R.t); store.del(KEY); store.del('sbtel-read:' + o.id); histForget(HKEY); }
   // Drop the kept drafts and histories of sessions the server says do not exist (404 on meta).
   async function prune() {
     const ids = new Set();
-    ['sbtel-draft:', 'sbtel-hist:'].forEach(p => store.keys(p).forEach(k => { const id = k.slice(p.length); if (/^[0-9a-f]{32}$/.test(id) && id !== o.id) ids.add(id); }));
+    ['sbtel-draft:', 'sbtel-hist:', 'sbtel-read:'].forEach(p => store.keys(p).forEach(k => { const id = k.slice(p.length); if (/^[0-9a-f]{32}$/.test(id) && id !== o.id) ids.add(id); }));
     for (const id of [...ids].slice(0, 64)) {
-      try { const r = await fetch('/s/' + id + '/meta', { cache:'no-store' }); if (r.status === 404) { store.del('sbtel-draft:' + id); store.del('sbtel-hist:' + id); } } catch (e) { return; } // server unreachable: keep everything
+      try { const r = await fetch('/s/' + id + '/meta', { cache:'no-store' }); if (r.status === 404) { store.del('sbtel-draft:' + id); store.del('sbtel-hist:' + id); store.del('sbtel-read:' + id); } } catch (e) { return; } // server unreachable: keep everything
     }
   }
 
@@ -4442,7 +4515,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     const el = $('rvComments'); if (!el) return;
     const list = pending();
     el.innerHTML = `<h4>Comments${list.length ? ` <span>(${list.length})</span>` : ''}</h4>` + (list.length ? list.map(c => `<div class="rv-c" data-cid="${esc(c.id)}"><div class="rv-h"><button class="go" data-rv="go" title="Show it">${esc(targetLabel(c.target))}</button><span class="spacer"></span><button class="tiny" data-rv="send" title="Send this comment to the agent now, on its own">Send now</button><button class="tiny" data-rv="del">Delete</button></div><textarea aria-label="Comment on ${esc(targetLabel(c.target))}">${esc(c.text)}</textarea></div>`).join('')
-      : `<p class="rv-note">No pending comments. Select something on the canvas, press Comment and choose <b>Add to review</b>.</p>`);
+      : `<p class="rv-note">No pending comments. Select something on the canvas, press Comment and choose <b>Add to review</b> (Shift+Enter).</p>`);
   }
   function renderSent() {
     const el = $('rvSent'); if (!el) return;
@@ -4512,47 +4585,25 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     renderSendBtn = () => { $('sendBtn').hidden = true; }; // a session has no "saved" comments: they are pending in the review
     const origPaint = paint; paint = (lay, keep) => { origPaint(lay, keep); if (!keep) markPending($('world')); };
     const origFill = fillBlock; fillBlock = (el, B, counts) => { origFill(el, B, counts); markPending(el); };
-    // The composer: Add to review is the primary action, Send now sends this one comment at once.
-    const prevComposer = openComposer;
-    openComposer = (key, anchor) => {
-      if (!SBTEL.session) return prevComposer(key, anchor);
+    // The chat: Send is the primary action (the agent starts on it while you look at something else), and
+    // Add to review keeps the comment for the review. A pending comment says so, with Edit and Send now.
+    const keep0 = chatKeep, add0 = chatAdd, status0 = chatStatus, btns0 = chatRowBtns, composer0 = openComposer;
+    chatKeep = () => SBTEL.session ? { c:'review', label:'Add to review', title:'Keep it in your review and send it with the rest (Shift+Enter)' } : keep0();
+    chatAdd = (key, text, how) => {
+      if (!SBTEL.session) return add0(key, text, how);
       if (o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; }
-      closePop('info');
-      const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 150, innerHeight / 3, 300, 0) };
-      const el = pop('composer', a, `<div class="kind">Comment on ${esc(targetLabel(key))}</div>
-        <div class="composer" style="margin-top:6px"><textarea id="cmtText" placeholder="What should change, or what is unclear?"></textarea></div>
-        <div class="acts" style="justify-content:flex-end"><button class="btn" data-c="cancel">Cancel</button><button class="btn" data-c="send" title="Send this comment to the agent now, on its own">Send now</button><button class="btn primary" data-c="review" title="Keep it in your review and send it with the rest (⌘Enter)">Add to review</button></div>`);
-      composerPop = el;
-      const ta = el.querySelector('textarea'); setTimeout(() => ta.focus(), 30);
-      el.addEventListener('click', e => {
-        const c = e.target.closest('[data-c]')?.dataset.c; if (!c) return;
-        if (c === 'cancel') { closePop('composer'); return; }
-        const text = ta.value.trim(); if (!text) { ta.focus(); return; }
-        closePop('composer');
-        const cm = addPending(key, text);
-        if (c === 'send') openSend([cm]);
-        else toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
-      });
-      ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) el.querySelector('[data-c="review"]').click(); });
+      const cm = addPending(key, text);
+      if (how === 'send') openSend([cm]);
+      else toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
     };
-    // Threads: a pending comment says so and offers Edit (in the Review panel) and Send now.
-    const prevThread = openThread;
-    openThread = (key, anch) => {
-      prevThread(key, anch);
-      const el = pops.thread; if (!el) return;
-      const list = state.comments.filter(c => c.target === key);
-      el.querySelectorAll('ul.thread > li').forEach((li, i) => {
-        const c = list[i]; if (!c || c.status !== 'pending') return;
-        const s = li.querySelector('[class^="st-"]'); if (s) { s.className = 'st-pending'; s.textContent = 'Pending'; s.title = 'In your review: it goes to the agent when you send the review'; }
-        const del = li.querySelector('[data-t="del"]');
-        del?.insertAdjacentHTML('beforebegin', `<button class="tiny" data-t="rvedit" data-id="${esc(c.id)}">Edit</button><button class="tiny" data-t="send" data-id="${esc(c.id)}">Send now</button>`);
-      });
-      el.addEventListener('click', e => {
-        const b = e.target.closest('[data-t="rvedit"]'); if (!b) return;
-        closePop('thread'); toggle(true);
-        setTimeout(() => { const ta = document.querySelector(`#rvComments [data-cid="${CSS.escape(b.dataset.id)}"] textarea`); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ block:'nearest' }); } }, 60);
-      });
-    };
+    chatStatus = c => c.status === 'pending' ? ['st-pending', 'Pending', 'In your review: it goes to the agent when you send the review'] : status0(c);
+    chatRowBtns = c => c.status === 'pending' ? `<button class="tiny" data-t="rvedit" data-id="${esc(c.id)}">Edit</button><button class="tiny" data-t="send" data-id="${esc(c.id)}">Send now</button><button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>` : btns0(c);
+    openComposer = (key, anchor) => { if (SBTEL.session && o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; } composer0(key, anchor); };
+    document.addEventListener('click', e => {
+      const b = e.target.closest('.pop.chat [data-t="rvedit"]'); if (!b) return;
+      closePop('thread'); toggle(true);
+      setTimeout(() => { const ta = document.querySelector(`#rvComments [data-cid="${CSS.escape(b.dataset.id)}"] textarea`); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ block:'nearest' }); } }, 60);
+    });
     // The dock: Review is the primary action, at the end.
     btn = document.createElement('button'); btn.className = 'tb rv-btn'; btn.id = 'rvBtn'; btn.setAttribute('aria-controls', 'rvSheet'); btn.setAttribute('aria-expanded', 'false');
     btn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h10v8H8l-3 3v-3H3z"/><path d="M5.5 6.5l1.6 1.6L10.5 4.8"/></svg><span class="rv-l">Review</span><span class="rv-n" hidden></span>';
@@ -4629,6 +4680,12 @@ SBTEL.modes.server = (() => {
 .sb-vt { position:fixed; left:50%; transform:translateX(-50%); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 46px); z-index:2950; background:var(--panel); color:var(--ink); border:1px solid var(--panel-line); border-left:3px solid var(--accent); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.45; box-shadow:0 14px 40px var(--shadow); width:max-content; max-width:min(460px, calc(100vw - 32px)); box-sizing:border-box; }
 .sb-vt.warn { border-left-color:var(--warn); }
 .sb-vt .acts { display:flex; gap:6px; justify-content:flex-end; margin-top:8px; flex-wrap:wrap; }
+.sb-cmp { position:fixed; inset:0; z-index:2940; background:var(--canvas); display:flex; flex-direction:column; }
+.sb-cmp header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--panel-line); font-size:14px; }
+.sb-cmp header b { font-weight:600; }
+.sb-cmp header .note { color:var(--muted); font-size:12.5px; }
+.sb-cmp header .spacer { flex:1; }
+.sb-cmp iframe { flex:1; width:100%; border:0; min-height:0; }
 .tb.sb-save:disabled { opacity:.55; }
 .sb-ow p { margin:0 0 10px; line-height:1.5; }
 .sb-ow .muted { color:var(--muted); font-size:13px; }
@@ -4644,10 +4701,34 @@ SBTEL.modes.server = (() => {
     barEl.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>`;
   }
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
+  // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.
+  // Nothing is replaced until Reload is pressed there; Back returns to the page as it was, with the toast.
+  let cmpEl = null;
+  function closeChanges() { cmpEl?.remove(); cmpEl = null; }
+  async function seeChanges(info) {
+    let spec;
+    try { spec = await getJSON('spec'); } catch (e) { toast('Could not load the new version: the sbtel server is not answering.'); versionToast(info); return; }
+    if (spec.src === S.loaded) { toast(`Version ${spec.version} has the same text as version ${S.version}.`); versionToast(info); return; }
+    const a = `version ${S.version} (what you have)`, b = `version ${spec.version} (new)`, dirty = unsent();
+    const k = putCompare({ a: { name: a, label: a, src: S.loaded }, b: { name: b, label: b, src: spec.src }, version: spec.version, label: `version ${S.version} → version ${spec.version}` });
+    closeChanges();
+    cmpEl = document.createElement('div'); cmpEl.className = 'sb-cmp'; cmpEl.setAttribute('role', 'dialog'); cmpEl.setAttribute('aria-label', `Changes in version ${spec.version}`);
+    cmpEl.innerHTML = `<header><b>Version ${S.version} → version ${esc(spec.version)}</b>${dirty ? '<span class="note">Your unsent edits are not in this comparison; reloading replaces them (⌘Z brings them back).</span>' : ''}<span class="spacer"></span>
+      <button class="btn" data-x="back">Back</button><button class="btn primary" data-x="reload">${dirty ? 'Discard my edits and reload' : 'Reload version ' + esc(spec.version)}</button></header>
+      <iframe title="What changed in version ${esc(spec.version)}" src="${location.pathname}?compare=${k}"></iframe>`;
+    cmpEl.addEventListener('click', e => {
+      const x = e.target.closest('[data-x]')?.dataset.x; if (!x) return;
+      closeChanges(); if (x === 'reload') reload(); else versionToast(info);
+    });
+    cmpEl.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeChanges(); versionToast(info); } });
+    document.body.appendChild(cmpEl); cmpEl.querySelector('[data-x="reload"]').focus();
+  }
   // The "new version" toast. It never reloads by itself; with unsaved edits it says so and asks.
-  function versionToast({ version, by, conflict }) {
+  function versionToast(info) {
+    const { version, by, conflict } = info;
     if (S.closed) return;
     hideVersionToast();
+    if (cmpEl) closeChanges(); // a still newer version arrived while the changes were open
     const from = by === 'disk' ? ' (the file changed on disk)' : by === 'user' ? ' (saved from another tab)' : '';
     const msg = conflict ? 'Not saved: the spec changed since this page loaded it.' : `A new version${version ? ' (v' + version + ')' : ''} is available${from}.`;
     // Unsent edits: neither saved nor in a sent review. A sent proposal alone is not at risk: it is in the
@@ -4655,10 +4736,10 @@ SBTEL.modes.server = (() => {
     const dirty = unsent(), prop = S.proposal && !dirty;
     vtEl = document.createElement('div'); vtEl.className = 'sb-vt' + (conflict || dirty ? ' warn' : ''); vtEl.setAttribute('role', 'alertdialog');
     vtEl.innerHTML = `<div>${esc(msg)}${dirty ? ' You have edits that are not saved or sent; reloading replaces them (⌘Z brings them back).' : prop ? ` It may hold the edits you proposed in ${esc(S.proposal.id)}; reloading shows it (⌘Z brings your proposal back).` : ''}</div>
-      <div class="acts"><button class="btn" data-v="later">${dirty ? 'Keep editing' : 'Later'}</button><button class="btn primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button></div>`;
+      <div class="acts"><button class="btn" data-v="later">${dirty ? 'Keep editing' : 'Later'}</button><button class="btn" data-v="diff" title="Look at what changed before you reload">See changes</button><button class="btn primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button></div>`;
     vtEl.addEventListener('click', e => {
       const v = e.target.closest('[data-v]')?.dataset.v; if (!v) return;
-      hideVersionToast(); if (v === 'reload') reload();
+      hideVersionToast(); if (v === 'reload') reload(); if (v === 'diff') seeChanges(info);
     });
     document.body.appendChild(vtEl);
   }
@@ -5631,7 +5712,8 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     // A comparison opened from a spec session's tab (?compare=<key>): the pair comes from that tab.
     if (SBTEL.compare) {
       let data = null;
-      try { const src = window.opener && window.opener.sbtelCompares && window.opener.sbtelCompares[SBTEL.compare]; if (src) data = JSON.parse(JSON.stringify(src)); } catch (e) {}
+      try { const from = window.opener || (window.parent !== window ? window.parent : null); // the tab that opened this one, or the page that frames it
+        const src = from && from.sbtelCompares && from.sbtelCompares[SBTEL.compare]; if (src) data = JSON.parse(JSON.stringify(src)); } catch (e) {}
       if (!data) { versionToast('This comparison was opened from another tab of the session, which has closed or reloaded since. Open it again from there.'); return; }
       open(data);
       return;

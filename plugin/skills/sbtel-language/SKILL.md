@@ -49,8 +49,12 @@ output a lower level has a lower number (`Store (level 1 of App) binds upward to
   same name: `(port :out Item)`, `(port :in Item :as backlog)`. Anchors, query, diff and the viewer use
   that name. The 0.2 form `(port name in Type)` is a lint warning; `sbtel fmt --migrate-ports spec.sbtel`
   rewrites it in place.
-- Names are runs of characters other than whitespace, `( ) " ;`. Dotted names (`Shell.Router`) are
-  only a convention, but use them: block ids must be unique across the whole file.
+- Names are runs of characters other than whitespace, `( ) " ;`. **Name a block what its reader would
+  call it**; no style is required. A directory or a file is best written as its path (`src/store/`,
+  `src/store.ts`), a function as its name without the parentheses (`parseNote`), a service as it is
+  called in the deploy (`billing-api`), a concept as its word. A dotted or CamelCase name
+  (`Shell.Router`) suits a module that is called that in the code, and is not a rule. Block ids must
+  be unique across the whole file, so qualify a name only where two blocks would otherwise share it.
 - The file is an unnamed root block. Top-level blocks sit in its levels, and top-level messages and
   behaviors are visible everywhere.
 - **Scope**: a message type or behavior declared in block D is usable in D and everything inside D,

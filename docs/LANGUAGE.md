@@ -83,8 +83,9 @@ language.
   form `(port name in Type)` is reported; `sbtel fmt --migrate-ports` rewrites it.
 - **`:type`** grounds a block, a behavior or a message type in code: what it is there (a module, a
   trait, a struct…). It shows as a pill. Keep the kinds consistent within a spec.
-- **Names** are any run of characters without whitespace, `(`, `)`, `"` or `;`. Dots (`Shell.Router`)
-  are a naming convention only. Duplicate block names get ids `Name#2`, `Name#3`… and a warning.
+- **Names** are any run of characters without whitespace, `(`, `)`, `"` or `;`, so a path
+  (`src/store.ts`), a kebab-case service (`billing-api`) and a dotted name (`Shell.Router`) are all
+  names. No style is required: name a block what its reader would call it. Duplicate block names get ids `Name#2`, `Name#3`… and a warning.
 
 **Checks** (`sbtel lint`): parse errors; model warnings (duplicates, two ports with one name, bad port
 direction, `adjacent` with fewer than 2 members, empty level, the old `(layer …)`, `(either …)` and

@@ -48,10 +48,10 @@ Sbtel.Server.Launch -> Sbtel.Server.Detach  # internal/server/browser.go:37
 Sbtel.Server.Client -> Sbtel.State  # internal/server/client.go:32 (+21 more)
 Sbtel.Server.Client -> Sbtel.Server.Detach  # internal/server/client.go:212
 Sbtel.Server.Routes -> Sbtel.Server.Core  # internal/server/http.go:33 (+23 more)
-Sbtel.Server.Routes -> Sbtel.State  # internal/server/http.go:68 (+20 more)
-Sbtel.Server.Routes -> Sbtel.Server.Sessions  # internal/server/http.go:99 (+26 more)
-Sbtel.Server.Routes -> Sbtel.Server.Fanout  # internal/server/http.go:131 (+1 more)
-Sbtel.Server.Routes -> Sbtel.Server.Lifecycle  # internal/server/http.go:246
+Sbtel.Server.Routes -> Sbtel.State  # internal/server/http.go:70 (+20 more)
+Sbtel.Server.Routes -> Sbtel.Server.Sessions  # internal/server/http.go:101 (+26 more)
+Sbtel.Server.Routes -> Sbtel.Server.Fanout  # internal/server/http.go:133 (+1 more)
+Sbtel.Server.Routes -> Sbtel.Server.Lifecycle  # internal/server/http.go:248
 Sbtel.Server.Core -> DiffsSpecs  # internal/server/server.go:40
 Sbtel.Server.Core -> Sbtel.State  # internal/server/server.go:52 (+1 more)
 # VIOLATION: the Server struct holds map[string]*session (and New makes it), so the shared core names the

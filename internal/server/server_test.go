@@ -145,7 +145,7 @@ func TestSecurityHeadersAndRouting(t *testing.T) {
 	}
 	for _, p := range []string{"/", "/s/" + id + "/", "/s/" + id + "/meta", "/s/" + id + "/spec", "/s/" + id + "/log"} {
 		resp, _ := h.req("GET", p, "", nil)
-		want := map[string]string{"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY"}
+		want := map[string]string{"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "X-Frame-Options": "SAMEORIGIN"}
 		for k, v := range want {
 			if got := resp.Header.Get(k); got != v {
 				t.Errorf("%s: %s = %q, want %q", p, k, got, v)

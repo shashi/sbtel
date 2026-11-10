@@ -33,6 +33,12 @@ SBTEL.modes.server = (() => {
 .sb-vt { position:fixed; left:50%; transform:translateX(-50%); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 46px); z-index:2950; background:var(--panel); color:var(--ink); border:1px solid var(--panel-line); border-left:3px solid var(--accent); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.45; box-shadow:0 14px 40px var(--shadow); width:max-content; max-width:min(460px, calc(100vw - 32px)); box-sizing:border-box; }
 .sb-vt.warn { border-left-color:var(--warn); }
 .sb-vt .acts { display:flex; gap:6px; justify-content:flex-end; margin-top:8px; flex-wrap:wrap; }
+.sb-cmp { position:fixed; inset:0; z-index:2940; background:var(--canvas); display:flex; flex-direction:column; }
+.sb-cmp header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--panel-line); font-size:14px; }
+.sb-cmp header b { font-weight:600; }
+.sb-cmp header .note { color:var(--muted); font-size:12.5px; }
+.sb-cmp header .spacer { flex:1; }
+.sb-cmp iframe { flex:1; width:100%; border:0; min-height:0; }
 .tb.sb-save:disabled { opacity:.55; }
 .sb-ow p { margin:0 0 10px; line-height:1.5; }
 .sb-ow .muted { color:var(--muted); font-size:13px; }
@@ -48,10 +54,34 @@ SBTEL.modes.server = (() => {
     barEl.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>`;
   }
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
+  // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.
+  // Nothing is replaced until Reload is pressed there; Back returns to the page as it was, with the toast.
+  let cmpEl = null;
+  function closeChanges() { cmpEl?.remove(); cmpEl = null; }
+  async function seeChanges(info) {
+    let spec;
+    try { spec = await getJSON('spec'); } catch (e) { toast('Could not load the new version: the sbtel server is not answering.'); versionToast(info); return; }
+    if (spec.src === S.loaded) { toast(`Version ${spec.version} has the same text as version ${S.version}.`); versionToast(info); return; }
+    const a = `version ${S.version} (what you have)`, b = `version ${spec.version} (new)`, dirty = unsent();
+    const k = putCompare({ a: { name: a, label: a, src: S.loaded }, b: { name: b, label: b, src: spec.src }, version: spec.version, label: `version ${S.version} → version ${spec.version}` });
+    closeChanges();
+    cmpEl = document.createElement('div'); cmpEl.className = 'sb-cmp'; cmpEl.setAttribute('role', 'dialog'); cmpEl.setAttribute('aria-label', `Changes in version ${spec.version}`);
+    cmpEl.innerHTML = `<header><b>Version ${S.version} → version ${esc(spec.version)}</b>${dirty ? '<span class="note">Your unsent edits are not in this comparison; reloading replaces them (⌘Z brings them back).</span>' : ''}<span class="spacer"></span>
+      <button class="btn" data-x="back">Back</button><button class="btn primary" data-x="reload">${dirty ? 'Discard my edits and reload' : 'Reload version ' + esc(spec.version)}</button></header>
+      <iframe title="What changed in version ${esc(spec.version)}" src="${location.pathname}?compare=${k}"></iframe>`;
+    cmpEl.addEventListener('click', e => {
+      const x = e.target.closest('[data-x]')?.dataset.x; if (!x) return;
+      closeChanges(); if (x === 'reload') reload(); else versionToast(info);
+    });
+    cmpEl.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeChanges(); versionToast(info); } });
+    document.body.appendChild(cmpEl); cmpEl.querySelector('[data-x="reload"]').focus();
+  }
   // The "new version" toast. It never reloads by itself; with unsaved edits it says so and asks.
-  function versionToast({ version, by, conflict }) {
+  function versionToast(info) {
+    const { version, by, conflict } = info;
     if (S.closed) return;
     hideVersionToast();
+    if (cmpEl) closeChanges(); // a still newer version arrived while the changes were open
     const from = by === 'disk' ? ' (the file changed on disk)' : by === 'user' ? ' (saved from another tab)' : '';
     const msg = conflict ? 'Not saved: the spec changed since this page loaded it.' : `A new version${version ? ' (v' + version + ')' : ''} is available${from}.`;
     // Unsent edits: neither saved nor in a sent review. A sent proposal alone is not at risk: it is in the
@@ -59,10 +89,10 @@ SBTEL.modes.server = (() => {
     const dirty = unsent(), prop = S.proposal && !dirty;
     vtEl = document.createElement('div'); vtEl.className = 'sb-vt' + (conflict || dirty ? ' warn' : ''); vtEl.setAttribute('role', 'alertdialog');
     vtEl.innerHTML = `<div>${esc(msg)}${dirty ? ' You have edits that are not saved or sent; reloading replaces them (⌘Z brings them back).' : prop ? ` It may hold the edits you proposed in ${esc(S.proposal.id)}; reloading shows it (⌘Z brings your proposal back).` : ''}</div>
-      <div class="acts"><button class="btn" data-v="later">${dirty ? 'Keep editing' : 'Later'}</button><button class="btn primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button></div>`;
+      <div class="acts"><button class="btn" data-v="later">${dirty ? 'Keep editing' : 'Later'}</button><button class="btn" data-v="diff" title="Look at what changed before you reload">See changes</button><button class="btn primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button></div>`;
     vtEl.addEventListener('click', e => {
       const v = e.target.closest('[data-v]')?.dataset.v; if (!v) return;
-      hideVersionToast(); if (v === 'reload') reload();
+      hideVersionToast(); if (v === 'reload') reload(); if (v === 'diff') seeChanges(info);
     });
     document.body.appendChild(vtEl);
   }

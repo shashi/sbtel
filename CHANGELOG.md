@@ -3,6 +3,30 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
+## Unreleased
+
+### Changed
+
+- **Comments are a chat.** A block's comments and the box to write one are now a single popover: the
+  thread, scrolled to its newest message, over an input. It stays open after you send, and the agent's
+  replies appear in it as they arrive. ⌘/Ctrl+Enter sends the comment now; Shift+Enter adds it to your
+  review (Save, in the standalone page); Enter is a new line. Send is the primary button and Add to
+  review the secondary one. Text you typed but did not send comes back when you open the chat again.
+  On a phone the chat is a sheet at the bottom, above the keyboard.
+- Comment text is larger (15px; 16px for the input on touch screens, where a smaller one makes iOS zoom
+  the page).
+- The server sends `X-Frame-Options: SAMEORIGIN` instead of `DENY`, so the page can frame its own diff
+  view. No other origin can frame it.
+- Skills and reference: block names need no particular style. A directory or file is best named by its
+  path; the sbtel-language skill no longer tells agents to use dotted names.
+
+### Added
+
+- **Unread replies.** A reply that arrives while its chat is closed puts a dot on the block's comment
+  count until you open the chat. What you have read is remembered per session.
+- **See changes.** The new-version toast has a second button beside Reload: it shows the diff between
+  the version you have and the one that arrived, over the page, with Back and Reload.
+
 ## 0.3.0 (2026-11-08)
 
 Ports are named after their type.

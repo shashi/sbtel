@@ -887,7 +887,8 @@ is the session's `tabs`.
   - `X-Content-Type-Options: nosniff`;
   - `Referrer-Policy: no-referrer`, so the capability URL never leaks through a link the page opens
     (the page itself requests nothing outside the server, §6.5);
-  - `X-Frame-Options: DENY`;
+  - `X-Frame-Options: SAMEORIGIN` (no other origin may frame a page; the page frames its own diff view for
+    "See changes", §6.3);
   - `Cross-Origin-Resource-Policy: same-origin` (an extra: other origins cannot even embed responses).
 - `/` lists nothing (404).
 - Control bodies (§5.3) are limited to 64 MiB, like browser writes. (Before the integration pass browser
@@ -965,8 +966,16 @@ equal `viewer/test/expected.txt`, which were recorded on the frozen Marquee page
 
 The UI behaviour is as follows (v0.2.1: reviews, §6.7).
 
-- **The composer** offers **Add to review** (primary; ⌘Enter) and **Send now**. Add to review keeps
-  the comment as `pending` in the draft review; Send now posts it to `comment` at once, as before.
+- **The chat** (v0.3.1; before it, a composer and a separate thread). A target's comments are one popover:
+  the thread, scrolled to its newest message, over an input, with **Send** (primary; ⌘/Ctrl+Enter) and
+  **Add to review** (Shift+Enter). Send posts the comment to `comment` at once; Add to review keeps it as
+  `pending` in the draft review. Enter is a new line. The chat stays open after either, the agent's
+  replies appear in it as they arrive, and unsent text is kept for the target while the page lives. On a
+  screen narrower than 760px it is a sheet at the bottom, lifted above the on-screen keyboard.
+- **Unread replies** (v0.3.1). A reply that arrives while its target's chat is closed puts a dot on the
+  comment count (`.cbub.unread`) until the chat is opened. What has been read is kept in localStorage
+  per session (`sbtel-read:<id>`: comment id to the number of replies read), and is dropped with the
+  session's other keys. On the first load of a session in a browser, what is already there is read.
 - **Review (N)**, the primary action, at the end of the dock: N is the pending comments plus the
   edits (the changes `diffSpecs` finds since the draft's base, at least 1 when the text differs), hidden
   at 0. It opens the Review panel (§6.7). Send review posts `review`.
@@ -981,8 +990,13 @@ The UI behaviour is as follows (v0.2.1: reviews, §6.7).
 - **SSE `version`** shows a toast: "A new version is available" with a **Reload** action (and
   "Discard my edits and reload" when there are unsent edits; with only a sent proposal, it says the
   version may hold it). Reload refetches `spec` and calls `setSource`,
-  keeping the open blocks and the camera. The page never reloads by itself.
-- **SSE `reply`** shows the reply under its comment thread, plus a toast.
+  keeping the open blocks and the camera. The page never reloads by itself. **See changes** (v0.3.1), beside
+  Reload, fetches `spec` and shows the diff view of the tab's loaded version against it, in a frame over
+  the page (`?compare=<key>`, §6.1; the frame reads the pair from its parent, as a compare tab reads it
+  from its opener), under a bar with **Back** (the page as it was, and the toast again) and **Reload**.
+  Unsent edits are not part of that comparison, and the bar says so.
+- **SSE `reply`** shows the reply under its comment in the chat; when that chat is closed, a toast and
+  the unread dot.
 - **SSE `closed`** shows a banner: the session is closed and the page is read-only.
 - **Bindings**: when `meta.bindings` is set, fetch `bindings`, run `bindingVerdict` (core) on each
   edge, and list the violations in the checks popover.
@@ -1052,7 +1066,7 @@ page shows one picture, side b's layout with ghosts (§11, entry 23):
   A side that does not parse shows an error card.
 
 The diff view is read-only: no edits, drags, links, menus that edit, or save. In a diff session the
-composer offers Add to review and Send now, and the Review panel holds comments and a message, never
+chat offers Send and Add to review, and the Review panel holds comments and a message, never
 edits (§6.7). A comparison page (`?compare=`, §6.1) has no session: no comments, no review. SSE `version` (from
 `open-diff --session`) shows a toast with Reload, and Reload refetches `diff.json`, keeping the
 camera and what the reader opened. Comments post to `comment` as in server mode. Their `target` keys
@@ -1078,7 +1092,8 @@ uses Playwright, which is not a repo dependency.
   (`changeItems`, `changeListHTML`, `changeSummaryHTML`, `changeLines`, `runsHTML`, `changesStyle`,
   region `Viewer.Changes`). session.js defines `sessionComments({ version,
   closed })`, which both modes call; its `hook()` reassigns `saveComments`, `openSend`,
-  `commentCounts` and `openThread`, and `rebuild(events)` and `onReply(d)` take the log and SSE. They share its scope: `state`, `$`, `SBTEL`, the core functions and the app's functions.
+  `commentCounts` and the chat's row hooks (`chatStatus`, `chatRowBtns`, `chatReplies`; `openChat` to
+  mark replies read), and `rebuild(events)` and `onReply(d)` take the log and SSE. They share its scope: `state`, `$`, `SBTEL`, the core functions and the app's functions.
 - A module MUST do nothing at load when `SBTEL.mode` is not its mode, apart from registering
   `SBTEL.modes.<mode>`.
 - To change app behaviour, a module reassigns top-level **function declarations**, for example
@@ -1088,7 +1103,7 @@ uses Playwright, which is not a repo dependency.
   and `targetSource(key)`. Server mode also reassigns `behaviorUsers` (v0.2.2: the blocks whose loaded bindings bind a behavior; §6.8), `openThread`, `commentCounts`, `renderChecks`
   and `showChecks` (any top-level function declaration works the same way; `openThread` and
   `commentCounts` through session.js, in both modes; review.js, in both modes, reassigns
-  `openComposer`, `openThread`, `saveComments`, `renderSendBtn`, `paint` and `fillBlock`, the last two
+  `openComposer`, the chat's `chatKeep`, `chatAdd`, `chatStatus` and `chatRowBtns`, `saveComments`, `renderSendBtn`, `paint` and `fillBlock`, the last two
   for the pending badges). Diff mode also
   reassigns `pressStart`, `startLink`, `openEdit`, `askDelete`, `askDeleteMany`, `cutSelected`,
   `menuItems`, `renderStrip`, `openCode`, `renderMsgTable`, `openMessages`, `openComposer` and

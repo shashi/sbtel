@@ -33,7 +33,9 @@ graph) and [annotations.md](annotations.md) (the forms, existing annotations, mo
   port or adjacent group a sketch, only when the code makes it evident (a package doc, a directory, a
   README section, a type's comment); never invent one. Record `(carries …)` only where the code's data
   types really contain one another. Give each block a `:type` naming the kind of code artifact it maps
-  to (`"Package"`, `"File"`, `"Function"`…), consistently. One sentence per sketch; none where the
+  to (`"Package"`, `"File"`, `"Function"`…), consistently. Name each block as the code names the thing: a
+  directory or file by its path from the repository root (`internal/server/`, `cmd/sbtel/main.go`), a
+  package, type or function by its own name. Do not turn paths into CamelCase. One sentence per sketch; none where the
   structure already says it.
 - **Ask before mass edits.** Annotating means editing many source files (comment lines only). Confirm
   the scope with the user first, and keep the annotations in their own commit when they want commits.

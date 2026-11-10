@@ -5,11 +5,28 @@
 // into its thread as well as a toast. Inlined by viewer/build.mjs after the app and before server.js
 // and diff.js; at load it only defines sessionComments, so standalone mode is untouched.
 function sessionComments({ version, closed }) {
-  const C = { thread: null, seenReplies: new Set(), reviews: [], listeners: [] };
+  const C = { read: null, seenReplies: new Set(), reviews: [], listeners: [] };
   const changed = () => C.listeners.forEach(f => f());
   const CSS = `
-.sb-reply { margin-top:7px; padding:6px 8px; border-radius:7px; background:var(--accent-soft); white-space:pre-wrap; }
-.sb-reply .who { display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:2px; }`;
+.sb-reply { margin-top:7px; overflow-wrap:anywhere; line-height:1.45; padding:6px 8px; border-radius:7px; background:var(--accent-soft); white-space:pre-wrap; }
+.sb-reply .who { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:2px; }`;
+  // Replies read so far: { comment id: how many of its replies the reader has seen }, kept per session, so a
+  // reply that arrived while its chat was closed puts a dot on the count until the chat is opened.
+  const RKEY = SBTEL.session ? 'sbtel-read:' + SBTEL.session : null;
+  const unread = c => !!c.sid && (c.replies || []).length > ((C.read || {})[c.sid] || 0);
+  function markUnread(root) {
+    const u = new Set(state.comments.filter(unread).map(c => c.target));
+    (root || document).querySelectorAll('.cbub[data-thread]').forEach(b => {
+      const on = u.has(b.dataset.thread); if (on === b.classList.contains('unread')) return;
+      b.classList.toggle('unread', on);
+      const l = (b.getAttribute('aria-label') || '').replace(/, new reply$/, ''); if (l) b.setAttribute('aria-label', l + (on ? ', new reply' : ''));
+    });
+  }
+  function markRead(key) {
+    let ch = false; C.read = C.read || {};
+    state.comments.forEach(c => { if (c.target === key && unread(c)) { C.read[c.sid] = c.replies.length; ch = true; } });
+    if (ch) { if (RKEY) store.set(RKEY, C.read); markUnread(); }
+  }
   const errText = async res => { try { return (await res.json()).error || 'HTTP ' + res.status; } catch (e) { return 'HTTP ' + res.status; } };
 
   // state.comments from the log's comment, review and reply events, plus this tab's unsent drafts (the
@@ -31,6 +48,8 @@ function sessionComments({ version, closed }) {
       last = Math.max(last, e.seq || 0);
     });
     state.comments = list.concat(drafts);
+    // The first load of a session in this browser: what is already there counts as read.
+    if (!C.read) { C.read = RKEY ? store.get(RKEY, null) : null; if (!C.read) { C.read = {}; list.forEach(c => { C.read[c.sid] = c.replies.length; }); } }
     C.reviews = [...revs.values()];
     changed();
     return last;
@@ -40,7 +59,7 @@ function sessionComments({ version, closed }) {
     let sent = 0, failed = '';
     for (const c of list) {
       const was = c.status;
-      c.status = 'sending';
+      c.status = 'sending'; refreshChat();
       try {
         const res = await fetch(SBTEL.base + 'comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target: c.target, targetLabel: targetLabel(c.target), text: c.text, version: version(), source: targetSource(c.target) }) });
         if (!res.ok) throw new Error(await errText(res));
@@ -48,9 +67,9 @@ function sessionComments({ version, closed }) {
         c.status = 'sent'; c.sid = c.id = j.id; c.replies = c.replies || []; sent++;
       } catch (e) { c.status = was === 'pending' ? 'pending' : 'saved'; failed = e.message === 'Failed to fetch' ? 'the sbtel server is not answering' : e.message; }
     }
-    saveComments(); render(); renderMsgTableIfOpen();
+    saveComments(); render(); refreshChat(); renderMsgTableIfOpen();
     if (failed) toast(`Could not send ${list.length - sent} comment${list.length - sent === 1 ? '' : 's'}: ${failed}. ${sent ? sent + ' sent.' : 'They are kept in your review.'}`);
-    else toast(`Sent ${sent} comment${sent === 1 ? '' : 's'} to the agent.`);
+    else if (!(list.length === 1 && chatOpen(list[0].target))) toast(`Sent ${sent} comment${sent === 1 ? '' : 's'} to the agent.`); // an open chat already says so
   }
   // SSE `reply`: {seq, to, text, at}.
   function onReply(d) {
@@ -62,13 +81,9 @@ function sessionComments({ version, closed }) {
     const c = state.comments.find(x => x.sid === d.to);
     if (!c) return;
     (c.replies = c.replies || []).push({ text: d.text, at: Date.parse(d.at) || Date.now() });
-    render(); changed();
-    toast(`Agent replied on ${targetLabel(c.target)}: ${short}`);
-    if (pops.thread && C.thread && C.thread.key === c.target) {
-      const { left, top } = pops.thread.style;
-      openThread(c.target, C.thread.anchor);
-      if (pops.thread) { pops.thread.style.left = left; pops.thread.style.top = top; }
-    }
+    if (chatOpen(c.target)) markRead(c.target); // it is being read now
+    render(); refreshChat(); markUnread(); changed(); // explicitly: diff mode draws with its own render
+    if (!chatOpen(c.target)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
   }
   // The app hooks (§6.5). Call once, from the mode's boot().
   function hook() {
@@ -77,20 +92,15 @@ function sessionComments({ version, closed }) {
     openSend = list => send(list);
     // Sent comments stay visible (their threads carry the agent's replies).
     commentCounts = () => { const c = {}; state.comments.forEach(x => { c[x.target] = (c[x.target] || 0) + 1; }); return c; };
-    const origThread = openThread;
-    openThread = (key, anchor) => {
-      C.thread = { key, anchor };
-      origThread(key, anchor);
-      const el = pops.thread; if (!el) return;
-      const list = state.comments.filter(c => c.target === key);
-      el.querySelectorAll('ul.thread > li').forEach((li, i) => {
-        const c = list[i]; if (!c) return;
-        if (c.status === 'sent') { li.querySelector('[data-t="del"]')?.remove(); const s = li.querySelector('.st-sent'); if (s) s.textContent = c.review ? 'Sent in review ' + c.review : 'Sent to the agent'; }
-        if (c.status === 'sending') { const s = li.querySelector('.st-sending'); if (s) s.textContent = 'Sending…'; }
-        (c.replies || []).forEach(r => li.insertAdjacentHTML('beforeend', `<div class="sb-reply"><span class="who">Agent</span>${esc(r.text)}</div>`));
-      });
-      placeNear(el, anchor && anchor.isConnected !== false && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : el.getBoundingClientRect());
-    };
+    // The chat's rows: a sent comment says how it went, cannot be deleted, and carries the agent's replies.
+    const status0 = chatStatus, btns0 = chatRowBtns;
+    chatStatus = c => c.status === 'sent' ? ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent to the agent'] : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
+    chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
+    chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent</span>${esc(r.text)}</div>`).join('');
+    // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
+    const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
+    const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };
+    const open0 = openChat; openChat = (key, anchor, focus) => { open0(key, anchor, focus); markRead(key); };
   }
   // The reviews sent in this session (from the log, and from this tab), and a listener for changes to
   // them or to the comments' threads (the Review panel's "Sent reviews").

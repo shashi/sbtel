@@ -267,6 +267,7 @@ for (const scheme of ['light', 'dark']) {
   // A comment on side b's block posts to the session.
   await p.evaluate(() => select('Back', null)); await p.waitForTimeout(200);
   await p.click('.strip [data-a="comment"]'); await p.fill('#cmtText', 'Why swap these?'); await p.click('.pop [data-c="send"]'); await p.waitForTimeout(600);
+  ok(await p.evaluate(() => { const c = document.querySelector('.pop.chat'); const had = !!c && c.textContent.includes('Why swap these?'); closePop('thread'); return had; }), 'server: the chat stays open after Send, with the comment in it');
   const c0 = posts[0] && posts[0].body;
   ok(c0 && c0.target === 'block:Back' && c0.text === 'Why swap these?' && c0.version === 2 && c0.source.startsWith('(block Back') && posts[0].type === 'application/json', 'server: comment posted with side b source', posts);
   // The sent comment keeps its bubble (it is not dropped because it is sent), and an agent reply over

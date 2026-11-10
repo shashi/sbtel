@@ -724,7 +724,8 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     // A comparison opened from a spec session's tab (?compare=<key>): the pair comes from that tab.
     if (SBTEL.compare) {
       let data = null;
-      try { const src = window.opener && window.opener.sbtelCompares && window.opener.sbtelCompares[SBTEL.compare]; if (src) data = JSON.parse(JSON.stringify(src)); } catch (e) {}
+      try { const from = window.opener || (window.parent !== window ? window.parent : null); // the tab that opened this one, or the page that frames it
+        const src = from && from.sbtelCompares && from.sbtelCompares[SBTEL.compare]; if (src) data = JSON.parse(JSON.stringify(src)); } catch (e) {}
       if (!data) { versionToast('This comparison was opened from another tab of the session, which has closed or reloaded since. Open it again from there.'); return; }
       open(data);
       return;

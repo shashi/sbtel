@@ -418,11 +418,28 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 
 .strip { position:fixed; z-index:1100; display:flex; gap:2px; padding:4px; border-radius:11px; background:var(--panel); border:1px solid var(--panel-line); box-shadow:0 8px 24px var(--shadow); }
 .strip .tb { height:30px; min-width:30px; font-size:12.5px; padding:0 8px; }
-.composer textarea { width:min(300px, calc(100vw - 60px)); min-height:84px; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:8px; padding:8px 10px; font:inherit; font-size:13.5px; background:var(--surface); color:var(--ink); resize:vertical; display:block; }
-.thread { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; max-height:40vh; overflow:auto; }
+/* Comments on one target: a chat. The thread scrolls, newest at the bottom, over the input. Its copy is a size
+   up from the cards' sketches, since the popover does not zoom with the canvas. */
+.pop.chat { width:min(380px, calc(100vw - 24px)); max-width:none; box-sizing:border-box; padding:10px 12px 12px; font-size:15px; }
+.pop.chat .chh { display:flex; align-items:center; gap:8px; }
+.pop.chat .chh .xbtn { width:28px; height:28px; margin:-4px -6px -4px auto; }
+.composer textarea { width:100%; min-height:64px; max-height:30vh; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:8px; padding:8px 10px; font:inherit; font-size:15px; line-height:1.45; background:var(--surface); color:var(--ink); resize:vertical; display:block; margin-top:8px; }
+.composer textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+@media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
+.pop.chat .acts { align-items:center; justify-content:flex-end; }
+.pop.chat .keys { margin-right:auto; font-size:11.5px; color:var(--muted); white-space:nowrap; }
+.thread { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; max-height:min(44vh, 420px); overflow:auto; overscroll-behavior:contain; }
 .thread li { border:1px solid var(--panel-line); border-radius:9px; padding:8px 10px; background:var(--surface); }
-.thread .ct { white-space:pre-wrap; }
-.thread .cm { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:11.5px; color:var(--muted); }
+.thread li.none { border:0; background:none; padding:2px 0; color:var(--muted); font-size:13.5px; }
+.thread .ct { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.45; }
+.thread .cm { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12px; color:var(--muted); }
+/* A reply nobody has read yet: a dot on the count. */
+.cbub.unread::after { content:""; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--canvas); }
+@media (max-width: 759px) {
+  .pop.chat { left:8px !important; right:8px; top:auto !important; bottom:calc(8px + var(--kb, 0px)); width:auto; }
+  .pop.chat .keys { display:none; }
+  .thread { max-height:32vh; }
+}
 .st-saved { color:var(--accent); font-weight:600; }
 .st-sent { color:var(--ok); font-weight:600; }
 .tiny { border:0; background:none; color:var(--muted); cursor:pointer; font-size:11.5px; padding:2px 4px; border-radius:5px; }
@@ -1313,7 +1330,6 @@ function placeStrip() {
   y = Math.max(64, Math.min(y, innerHeight - h - 76));
   x = Math.max(12, Math.min(x, innerWidth - w - 12));
   strip.style.left = x + 'px'; strip.style.top = y + 'px';
-  if (composerPop && composerPop.isConnected) placeNear(composerPop, r);
 }
 function cutSelected() {
   const c = state.selLine && state.lay.connectors.find(c => connectorKey(c) === state.selLine); if (!c) return;
@@ -2164,37 +2180,80 @@ function anchorFor(key) {
   if (kind === 'line') return document.querySelector(`#lines path.vis[data-key="${CSS.escape(rest)}"]`);
   if (kind === 'msg') return state.elems.get('μ:' + rest) || document.querySelector(`#msgRows tr[data-name="${CSS.escape(rest)}"]`);
 }
-let composerPop = null;
-function openComposer(key, anchor) {
-  closePop('info');
-  const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 150, innerHeight / 3, 300, 0) };
-  const el = pop('composer', a, `<div class="kind">Comment on ${esc(targetLabel(key))}</div>
-    <div class="composer" style="margin-top:6px"><textarea id="cmtText" placeholder="What should change, or what is unclear?"></textarea></div>
-    <div class="acts" style="justify-content:flex-end"><button class="btn" data-c="cancel">Cancel</button><button class="btn" data-c="save">Save</button><button class="btn primary" data-c="send">Send</button></div>`);
-  composerPop = el;
-  const ta = el.querySelector('textarea'); setTimeout(() => ta.focus(), 30);
-  el.addEventListener('click', e => {
-    const c = e.target.closest('[data-c]')?.dataset.c; if (!c) return;
-    if (c === 'cancel') { closePop('composer'); return; }
-    const text = ta.value.trim(); if (!text) { ta.focus(); return; }
-    const cm = { id:Date.now().toString(36), target:key, text, status:'saved', version:version(), at:Date.now() };
-    state.comments.push(cm); saveComments(); closePop('composer'); render();
-    if (c === 'send') openSend([cm]); else toast('Comment saved. Send it from the toolbar when you are ready.');
-  });
-  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) el.querySelector('[data-c="save"]').click(); });
+// One chat per target: its comments, newest at the bottom, over an input. ⌘/Ctrl+Enter sends the comment now;
+// Shift+Enter keeps it for later (Save here, Add to review in a session). The chat stays open after either,
+// and text that was typed but not sent comes back when the chat is opened again.
+let chat = null; // { key, el }
+const chatDrafts = new Map();
+// What a mode changes (§6.5): the secondary action, what a new comment becomes, and a row's status
+// ([class, text, title]), buttons and replies.
+let chatKeep = () => ({ c:'save', label:'Save', title:'Keep it here and send it later from the toolbar (Shift+Enter)' });
+let chatAdd = (key, text, how) => {
+  const cm = { id:Date.now().toString(36) + Math.random().toString(36).slice(2, 5), target:key, text, status:'saved', version:version(), at:Date.now() };
+  state.comments.push(cm); saveComments(); render();
+  if (how === 'send') openSend([cm]); else toast('Comment saved. Send it from the toolbar when you are ready.');
+};
+let chatStatus = c => c.status === 'sent' ? ['st-sent', 'Sent'] : ['st-saved', 'Saved'];
+let chatRowBtns = c => (c.status === 'saved' ? `<button class="tiny" data-t="send" data-id="${esc(c.id)}">Send</button>` : '') + `<button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>`;
+let chatReplies = c => '';
+function chatRow(c) {
+  const [cls, text, title] = chatStatus(c);
+  return `<li data-id="${esc(c.id)}"><div class="ct">${esc(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
-function openThread(key, anchor) {
-  const list = state.comments.filter(c => c.target === key);
-  const el = pop('thread', anchor, `<div class="kind">Comments on ${esc(targetLabel(key))}</div>
-    <ul class="thread">${list.map(c => `<li><div class="ct">${esc(c.text)}</div><div class="cm"><span class="st-${c.status}">${c.status === 'sent' ? 'Sent' : 'Saved'}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${c.status === 'saved' ? `<button class="tiny" data-t="send" data-id="${c.id}">Send</button>` : ''}<button class="tiny" data-t="del" data-id="${c.id}">Delete</button></div></li>`).join('')}</ul>
-    <div class="acts" style="justify-content:flex-end"><button class="btn" data-t="add">Add comment</button></div>`);
-  el.addEventListener('click', e => {
-    const b = e.target.closest('[data-t]'); if (!b) return;
-    if (b.dataset.t === 'add') { openComposer(key, anchor); return; }
-    const c = state.comments.find(x => x.id === b.dataset.id);
-    if (b.dataset.t === 'del') { state.comments = state.comments.filter(x => x !== c); saveComments(); closePop('thread'); render(); if (key.startsWith('msg:')) renderMsgTable(); }
-    if (b.dataset.t === 'send') { closePop('thread'); openSend([c]); }
+const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || chat.key === key));
+// Draw the open chat's thread again and show its end; the popover and what is typed in it stay.
+function refreshChat() {
+  if (!chatOpen()) { chat = null; return; }
+  const el = chat.el, ul = el.querySelector('ul.thread'), list = state.comments.filter(c => c.target === chat.key);
+  ul.innerHTML = list.map(chatRow).join('') || '<li class="none">No comments here yet.</li>';
+  ul.scrollTop = ul.scrollHeight;
+  const r = el.getBoundingClientRect();
+  if (r.bottom > innerHeight - 8 && innerWidth >= 760) el.style.top = Math.max(8, innerHeight - r.height - 8) + 'px';
+}
+function openChat(key, anchor, focus) {
+  closePop('info');
+  if (chatOpen(key)) { if (focus) chat.el.querySelector('textarea').focus(); return; }
+  const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 190, innerHeight / 3, 380, 0) };
+  const keep = chatKeep(), mac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+  const el = pop('thread', a, `<div class="chh"><span class="kind">Comments on ${esc(targetLabel(key))}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
+    <ul class="thread" aria-live="polite"></ul>
+    <div class="composer"><textarea id="cmtText" rows="2" placeholder="What should change, or what is unclear?" aria-label="Comment on ${esc(targetLabel(key))}"></textarea></div>
+    <div class="acts"><span class="keys">${mac ? '⌘' : 'Ctrl+'}Enter sends · Shift+Enter: ${esc(keep.label.toLowerCase())}</span><button class="btn" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div>`, 'chat');
+  chat = { key, el };
+  const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
+  refreshChat(); placeNear(el, a.getBoundingClientRect());
+  if (focus) setTimeout(() => { if (chatOpen(key)) ta.focus(); }, 30);
+  const submit = how => {
+    const text = ta.value.trim(); if (!text) { ta.focus(); return; }
+    ta.value = ''; chatDrafts.delete(key);
+    chatAdd(key, text, how); refreshChat();
+    if (chatOpen(key)) ta.focus();
+  };
+  ta.addEventListener('input', () => { if (ta.value.trim()) chatDrafts.set(key, ta.value); else chatDrafts.delete(key); });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePop('thread'); return; }
+    if (e.key !== 'Enter' || e.isComposing) return;
+    if (e.metaKey || e.ctrlKey) { e.preventDefault(); submit('send'); }
+    else if (e.shiftKey) { e.preventDefault(); submit('keep'); }
   });
+  el.addEventListener('click', e => {
+    const c = e.target.closest('[data-c]')?.dataset.c; if (c) { submit(c === 'send' ? 'send' : 'keep'); return; }
+    const b = e.target.closest('[data-t]'); if (!b) return;
+    if (b.dataset.t === 'close') { closePop('thread'); return; }
+    const cm = state.comments.find(x => x.id === b.dataset.id); if (!cm) return;
+    if (b.dataset.t === 'del') { state.comments = state.comments.filter(x => x !== cm); saveComments(); render(); refreshChat(); if (key.startsWith('msg:')) renderMsgTable(); }
+    if (b.dataset.t === 'send') openSend([cm]);
+  });
+}
+// Comment on a thing (the input has the focus), or read its thread (on a touch screen the keyboard stays down).
+function openComposer(key, anchor) { openChat(key, anchor, true); }
+function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: coarse)').matches); }
+// Every full render draws the open chat again: a comment was added, sent or answered.
+{ const draw = render; render = (anchorId, pv) => { draw(anchorId, pv); if (!pv) refreshChat(); }; }
+// On a phone the chat is a sheet at the bottom; --kb lifts it above the on-screen keyboard.
+if (window.visualViewport) {
+  const kb = () => document.documentElement.style.setProperty('--kb', Math.max(0, Math.round(innerHeight - visualViewport.height - visualViewport.offsetTop)) + 'px');
+  visualViewport.addEventListener('resize', kb); visualViewport.addEventListener('scroll', kb);
 }
 function renderSendBtn() {
   const n = state.comments.filter(c => c.status === 'saved').length;
@@ -2492,7 +2551,7 @@ addEventListener('keydown', e => {
 });
 document.addEventListener('pointerdown', e => {
   if (e.target.closest('.pop, .strip, .dock, [data-thread], [data-msg], [data-beh], .ulink, [data-cmsg], [data-tmsg]')) return;
-  ['thread', 'composer', 'checks', 'info-pin', 'menu'].forEach(k => { if (pops[k] && !(k === 'composer' && pops[k].querySelector('textarea').value.trim())) closePop(k); });
+  ['thread', 'checks', 'info-pin', 'menu'].forEach(k => { if (pops[k]) closePop(k); }); // a chat keeps its unsent text (chatDrafts)
 }, true);
 addEventListener('resize', () => placeStrip());
 

@@ -109,10 +109,14 @@ function changeListHTML(items) {
 
 // A comparison in a new tab of this page, in diff mode (the page at ?compare=<key>). data has the shape
 // of diff.json, {a: {name, label, src}, b: {…}, label}; the new tab reads it from this one (its opener).
-function openCompare(data) {
+function putCompare(data) {
   const k = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   SBTEL.compares[k] = data;
-  window.sbtelCompares = SBTEL.compares; // the new tab reads it here: a top-level const is not a window property
+  window.sbtelCompares = SBTEL.compares; // the other view reads it here: a top-level const is not a window property
+  return k;
+}
+function openCompare(data) {
+  const k = putCompare(data);
   const w = window.open(location.pathname + '?compare=' + k, '_blank');
   if (!w) toast('The browser blocked the new tab. Allow pop-ups for this page to see the diff.');
   return w;
@@ -178,13 +182,13 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     (Array.isArray(d.comments) ? d.comments : []).forEach(c => { if (c && c.target && c.text && !state.comments.some(x => x.id === c.id)) state.comments.push({ id:String(c.id), target:c.target, text:c.text, status:'pending', version:c.version, at:c.at || Date.now() }); });
   }
   // The session is gone (closed, or unknown to the server): drop what this page kept for it.
-  function forget() { R.off = true; clearTimeout(R.t); store.del(KEY); histForget(HKEY); }
+  function forget() { R.off = true; clearTimeout(R.t); store.del(KEY); store.del('sbtel-read:' + o.id); histForget(HKEY); }
   // Drop the kept drafts and histories of sessions the server says do not exist (404 on meta).
   async function prune() {
     const ids = new Set();
-    ['sbtel-draft:', 'sbtel-hist:'].forEach(p => store.keys(p).forEach(k => { const id = k.slice(p.length); if (/^[0-9a-f]{32}$/.test(id) && id !== o.id) ids.add(id); }));
+    ['sbtel-draft:', 'sbtel-hist:', 'sbtel-read:'].forEach(p => store.keys(p).forEach(k => { const id = k.slice(p.length); if (/^[0-9a-f]{32}$/.test(id) && id !== o.id) ids.add(id); }));
     for (const id of [...ids].slice(0, 64)) {
-      try { const r = await fetch('/s/' + id + '/meta', { cache:'no-store' }); if (r.status === 404) { store.del('sbtel-draft:' + id); store.del('sbtel-hist:' + id); } } catch (e) { return; } // server unreachable: keep everything
+      try { const r = await fetch('/s/' + id + '/meta', { cache:'no-store' }); if (r.status === 404) { store.del('sbtel-draft:' + id); store.del('sbtel-hist:' + id); store.del('sbtel-read:' + id); } } catch (e) { return; } // server unreachable: keep everything
     }
   }
 
@@ -242,7 +246,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     const el = $('rvComments'); if (!el) return;
     const list = pending();
     el.innerHTML = `<h4>Comments${list.length ? ` <span>(${list.length})</span>` : ''}</h4>` + (list.length ? list.map(c => `<div class="rv-c" data-cid="${esc(c.id)}"><div class="rv-h"><button class="go" data-rv="go" title="Show it">${esc(targetLabel(c.target))}</button><span class="spacer"></span><button class="tiny" data-rv="send" title="Send this comment to the agent now, on its own">Send now</button><button class="tiny" data-rv="del">Delete</button></div><textarea aria-label="Comment on ${esc(targetLabel(c.target))}">${esc(c.text)}</textarea></div>`).join('')
-      : `<p class="rv-note">No pending comments. Select something on the canvas, press Comment and choose <b>Add to review</b>.</p>`);
+      : `<p class="rv-note">No pending comments. Select something on the canvas, press Comment and choose <b>Add to review</b> (Shift+Enter).</p>`);
   }
   function renderSent() {
     const el = $('rvSent'); if (!el) return;
@@ -312,47 +316,25 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     renderSendBtn = () => { $('sendBtn').hidden = true; }; // a session has no "saved" comments: they are pending in the review
     const origPaint = paint; paint = (lay, keep) => { origPaint(lay, keep); if (!keep) markPending($('world')); };
     const origFill = fillBlock; fillBlock = (el, B, counts) => { origFill(el, B, counts); markPending(el); };
-    // The composer: Add to review is the primary action, Send now sends this one comment at once.
-    const prevComposer = openComposer;
-    openComposer = (key, anchor) => {
-      if (!SBTEL.session) return prevComposer(key, anchor);
+    // The chat: Send is the primary action (the agent starts on it while you look at something else), and
+    // Add to review keeps the comment for the review. A pending comment says so, with Edit and Send now.
+    const keep0 = chatKeep, add0 = chatAdd, status0 = chatStatus, btns0 = chatRowBtns, composer0 = openComposer;
+    chatKeep = () => SBTEL.session ? { c:'review', label:'Add to review', title:'Keep it in your review and send it with the rest (Shift+Enter)' } : keep0();
+    chatAdd = (key, text, how) => {
+      if (!SBTEL.session) return add0(key, text, how);
       if (o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; }
-      closePop('info');
-      const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 150, innerHeight / 3, 300, 0) };
-      const el = pop('composer', a, `<div class="kind">Comment on ${esc(targetLabel(key))}</div>
-        <div class="composer" style="margin-top:6px"><textarea id="cmtText" placeholder="What should change, or what is unclear?"></textarea></div>
-        <div class="acts" style="justify-content:flex-end"><button class="btn" data-c="cancel">Cancel</button><button class="btn" data-c="send" title="Send this comment to the agent now, on its own">Send now</button><button class="btn primary" data-c="review" title="Keep it in your review and send it with the rest (⌘Enter)">Add to review</button></div>`);
-      composerPop = el;
-      const ta = el.querySelector('textarea'); setTimeout(() => ta.focus(), 30);
-      el.addEventListener('click', e => {
-        const c = e.target.closest('[data-c]')?.dataset.c; if (!c) return;
-        if (c === 'cancel') { closePop('composer'); return; }
-        const text = ta.value.trim(); if (!text) { ta.focus(); return; }
-        closePop('composer');
-        const cm = addPending(key, text);
-        if (c === 'send') openSend([cm]);
-        else toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
-      });
-      ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) el.querySelector('[data-c="review"]').click(); });
+      const cm = addPending(key, text);
+      if (how === 'send') openSend([cm]);
+      else toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
     };
-    // Threads: a pending comment says so and offers Edit (in the Review panel) and Send now.
-    const prevThread = openThread;
-    openThread = (key, anch) => {
-      prevThread(key, anch);
-      const el = pops.thread; if (!el) return;
-      const list = state.comments.filter(c => c.target === key);
-      el.querySelectorAll('ul.thread > li').forEach((li, i) => {
-        const c = list[i]; if (!c || c.status !== 'pending') return;
-        const s = li.querySelector('[class^="st-"]'); if (s) { s.className = 'st-pending'; s.textContent = 'Pending'; s.title = 'In your review: it goes to the agent when you send the review'; }
-        const del = li.querySelector('[data-t="del"]');
-        del?.insertAdjacentHTML('beforebegin', `<button class="tiny" data-t="rvedit" data-id="${esc(c.id)}">Edit</button><button class="tiny" data-t="send" data-id="${esc(c.id)}">Send now</button>`);
-      });
-      el.addEventListener('click', e => {
-        const b = e.target.closest('[data-t="rvedit"]'); if (!b) return;
-        closePop('thread'); toggle(true);
-        setTimeout(() => { const ta = document.querySelector(`#rvComments [data-cid="${CSS.escape(b.dataset.id)}"] textarea`); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ block:'nearest' }); } }, 60);
-      });
-    };
+    chatStatus = c => c.status === 'pending' ? ['st-pending', 'Pending', 'In your review: it goes to the agent when you send the review'] : status0(c);
+    chatRowBtns = c => c.status === 'pending' ? `<button class="tiny" data-t="rvedit" data-id="${esc(c.id)}">Edit</button><button class="tiny" data-t="send" data-id="${esc(c.id)}">Send now</button><button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>` : btns0(c);
+    openComposer = (key, anchor) => { if (SBTEL.session && o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; } composer0(key, anchor); };
+    document.addEventListener('click', e => {
+      const b = e.target.closest('.pop.chat [data-t="rvedit"]'); if (!b) return;
+      closePop('thread'); toggle(true);
+      setTimeout(() => { const ta = document.querySelector(`#rvComments [data-cid="${CSS.escape(b.dataset.id)}"] textarea`); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ block:'nearest' }); } }, 60);
+    });
     // The dock: Review is the primary action, at the end.
     btn = document.createElement('button'); btn.className = 'tb rv-btn'; btn.id = 'rvBtn'; btn.setAttribute('aria-controls', 'rvSheet'); btn.setAttribute('aria-expanded', 'false');
     btn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h10v8H8l-3 3v-3H3z"/><path d="M5.5 6.5l1.6 1.6L10.5 4.8"/></svg><span class="rv-l">Review</span><span class="rv-n" hidden></span>';

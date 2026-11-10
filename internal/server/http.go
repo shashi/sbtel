@@ -46,7 +46,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.Set("Cache-Control", "no-store")
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("Referrer-Policy", "no-referrer")
-	h.Set("X-Frame-Options", "DENY")
+	// SAMEORIGIN, not DENY: the page frames its own diff view to show an arriving version's changes (DESIGN
+	// §6.3). Only this origin (this host and port) may frame it, and that origin already has every right here.
+	h.Set("X-Frame-Options", "SAMEORIGIN")
 	h.Set("Cross-Origin-Resource-Policy", "same-origin")
 	if !s.hostOK(r.Host) {
 		w.WriteHeader(http.StatusMisdirectedRequest) // 421: DNS rebinding or a stray client

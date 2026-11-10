@@ -92,6 +92,8 @@ async function until(fn, ms = 8000, step = 100) {
   await page.click('.pop [data-c="send"]');
   await until(() => page.evaluate(() => state.comments.some(c => c.status === 'sent')));
   check('comment marked sent in the page', await page.evaluate(() => state.comments.filter(c => c.status === 'sent').length === 1));
+  check('the chat stays open after Send: the comment is in its thread and the input is empty', await page.evaluate(() => { const p = document.querySelector('.pop.chat'); return !!p && p.querySelector('ul.thread').textContent.includes('Second line: ünïcödé') && p.querySelector('.st-sent')?.textContent === 'Sent to the agent' && p.querySelector('#cmtText').value === '' && !p.querySelector('[data-t="del"]'); }));
+  await page.evaluate(() => closePop('thread'));
 
   // ---- inbox ----
   let ib = sb(['inbox', id, '--json', '--peek']);
@@ -110,9 +112,12 @@ async function until(fn, ms = 8000, step = 100) {
   check('page received the reply over SSE', await page.evaluate(() => state.comments[0].replies[0].text === 'Done: split into Router and RouteState.\nSee v2.'));
   check('reply toast shown', (await page.evaluate(() => document.querySelector('.toast').textContent)).startsWith('Agent replied on block Shell.Router'));
   await page.evaluate(() => { const b = document.querySelector('[data-thread="block:Shell.Router"]'); b.scrollIntoView(); });
+  check('a reply to a closed chat puts a dot on the count', await page.evaluate(() => { const b = document.querySelector('[data-thread="block:Shell.Router"]'); return b.classList.contains('unread') && /new reply$/.test(b.getAttribute('aria-label')); }));
   await page.click('[data-thread="block:Shell.Router"]');
   const replyText = await page.waitForSelector('.pop .sb-reply', { timeout: 3000 }).then(el => el.textContent()).catch(() => '');
   check('thread shows the agent reply', replyText.includes('Done: split into Router and RouteState.'), replyText);
+  check('opening the chat clears the dot, and a reload does not bring it back', await page.evaluate(() => !document.querySelector('[data-thread="block:Shell.Router"]').classList.contains('unread') && JSON.parse(localStorage.getItem('sbtel-read:' + SBTEL.session))[state.comments[0].sid] === 1));
+  await page.evaluate(() => closePop('thread'));
   await page.keyboard.press('Escape');
   check('reply to an unknown comment is exit 2', sb(['reply', id, 'c999', 'x']).code === 2);
 
@@ -125,6 +130,13 @@ async function until(fn, ms = 8000, step = 100) {
   const vt = await page.waitForSelector('.sb-vt', { timeout: 5000 }).catch(() => null);
   check('new-version toast appears', !!vt && (await vt.textContent()).includes('A new version (v2) is available'));
   check('page did not reload by itself', await page.evaluate(src => state.src === src, v1));
+  // See changes: the diff of what the tab has and the new version, over the page; Back changes nothing.
+  await page.click('.sb-vt [data-v="diff"]');
+  const cmpFrame = await page.waitForSelector('.sb-cmp iframe', { timeout: 5000 }).then(f => f.contentFrame()).catch(() => null);
+  await until(() => cmpFrame && cmpFrame.evaluate(() => SBTEL.mode === 'diff' && !!SBTEL.modes.diff._state.res).catch(() => false));
+  check('See changes shows version 1 against version 2 in the diff view', !!cmpFrame && await cmpFrame.evaluate(([a, b]) => { const D = SBTEL.modes.diff._state; return D.data.a.src === a && D.data.b.src === b; }, [v1, v2]) && (await page.textContent('.sb-cmp header')).includes('Reload version 2'));
+  await page.click('.sb-cmp [data-x="back"]');
+  check('Back keeps the page as it was and offers the version again', !(await page.$('.sb-cmp')) && !!(await page.waitForSelector('.sb-vt', { timeout: 3000 }).catch(() => null)) && await page.evaluate(src => state.src === src, v1));
   await page.click('.sb-vt [data-v="reload"]');
   await until(() => page.evaluate(src => state.src === src, v2));
   check('Reload applies the new source', await page.evaluate(src => state.src === src, v2));
@@ -172,12 +184,12 @@ async function until(fn, ms = 8000, step = 100) {
 
   // ---- the draft review: Add to review, a pending badge, Review, Send ----
   const vSaved = fs.readFileSync(SPEC, 'utf8');
-  check('the composer offers Add to review (primary) and Send now', await (async () => {
+  check('the chat offers Send (primary) and Add to review', await (async () => {
     await page.evaluate(() => openComposer('block:Shell.Keymap'));
     const b = await page.evaluate(() => [...document.querySelectorAll('.pop .acts button')].map(x => x.textContent + (x.classList.contains('primary') ? '*' : '')));
-    if (SHOTS) { await page.keyboard.press('Escape'); await page.evaluate(() => closePop('composer')); await shotView(page, 'Shell.Keymap'); await page.evaluate(() => openComposer('block:Shell.Keymap')); await page.fill('#cmtText', 'Should the keymap own chords, or the palette?'); await page.screenshot({ path: path.join(SHOTS, 'composer.png') }); }
-    await page.keyboard.press('Escape'); await page.evaluate(() => closePop('composer'));
-    return JSON.stringify(b) === JSON.stringify(['Cancel', 'Send now', 'Add to review*']);
+    if (SHOTS) { await page.evaluate(() => closePop('thread')); await shotView(page, 'Shell.Keymap'); await page.evaluate(() => openComposer('block:Shell.Keymap')); await page.fill('#cmtText', 'Should the keymap own chords, or the palette?'); await page.screenshot({ path: path.join(SHOTS, 'composer.png') }); await page.fill('#cmtText', ''); }
+    await page.evaluate(() => closePop('thread'));
+    return JSON.stringify(b) === JSON.stringify(['Add to review', 'Send*']);
   })());
   const waiting = sbAsync(['inbox', id, '--wait', '--timeout', '4']); // pending activity must not wake it
   await sleep(300);
@@ -193,7 +205,7 @@ async function until(fn, ms = 8000, step = 100) {
     await page.evaluate(() => select(null, null)); await shotView(page, 'Shell.Keymap');
     await page.evaluate(() => { const b = document.querySelector('[data-thread="block:Shell.Keymap"]'); openThread(b.dataset.thread, b); }); await page.waitForSelector('.pop .st-pending');
     await page.screenshot({ path: path.join(SHOTS, 'pending-comment.png') });
-    await page.keyboard.press('Escape');
+    await page.evaluate(() => closePop('thread'));
   }
   await page.click('#rvBtn');
   await page.waitForSelector('#rvSheet:not(.closed) #rvEdits .d-item');
@@ -445,6 +457,8 @@ async function until(fn, ms = 8000, step = 100) {
   await dp.fill('#cmtText', 'Why does the router change?');
   await dp.click('.pop [data-c="send"]');
   await until(() => dp.evaluate(() => state.comments.some(c => c.status === 'sent')));
+  await dp.evaluate(() => closePop('thread')); // the reply comes while the chat is closed: a toast
+  await until(() => dp.evaluate(() => state.comments.some(c => c.status === 'sent')));
   check('diff: a sent comment keeps its bubble', await dp.evaluate(() => !!document.querySelector('[data-thread="block:Shell.Router"]')));
   const dEvs = sb(['inbox', did, '--json']).out.trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
   const dcm = dEvs.find(e => e.kind === 'comment');
@@ -479,7 +493,15 @@ async function until(fn, ms = 8000, step = 100) {
   await sp.waitForTimeout(800);
   check('standalone page makes no network request', outside.length === 0, outside.join(' '));
   check('standalone page has no server UI', await sp.evaluate(() => SBTEL.mode === 'standalone' && !document.getElementById('sbSave') && !document.querySelector('.sb-bar') && !document.getElementById('rvBtn') && document.title === 'sbtel Playground'));
-  check('standalone composer keeps Save and Send', await sp.evaluate(() => { openComposer('block:Shell.Router'); const b = [...document.querySelectorAll('.pop .acts button')].map(x => x.textContent); closePop('composer'); return JSON.stringify(b) === '["Cancel","Save","Send"]'; }));
+  check('standalone chat keeps Save and Send', await sp.evaluate(() => { openComposer('block:Shell.Router'); const b = [...document.querySelectorAll('.pop .acts button')].map(x => x.textContent); return JSON.stringify(b) === '["Save","Send"]'; }));
+  await sp.fill('#cmtText', 'Kept for later'); await sp.press('#cmtText', 'Shift+Enter');
+  check('Shift+Enter keeps the comment and the chat stays open', await sp.evaluate(() => { const p = document.querySelector('.pop.chat'); return state.comments.length === 1 && state.comments[0].status === 'saved' && !!p && p.querySelector('ul.thread').textContent.includes('Kept for later') && p.querySelector('#cmtText').value === ''; }));
+  await sp.fill('#cmtText', 'line one'); await sp.press('#cmtText', 'Enter'); await sp.type('#cmtText', 'line two');
+  check('Enter alone is a new line', await sp.evaluate(() => document.querySelector('#cmtText').value === 'line one\nline two' && state.comments.length === 1));
+  await sp.evaluate(() => closePop('thread'));
+  check('unsent text comes back when the chat is opened again', await sp.evaluate(() => { openComposer('block:Shell.Router'); return document.querySelector('#cmtText').value === 'line one\nline two'; }));
+  await sp.press('#cmtText', 'Control+Enter');
+  check('Ctrl+Enter sends', await sp.evaluate(() => state.comments.length === 2 && state.comments[1].text === 'line one\nline two' && !!document.querySelector('.modal, .scrim, [role="dialog"]')));
 
   await browser.close();
   sb(['serve', '--stop']);
