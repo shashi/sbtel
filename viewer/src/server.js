@@ -54,6 +54,14 @@ SBTEL.modes.server = (() => {
     barEl.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>`;
   }
   // The file modal reads through the server, which serves only what the pushed spec names (§5.9).
+  // The same cap as the server's (internal/server/ref.go fileMaxBytes).
+  saveFile = async f => {
+    if (f.size > 16 * 1048576) throw new Error('larger than 16 MB');
+    const data = await new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(',')[1] || ''); fr.onerror = () => no(new Error('could not be read')); fr.readAsDataURL(f); });
+    const res = await post('file', { name: f.name || 'pasted', data });
+    if (!res.ok) throw new Error(await errText(res));
+    return (await res.json()).path;
+  };
   loadRef = async r => { const q = 'ref?path=' + encodeURIComponent(r.file); const d = await getJSON(q); if (d.image) d.src = q + '&raw=1'; return d; };
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
   // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.

@@ -800,6 +800,18 @@ comments are not separate events; their ids are `c<seq>.<k>` (k = 1, 2, …), wh
 `source` is the element's source text at the version the comment was written against (for a line, the
 two blocks' texts joined by a blank line).
 
+### 4.4 The project folder (v0.4)
+
+`.sbtel/` beside a spec file holds what belongs with the project rather than with one machine:
+
+- `files/`: files the human attached (§5.2, `POST /s/<id>/file`).
+- `comments/<spec file>.jsonl`: every comment, reply and review event of every session on that spec,
+  appended as it is written to the session's events.jsonl (a proposal's path is left out).
+
+`sbtel open` on a file looks for a `.git` at or above the spec's directory; when it finds one and the
+repository's top `.gitignore` has no line that ignores `.sbtel`, it appends `.sbtel/` and reports
+`added .sbtel/ to <path>` on stderr. The server does the same before it first writes a file.
+
 ---
 
 ## 5. Server
@@ -890,6 +902,14 @@ is the session's `tabs`.
   - `X-Frame-Options: SAMEORIGIN` (no other origin may frame a page; the page frames its own diff view for
     "See changes", §6.3);
   - `Cross-Origin-Resource-Policy: same-origin` (an extra: other origins cannot even embed responses).
+- `POST /s/<id>/file {name, data}` (v0.4; spec sessions with a file) stores a file the human dropped,
+  pasted or picked. `data` is base64, at most 16 MiB decoded. The file is written to `.sbtel/files/`
+  beside the spec (§4.4) and nowhere else: the name is reduced to its base name, to the characters
+  `[A-Za-z0-9._-]`, without a leading dot, at most 80 characters; a file with the same contents is reused,
+  and one with other contents is never replaced (`-2`, `-3`, … are tried). The answer is
+  `{path: ".sbtel/files/<name>", size}`. A stdin spec answers 409.
+- `GET /s/<id>/ref?path=…` serves `.sbtel/files/<name>` (one level, no dot-file) without the spec or a
+  comment naming it; every other dot-directory stays refused.
 - `/` lists nothing (404).
 - Control bodies (§5.3) are limited to 64 MiB, like browser writes. (Before the integration pass browser
   writes had a 4 MiB limit, so a tab could not save a big spec an agent had pushed; §11, entry 27.)

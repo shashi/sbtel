@@ -2,10 +2,12 @@
 package server
 
 import (
+	"encoding/base64"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -87,8 +89,10 @@ func resolveRef(root, rel string) string {
 	if rel == "" || filepath.IsAbs(rel) || strings.HasPrefix(rel, "/") || strings.HasPrefix(rel, `\`) || strings.ContainsRune(rel, 0) {
 		return ""
 	}
-	for _, part := range strings.FieldsFunc(rel, func(r rune) bool { return r == '/' || r == '\\' }) {
-		if part == ".." || strings.HasPrefix(part, ".") && part != "." {
+	parts := strings.FieldsFunc(rel, func(r rune) bool { return r == '/' || r == '\\' })
+	dropped := isDropped(rel) // .sbtel/files/<name>: the one dot-directory a ref may name
+	for i, part := range parts {
+		if part == ".." || strings.HasPrefix(part, ".") && part != "." && !(dropped && i == 0) {
 			return ""
 		}
 	}
@@ -103,8 +107,8 @@ func resolveRef(root, rel string) string {
 	if r, err := filepath.Rel(realRoot, full); err != nil || r == ".." || strings.HasPrefix(r, ".."+string(filepath.Separator)) || filepath.IsAbs(r) {
 		return ""
 	}
-	for _, part := range strings.Split(filepath.ToSlash(strings.TrimPrefix(full, realRoot)), "/") {
-		if strings.HasPrefix(part, ".") && part != "." { // a link into a dot-directory
+	for i, part := range strings.Split(strings.TrimPrefix(filepath.ToSlash(strings.TrimPrefix(full, realRoot)), "/"), "/") {
+		if strings.HasPrefix(part, ".") && part != "." && !(dropped && i == 0 && part == state.ProjectDirName) { // a link into a dot-directory
 			return ""
 		}
 	}
@@ -114,7 +118,8 @@ func resolveRef(root, rel string) string {
 func (s *Server) serveRef(w http.ResponseWriter, r *http.Request, ss *session) {
 	m := &ss.meta
 	rel := r.URL.Query().Get("path")
-	if m.Spec == nil || m.Spec.Path == nil || !(refsIn(ss.src)[rel] || s.refsSaid(m.ID)[rel]) {
+	// A dropped file is served without being named: the page shows it before the comment that names it is sent.
+	if m.Spec == nil || m.Spec.Path == nil || !(isDropped(rel) || refsIn(ss.src)[rel] || s.refsSaid(m.ID)[rel]) {
 		notFound(w)
 		return
 	}
@@ -154,4 +159,95 @@ func (s *Server) serveRef(w http.ResponseWriter, r *http.Request, ss *session) {
 		return
 	}
 	writeJSON(w, 200, map[string]any{"path": rel, "size": len(b), "text": string(b)})
+}
+
+// isDropped says whether rel is a file in the project's own files folder: .sbtel/files/<name>, one level deep.
+func isDropped(rel string) bool {
+	name := strings.TrimPrefix(filepath.ToSlash(rel), state.ProjectFilesRel+"/")
+	return name != filepath.ToSlash(rel) && name != "" && !strings.ContainsAny(name, `/\`) && !strings.HasPrefix(name, ".")
+}
+
+// POST /s/<id>/file {name, data}  (DESIGN.md §5.2, v0.4): a file dropped onto the diagram or pasted into a
+// comment. data is the file's bytes in base64. It is written to `.sbtel/files/` beside the spec and
+// nowhere else, under a cleaned name, never over a file with other contents; the answer is the path a
+// (ref …) names. A spec from stdin has no directory, so it takes no files.
+const (
+	fileMaxBytes  = 16 << 20
+	fileBodyLimit = fileMaxBytes*4/3 + 4096
+)
+
+type fileIn struct {
+	Name string `json:"name"`
+	Data string `json:"data"`
+}
+
+var fileNameBad = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
+
+// cleanFileName keeps a dropped file's base name to letters, digits, dot, dash and underscore, without a
+// leading dot, at most 80 characters: a name that needs no quoting in a ref and cannot leave its folder.
+func cleanFileName(name string) string {
+	name = filepath.Base(strings.ReplaceAll(name, `\`, "/"))
+	name = strings.Trim(fileNameBad.ReplaceAllString(name, "-"), "-.")
+	if len(name) > 80 {
+		ext := filepath.Ext(name)
+		if len(ext) > 12 {
+			ext = ""
+		}
+		name = strings.TrimRight(name[:80-len(ext)], "-.") + ext
+	}
+	if name == "" {
+		name = "file"
+	}
+	return name
+}
+
+func (s *Server) saveFile(ss *session, in fileIn) (map[string]any, error) {
+	m := &ss.meta
+	if m.Spec == nil || m.Spec.Path == nil {
+		return nil, &httpError{http.StatusConflict, "this spec was read from stdin, so it has no folder to keep files in"}
+	}
+	b, err := base64.StdEncoding.DecodeString(in.Data)
+	if err != nil {
+		return nil, &httpError{http.StatusBadRequest, "data is not base64"}
+	}
+	if len(b) > fileMaxBytes {
+		return nil, &httpError{http.StatusRequestEntityTooLarge, "the file is larger than 16 MB"}
+	}
+	dir := state.ProjectFiles(*m.Spec.Path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, err
+	}
+	state.EnsureIgnored(*m.Spec.Path) // best effort: open already did it
+	name := cleanFileName(in.Name)
+	ext := filepath.Ext(name)
+	stem := strings.TrimSuffix(name, ext)
+	for i := 1; i < 1000; i++ {
+		if i > 1 {
+			name = stem + "-" + strconv.Itoa(i) + ext
+		}
+		full := filepath.Join(dir, name)
+		old, err := os.ReadFile(full)
+		if err == nil && string(old) == string(b) { // the same file, dropped again
+			return map[string]any{"path": state.ProjectFilesRel + "/" + name, "size": len(b), "existed": true}, nil
+		}
+		if err == nil {
+			continue
+		}
+		f, err := os.OpenFile(full, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if err != nil {
+			if os.IsExist(err) {
+				continue
+			}
+			return nil, err
+		}
+		_, werr := f.Write(b)
+		if cerr := f.Close(); werr == nil {
+			werr = cerr
+		}
+		if werr != nil {
+			return nil, werr
+		}
+		return map[string]any{"path": state.ProjectFilesRel + "/" + name, "size": len(b)}, nil
+	}
+	return nil, &httpError{http.StatusConflict, "too many files with that name"}
 }

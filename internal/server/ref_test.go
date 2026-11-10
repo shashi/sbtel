@@ -1,10 +1,12 @@
 package server
 
 import (
+	"encoding/base64"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -87,5 +89,78 @@ func TestRefRoute(t *testing.T) {
 	id2 := h.create(`(block A (ref src/store.ts))`+"\n", nil)
 	if r, _ := h.req("GET", "/s/"+id2+"/ref?path=src/store.ts", "", nil); r.StatusCode != 404 {
 		t.Errorf("stdin spec: %d", r.StatusCode)
+	}
+}
+
+// A dropped file lands in .sbtel/files beside the spec under a cleaned name, is served back without being
+// named, and never replaces a different file. What is said in the session is also logged in .sbtel/comments.
+func TestFileRoute(t *testing.T) {
+	h := start(t, Options{})
+	dir := t.TempDir()
+	os.Mkdir(filepath.Join(dir, ".git"), 0o755)
+	file := filepath.Join(dir, "x.sbtel")
+	src := "(block A)\n"
+	os.WriteFile(file, []byte(src), 0o644)
+	id := h.create(src, &file)
+	put := func(name, data string) (int, string) {
+		r, b := h.req("POST", "/s/"+id+"/file", `{"name":`+strconv.Quote(name)+`,"data":"`+base64.StdEncoding.EncodeToString([]byte(data))+`"}`, nil)
+		return r.StatusCode, b
+	}
+	for _, c := range []struct{ name, data, want string }{
+		{"Screen Shot (1).png", "one", ".sbtel/files/Screen-Shot-1-.png"},
+		{"Screen Shot (1).png", "one", ".sbtel/files/Screen-Shot-1-.png"},   // the same file again
+		{"Screen Shot (1).png", "two", ".sbtel/files/Screen-Shot-1--2.png"}, // other contents: a new name
+		{"../../etc/passwd", "p", ".sbtel/files/passwd"},
+		{`C:\Users\me\..\.env`, "e", ".sbtel/files/env"},
+		{"..", "d", ".sbtel/files/file"},
+		{"", "n", ".sbtel/files/file-2"},
+	} {
+		code, b := put(c.name, c.data)
+		if code != 200 || !strings.Contains(b, `"path":"`+c.want+`"`) {
+			t.Errorf("%q: %d %s, want %s", c.name, code, b, c.want)
+		}
+	}
+	ents, _ := os.ReadDir(filepath.Join(dir, ".sbtel", "files"))
+	if len(ents) != 6 {
+		t.Errorf("%d files in .sbtel/files, want 6", len(ents))
+	}
+	if all, _ := filepath.Glob(filepath.Join(dir, "*")); len(all) != 4 { // .git, .gitignore, .sbtel and x.sbtel; nothing escaped
+		t.Errorf("files beside the spec: %v", all)
+	}
+	if gi, _ := os.ReadFile(filepath.Join(dir, ".gitignore")); string(gi) != ".sbtel/\n" {
+		t.Errorf(".gitignore: %q", gi)
+	}
+	if r, b := h.req("GET", "/s/"+id+"/ref?path="+url.QueryEscape(".sbtel/files/passwd"), "", nil); r.StatusCode != 200 || !strings.Contains(b, `"text":"p"`) {
+		t.Errorf("served back: %d %s", r.StatusCode, b)
+	}
+	os.MkdirAll(filepath.Join(dir, ".sbtel", "files", "sub"), 0o755)
+	os.WriteFile(filepath.Join(dir, ".sbtel", "files", "sub", "deep.txt"), []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(dir, ".sbtel", "files", ".hidden"), []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(dir, ".sbtel", "other.txt"), []byte("x"), 0o644)
+	for _, p := range []string{".sbtel/files/sub/deep.txt", ".sbtel/files/.hidden", ".sbtel/other.txt", ".sbtel/comments/x.sbtel.jsonl", ".sbtel/files/../other.txt", ".sbtel/files/nope"} {
+		if r, _ := h.req("GET", "/s/"+id+"/ref?path="+url.QueryEscape(p), "", nil); r.StatusCode != 404 {
+			t.Errorf("%s: %d, want 404", p, r.StatusCode)
+		}
+	}
+	if code, _ := put("a.txt", strings.Repeat("x", fileMaxBytes+1)); code != 413 {
+		t.Errorf("too large: %d", code)
+	}
+	if r, _ := h.req("POST", "/s/"+id+"/file", `{"name":"a","data":"!!"}`, nil); r.StatusCode != 400 {
+		t.Errorf("bad base64: %d", r.StatusCode)
+	}
+	if r, _ := h.req("POST", "/s/"+id+"/file", `{"name":"a","data":""}`, map[string]string{"Origin": "https://evil.example"}); r.StatusCode == 200 {
+		t.Error("another origin could write a file")
+	}
+	// A spec from stdin has no folder.
+	sid := h.create(src, nil)
+	if r, _ := h.req("POST", "/s/"+sid+"/file", `{"name":"a","data":""}`, nil); r.StatusCode != 409 {
+		t.Errorf("stdin spec: %d", r.StatusCode)
+	}
+	// The comment log.
+	if r, b := h.req("POST", "/s/"+id+"/comment", `{"target":"block:A","targetLabel":"block A","text":"hello there","version":1,"source":""}`, nil); r.StatusCode != 200 {
+		t.Fatalf("comment: %d %s", r.StatusCode, b)
+	}
+	if log, _ := os.ReadFile(filepath.Join(dir, ".sbtel", "comments", "x.sbtel.jsonl")); !strings.Contains(string(log), "hello there") {
+		t.Errorf("comment log: %q", log)
 	}
 }

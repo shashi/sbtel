@@ -193,6 +193,14 @@ func cmdOpen(e env, args []string) int {
 		}
 	}
 	lintToStderr(e, in)
+	// The project folder beside the spec (.sbtel/: dropped files, the comment log) stays out of git.
+	if in.path != nil {
+		if gi, err := state.EnsureIgnored(*in.path); err != nil {
+			fmt.Fprintf(e.stderr, "sbtel %s: could not add .sbtel/ to .gitignore: %v\n", cmd, err)
+		} else if gi != "" {
+			fmt.Fprintf(e.stderr, "sbtel %s: added .sbtel/ to %s\n", cmd, gi)
+		}
+	}
 	c := ensureServer(e, cmd, p)
 	if c == nil {
 		return 2

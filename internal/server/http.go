@@ -97,10 +97,21 @@ func decode(w http.ResponseWriter, r *http.Request, limit int64, v any) bool {
 	return true
 }
 
+// httpError is a refusal with its own status code.
+type httpError struct {
+	code int
+	msg  string
+}
+
+func (e *httpError) Error() string { return e.msg }
+
 func (s *Server) fail(w http.ResponseWriter, err error) {
 	var br errBadRequest
 	var cf conflict
+	var he *httpError
 	switch {
+	case errors.As(err, &he):
+		writeJSON(w, he.code, map[string]string{"error": he.msg})
 	case errors.As(err, &cf):
 		writeJSON(w, http.StatusConflict, cf)
 	case errors.Is(err, errNotFound):
@@ -194,6 +205,17 @@ func (s *Server) browser(w http.ResponseWriter, r *http.Request, id, route strin
 			return
 		}
 		writeJSON(w, 200, map[string]any{"version": n, "hash": state.Hash(b), "src": string(b)})
+	case route == "file" && !isGet && m.Kind == "spec":
+		var in fileIn
+		if !decode(w, r, fileBodyLimit, &in) {
+			return
+		}
+		out, err := s.saveFile(ss, in)
+		if err != nil {
+			s.fail(w, err)
+			return
+		}
+		writeJSON(w, 200, out)
 	case route == "ref" && isGet && m.Kind == "spec":
 		s.pollDisk(ss)
 		s.serveRef(w, r, ss)

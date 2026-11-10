@@ -95,6 +95,12 @@ func (s *Server) append(ss *session, e state.Event) (state.Event, error) {
 	}
 	ss.seq = e.Seq
 	ss.meta.Updated = e.At
+	// What was said also goes to the project's own log, beside the spec (state.AppendProjectComment).
+	if (e.Kind == "comment" || e.Kind == "reply" || e.Kind == "review") && ss.meta.Spec != nil && ss.meta.Spec.Path != nil {
+		if err := state.AppendProjectComment(*ss.meta.Spec.Path, e); err != nil {
+			s.logf("session %s: project comment log: %v", ss.meta.ID, err)
+		}
+	}
 	return e, nil
 }
 

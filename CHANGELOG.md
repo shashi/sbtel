@@ -31,8 +31,21 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   count until you open the chat. What you have read is remembered per session.
 - **See changes.** The new-version toast has a second button beside Reload: it shows the diff between
   the version you have and the one that arrived, over the page, with Back and Reload.
+- **Attach a file.** Drop a file on a block and the block gets a `ref` to it, as an edit in your draft.
+  Drop or paste a file into a comment, or use the paperclip in the comment box (the way to attach on a
+  phone), and the comment's text gets the `ref`. The file is stored in `.sbtel/files/` beside the spec,
+  under a name cleaned to letters, digits, `.`, `-` and `_`; it never replaces a different file, and it
+  may be up to 16 MB. The standalone page has no folder, so it says to use `sbtel open`.
+- **The project folder `.sbtel/`.** Beside the spec it holds the attached files (`files/`) and a log of
+  every comment, reply and review about that spec (`comments/<spec file>.jsonl`, one JSON event per
+  line). When the spec is inside a git repository, `sbtel open` adds `.sbtel/` to the repository's
+  `.gitignore` if it is not ignored there yet, and says so on stderr.
+- **The version in Settings.** The Settings panel ends with the sbtel version that built the page.
 
 ### Changed
+
+- **Paragraphs in a sketch sit half a line apart** on a card, where a whole blank line stood between
+  them. A sketch too long for its card is clipped to whole lines without the breaks.
 
 - **The skills are rewritten** as short operational guidance: what a view shows and how deep to go by
   task, and a counting step in design and recovery (a lower-level block is used by most of what is

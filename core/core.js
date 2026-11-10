@@ -19,6 +19,8 @@ function lineCol(src, pos) { const pre = src.slice(0, pos); const line = pre.spl
 // The text of a (~ … ~) sketch: trimmed, every run of whitespace one space, except that a run holding two
 // or more line breaks (a blank line between paragraphs) is one paragraph break, \n\n. \r\n and \r count as
 // one line break each. (sketch "…") strings keep their own rule: every whitespace run is one space.
+// Paragraph breaks in a sketch's text (M.wrap counts each as one line; a card draws each half a line tall).
+function paraGaps(text) { return Math.max(0, text.split('\n\n').filter(p => p.trim()).length - 1); }
 function tildeText(raw) { return raw.replace(/\r\n?/g, '\n').replace(/\s+/g, w => w.indexOf('\n') !== w.lastIndexOf('\n') ? '\n\n' : ' ').trim(); }
 function tokenize(src) {
   const t = [], n = src.length, NONWS = /\S/g, STOP = /[\s()";]/g; let i = 0;
@@ -626,21 +628,25 @@ function layout(model, opts, M) {
     const top = topRow(n, inner, d);
     // A clipped sketch shows all its lines while its id is in opts.expanded.
     const full = n.sketch ? M.wrap(n.sketch, FONT.sketch, inner - 4) : 0, clip = d ? 4 : 2;
-    const lines = opts.expanded && opts.expanded.has(n.id) ? full : Math.min(clip, full);
+    // A paragraph break is drawn half a line tall. A sketch too long for the card is clipped to whole lines, without breaks.
+    const gapsAll = n.sketch ? paraGaps(n.sketch) : 0, tight = full - gapsAll;
+    const whole = (opts.expanded && opts.expanded.has(n.id)) || tight <= clip;
+    const lines = whole ? tight : clip, gaps = whole ? gapsAll : 0;
     const inH = d ? rowsH(rowsOf(iw, inner - K.LABEL)) : 0, outH = d ? rowsH(rowsOf(ow, inner - K.LABEL)) : 0;
     // A footer that still does not fit wraps to a second line, and the card grows to show it.
     const footLines = footText ? (isM ? M.wrap(footText, FONT.chip, inner - 4) : M.wrap(footText, FONT.foot, inner - 24 - 4)) : 0;
     const foot = footText ? 26 + Math.max(0, footLines - 1) * 17 : 0;
-    const h = 14 + top.h + 24 + (d ? inH + 6 : 0) + (lines ? lines * 18 + 4 : 0) + (d ? outH + 6 : 0) + (foot ? foot + 4 : 0) + 12;
-    return { w, h:Math.max(h, 84), lines, more: full > clip, top, inH, outH, foot, d };
+    const h = 14 + top.h + 24 + (d ? inH + 6 : 0) + (lines ? lines * 18 + gaps * 9 + 4 : 0) + (d ? outH + 6 : 0) + (foot ? foot + 4 : 0) + 12;
+    return { w, h:Math.max(h, 84), lines, gaps, more: tight > clip, top, inH, outH, foot, d };
   }
   function headerMetrics(b, inner) {
     const top = topRow(b, inner, true), P = portsFor(b);
     let y = 18 + top.h + 30;
-    const lines = b.sketch ? Math.min(4, M.wrap(b.sketch, FONT.hsketch, Math.min(inner, 640) - 4)) : 0;
-    if (lines) y += lines * 20 + 6;
+    const full = b.sketch ? M.wrap(b.sketch, FONT.hsketch, Math.min(inner, 640) - 4) : 0, gapsAll = b.sketch ? paraGaps(b.sketch) : 0;
+    const whole = full - gapsAll <= 4, lines = whole ? full - gapsAll : 4, gaps = whole ? gapsAll : 0;
+    if (lines) y += lines * 20 + gaps * 10 + 6;
     y += 24 + 16;
-    return { h:y, top, lines };
+    return { h:y, top, lines, gaps };
   }
   function maxContent(b) {
     if (memo.has(b)) return memo.get(b);
@@ -951,6 +957,13 @@ function applyEdit(src, model, act) {
     const b = act.block; if (b.impl.includes(act.name)) return { src };
     const p = childInsert(src, b, ['implements']);
     return { src: src.slice(0, p.pos) + p.pre + '(implements ' + act.name + ')' + p.post + src.slice(p.pos), name:b.name };
+  }
+  if (act.t === 'ref') {
+    // A file named on a block, behavior or shape: after its other refs, else after its sketch.
+    const b = act.block; if (b.children.some(c => c.form === 'ref' && c.path === act.path)) return { src };
+    const p = childInsert(src, b, ['ref', 'sketch']);
+    const path = /^[^\s()";~]+$/.test(act.path) ? act.path : JSON.stringify(act.path);
+    return { src: src.slice(0, p.pos) + p.pre + '(ref ' + path + ')' + p.post + src.slice(p.pos), name:b.name };
   }
   if (act.t === 'port') {
     const b = act.block, p = childInsert(src, b, ['port', 'implements']);
