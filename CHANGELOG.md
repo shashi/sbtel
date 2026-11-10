@@ -40,6 +40,16 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   every comment, reply and review about that spec (`comments/<spec file>.jsonl`, one JSON event per
   line). When the spec is inside a git repository, `sbtel open` adds `.sbtel/` to the repository's
   `.gitignore` if it is not ignored there yet, and says so on stderr.
+- **A ref to another spec opens as a diagram.** `(ref projects/site.sbtel)` on a block shows an arrow at
+  the card's corner; it, or the same ref in a comment, opens that spec in a new tab as a session of its
+  own (the one already showing that file, else a new one). The rule is the one for reading a file: named
+  in the spec or in a comment, inside the spec's folder. One spec can so be the map of many.
+- **Drag a file from a comment onto a block.** A file named in a comment or a reply is a chip you can
+  drag onto a block; the block gets the `ref` as an edit in your draft. The file viewer opened from a
+  chat has an "Add to <block>" button that does the same, which is the way on a phone.
+- **All comments in one list.** A Comments button in the toolbar, with a dot when a reply is unread,
+  lists every thread of the session, unread first; choosing one goes to its block and opens the chat.
+  The `C` key opens the list, or the comment box of the selected block.
 - **The version in Settings.** The Settings panel ends with the sbtel version that built the page.
 
 ### Changed

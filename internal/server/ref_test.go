@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/base64"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -162,5 +163,43 @@ func TestFileRoute(t *testing.T) {
 	}
 	if log, _ := os.ReadFile(filepath.Join(dir, ".sbtel", "comments", "x.sbtel.jsonl")); !strings.Contains(string(log), "hello there") {
 		t.Errorf("comment log: %q", log)
+	}
+}
+
+// A ref to another spec opens as a session on that file: a new one first, the same one after.
+func TestOpenRef(t *testing.T) {
+	h := start(t, Options{})
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "projects"), 0o755)
+	os.WriteFile(filepath.Join(dir, "projects", "site.sbtel"), []byte("(block Site)\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "projects", "other.sbtel"), []byte("(block Other)\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "notes.md"), []byte("x"), 0o644)
+	file := filepath.Join(dir, "all.sbtel")
+	src := "(block All (block Site (ref projects/site.sbtel)) (ref notes.md) (ref projects/gone.sbtel) (ref ../up.sbtel))\n"
+	os.WriteFile(file, []byte(src), 0o644)
+	id := h.create(src, &file)
+	open := func(p string) (int, string) {
+		c := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+		r, err := c.Get(h.base() + "/s/" + id + "/open?path=" + url.QueryEscape(p))
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.Body.Close()
+		return r.StatusCode, r.Header.Get("Location")
+	}
+	code, loc := open("projects/site.sbtel")
+	if code != 303 || !strings.Contains(loc, "/s/") || strings.Contains(loc, id) {
+		t.Fatalf("open: %d %q", code, loc)
+	}
+	if r, b := h.req("GET", strings.TrimPrefix(loc, h.base())+"spec", "", nil); r.StatusCode != 200 || !strings.Contains(b, "block Site") {
+		t.Errorf("the opened session: %d %s", r.StatusCode, b)
+	}
+	if _, again := open("projects/site.sbtel"); again != loc {
+		t.Errorf("a second open made another session: %q, then %q", loc, again)
+	}
+	for _, p := range []string{"projects/other.sbtel", "notes.md", "projects/gone.sbtel", "../up.sbtel", "all.sbtel", ""} {
+		if code, _ := open(p); code != 404 {
+			t.Errorf("%q: %d, want 404", p, code)
+		}
 	}
 }

@@ -157,6 +157,16 @@ func (s *Server) browser(w http.ResponseWriter, r *http.Request, id, route strin
 		writeJSON(w, 200, out)
 		return
 	}
+	if route == "open" && r.Method == http.MethodGet {
+		u, err := s.openRef(id, r.URL.Query().Get("path")) // takes s.mu itself: it may create a session
+		if err != nil {
+			notFound(w)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		http.Redirect(w, r, u, http.StatusSeeOther)
+		return
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	ss, err := s.get(id)

@@ -62,6 +62,7 @@ SBTEL.modes.server = (() => {
     if (!res.ok) throw new Error(await errText(res));
     return (await res.json()).path;
   };
+  specURL = r => url('open?path=' + encodeURIComponent(r.file));
   loadRef = async r => { const q = 'ref?path=' + encodeURIComponent(r.file); const d = await getJSON(q); if (d.image) d.src = q + '&raw=1'; return d; };
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
   // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.

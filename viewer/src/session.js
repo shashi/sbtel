@@ -14,7 +14,9 @@ function sessionComments({ version, closed }) {
   // reply that arrived while its chat was closed puts a dot on the count until the chat is opened.
   const RKEY = SBTEL.session ? 'sbtel-read:' + SBTEL.session : null;
   const unread = c => !!c.sid && (c.replies || []).length > ((C.read || {})[c.sid] || 0);
+  chatUnread = c => unread(c);
   function markUnread(root) {
+    cmtCount();
     const u = new Set(state.comments.filter(unread).map(c => c.target));
     (root || document).querySelectorAll('.cbub[data-thread]').forEach(b => {
       const on = u.has(b.dataset.thread); if (on === b.classList.contains('unread')) return;
@@ -23,7 +25,8 @@ function sessionComments({ version, closed }) {
     });
   }
   function markRead(key) {
-    let ch = false; C.read = C.read || {};
+    if (!C.read) return; // the log has not loaded yet: its first load says what is read
+    let ch = false;
     state.comments.forEach(c => { if (c.target === key && unread(c)) { C.read[c.sid] = c.replies.length; ch = true; } });
     if (ch) { if (RKEY) store.set(RKEY, C.read); markUnread(); }
   }

@@ -251,3 +251,58 @@ func (s *Server) saveFile(ss *session, in fileIn) (map[string]any, error) {
 	}
 	return nil, &httpError{http.StatusConflict, "too many files with that name"}
 }
+
+// GET /s/<id>/open?path=…  (DESIGN.md §5.2, v0.4): a ref to another spec opens as a diagram. The path
+// passes the same tests as a file to read (named in this session, inside the spec's directory) and must
+// end in .sbtel. The answer is a redirect to a session on that file: the one that already shows it, else
+// a new one. The page opens it in a new tab.
+func (s *Server) openRef(id, rel string) (string, error) {
+	s.mu.Lock()
+	ss, err := s.get(id)
+	if err != nil {
+		s.mu.Unlock()
+		return "", err
+	}
+	m := &ss.meta
+	full := ""
+	if m.Kind == "spec" && m.Spec != nil && m.Spec.Path != nil && strings.EqualFold(filepath.Ext(rel), ".sbtel") {
+		s.pollDisk(ss)
+		if refsIn(ss.src)[rel] || s.refsSaid(m.ID)[rel] {
+			full = resolveRef(filepath.Dir(*m.Spec.Path), rel)
+		}
+	}
+	if info, err := os.Stat(full); full == "" || err != nil || !info.Mode().IsRegular() || info.Size() > refMaxBytes {
+		s.mu.Unlock()
+		return "", errNotFound
+	}
+	// A session that already shows this file: the most recently used one.
+	found, when := "", ""
+	ids, _ := state.ListIDs(s.paths)
+	for _, oid := range ids {
+		o, err := s.get(oid)
+		if err != nil || o.meta.Kind != "spec" || o.meta.Spec == nil || o.meta.Spec.Path == nil {
+			continue
+		}
+		p := *o.meta.Spec.Path
+		if real, err := filepath.EvalSymlinks(p); err == nil {
+			p = real
+		}
+		if p == full && o.meta.Updated >= when {
+			found, when = oid, o.meta.Updated
+		}
+	}
+	s.mu.Unlock()
+	if found != "" {
+		return s.url(found, "spec"), nil
+	}
+	b, err := os.ReadFile(full)
+	if err != nil {
+		return "", err
+	}
+	name := filepath.Base(full)
+	out, err := s.create(SessionIn{Kind: "spec", Label: name, Spec: &specIn{Path: &full, Name: name, Src: string(b)}})
+	if err != nil {
+		return "", err
+	}
+	return out["url"].(string), nil
+}

@@ -81,6 +81,8 @@ sbtel reply "$id" c7.1 "What changed."    # answer each comment; r7 answers a re
 - Reply to every comment with what changed or why nothing did.
 - When the human asks to see a file or the evidence for something, name it in the reply as
   `(ref path:from-to)`: it becomes a button that opens the file at those lines. Only when asked.
+- A `(ref other.sbtel)` opens that spec as a diagram in a new tab, in a session of its own; `sbtel sessions`
+  lists it. A spec whose blocks each ref another spec is a map of them.
 - A file the human attached is a `(ref .sbtel/files/<name>)` in the comment or on the block. Read it from
   `.sbtel/files/` beside the spec. `.sbtel/comments/<spec file>.jsonl` there logs everything said so far.
 
