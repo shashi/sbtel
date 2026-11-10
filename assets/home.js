@@ -282,12 +282,15 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   observeResize(fr, () => { if (beat === 1) placeTangle(false); draw(); });
   if (reduce) { go(1, false); return; }
   go(1, false);
-  // Gentle autoplay: once the tangle is in view, arrange it after a beat. Any interaction stops it.
-  const start = () => { auto = setTimeout(() => { auto = null; if (beat === 1) go(2); }, 2600); };
+  // Gentle autoplay: once a quarter of the tangle is in view, arrange it after a beat, then show the fix if
+  // the picture is still on screen. It plays once and any interaction stops it.
+  let seen = false;
+  const step = (ms, from) => { auto = setTimeout(() => { auto = null; if (beat !== from || !seen) return; go(from + 1); if (from === 1) step(8000, 2); }, ms); };
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
     placeTangle(false); draw();
-    if (!('IntersectionObserver' in window)) return start();
-    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); start(); } }, { threshold: .5 });
+    if (!('IntersectionObserver' in window)) { seen = true; return step(2600, 1); }
+    let started = false;
+    const io = new IntersectionObserver(es => { seen = es[es.length - 1].isIntersecting; if (seen && !started) { started = true; step(2600, 1); } }, { threshold: .25 });
     io.observe(fr);
   });
 })();

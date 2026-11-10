@@ -1,23 +1,23 @@
 /* Home page. Shared tokens and type are in site.css. */
 
 /* ---------- Hero ---------- */
-.hero { padding:48px 0 0; }
+.hero { padding:36px 0 0; }
 .hero-top { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:56px; align-items:end; }
 .hero h1 { text-wrap:balance; margin:0; font-size:clamp(40px, 5.2vw, 64px); line-height:1.03; font-weight:620; letter-spacing:-.032em; }
 .hero h1 span { display:block; }
-.hero .tag { margin:0; font-size:20px; line-height:1.5; color:var(--ink-2); max-width:36ch; }
-.inst-tabs { margin-top:28px; display:flex; gap:22px; border-bottom:1px solid var(--panel-line); }
+.hero .tag { margin:20px 0 0; font-size:20px; line-height:1.5; color:var(--ink-2); max-width:44ch; }
+.inst-tabs { margin-top:0; display:flex; gap:22px; border-bottom:1px solid var(--panel-line); }
 .inst-tabs [role="tab"] { border:0; background:none; padding:6px 0 8px; margin-bottom:-1px; border-bottom:2px solid transparent; font-size:14.5px; color:var(--muted); cursor:pointer; }
 .inst-tabs [role="tab"]:hover { color:var(--ink); }
 .inst-tabs [role="tab"][aria-selected="true"] { color:var(--ink); font-weight:600; border-bottom-color:var(--ink); }
-.inst-pane { min-height:96px; }
+.inst-pane { min-height:84px; }
 .install { margin-top:12px; display:flex; align-items:stretch; max-width:100%; background:var(--surface); border:1px solid var(--panel-line); border-radius:10px; overflow:hidden; }
 .install code { flex:1; min-width:0; padding:11px 12px 11px 14px; font-size:12.5px; line-height:1.5; white-space:nowrap; overflow-x:auto; scrollbar-width:thin; background:none; border:0; border-radius:0; }
 .install code.sh::before { content:"$ "; color:var(--muted); }
 .install code.multi { white-space:pre; }
 .install button { flex:none; border:0; border-left:1px solid var(--panel-line); background:var(--chip); padding:0 14px; font-size:13.5px; cursor:pointer; min-width:76px; }
 .install button:hover { background:var(--accent-soft); color:var(--accent-ink); }
-.hero .ctas { margin-top:22px; display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; }
+.hero .ctas { margin-top:14px; display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; }
 .hero .alt { margin:12px 0 0; font-size:13.5px; color:var(--muted); }
 
 /* ---------- Frames and diagrams (the viewer's look) ---------- */
@@ -71,7 +71,7 @@
 .tagl.lefty { transform:translate(calc(-100% - 10px), -50%); }
 
 /* The demo: the diagram, and a panel that tells the three beats. */
-.demo { margin-top:52px; display:grid; grid-template-columns:minmax(0, 7fr) minmax(0, 5fr); gap:40px; align-items:start; }
+.demo { margin-top:36px; display:grid; grid-template-columns:minmax(0, 7fr) minmax(0, 5fr); gap:40px; align-items:start; }
 .beats { list-style:none; margin:0 0 20px; padding:0; display:flex; gap:8px; counter-reset:beat; }
 .beats li { flex:1; counter-increment:beat; min-width:0; }
 .beats button { width:100%; text-align:left; border:0; border-top:2px solid var(--panel-line); background:none; padding:10px 0 4px; font-size:14.5px; color:var(--muted); cursor:pointer; }
@@ -231,6 +231,7 @@ details[open] > summary { margin-bottom:10px; }
 @media (max-width: 720px) {
   .hero h1 { font-size:40px; }
   .hero .tag { font-size:18px; margin-top:18px; }
+  .inst-tabs { margin-top:4px; }
   .sec { padding-top:88px; }
   .term { font-size:26px; margin-bottom:20px; }
   .lead { font-size:20px; }
