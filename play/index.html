@@ -192,6 +192,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .chip .g { width:14px; height:14px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:8.5px; font-style:normal; flex:none; }
 .fh { position:absolute; left:0; right:0; top:0; padding:18px 22px 0; }
 .fh .ttl { font-size:20px; font-weight:600; height:30px; line-height:30px; }
+.sk .pg { display:block; height:9px; }
+.fh .sk .pg { height:10px; }
 .sk.more { cursor:pointer; border-radius:5px; margin-left:-4px; margin-right:-4px; padding:0 4px; }
 .sk.more:hover { background:var(--sk-hover); }
 .fh .sk { font-size:14.5px; line-height:20px; max-width:640px; margin-top:0; margin-bottom:6px; }
@@ -216,6 +218,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .refb svg.i { width:11px; height:11px; }
 .refc { display:inline-flex; align-items:center; gap:4px; vertical-align:baseline; border:1px solid var(--panel-line); background:var(--surface); color:var(--accent-ink); border-radius:7px; padding:0 6px; font:500 .88em var(--ff-mono); cursor:pointer; }
 .refc:hover { border-color:var(--accent); }
+.refc[draggable] { -webkit-user-drag:element; }
+.refc.spec { background:var(--accent-soft); }
 .refc svg.i { width:11px; height:11px; }
 /* The file modal. It closes with its Close button or Escape, never by a click outside it. */
 .codep.refp { display:flex; flex-direction:column; left:50%; top:5vh; transform:translateX(-50%); width:min(920px, calc(100vw - 24px)); height:90vh; }
@@ -449,7 +453,25 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .composer textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
 @media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
 .pop.chat .acts { align-items:center; justify-content:flex-end; }
-.pop.chat .keys { margin-right:auto; font-size:11.5px; color:var(--muted); white-space:nowrap; }
+.pop.chat .composer { position:relative; }
+.pop.chat .composer textarea { padding-right:38px; }
+.pop.chat .attach { position:absolute; right:3px; bottom:20px; width:32px; height:32px; color:var(--muted); }
+.pop.chat .attach:hover { color:var(--ink); }
+.tb.cmtbtn { position:relative; }
+.tb.cmtbtn.unread::after { content:""; position:absolute; top:3px; right:3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
+.allc { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+.allc button { width:100%; display:grid; grid-template-columns:1fr auto; gap:2px 10px; text-align:left; border:1px solid var(--panel-line); background:var(--surface); border-radius:10px; padding:10px 12px; font:inherit; color:var(--ink); cursor:pointer; }
+.allc button:hover, .allc button:focus-visible { border-color:var(--accent); outline:none; }
+.allc .on { font-weight:600; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.allc .n { font-size:12px; color:var(--muted); align-self:center; }
+.allc .last { grid-column:1 / -1; font-size:13.5px; line-height:1.4; color:var(--ink-2); display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; }
+.allc .last b { font-weight:600; color:var(--accent-ink); margin-right:4px; }
+.allc button.unread .on::before { content:""; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--warn); margin-right:7px; vertical-align:1px; }
+.dropon { outline:2px dashed var(--accent); outline-offset:3px; }
+.modal .ver { margin-top:14px; font-size:12px; color:var(--muted); }
+.pop.chat .keys { margin-right:auto; font-size:11.5px; line-height:1.35; color:var(--muted); min-width:0; flex:1 1 0; }
+.pop.chat .acts .btn { flex:none; }
+.pop.chat .acts { flex-wrap:nowrap; }
 .thread { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; max-height:min(44vh, 420px); overflow:auto; overscroll-behavior:contain; }
 .thread li { border:1px solid var(--panel-line); border-radius:9px; padding:8px 10px; background:var(--surface); }
 .thread li.none { border:0; background:none; padding:2px 0; color:var(--muted); font-size:13.5px; }
@@ -502,7 +524,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
     <li>Drag a block to move it (on a touch screen, tap it first, then drag it). Drop it between two linked blocks to join their group.</li>
     <li>Shift-drag a behavior onto a block, or a shape onto an ear, to attach it.</li>
     <li>Select something and choose Edit to rename it or change its type and sketch.</li>
-    <li>⌘/Ctrl-click a block or line to comment on it.</li>
+    <li>⌘/Ctrl-click a block or line to comment on it, or select it and press C. With nothing selected, C lists every comment.</li>
+    <li>Drop a file on a block or into a comment to attach it. Drag a file named in a reply onto a block to keep it there.</li>
   </ul>
 </div>
 
@@ -521,6 +544,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
   <button class="tb" id="msgBtn" aria-expanded="false" aria-controls="msgSheet"><svg class="i" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M6.5 6.5V13"/></svg><span class="lbl">Shapes</span></button>
   <button class="tb" id="srcBtn" aria-expanded="false" aria-controls="srcSheet"><svg class="i" viewBox="0 0 16 16"><path d="M6 4L2 8l4 4M10 4l4 4-4 4"/></svg><span class="lbl">Source</span></button>
   <button class="tb chkpill" id="chkBtn" title="Layout and spec checks"></button>
+  <button class="tb cmtbtn" id="cmtBtn" hidden title="Every comment in this session (C)" aria-label="Comments"><svg class="i" viewBox="0 0 16 16"><path d="M3 3h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 13.5V11H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg><span id="cmtN"></span></button>
   <button class="tb sendbtn" id="sendBtn" hidden title="Send saved comments to an agent"><svg class="i" viewBox="0 0 16 16"><path d="M2.5 8L13.5 2.5 10 13.5 7.5 9z"/><path d="M7.5 9L13.5 2.5"/></svg><span id="sendN"></span></button>
   <button class="tb icon" id="setBtn" title="Settings" aria-label="Settings"><svg class="i" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4L5 11M11 5l1.4-1.4"/></svg></button>
 </div>
@@ -560,6 +584,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
   <div class="rule"><div class="lbl">Theme</div>
     <div class="opts"><label><input type="radio" name="theme" value="system"><span>Follow system</span></label><label><input type="radio" name="theme" value="light"><span>Light</span></label><label><input type="radio" name="theme" value="dark"><span>Dark</span></label></div></div>
   <label class="chk"><input type="checkbox" id="anim"> Animate changes</label>
+  <div class="ver">sbtel <span id="verNo"></span></div>
 </template>
 
 <!-- @sbtel begin Viewer.Boot -->
@@ -585,6 +610,8 @@ function lineCol(src, pos) { const pre = src.slice(0, pos); const line = pre.spl
 // The text of a (~ … ~) sketch: trimmed, every run of whitespace one space, except that a run holding two
 // or more line breaks (a blank line between paragraphs) is one paragraph break, \n\n. \r\n and \r count as
 // one line break each. (sketch "…") strings keep their own rule: every whitespace run is one space.
+// Paragraph breaks in a sketch's text (M.wrap counts each as one line; a card draws each half a line tall).
+function paraGaps(text) { return Math.max(0, text.split('\n\n').filter(p => p.trim()).length - 1); }
 function tildeText(raw) { return raw.replace(/\r\n?/g, '\n').replace(/\s+/g, w => w.indexOf('\n') !== w.lastIndexOf('\n') ? '\n\n' : ' ').trim(); }
 function tokenize(src) {
   const t = [], n = src.length, NONWS = /\S/g, STOP = /[\s()";]/g; let i = 0;
@@ -1192,21 +1219,25 @@ function layout(model, opts, M) {
     const top = topRow(n, inner, d);
     // A clipped sketch shows all its lines while its id is in opts.expanded.
     const full = n.sketch ? M.wrap(n.sketch, FONT.sketch, inner - 4) : 0, clip = d ? 4 : 2;
-    const lines = opts.expanded && opts.expanded.has(n.id) ? full : Math.min(clip, full);
+    // A paragraph break is drawn half a line tall. A sketch too long for the card is clipped to whole lines, without breaks.
+    const gapsAll = n.sketch ? paraGaps(n.sketch) : 0, tight = full - gapsAll;
+    const whole = (opts.expanded && opts.expanded.has(n.id)) || tight <= clip;
+    const lines = whole ? tight : clip, gaps = whole ? gapsAll : 0;
     const inH = d ? rowsH(rowsOf(iw, inner - K.LABEL)) : 0, outH = d ? rowsH(rowsOf(ow, inner - K.LABEL)) : 0;
     // A footer that still does not fit wraps to a second line, and the card grows to show it.
     const footLines = footText ? (isM ? M.wrap(footText, FONT.chip, inner - 4) : M.wrap(footText, FONT.foot, inner - 24 - 4)) : 0;
     const foot = footText ? 26 + Math.max(0, footLines - 1) * 17 : 0;
-    const h = 14 + top.h + 24 + (d ? inH + 6 : 0) + (lines ? lines * 18 + 4 : 0) + (d ? outH + 6 : 0) + (foot ? foot + 4 : 0) + 12;
-    return { w, h:Math.max(h, 84), lines, more: full > clip, top, inH, outH, foot, d };
+    const h = 14 + top.h + 24 + (d ? inH + 6 : 0) + (lines ? lines * 18 + gaps * 9 + 4 : 0) + (d ? outH + 6 : 0) + (foot ? foot + 4 : 0) + 12;
+    return { w, h:Math.max(h, 84), lines, gaps, more: tight > clip, top, inH, outH, foot, d };
   }
   function headerMetrics(b, inner) {
     const top = topRow(b, inner, true), P = portsFor(b);
     let y = 18 + top.h + 30;
-    const lines = b.sketch ? Math.min(4, M.wrap(b.sketch, FONT.hsketch, Math.min(inner, 640) - 4)) : 0;
-    if (lines) y += lines * 20 + 6;
+    const full = b.sketch ? M.wrap(b.sketch, FONT.hsketch, Math.min(inner, 640) - 4) : 0, gapsAll = b.sketch ? paraGaps(b.sketch) : 0;
+    const whole = full - gapsAll <= 4, lines = whole ? full - gapsAll : 4, gaps = whole ? gapsAll : 0;
+    if (lines) y += lines * 20 + gaps * 10 + 6;
     y += 24 + 16;
-    return { h:y, top, lines };
+    return { h:y, top, lines, gaps };
   }
   function maxContent(b) {
     if (memo.has(b)) return memo.get(b);
@@ -1517,6 +1548,13 @@ function applyEdit(src, model, act) {
     const b = act.block; if (b.impl.includes(act.name)) return { src };
     const p = childInsert(src, b, ['implements']);
     return { src: src.slice(0, p.pos) + p.pre + '(implements ' + act.name + ')' + p.post + src.slice(p.pos), name:b.name };
+  }
+  if (act.t === 'ref') {
+    // A file named on a block, behavior or shape: after its other refs, else after its sketch.
+    const b = act.block; if (b.children.some(c => c.form === 'ref' && c.path === act.path)) return { src };
+    const p = childInsert(src, b, ['ref', 'sketch']);
+    const path = /^[^\s()";~]+$/.test(act.path) ? act.path : JSON.stringify(act.path);
+    return { src: src.slice(0, p.pos) + p.pre + '(ref ' + path + ')' + p.post + src.slice(p.pos), name:b.name };
   }
   if (act.t === 'port') {
     const b = act.block, p = childInsert(src, b, ['port', 'implements']);
@@ -2217,10 +2255,13 @@ const M = {
   }
 };
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+// A sketch on a card: its paragraphs half a line apart when the card shows all of it, else run together.
+const skHTML = (t, gaps) => t.split('\n\n').filter(p => p.trim()).map(esc).join(gaps ? '<i class="pg"></i>' : '\n');
 const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 const msgColor = k => 'var(--m' + (1 + hash(k || '?') % 6) + ')';
 const GLYPH = ['★','◆','▲','●','■','✚'], GCOL = ['var(--m6)','var(--m4)','var(--m5)','var(--m1)','var(--m3)','var(--m2)'];
 const ICON = {
+  clip:'<svg class="i" viewBox="0 0 16 16"><path d="M13 7.5l-5 5a3 3 0 0 1-4.2-4.2l5.5-5.5a2 2 0 0 1 2.8 2.8L6.8 10.9a1 1 0 0 1-1.4-1.4L10 5"/></svg>',
   details:'<svg class="i" viewBox="0 0 16 16"><path d="M6 4.5h7.5M6 8h7.5M6 11.5h7.5"/><circle cx="3" cy="4.5" r=".7"/><circle cx="3" cy="8" r=".7"/><circle cx="3" cy="11.5" r=".7"/></svg>',
   code:'<svg class="i" viewBox="0 0 16 16"><path d="M6 4L2 8l4 4M10 4l4 4-4 4"/></svg>',
   comment:'<svg class="i" viewBox="0 0 16 16"><path d="M3 3h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 13.5V11H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg>',
@@ -2479,7 +2520,7 @@ function fillBlock(el, B, counts) {
   el.style.zIndex = B.kind === 'frame' ? 10 + B.depth * 2 : (dr && (dr.top || dr.bot) ? 800 : 500) + B.depth;
   el.innerHTML = (B.kind === 'card' ? cardHTML(B) : frameHTML(B)) +
     (counts[key] ? `<button class="cbub" data-thread="${esc(key)}" aria-label="${counts[key]} comment${counts[key] === 1 ? '' : 's'}">${ICON.comment}${counts[key]}</button>` : '') +
-    (B.node && B.node.refs && B.node.refs.length ? `<button class="refb" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${ICON.code}${B.node.refs.length}</button>` : '');
+    (B.node && B.node.refs && B.node.refs.length ? `<button class="refb" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.code + B.node.refs.length}</button>` : '');
 }
 // Opening a drawer never resizes the card: the row it sits in makes room instead.
 function setDrawer(id, side, open) {
@@ -2556,7 +2597,7 @@ function cardHTML(B) {
   const foot2 = m.foot > 26 ? foot.replace('<div class="foot">', `<div class="foot wrap" style="height:${m.foot}px">`) : foot;
   return (isM ? carryEarHTML(n) : m.d ? '' : tabsHTML(n)) + `<div class="bd">${topHTML(n, m.top, m.d)}<div class="ttl" title="${esc(n.name)}">${title}</div>` +
     (m.d ? prowHTML('Input', P.in, m.inH) : '') +
-    (m.lines ? `<div class="sk${m.more ? ' more' : ''}"${m.more ? ` data-expand="${esc(n.id)}" role="button" tabindex="0" aria-expanded="${state.expanded.has(n.id)}" title="${state.expanded.has(n.id) ? 'Show less' : 'Show the whole sketch'}"` : ''} style="-webkit-line-clamp:${m.lines};height:${m.lines * 18}px">${esc(n.sketch)}</div>` : '') +
+    (m.lines ? `<div class="sk${m.more ? ' more' : ''}"${m.more ? ` data-expand="${esc(n.id)}" role="button" tabindex="0" aria-expanded="${state.expanded.has(n.id)}" title="${state.expanded.has(n.id) ? 'Show less' : 'Show the whole sketch'}"` : ''} style="-webkit-line-clamp:${m.lines};height:${m.lines * 18 + m.gaps * 9}px">${skHTML(n.sketch, m.gaps)}</div>` : '') +
     (m.d ? prowHTML('Output', P.out, m.outH) : '') +
     (m.foot ? foot2 : '') +
     `</div>`;
@@ -2565,7 +2606,7 @@ function frameHTML(B) {
   const b = B.node, h = B.hdr, P = dotsOf(b, state.opts.childDots);
   const nm = b.messageDecls.length;
   return tabsHTML(b) + (B.appendixY != null ? `<div class="appx" style="top:${B.appendixY}px"></div>` : '') + `<div class="fh">${topHTML(b, h.top, true)}<div class="ttl"><span>${esc(b.name)}</span></div>` +
-    (h.lines ? `<div class="sk" style="-webkit-line-clamp:${h.lines};height:${h.lines * 20}px">${esc(b.sketch)}</div>` : '') +
+    (h.lines ? `<div class="sk" style="-webkit-line-clamp:${h.lines};height:${h.lines * 20 + h.gaps * 10}px">${skHTML(b.sketch, h.gaps)}</div>` : '') +
     `<div class="foot"><button class="tw open" data-tog="${esc(b.id)}" aria-label="Close ${esc(b.name)}">▶</button><span class="cnt" data-tog="${esc(b.id)}">${countText(b)}</span>` +
     `</div></div>` + B.bandLabs.map(l => `<div class="bandlab" style="top:${l.y}px">${esc(l.text)}</div>`).join('');
 }
@@ -2740,7 +2781,7 @@ vp.addEventListener('click', e => {
   if (tc && performance.now() - tc.t < 1000 && Math.hypot(e.clientX - tc.x, e.clientY - tc.y) <= 4) return;
   const T = tapAt && e.pointerType && e.pointerType !== 'mouse' && performance.now() - tapAt.at < 1500 && tapAt.t.closest('.blk') ? tapAt.t : e.target; tapAt = null;
   const th = T.closest('[data-thread]'); if (th) { openThread(th.dataset.thread, th); return; }
-  const rf = T.closest('[data-refs]'); if (rf) { openRefs(rf.dataset.refs); return; }
+  const rf = T.closest('[data-refs]'); if (rf) { const n = state.model.node(rf.dataset.refs); if (n && n.refs.length === 1 && isSpec(n.refs[0].path) && specURL) openSpec(n.refs[0]); else openRefs(rf.dataset.refs); return; }
   const t = T.closest('[data-tog]'); if (t) { toggle(t.dataset.tog); return; }
   const ex = T.closest('[data-expand]'); if (ex) { toggleSketch(ex.dataset.expand); return; }
   const ow = T.closest('[data-owner]'); if (ow) { openMessages({ owner: ow.dataset.owner }); return; }
@@ -3766,12 +3807,14 @@ function refreshChat() {
 }
 function openChat(key, anchor, focus) {
   closePop('info');
+  // A file opened from this chat can be added to the chat's block (the Files hook, set here because Files is declared later).
+  refAddTo = () => { const k = chatOpen() ? chat.key : ''; const n = k.startsWith('block:') && k.length > 6 ? state.model.node(k.slice(6)) : null; return n && !readOnly() ? n.id : null; };
   if (chatOpen(key)) { if (focus) chat.el.querySelector('textarea').focus(); return; }
   const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 190, innerHeight / 3, 380, 0) };
   const keep = chatKeep(), mac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
   const el = pop('thread', a, `<div class="chh"><span class="kind">Comments on ${esc(targetLabel(key))}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
     <ul class="thread" aria-live="polite"></ul>
-    <div class="composer"><textarea id="cmtText" rows="2" placeholder="What should change, or what is unclear?" aria-label="Comment on ${esc(targetLabel(key))}"></textarea></div>
+    <div class="composer"><textarea id="cmtText" rows="2" placeholder="What should change, or what is unclear?" aria-label="Comment on ${esc(targetLabel(key))}"></textarea><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><input type="file" multiple hidden></div>
     <div class="acts"><span class="keys">${mac ? '⌘' : 'Ctrl+'}Enter sends · Shift+Enter: ${esc(keep.label.toLowerCase())}</span><button class="btn" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div>`, 'chat');
   chat = { key, el };
   const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
@@ -3783,6 +3826,9 @@ function openChat(key, anchor, focus) {
     chatAdd(key, text, how); refreshChat();
     if (chatOpen(key)) ta.focus();
   };
+  const pick = el.querySelector('input[type=file]');
+  pick.addEventListener('change', () => { attachTo(ta, [...pick.files]); pick.value = ''; });
+  ta.addEventListener('paste', e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); attachTo(ta, fs); } });
   ta.addEventListener('input', () => { if (ta.value.trim()) chatDrafts.set(key, ta.value); else chatDrafts.delete(key); });
   ta.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePop('thread'); return; }
@@ -3794,6 +3840,7 @@ function openChat(key, anchor, focus) {
     const c = e.target.closest('[data-c]')?.dataset.c; if (c) { submit(c === 'send' ? 'send' : 'keep'); return; }
     const b = e.target.closest('[data-t]'); if (!b) return;
     if (b.dataset.t === 'close') { closePop('thread'); return; }
+    if (b.dataset.t === 'file') { pick.click(); return; }
     const cm = state.comments.find(x => x.id === b.dataset.id); if (!cm) return;
     if (b.dataset.t === 'del') { state.comments = state.comments.filter(x => x !== cm); saveComments(); render(); refreshChat(); if (key.startsWith('msg:')) renderMsgTable(); }
     if (b.dataset.t === 'send') openSend([cm]);
@@ -3803,7 +3850,31 @@ function openChat(key, anchor, focus) {
 function openComposer(key, anchor) { openChat(key, anchor, true); }
 function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: coarse)').matches); }
 // Every full render draws the open chat again: a comment was added, sent or answered.
-{ const draw = render; render = (anchorId, pv) => { draw(anchorId, pv); if (!pv) refreshChat(); }; }
+{ const draw = render; render = (anchorId, pv) => { draw(anchorId, pv); if (!pv) { refreshChat(); cmtCount(); } }; }
+// ---------- Every thread in one list ----------
+// The toolbar's Comments button (and the C key) lists each thing that has comments, the ones with an
+// unread reply first, then by the latest word. A mode says which comments are unread (chatUnread).
+let chatUnread = c => false;
+function cmtCount() {
+  const b = $('cmtBtn'), n = new Set(state.comments.map(c => c.target)).size;
+  b.hidden = !n; $('cmtN').textContent = n || ''; b.classList.toggle('unread', state.comments.some(chatUnread));
+}
+function openAllComments() {
+  const by = new Map();
+  for (const c of state.comments) { let t = by.get(c.target); if (!t) by.set(c.target, t = { key:c.target, list:[], unread:false, at:0 }); t.list.push(c); t.unread = t.unread || chatUnread(c); t.at = Math.max(t.at, c.at || 0, ...(c.replies || []).map(r => +r.at || 0)); }
+  const rows = [...by.values()].sort((a, b) => (b.unread - a.unread) || (b.at - a.at));
+  const last = t => { const c = t.list[t.list.length - 1], r = (c.replies || [])[(c.replies || []).length - 1]; const plain = s => esc(String(s).replace(/\(ref\s+"?([^\s()"]+)"?\)/g, '$1')); return r ? `<b>Agent</b> ${plain(r.text)}` : plain(c.text); };
+  const m = modal('Comments', rows.length ? `<ul class="allc">${rows.map(t => `<li><button type="button" data-key="${esc(t.key)}" class="${t.unread ? 'unread' : ''}"><span class="on">${esc(targetLabel(t.key))}</span><span class="n">${t.list.length + t.list.reduce((s, c) => s + (c.replies || []).length, 0)}</span><span class="last">${last(t)}</span></button></li>`).join('')}</ul>` : '<p class="hint2">No comments yet. ⌘/Ctrl-click a block, or select it and press C, to write one.</p>');
+  m.classList.add('allcm');
+  m.addEventListener('click', e => {
+    const b = e.target.closest('button[data-key]'); if (!b) return;
+    const key = b.dataset.key; closeModal();
+    if (key.startsWith('block:') && key.length > 6 && state.model.node(key.slice(6))) { goTo(key.slice(6)); setTimeout(() => openThread(key), 380); }
+    else openThread(key);
+  });
+  m.querySelector('button[data-key]')?.focus();
+}
+$('cmtBtn').onclick = openAllComments;
 // On a phone the chat is a sheet at the bottom; --kb lifts it above the on-screen keyboard.
 if (window.visualViewport) {
   const kb = () => document.documentElement.style.setProperty('--kb', Math.max(0, Math.round(innerHeight - visualViewport.height - visualViewport.offsetTop)) + 'px');
@@ -3902,6 +3973,7 @@ $('setBtn').onclick = () => {
   });
   const cw = m.querySelector('#cw'), cwv = m.querySelector('#cwv'); cw.value = state.opts.width; cwv.textContent = state.opts.width;
   cw.addEventListener('input', () => { state.opts.width = +cw.value; cwv.textContent = cw.value; persist(); const a = state.opts.animate; state.opts.animate = false; render(); state.opts.animate = a; });
+  m.querySelector('#verNo').textContent = SBTEL.version;
   const an = m.querySelector('#anim'); an.checked = state.opts.animate; an.onchange = () => { state.opts.animate = an.checked; persist(); };
 };
 
@@ -4059,15 +4131,78 @@ function richText(s) {
     const path = q != null ? q : bare != null ? bare : href; if (!path) return all;
     const un = path.replace(/&amp;/g, '&');
     if (/^[a-z][a-z0-9+.-]*:\/\//i.test(un)) return `<a href="${path}" target="_blank" rel="noopener noreferrer">${label || path}</a>`;
-    return `<button type="button" class="refc" data-ref="${path}">${ICON.code}${label || path}</button>`;
+    return `<button type="button" class="refc${isSpec(un) ? ' spec' : ''}" draggable="true" data-ref="${path}" title="${isSpec(un) ? 'Open this diagram in a new tab' : 'Open'}. Drag it onto a block to add it there.">${isSpec(un) ? ICON.go : ICON.code}${label || path}</button>`;
   });
 }
-document.addEventListener('click', e => { const b = e.target.closest('.refc[data-ref]'); if (b) { e.stopPropagation(); openRefs(null, 0, { name:'Files', refs:[{ path:b.dataset.ref, sketch:'', ...refParts(b.dataset.ref) }] }); } }, true);
+// A ref to another spec is a diagram: it opens in a new tab, as a session of its own (the session's page
+// sets specURL; a page on its own cannot open files).
+const isSpec = path => /\.sbtel$/i.test(refParts(path).file || '');
+let specURL = null;
+function openSpec(r) {
+  if (!specURL) { toast('Opening another diagram needs a session: open the spec with sbtel open.'); return; }
+  window.open(specURL(r), '_blank', 'noopener');
+}
+// The block a file opened from a comment can be added to (the comments say: the open chat's block).
+let refAddTo = () => null;
+function addRef(id, path) {
+  const n = state.model.node(id); if (!n) return false;
+  const before = state.src; edit({ t:'ref', block:n, path });
+  toast(state.src === before ? `${n.name} already names ${path.split('/').pop()}` : `Added ${path.split('/').pop()} to ${n.name}`);
+  return true;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.refc[data-ref]'); if (!b) return; e.stopPropagation();
+  const r = { path:b.dataset.ref, sketch:'', ...refParts(b.dataset.ref) };
+  if (isSpec(r.path)) { openSpec(r); return; }
+  openRefs(null, 0, { name:'Files', refs:[r], addTo: refAddTo() });
+}, true);
+document.addEventListener('dragstart', e => {
+  const b = e.target.closest?.('.refc[data-ref]'); if (!b) return;
+  e.dataTransfer.setData('application/x-sbtel-ref', b.dataset.ref); e.dataTransfer.setData('text/plain', `(ref ${/^[^\s()";~]+$/.test(b.dataset.ref) ? b.dataset.ref : JSON.stringify(b.dataset.ref)})`);
+  e.dataTransfer.effectAllowed = 'copy';
+});
+// A file the human gives: dropped on a block (the block gets a ref, as an edit), or dropped, pasted or
+// picked into a comment (the text gets the ref). The session's page sets saveFile; it answers the path a
+// ref names, in the spec's .sbtel/files folder. The standalone page has no folder to keep files in.
+let saveFile = null;
+async function putFiles(files) {
+  if (!saveFile) { toast('Attaching a file needs a session: open the spec with sbtel open.'); return []; }
+  const out = [];
+  for (const f of files) { try { out.push(await saveFile(f)); } catch (e) { toast(`${f.name}: ${e.message}`); } }
+  return out;
+}
+async function attachTo(ta, files) {
+  const paths = await putFiles(files); if (!paths.length || !ta.isConnected) return;
+  const add = paths.map(p => `(ref ${p})`).join(' '), a = ta.selectionStart ?? ta.value.length, b = ta.selectionEnd ?? a;
+  const pre = ta.value.slice(0, a), post = ta.value.slice(b);
+  ta.value = pre + (pre && !/\s$/.test(pre) ? ' ' : '') + add + (post && !/^\s/.test(post) ? ' ' : '') + post;
+  ta.dispatchEvent(new Event('input')); ta.focus();
+}
+{
+  const REF = 'application/x-sbtel-ref', types = e => [...(e.dataTransfer?.types || [])];
+  const hasRef = e => types(e).includes(REF), hasFiles = e => types(e).includes('Files') || hasRef(e);
+  const refable = id => { const n = id && state.model.node(id); return n && (n.form === 'block' || n.form === 'behavior' || n.form === 'message') ? n : null; };
+  const place = e => { const ch = e.target.closest?.('.pop.chat'); if (ch) return { ch }; const n = refable(e.target.closest?.('.blk')?.dataset.id); return n ? { n, el: state.elems.get(n.id) } : {}; };
+  let lit = null; const light = el => { if (lit === el) return; lit?.classList.remove('dropon'); lit = el; lit?.classList.add('dropon'); };
+  addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); const p = place(e); if (hasRef(e)) delete p.ch; e.dataTransfer.dropEffect = p.ch || p.n ? 'copy' : 'none'; light(p.ch || p.el || null); });
+  addEventListener('dragleave', e => { if (!e.relatedTarget) light(null); });
+  addEventListener('drop', async e => {
+    if (!hasFiles(e)) return; e.preventDefault(); light(null);
+    const p = place(e), files = [...e.dataTransfer.files];
+    if (hasRef(e)) { if (p.n && !readOnly()) addRef(p.n.id, e.dataTransfer.getData(REF)); return; }
+    if (p.ch) { attachTo(p.ch.querySelector('textarea'), files); return; }
+    if (!p.n) { toast('Drop a file on a block, or into a comment.'); return; }
+    if (readOnly()) return;
+    const id = p.n.id, paths = await putFiles(files);
+    for (const path of paths) { const n = state.model.node(id); if (n) edit({ t:'ref', block:n, path }); }
+    if (paths.length) toast(paths.length === 1 ? `Added ${paths[0].split('/').pop()} to ${p.n.name}` : `Added ${paths.length} files to ${p.n.name}`);
+  });
+}
 function openRefs(id, first, given) {
   const n = given || state.model.node(id); if (!n || !n.refs || !n.refs.length) return;
   const scrim = document.createElement('div'); scrim.className = 'scrim';
   const p = document.createElement('div'); p.className = 'codep refp'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); p.setAttribute('aria-label', 'Files of ' + n.name);
-  p.innerHTML = `<header><b>${esc(n.name)}</b><span>${n.refs.length} file${n.refs.length === 1 ? '' : 's'}</span><span class="spacer"></span><button class="btn" data-k="close">Close</button></header>` +
+  p.innerHTML = `<header><b>${esc(n.name)}</b><span>${n.refs.length} file${n.refs.length === 1 ? '' : 's'}</span><span class="spacer"></span><button class="btn" data-k="spec" hidden>Open diagram</button>${n.addTo ? `<button class="btn" data-k="add">Add to ${esc(state.model.node(n.addTo)?.name || 'block')}</button>` : ''}<button class="btn primary" data-k="close">Close</button></header>` +
     (n.refs.length > 1 ? `<nav class="reflist" aria-label="Files">${n.refs.map((r, i) => `<button type="button" data-i="${i}">${esc(r.path)}</button>`).join('')}</nav>` : '') +
     `<p class="refnote"></p><div class="refbody" tabindex="0"></div>`;
   document.body.append(scrim, p);
@@ -4077,6 +4212,7 @@ function openRefs(id, first, given) {
     const r = n.refs[i]; shown = i;
     p.querySelectorAll('.reflist button').forEach((b, k) => { if (k === i) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
     note.textContent = (n.refs.length > 1 ? '' : r.path + (r.sketch ? '. ' : '')) + (r.sketch || ''); note.hidden = !note.textContent;
+    p.querySelector('[data-k="spec"]').hidden = !isSpec(r.path);
     if (r.url) { body.innerHTML = `<p><a href="${esc(r.file)}" target="_blank" rel="noopener noreferrer">Open ${esc(r.file)} in a new tab</a></p>`; return; }
     body.innerHTML = '<p>Loading…</p>';
     let d = null; try { d = await loadRef(r); } catch (e) { d = { error:true }; }
@@ -4095,7 +4231,13 @@ function openRefs(id, first, given) {
   const close = () => { document.removeEventListener('keydown', onKey, true); p.remove(); scrim.remove(); };
   const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
   document.addEventListener('keydown', onKey, true);
-  p.addEventListener('click', e => { if (e.target.closest('[data-k="close"]')) close(); const b = e.target.closest('.reflist button'); if (b) show(+b.dataset.i); });
+  p.addEventListener('click', e => {
+    const k = e.target.closest('[data-k]')?.dataset.k;
+    if (k === 'close') close();
+    if (k === 'spec') openSpec(n.refs[shown]);
+    if (k === 'add' && addRef(n.addTo, n.refs[shown].path)) close();
+    const b = e.target.closest('.reflist button'); if (b) show(+b.dataset.i);
+  });
   p.querySelector('[data-k="close"]').focus();
   show(first || 0);
 }
@@ -4152,6 +4294,7 @@ addEventListener('keydown', e => {
   }
   if (typing || modalEl) return;
   const mod = e.metaKey || e.ctrlKey;
+  if (!mod && !e.altKey && e.key.toLowerCase() === 'c') { e.preventDefault(); if (state.sel && state.model.node(state.sel)) openComposer(targetKey(state.sel)); else openAllComments(); return; }
   if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && state.selLine) { e.preventDefault(); cutSelected(); return; }
@@ -4196,7 +4339,9 @@ function sessionComments({ version, closed }) {
   // reply that arrived while its chat was closed puts a dot on the count until the chat is opened.
   const RKEY = SBTEL.session ? 'sbtel-read:' + SBTEL.session : null;
   const unread = c => !!c.sid && (c.replies || []).length > ((C.read || {})[c.sid] || 0);
+  chatUnread = c => unread(c);
   function markUnread(root) {
+    cmtCount();
     const u = new Set(state.comments.filter(unread).map(c => c.target));
     (root || document).querySelectorAll('.cbub[data-thread]').forEach(b => {
       const on = u.has(b.dataset.thread); if (on === b.classList.contains('unread')) return;
@@ -4205,7 +4350,8 @@ function sessionComments({ version, closed }) {
     });
   }
   function markRead(key) {
-    let ch = false; C.read = C.read || {};
+    if (!C.read) return; // the log has not loaded yet: its first load says what is read
+    let ch = false;
     state.comments.forEach(c => { if (c.target === key && unread(c)) { C.read[c.sid] = c.replies.length; ch = true; } });
     if (ch) { if (RKEY) store.set(RKEY, C.read); markUnread(); }
   }
@@ -4784,6 +4930,15 @@ SBTEL.modes.server = (() => {
     barEl.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>`;
   }
   // The file modal reads through the server, which serves only what the pushed spec names (§5.9).
+  // The same cap as the server's (internal/server/ref.go fileMaxBytes).
+  saveFile = async f => {
+    if (f.size > 16 * 1048576) throw new Error('larger than 16 MB');
+    const data = await new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(',')[1] || ''); fr.onerror = () => no(new Error('could not be read')); fr.readAsDataURL(f); });
+    const res = await post('file', { name: f.name || 'pasted', data });
+    if (!res.ok) throw new Error(await errText(res));
+    return (await res.json()).path;
+  };
+  specURL = r => url('open?path=' + encodeURIComponent(r.file));
   loadRef = async r => { const q = 'ref?path=' + encodeURIComponent(r.file); const d = await getJSON(q); if (d.image) d.src = q + '&raw=1'; return d; };
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
   // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.
