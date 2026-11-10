@@ -1,0 +1,76 @@
+# sbtel
+
+sbtel is a small language for describing a system as nested blocks in ordered levels, and a tool that
+shows a spec as a diagram in the human's browser. You, the agent, write the spec. The human reads the
+picture, moves things, comments on blocks, and sends that back to you. This file tells you how to
+install sbtel and start.
+
+Site: https://shashi.biz/sbtel/  Source: https://github.com/shashi/sbtel
+
+## 1. Install the binary
+
+macOS, Linux, Git Bash:
+
+    curl -fsSL https://raw.githubusercontent.com/shashi/sbtel/main/install.sh | sh
+
+Windows PowerShell:
+
+    irm https://raw.githubusercontent.com/shashi/sbtel/main/install.ps1 | iex
+
+Check it with `sbtel --version`. If the command is not found, the installer printed the directory to add
+to PATH.
+
+## 2. Get the skills
+
+Three skills teach you the language, how to design with it, and how to recover a spec from code.
+
+Claude Code, from a shell (these two commands need no interaction):
+
+    claude plugin marketplace add shashi/sbtel
+    claude plugin install sbtel@sbtel
+
+Then ask the human to run `/reload-plugins`, or to start a new session, so the skills load. Until they
+do, and in any other agent (Codex, Cursor, and so on), read the skill files directly:
+
+- https://raw.githubusercontent.com/shashi/sbtel/main/plugin/skills/sbtel-language/SKILL.md
+- https://raw.githubusercontent.com/shashi/sbtel/main/plugin/skills/sbtel-design/SKILL.md
+- https://raw.githubusercontent.com/shashi/sbtel/main/plugin/skills/sbtel-recover/SKILL.md
+
+Read `sbtel-language` first. If your agent keeps skills in a folder, save each one there under its own
+name so later sessions have it.
+
+## 3. Show something
+
+When the human asks to see a plan or a design in sbtel:
+
+1. Write it as a spec, for example `plan.sbtel`. A plan is blocks for the pieces of work, in levels from
+   what the human asked for at the top to what everything else rests on at the bottom, each block with a
+   one-line sketch in plain words.
+2. Run `sbtel lint plan.sbtel` and fix what it reports.
+3. Run `sbtel open plan.sbtel`. It opens the diagram in the human's browser and prints a session id.
+4. Run `sbtel inbox <session> --wait`. It returns when the human sends a comment, a review or a save.
+5. Change the file as asked, run `sbtel open plan.sbtel --session <session>` to show the new version,
+   and answer each comment with `sbtel reply <session> <comment id> <text>`. Go back to step 4.
+
+## The language in one example
+
+    (block Notes :type "app"
+      (~ Write notes and see them formatted. ~)
+      (shape Note (~ A note's title and text. ~))
+      (level :name "App"
+        (block Editor (gives Note) (~ Type a note. ~))
+        (block Preview (takes Note) (~ See it formatted. ~)))
+      (level :name "Stored and formatted notes"
+        (block Store (takes Note) (~ Keeps notes on disk. ~))
+        (block Formatter (~ Markdown to HTML. ~))))
+
+- `block`: a part of the system. It can hold levels of more blocks. `:type` says what kind of thing it is.
+- `level`: a row of blocks. A block may depend only on blocks in levels below its own.
+- `adjacent`: two blocks in one level that must work as one.
+- `shape`: something that passes between blocks. `takes` and `gives` on a block say which shapes go in
+  and come out. `carries` and `refines` relate shapes.
+- `behavior` and `implements`: a contract, and the blocks that fulfil it.
+- `(~ … ~)` or `sketch`: a description in plain words.
+- `ref`: a file, a line range, a URL, or another `.sbtel` file that a block is about.
+
+Full reference: https://shashi.biz/sbtel/docs/reference/

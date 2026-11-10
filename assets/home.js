@@ -299,13 +299,13 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     ['cb', 'hist', 'chat', 'sent', 'bar', 'think'].forEach(k => on(k, false)); el('reply').hidden = true;
     el('typed').textContent = ''; chat.classList.remove('done'); target.classList.remove('sel');
     el('new').hidden = true; el('new').classList.remove('kept'); el('hist').classList.remove('kept');
-    el('last').textContent = '    (block Store)))'; el('accept').classList.remove('press'); rename();
+    el('last').textContent = '    (block Store (~ Keeps notes on disk. ~))))'; el('accept').classList.remove('press'); rename();
     cur.style.opacity = reduce ? 0 : 1; point(null); placeChat(); cap(0);
   }
   // The proposal as it stands before Accept: also what is shown when motion is off.
   function proposed() {
     target.classList.add('sel'); on('chat'); chat.classList.add('done'); el('typed').textContent = TEXT; on('sent'); on('cb'); el('reply').hidden = false;
-    el('last').textContent = '    (block Store)'; el('new').hidden = false; on('hist'); on('bar'); rename('diff');
+    el('last').textContent = '    (block Store (~ Keeps notes on disk. ~))'; el('new').hidden = false; on('hist'); on('bar'); rename('diff');
   }
   function play() {
     reset();
@@ -316,7 +316,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     const sent = 2100 + TEXT.length * 42 + 450;
     at(sent, () => { chat.classList.add('done'); on('sent'); on('cb'); });
     at(sent + 700, () => { cap(2); on('think'); });                            // the agent thinks
-    at(sent + 3000, () => { cap(3); on('think', false); el('last').textContent = '    (block Store)'; el('new').hidden = false; el('lvl').textContent = `  (level :name "${NEW}"`; el('lvl').classList.add('new'); });
+    at(sent + 3000, () => { cap(3); on('think', false); el('last').textContent = '    (block Store (~ Keeps notes on disk. ~))'; el('new').hidden = false; el('lvl').textContent = `  (level :name "${NEW}"`; el('lvl').classList.add('new'); });
     at(sent + 3400, () => { el('reply').hidden = false; });
     at(sent + 5600, () => { on('chat', false); target.classList.remove('sel'); });
     at(sent + 5900, () => { on('hist'); on('bar'); rename('diff'); });                         // the proposal: a new block, and a notification

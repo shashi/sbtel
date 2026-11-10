@@ -383,3 +383,13 @@ details.spec > pre.code { margin-top:10px; }
 .more p { margin:0; font-size:16.5px; line-height:1.55; color:var(--ink-2); max-width:52ch; }
 .more q { font-family:var(--ff-mono); font-size:.9em; color:var(--ink); quotes:"\201C" "\201D"; }
 @media (max-width: 720px) { .more { grid-template-columns:minmax(0, 1fr); } }
+
+/* A sentence to say to an agent, where a command would be: it wraps. */
+.install code.say { white-space:normal; font-family:var(--ff-ui); font-size:14.5px; line-height:1.45; color:var(--ink); }
+.install code.say::before { content:"\201C"; color:var(--muted); } .install code.say::after { content:"\201D"; color:var(--muted); }
+.say-cta { max-width:560px; margin:-6px 0 26px; }
+/* Why: each block is a name and one line of plain words. */
+.flow-you .blk { display:flex; flex-direction:column; align-items:flex-start; text-align:left; padding:9px 12px 10px; min-width:0; }
+.flow-you .blk b { font-weight:600; }
+.flow-you .blk small { margin-top:2px; font-size:11.5px; line-height:1.3; color:var(--muted); white-space:nowrap; }
+@media (max-width: 560px) { .flow-agent pre.code { font-size:11px; padding-left:12px; padding-right:12px; } }
