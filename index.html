@@ -271,8 +271,9 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
   <h2 class="term" id="t-adj">Simplicity and explicit coupling</h2>
   <div class="pair flip">
     <div class="txt">
-      <p class="lead">Adjacent blocks use each other&rsquo;s internals, working as a single unit.</p>
-      <p>Other blocks in a level stay independent. A design is simple when its strands are not braided together (<a href="https://www.infoq.com/presentations/Simple-Made-Easy/">&ldquo;Simple Made Easy&rdquo;</a>); declaring two blocks adjacent makes their braid explicit, drawn in the picture with a sentence that says why.</p>
+      <p class="lead">Simple means not braided together.</p>
+      <p>That is Rich Hickey&rsquo;s definition in <a href="https://www.infoq.com/presentations/Simple-Made-Easy/">&ldquo;Simple Made Easy&rdquo;</a>: a simple thing is one strand, and complexity is what you get when strands are twisted into each other. The blocks in a level stay separate strands.</p>
+      <p>Adjacent blocks use each other&rsquo;s internals, working as a single unit. Declaring it makes that one braid explicit: it is drawn in the picture, with a sentence that says why.</p>
 <details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(level :name "Notes as text"
   (adjacent (~ The preview scrolls with the editor. ~)
