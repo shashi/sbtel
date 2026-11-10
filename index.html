@@ -226,7 +226,7 @@
         <li>An obvious path to mastering the system, top-down or bottom-up.</li>
         <li>Parts organized so they are easy to find when you need them.</li>
       </ol>
-      <p><b>One opinionated omission:</b> there is no arrow from every block to each block it depends on. Levels give most of the benefit of those arrows without their noise, because they define which blocks may depend on which.</p>
+      <p><b>One opinionated omission:</b> there is no arrow from every block to each block it depends on. Levels give most of the benefit of those arrows without their noise, by defining which blocks may potentially depend on which ones.</p>
       <p><b>Simple means not braided together</b> (Rich Hickey, <a href="https://www.infoq.com/presentations/Simple-Made-Easy/">&ldquo;Simple Made Easy&rdquo;</a>), so the blocks in a level stay independent of each other. When two must work as one, you declare them adjacent and the picture joins them with a line, as with Pricing and Tax here.</p>
 <details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(block Shop
