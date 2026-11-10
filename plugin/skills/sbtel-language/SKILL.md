@@ -80,6 +80,8 @@ sbtel reply "$id" c7.1 "What changed."    # answer each comment; r7 answers a re
 - A **save** means the human wrote the file from the browser. Re-read it before you edit.
 - Keep `--timeout` under your shell's limit; on a timeout, wait again.
 - Reply to every comment with what changed or why nothing did.
+- Put evidence in the reply as `(ref path:from-to)`: it becomes a button that opens the file at those
+  lines. Any file beside or below the spec works; it does not have to be in the spec.
 
 ## Other commands
 
