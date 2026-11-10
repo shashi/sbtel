@@ -53,6 +53,8 @@ SBTEL.modes.server = (() => {
     barEl.className = 'sb-bar ' + (cls || '');
     barEl.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>`;
   }
+  // The file modal reads through the server, which serves only what the pushed spec names (§5.9).
+  loadRef = async r => { const q = 'ref?path=' + encodeURIComponent(r.file); const d = await getJSON(q); if (d.image) d.src = q + '&raw=1'; return d; };
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
   // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.
   // Nothing is replaced until Reload is pressed there; Back returns to the page as it was, with the toast.

@@ -53,6 +53,7 @@ language.
 | `(block Name [:type "T"] body…)` | file, block, level, adjacent | a part of the system; it may contain levels |
 | `(level [:name "N"] block-or-adjacent…)` | file, block | one level; levels are ordered **top to bottom** |
 | `(adjacent block-or-adjacent…)` | file, block, level, adjacent | peers in one level that may bind each other (≥ 2 members) |
+| `(ref path [sketch])` | block, behavior, shape | a file the declaration stands for or rests on: `src/store.ts`, `src/store.ts:40-60` (lines), `"docs/a note.md#rollout"` (a heading) or a URL. A path is relative to the spec file and stays beside or below it. The viewer shows a count on the card and opens the file in a modal; `sbtel check` does not read refs |
 | `(takes Shape [:as name] [sketch])` / `(gives Shape …)` | block, behavior | a port: what the block takes, or gives; named after its type (`NoteSaved` → `noteSaved`) unless `:as` names it |
 | `(shape Name [:type "T"] …)` | file, block | a data type; `(sketch)`, `(refines T)`, `(carries A B…)` inside |
 | `(behavior Name [:type "T"] …)` / `(behavior (Name P…) …)` | file, block | a named set of ports a block can promise; `(sketch)`, `(port …)`, `(implements …)` inside |
@@ -192,9 +193,9 @@ k tildes followed by `)`. Nothing inside is special: quotes, `;`, `#`, backslash
 goes, so put a space after it: `(~ ~)` is the empty sketch. An opener with no closer is a parse error at
 the opener (§7.1).
 
-Every form is a parenthesised list whose first item is a symbol naming the form. The eleven forms are
-`block`, `level`, `adjacent`, `takes`, `gives`, `shape`, `refines`, `carries`, `behavior`, `implements` and
-`sketch`. The 0.3 forms `(port :in|:out Type)` and `(message Name)` still read; lint reports each with the
+Every form is a parenthesised list whose first item is a symbol naming the form. The twelve forms are
+`block`, `level`, `adjacent`, `takes`, `gives`, `shape`, `refines`, `carries`, `behavior`, `implements`,
+`ref` and `sketch`. The 0.3 forms `(port :in|:out Type)` and `(message Name)` still read; lint reports each with the
 way to write it now, and `sbtel fmt --migrate` rewrites them. Anything else is reported by lint (§7.3) and otherwise ignored. 0.2 renamed `layer` to
 `level` and removed `either`; both are reported with what to write instead (§7.2).
 

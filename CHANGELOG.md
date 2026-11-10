@@ -10,13 +10,23 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 - **`shape` replaces `message`.** `(shape NoteSaved)` declares what a port takes or gives. The word
   "message" suggested a queue; a shape is only what two ports must share to fit.
 - **`takes` and `gives` replace `port`.** `(takes NoteSaved)` and `(gives Note :as text)`, where 0.3
-  wrote `(port :in NoteSaved)` and `(port :out Note :as text)`. The language now has eleven forms.
+  wrote `(port :in NoteSaved)` and `(port :out Note :as text)`.
 - The 0.3 forms still read and still draw. Lint reports each one with the way to write it now, and
   `sbtel fmt --migrate spec.sbtel` rewrites a file in place (`--migrate-ports` still works). The 0.2
   port form is rewritten too.
 - Lint, check, query and diff say "shape" where they said "message type". JSON output keeps its keys
   (`messages`, `"kind": "message"`) and the `μ:` and `msg:` id prefixes.
 - The code anchor is `@sbtel shape Name`; `@sbtel message Name` still works.
+
+### Added
+
+- **`ref`.** `(ref src/store.ts:40-60 (~ why ~))` in a block, a behavior or a shape names a file it
+  stands for or rests on: a path beside or below the spec, with optional lines or a `#heading`, or a URL.
+  A card with refs shows a count at its lower right corner; it opens the file in a modal that closes
+  only with Close or Escape, with the named lines highlighted. The server serves a file only when the
+  pushed spec names it, only from inside the spec's directory (no `..`, no dot-files, no links out), and
+  only as text or an image, never as a page. A standalone page or an export shows the paths. The
+  language has twelve forms.
 
 ### Changed
 

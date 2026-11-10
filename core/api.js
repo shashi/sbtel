@@ -205,9 +205,9 @@ var __api = (function () {
   // These walk the reader's output and report each such thing as a warning, after the core's own.
   var ALLOWED = {
     file: ['block', 'level', 'adjacent', 'shape', 'message', 'behavior'],
-    block: ['block', 'level', 'adjacent', 'takes', 'gives', 'port', 'shape', 'message', 'behavior', 'implements', 'sketch'],
+    block: ['block', 'level', 'adjacent', 'takes', 'gives', 'port', 'shape', 'message', 'behavior', 'implements', 'sketch', 'ref'],
     level: ['block', 'adjacent', 'sketch'], adjacent: ['block', 'adjacent', 'sketch'], port: ['sketch'],
-    message: ['sketch', 'refines', 'carries'], behavior: ['takes', 'gives', 'port', 'sketch', 'implements']
+    message: ['sketch', 'refines', 'carries', 'ref'], behavior: ['takes', 'gives', 'port', 'sketch', 'implements', 'ref'], ref: ['sketch']
   };
   function formWarnings(src) {
     var out = [], starts = lineStarts(src);
@@ -305,6 +305,12 @@ var __api = (function () {
         return;
       }
       if (h === 'sketch') { if (!it.length || it.some(function (y) { return y.list; })) warn('sketch takes a "string"', x.s); return; }
+      if (h === 'ref') {
+        if (!nm || nm.list || (isSym(nm) && nm.v.charAt(0) === ':')) { warn('ref needs a path: (ref path) or (ref "a path")', x.s); return; }
+        var rp = refParts(nm.v);
+        if (!rp.url && (/^([\\/]|[A-Za-z]:[\\/])/.test(rp.file) || rp.file.split(/[\\/]/).indexOf('..') >= 0)) warn('ref ' + nm.v + ' leaves the spec\'s directory; a ref is a path beside or below the spec', nm.s);
+        return kids('ref', 'ref ' + nm.v, it.slice(1));
+      }
       if (h === 'message') {
         if (!isName(nm)) { warn('shape needs a name', x.s); return; }
         return kids('message', 'shape ' + nm.v, it.slice(keywords('shape', nm.v, it)));

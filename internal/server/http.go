@@ -194,6 +194,9 @@ func (s *Server) browser(w http.ResponseWriter, r *http.Request, id, route strin
 			return
 		}
 		writeJSON(w, 200, map[string]any{"version": n, "hash": state.Hash(b), "src": string(b)})
+	case route == "ref" && isGet && m.Kind == "spec":
+		s.pollDisk(ss)
+		s.serveRef(w, r, ss)
 	case route == "bindings" && isGet:
 		if ss.bindings == nil {
 			notFound(w)

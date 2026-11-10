@@ -1,6 +1,6 @@
 ---
 name: sbtel-language
-description: Read, write and fix sbtel specs (.sbtel files: block, level, adjacent, takes, gives, shape, behavior, implements, refines, carries, sketch), choose what a view shows, and run the review loop with the human (sbtel lint, open, inbox, reply, query, diff, check, export). Use whenever a .sbtel file or the sbtel CLI is involved, or the user wants to see, design, understand, debug or review a system, a document, a prompt or a process as blocks in levels.
+description: Read, write and fix sbtel specs (.sbtel files: block, level, adjacent, takes, gives, shape, behavior, implements, refines, carries, ref, sketch), choose what a view shows, and run the review loop with the human (sbtel lint, open, inbox, reply, query, diff, check, export). Use whenever a .sbtel file or the sbtel CLI is involved, or the user wants to see, design, understand, debug or review a system, a document, a prompt or a process as blocks in levels.
 ---
 
 # sbtel: the language, the view and the loop
@@ -21,6 +21,7 @@ Run `sbtel version` first. If it is missing: `curl -fsSL https://raw.githubuserc
   (takes Shape)                            ; a port in; named after the shape (noteSaved)
   (gives Shape :as cmd (~ … ~))            ; a port out; :as only to tell two ports apart
   (implements Behavior)                    ; adds the behavior's ports
+  (ref src/store.ts:40-60 (~ … ~))         ; a file it stands for or rests on; the human opens it
   (shape Note (~ … ~))                     ; what a port takes or gives
   (shape Saved (refines Note))             ; is-a: fits wherever a Note fits
   (shape Page (carries Note Saved))        ; has-a
@@ -39,6 +40,9 @@ Run `sbtel version` first. If it is missing: `curl -fsSL https://raw.githubuserc
   upward, not across its own level, not its container.
 - A shape or behavior is visible in the block that declares it and everything inside.
 - A `takes U` port fits a `gives T` port when T is U or refines it.
+- A `ref` is a path beside or below the spec (`file`, `file:40-60`, `"a file.md#heading"`) or a URL. Use
+  it for the code a block maps to, and for evidence: an eval output, a log, a document. The human
+  reads it in the viewer once you push the version that names it.
 - `(port :in T)`, `(port :out T)` and `(message T)` are the 0.3 forms: `sbtel fmt --migrate spec.sbtel`.
 
 Grammar, every lint message and the binding table: [reference.md](reference.md).

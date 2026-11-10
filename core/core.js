@@ -8,7 +8,7 @@ const FONT = {
 };
 // 0.4 names: (shape …), (takes …) and (gives …). The 0.3 names (message) and (port :in|:out) still read, with a
 // warning that says how to write them now; a model node keeps the forms 'message' and 'port' either way.
-const FORMS = new Set(['block','level','adjacent','takes','gives','shape','behavior','implements','sketch','refines','carries','port','message']);
+const FORMS = new Set(['block','level','adjacent','takes','gives','shape','behavior','implements','sketch','refines','carries','ref','port','message']);
 // Forms a behavior does not contain (it is a set of ports, not a part of the system), and what to declare instead.
 const NOT_IN_BEHAVIOR = { block:'the block', level:'the level', adjacent:'the adjacent group', message:'the shape', shape:'the shape', behavior:'the behavior' };
 
@@ -109,6 +109,17 @@ function portParts(items) {
 }
 // How lint quotes a 0.2 port: (port chord in KeyChord), with … when it has more after the type.
 function legacyPortText(p, more) { return `(port ${p.as} ${p.dir}${p.kind ? ' ' + p.kind : ''}${more ? ' …' : ''})`; }
+// A ref's path, taken apart: { file, from, to, anchor, url }. A URL is kept whole. `path:40-60` names lines
+// (a Windows drive letter is not a line number), and `path#heading` a place in a document.
+function refParts(path) {
+  if (!path) return { file:null, from:0, to:0, anchor:'', url:false };
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(path)) return { file:path, from:0, to:0, anchor:'', url:true };
+  let file = path, anchor = ''; const h = file.indexOf('#'); if (h > 0) { anchor = file.slice(h + 1); file = file.slice(0, h); }
+  const m = /^(.+?):(\d+)(?:-(\d+))?$/.exec(file);
+  return m ? { file:m[1], from:+m[2], to:+(m[3] || m[2]), anchor, url:false } : { file, from:0, to:0, anchor, url:false };
+}
+// The refs of a block, behavior or shape, in the order written.
+const refsOf = n => n.children.filter(c => c.form === 'ref' && c.path).map(r => ({ path:r.path, file:r.file, from:r.from, to:r.to, anchor:r.anchor, url:r.url, sketch:r.sketch }));
 function parse(src) {
   const forms = readAll(src);
   const ctx = { warnings:[], behaviors:new Map(), messages:new Map(), blocks:new Map(), behaviorOrder:[] };
@@ -207,6 +218,14 @@ function parse(src) {
       // (~ … ~) arrives already normalized (tildeText) and keeps its tilde count, so edits can keep the form.
       case 'sketch': if (sx.tilde) { node.text = items[0].v; node.tilde = sx.tilde; } else node.text = items.map(x => x.v || '').join(' ').replace(/\s+/g, ' ').trim(); break;
       case 'refines': case 'carries': node.names = items.map(symOf); break;
+      // (ref path [sketch]): a file the declaration stands for or rests on. The path is a name or a "string",
+      // as written (path, path:40 or path:40-60, path#heading, or a URL); node.file is the path alone.
+      case 'ref': {
+        const p0 = items[0]; node.path = p0 && !p0.list && !(p0.t === 'sym' && p0.v.startsWith(':')) ? p0.v : null;
+        Object.assign(node, refParts(node.path));
+        node.children = items.slice(1).map(x => conv(x, owner, 'ref ' + (node.path || '?'))).filter(Boolean); node.sketch = sketchOf(node);
+        break;
+      }
     }
     return node;
   }
@@ -268,10 +287,11 @@ function prepBlock(b, ctx) {
   implOf(b);
   b.behaviorDecls = b.children.filter(c => c.form === 'behavior');
   b.messageDecls = b.children.filter(c => c.form === 'message');
+  b.refs = refsOf(b);
   b._ctx = ctx;
 }
 function prepBehavior(bh, ctx) {
-  bh.sketch = sketchOf(bh);
+  bh.sketch = sketchOf(bh); bh.refs = refsOf(bh);
   bh.ports = bh.children.filter(c => c.form === 'port').map(p => ({ name:p.name, dir:p.dir, kind:p.kind, sketch:p.sketch }));
   bh.levels = []; implOf(bh); bh._ctx = ctx;
 }
@@ -282,7 +302,7 @@ function implOf(n) {
   n.children.forEach(c => { if (c.form !== 'implements') return; n.impl.push(c.name); if (c.name && !seen.has(c.name) && c.args && c.args.length) n.implArgs[c.name] = c.args.slice(); seen.add(c.name); });
 }
 function prepMessage(m, ctx) {
-  m.sketch = sketchOf(m); m.id = 'μ:' + m.name; m.levels = []; m.impl = []; m.ports = []; m._ctx = ctx;
+  m.sketch = sketchOf(m); m.id = 'μ:' + m.name; m.levels = []; m.impl = []; m.ports = []; m._ctx = ctx; m.refs = refsOf(m);
   const r = m.children.find(c => c.form === 'refines'), k = m.children.find(c => c.form === 'carries');
   m.refines = r ? r.names[0] : null;
   // has-a: the types a value of m holds (only the first (carries …) counts; lint reports a second).
