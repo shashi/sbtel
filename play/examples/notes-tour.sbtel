@@ -1,4 +1,4 @@
-; The Notes app: levels, an adjacent pair and messages.
+; The Notes app: levels, an adjacent pair, and the shapes its blocks give and take.
 (block Notes :type "app"
   (~ Write notes, see them rendered, keep them on disk. ~)
   (shape Note :type "struct" (~ A title and a body. ~))

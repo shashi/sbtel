@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="sbtel-home" content="../">
+<meta name="sbtel-example" content="notes-tour">
 <title>sbtel Playground</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -288,7 +289,9 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .brand b { font-weight:700; }
 .brand .nm { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .help { left:max(14px, env(safe-area-inset-left, 0px)); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 48px); border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.5; max-width:min(360px, calc(100vw - 28px)); }
-.help ul { margin:0; padding-left:16px; }
+.help ul { margin:0; padding-left:16px; padding-right:22px; }
+.help #helpX { position:absolute; top:6px; right:6px; width:28px; height:28px; font-size:18px; line-height:1; color:var(--muted); }
+.help #helpX:hover { color:var(--ink); }
 .help li { margin:2px 0; }
 .dock { left:50%; transform:translateX(-50%); bottom:max(14px, env(safe-area-inset-bottom, 0px)); border-radius:14px; padding:6px; display:flex; align-items:center; gap:2px;
   max-width:calc(100vw - 24px); overflow-x:auto; scrollbar-width:none; }
@@ -516,6 +519,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 <div class="float brand" id="brand"><b>sbtel</b><span class="nm" id="specName"></span>
   <button class="xbtn" id="helpBtn" aria-expanded="false" aria-controls="help" title="How to use">?</button></div>
 <div class="float help" id="help" hidden>
+  <button class="xbtn" id="helpX" aria-label="Close" title="Close">×</button>
   <ul>
     <li><b>sbtel</b> is a language to design, understand, and collaborate on a system's architecture with AI. This page draws a system as blocks in levels, from text you can edit.</li>
     <li>Drag the canvas to pan. Pinch, or ⌘/Ctrl + scroll, to zoom.</li>
@@ -1300,7 +1304,7 @@ function layout(model, opts, M) {
     const placed = [];
     b.levels.forEach((L, i) => { const r = layoutLevel(L, inner, depth + 1); placed.push({ L, r, y }); y += r.h; if (i < b.levels.length - 1) y += K.LEVELGAP; });
     const levelsEnd = y;
-    const bands = [bandOf(b.behaviorDecls, inner, depth + 1, 'Behaviors'), bandOf(b.messageDecls, inner, depth + 1, 'Message types')].filter(Boolean);
+    const bands = [bandOf(b.behaviorDecls, inner, depth + 1, 'Behaviors'), bandOf(b.messageDecls, inner, depth + 1, 'Shapes')].filter(Boolean);
     if (bands.length) { if (placed.length) y += K.BANDGAP; bands.forEach((bd, i) => { bd.y = y; y += bd.h + (i < bands.length - 1 ? 24 : 0); }); }
     y += 6; const outY = y;
     const H = y + (b.virtual ? 16 : K.PAD);
@@ -4109,6 +4113,7 @@ $('zOut').onclick = () => zoomAt(1 / 1.2, innerWidth / 2, innerHeight / 2);
 $('fit').onclick = () => fit(true);
 $('expAll').onclick = () => { state.model.blocks.forEach(b => { if (hasInside(b)) state.open.add(b.id); }); render(); fit(true); };
 $('colAll').onclick = () => { state.open = new Set(); render(); fit(true); };
+$('helpX').onclick = () => $('helpBtn').click();
 $('helpBtn').onclick = () => { const h = $('help'); h.hidden = !h.hidden; $('helpBtn').setAttribute('aria-expanded', !h.hidden); store.set('sbtel-help-seen', true); };
 
 // @sbtel end App.Input
@@ -4330,7 +4335,7 @@ addEventListener('resize', () => placeStrip());
 const SBTEL = (() => {
   const m = location.protocol === 'file:' ? null : /^\/s\/([0-9a-f]{32})\/(diff)?$/.exec(location.pathname);
   const cmp = m && !m[2] ? /(?:^\?|&)compare=([\w.-]+)(?:&|$)/.exec(location.search) : null;
-  return { version: '0.4.0', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
+  return { version: '0.4.1', mode: m ? (m[2] || cmp ? 'diff' : 'server') : 'standalone', session: m && !cmp ? m[1] : null, base: m && !cmp ? '/s/' + m[1] + '/' : null,
     compare: cmp ? cmp[1] : null, compares: {}, modes: {} };
 })();
 // @sbtel end Viewer.Mode
@@ -6133,6 +6138,12 @@ SBTEL.modes.standalone = (() => {
       try { return { text: decode(P.src) }; }
       catch (e) { return { text: '', raw: 'src:' + P.src, error: 'The spec in the URL (#src=…) is not base64url-encoded UTF-8 text.' }; }
     }
+    // A hosted page may name the example it starts with (<meta name="sbtel-example">), where the built-in
+    // sample would be; if it cannot be fetched, the sample is.
+    const start = P.example === null ? (document.querySelector('meta[name="sbtel-example"]')?.getAttribute('content') || '').trim() : '';
+    if (start && /^[\w-]+(?:\/[\w-]+)*$/.test(start)) {
+      try { const r = await fetch('examples/' + start + '.sbtel'); if (r.ok) return { text: await r.text(), start: true }; } catch (e) {}
+    }
     if (P.example !== null) {
       const name = dec(P.example), path = 'examples/' + name + '.sbtel';
       if (!/^[\w-]+(?:\/[\w-]+)*$/.test(name)) return { text: '', raw: 'example:' + name, error: `#example=${name} is not an example name: letters, digits, - and _, with / between folders.` };
@@ -6330,7 +6341,8 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
 
   async function boot() {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
-    const got = await fromURL(), text = got ? got.text : SAMPLE, exported = !!(got && got.exported);
+    let got = await fromURL(); const text = got ? got.text : SAMPLE, exported = !!(got && got.exported);
+    if (got && got.start) { got = null; $('sample').onclick = () => { state.open = new Set(); state.seenTop = new Set(); setSource(text); fit(true); }; } // the page's own sample: handled as the built-in one is
     const key = got || P.embed ? ':' + (P.embed ? 'embed-' : 'spec-') + digest(got && got.error ? got.raw : text) : '';
     if (key) loadPrefs(key);
     if (P.theme) state.opts.theme = P.theme; else if (P.embed) state.opts.theme = 'system';
