@@ -122,26 +122,26 @@ details[open] > summary { margin-bottom:10px; }
 
 /* Blocks demo */
 /* Blocks: one block opens into its levels, and one of those into its functions. No canvas box: the page is the canvas. */
-.grow { position:relative; min-height:500px; display:flex; align-items:center; justify-content:center; }
-.grow .box { align-items:stretch; padding:14px 18px 16px; transition:background-color .45s ease, padding .45s ease, box-shadow .2s ease; }
-.grow .box > .pill { align-self:flex-start; }
-.grow .box > .bt { font-size:17px; font-weight:600; }
-.grow #bk-notes > .bt { font-size:19px; }
-.grow .box > .sk { font:400 13.5px/1.45 var(--ff-ui); margin-top:4px; white-space:nowrap; }
-.grow .kids { display:grid; grid-template-rows:0fr; max-width:0; opacity:0; transition:grid-template-rows .55s cubic-bezier(.4, 0, .2, 1), max-width .55s cubic-bezier(.4, 0, .2, 1), opacity .3s ease; }
-.grow .kin { overflow:hidden; min-height:0; }
-.grow .open > .kids { grid-template-rows:1fr; max-width:560px; opacity:1; transition-delay:0s, 0s, .25s; }
-.grow .open > .kids > .kin { padding-top:12px; }
-.grow .row { padding:14px 0; min-height:0; gap:12px; align-items:flex-start; white-space:nowrap; }
-.grow .lname { font-size:13px; }
-.grow .lname span { background:transparent; }
+.unfold { position:relative; min-height:500px; display:flex; align-items:center; justify-content:center; }
+.unfold .box { align-items:stretch; padding:14px 18px 16px; transition:background-color .45s ease, padding .45s ease, box-shadow .2s ease; }
+.unfold .box > .pill { align-self:flex-start; }
+.unfold .box > .bt { font-size:17px; font-weight:600; }
+.unfold #bk-notes > .bt { font-size:19px; }
+.unfold .box > .sk { font:400 13.5px/1.45 var(--ff-ui); margin-top:4px; white-space:nowrap; }
+.unfold .kids { display:grid; grid-template-rows:0fr; max-width:0; opacity:0; transition:grid-template-rows .55s cubic-bezier(.4, 0, .2, 1), max-width .55s cubic-bezier(.4, 0, .2, 1), opacity .3s ease; }
+.unfold .kin { overflow:hidden; min-height:0; }
+.unfold .open > .kids { grid-template-rows:1fr; max-width:560px; opacity:1; transition-delay:0s, 0s, .25s; }
+.unfold .open > .kids > .kin { padding-top:12px; }
+.unfold .row { padding:14px 0; min-height:0; gap:12px; align-items:flex-start; white-space:nowrap; }
+.unfold .lname { font-size:13px; }
+.unfold .lname span { background:transparent; }
 /* The viewer's colours: a block at the top is a white frame once it holds levels, a block inside it is a card, a leaf is cream. */
-.grow #bk-notes.open { background:var(--surface); border-radius:14px; padding:18px 22px 14px; }
-.grow #bk-store.open { background:var(--card); }
-.grow .blk.fn { font-family:var(--ff-mono); font-size:13.5px; }
-.grow .blk.fn .pill { font-family:var(--ff-ui); }
-.grow .blk.sel { box-shadow:0 0 0 2px var(--canvas), 0 0 0 4px var(--accent); }
-.grow-cap { margin:14px 0 0; text-align:center; font-size:15px; color:var(--muted); min-height:1.5em; }
+.unfold #bk-notes.open { background:var(--surface); border-radius:14px; padding:18px 22px 14px; }
+.unfold #bk-store.open { background:var(--card); }
+.unfold .blk.fn { font-family:var(--ff-mono); font-size:13.5px; }
+.unfold .blk.fn .pill { font-family:var(--ff-ui); }
+.unfold .blk.sel { box-shadow:0 0 0 2px var(--canvas), 0 0 0 4px var(--accent); }
+.unfold-cap { margin:14px 0 0; text-align:center; font-size:15px; color:var(--muted); min-height:1.5em; }
 
 /* Adjacency demo */
 #adj .row { padding-top:74px; padding-bottom:58px; gap:0; justify-content:center; }
@@ -248,11 +248,11 @@ details[open] > summary { margin-bottom:10px; }
   .band { margin:10px -12px -18px; padding:12px 12px 16px; border-radius:0 0 10.5px 10.5px; }
   .row { gap:8px; }
   .blk { padding:8px 10px; font-size:14px; border-radius:10px; }
-  .grow { min-height:472px; }
-  .grow .box { padding:10px 12px 12px; }
-  .grow #bk-notes.open { padding:12px 12px 8px; }
-  .grow .box > .sk { white-space:normal; }
-  .grow .row { gap:8px; }
+  .unfold { min-height:472px; }
+  .unfold .box { padding:10px 12px 12px; }
+  .unfold #bk-notes.open { padding:12px 12px 8px; }
+  .unfold .box > .sk { white-space:normal; }
+  .unfold .row { gap:8px; }
   #hero .blk { font-size:13.5px; padding:8px 9px; }
   #hero .gapb { width:40px; }
   #hero .row { padding:24px 0; }
