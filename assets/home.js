@@ -267,7 +267,13 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   const fig = $('#flow'); if (!fig) return;
   const el = id => $('#flow-' + id), on = (id, v = true) => el(id).classList.toggle('on', v);
   const frame = el('frame'), target = el('target'), chat = el('chat'), cur = el('cur');
-  const TEXT = 'Editor parses Markdown too. Share it.';
+  const TEXT = 'Editor formats Markdown too. Share it.';
+  const OLD = 'Stored notes', NEW = 'Stored and formatted notes';
+  // The level's new name: as a word diff while it is a proposal, plain once accepted or undone.
+  const rename = how => {
+    el('lname').innerHTML = how === 'diff' ? `<del>${OLD}</del> <ins>${NEW}</ins>` : how === 'new' ? NEW : OLD;
+    el('lvl').textContent = `  (level :name "${how ? NEW : OLD}"`; el('lvl').classList.toggle('new', how === 'diff');
+  };
   const CAP = ['One design, two views of it.', 'You click a block and say what you want.', 'Your agent reads the comment and thinks.',
     'It edits the text, answers you, and proposes the change.', 'You look at what changed and accept it.'];
   let timers = [];
@@ -293,13 +299,13 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     ['cb', 'hist', 'chat', 'sent', 'bar', 'think'].forEach(k => on(k, false)); el('reply').hidden = true;
     el('typed').textContent = ''; chat.classList.remove('done'); target.classList.remove('sel');
     el('new').hidden = true; el('new').classList.remove('kept'); el('hist').classList.remove('kept');
-    el('last').textContent = '    (block Store)))'; el('accept').classList.remove('press');
+    el('last').textContent = '    (block Store)))'; el('accept').classList.remove('press'); rename();
     cur.style.opacity = reduce ? 0 : 1; point(null); placeChat(); cap(0);
   }
   // The proposal as it stands before Accept: also what is shown when motion is off.
   function proposed() {
     target.classList.add('sel'); on('chat'); chat.classList.add('done'); el('typed').textContent = TEXT; on('sent'); on('cb'); el('reply').hidden = false;
-    el('last').textContent = '    (block Store)'; el('new').hidden = false; on('hist'); on('bar');
+    el('last').textContent = '    (block Store)'; el('new').hidden = false; on('hist'); on('bar'); rename('diff');
   }
   function play() {
     reset();
@@ -310,13 +316,13 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     const sent = 2100 + TEXT.length * 42 + 450;
     at(sent, () => { chat.classList.add('done'); on('sent'); on('cb'); });
     at(sent + 700, () => { cap(2); on('think'); });                            // the agent thinks
-    at(sent + 3000, () => { cap(3); on('think', false); el('last').textContent = '    (block Store)'; el('new').hidden = false; });
+    at(sent + 3000, () => { cap(3); on('think', false); el('last').textContent = '    (block Store)'; el('new').hidden = false; el('lvl').textContent = `  (level :name "${NEW}"`; el('lvl').classList.add('new'); });
     at(sent + 3400, () => { el('reply').hidden = false; });
     at(sent + 5600, () => { on('chat', false); target.classList.remove('sel'); });
-    at(sent + 5900, () => { on('hist'); on('bar'); });                         // the proposal: a new block, and a notification
+    at(sent + 5900, () => { on('hist'); on('bar'); rename('diff'); });                         // the proposal: a new block, and a notification
     at(sent + 7300, () => { cap(4); point(el('accept'), .55, .6); });          // the pointer goes to Accept
     at(sent + 8300, () => { click(); el('accept').classList.add('press'); });
-    at(sent + 8650, () => { el('accept').classList.remove('press'); on('bar', false); el('hist').classList.add('kept'); el('new').classList.add('kept'); });
+    at(sent + 8650, () => { el('accept').classList.remove('press'); on('bar', false); el('hist').classList.add('kept'); el('new').classList.add('kept'); rename('new'); });
     at(sent + 9300, () => point(null));
     at(sent + 12600, play);
   }
