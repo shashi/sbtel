@@ -368,3 +368,5 @@ details.spec > pre.code { margin-top:10px; }
 #lv .edges .oks path:not(.head) { stroke-dasharray:1.5 5.5; stroke-linecap:round; stroke-width:1.8; }
 .gives { margin:0 0 18px; padding-left:22px; }
 .gives li { margin:4px 0; color:var(--ink-2); }
+.txt p b { color:var(--ink); font-weight:600; }
+.check-out details .hint { margin:8px 0; }

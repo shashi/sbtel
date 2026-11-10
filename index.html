@@ -223,10 +223,10 @@
       <p class="lead">Low-level details stay in the lower levels.</p>
       <p>Levels create an &ldquo;abstraction barrier&rdquo;: a dependency can only point downward, across levels. This is the stratified design of <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/full-text/book/book-Z-H-14.html"><abbr title="Structure and Interpretation of Computer Programs">SICP</abbr></a>. It gives you two things:</p>
       <ol class="gives">
-        <li>An obvious path into the system, top-down or bottom-up.</li>
+        <li>An obvious path to mastering the system, top-down or bottom-up.</li>
         <li>Parts organized so they are easy to find when you need them.</li>
       </ol>
-      <p>One opinionated omission: there is no arrow from every block to each block it depends on. Levels give most of the benefit of those arrows without their noise, because they define which blocks may depend on which.</p>
+      <p><b>One opinionated omission:</b> there is no arrow from every block to each block it depends on. Levels give most of the benefit of those arrows without their noise, because they define which blocks may depend on which.</p>
 <details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(block Shop
   (level :name "Pages"
@@ -262,6 +262,7 @@
         <div class="verdict" id="lv-say" aria-live="polite"><p class="fine">Every dependency points down. <code>sbtel check</code> finds nothing to fix.</p></div>
         <details id="lv-raw">
           <summary>See the real sbtel check output</summary>
+          <p class="hint"><code>edges.txt</code> is the list of real dependencies your agent maps from the code.</p>
 <pre class="code wrapline term-out" id="lv-out"><span class="hl-prompt">$ </span>sbtel check shop.sbtel --bindings edges.txt
 shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
         </details>
@@ -385,7 +386,8 @@ shop.sbtel: 6 bindings, <span class="hl-ok">0 not allowed</span></pre>
   <div class="pair">
     <div class="txt">
       <p class="lead">The picture can&rsquo;t silently lie.</p>
-      <p>List who names whom in the real code, one edge per line with its file and line. <code>sbtel check</code> reports every upward, sideways or out-of-scope dependency, and points at the line.</p>
+      <p><code>edges.txt</code> is a file your agent creates. It maps the dependencies in the actual system: who names whom, one per line, with the file and line.</p>
+      <p><code>sbtel check</code> lets your agent verify the code against your design, and see where the implementation can be simplified or made to match it. It reports every upward, sideways or out-of-scope dependency, and points at the line.</p>
       <p>When a break is deliberate, a <code># VIOLATION:</code> comment above the edge says why, and the report carries the reason.</p>
 <details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(block Notes
