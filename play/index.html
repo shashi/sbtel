@@ -220,6 +220,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .refc:hover { border-color:var(--accent); }
 .refc[draggable] { -webkit-user-drag:element; }
 .refc.spec { background:var(--accent-soft); }
+.refb.unread::after { content:""; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
 .refc svg.i { width:11px; height:11px; }
 /* The file modal. It closes with its Close button or Escape, never by a click outside it. */
 .codep.refp { display:flex; flex-direction:column; left:50%; top:5vh; transform:translateX(-50%); width:min(920px, calc(100vw - 24px)); height:90vh; }
@@ -2523,7 +2524,7 @@ function fillBlock(el, B, counts) {
   el.style.zIndex = B.kind === 'frame' ? 10 + B.depth * 2 : (dr && (dr.top || dr.bot) ? 800 : 500) + B.depth;
   el.innerHTML = (B.kind === 'card' ? cardHTML(B) : frameHTML(B)) +
     (counts[key] ? `<button class="cbub" data-thread="${esc(key)}" aria-label="${counts[key]} comment${counts[key] === 1 ? '' : 's'}">${ICON.comment}${counts[key]}</button>` : '') +
-    (B.node && B.node.refs && B.node.refs.length ? `<button class="refb" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.code + B.node.refs.length}</button>` : '');
+    (B.node && B.node.refs && B.node.refs.length ? `<button class="refb${B.node.refs.some(r => isSpec(r.path) && refUnread(r.file)) ? ' unread' : ''}" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.code + B.node.refs.length}</button>` : '');
 }
 // Opening a drawer never resizes the card: the row it sits in makes room instead.
 function setDrawer(id, side, open) {
@@ -4137,16 +4138,20 @@ function richText(s) {
     const path = q != null ? q : bare != null ? bare : href; if (!path) return all;
     const un = path.replace(/&amp;/g, '&');
     if (/^[a-z][a-z0-9+.-]*:\/\//i.test(un)) return `<a href="${path}" target="_blank" rel="noopener noreferrer">${label || path}</a>`;
-    return `<button type="button" class="refc${isSpec(un) ? ' spec' : ''}" draggable="true" data-ref="${path}" title="${isSpec(un) ? 'Open this diagram in a new tab' : 'Open'}. Drag it onto a block to add it there.">${isSpec(un) ? ICON.go : ICON.code}${label || path}</button>`;
+    return `<button type="button" class="refc${isSpec(un) ? ' spec' : ''}" draggable="true" data-ref="${path}" title="${isSpec(un) ? 'Open this diagram' : 'Open'}. Drag it onto a block to add it there.">${isSpec(un) ? ICON.go : ICON.code}${label || path}</button>`;
   });
 }
 // A ref to another spec is a diagram: it opens in a new tab, as a session of its own (the session's page
 // sets specURL; a page on its own cannot open files).
 const isSpec = path => /\.sbtel$/i.test(refParts(path).file || '');
-let specURL = null;
+// It opens over this page (showSpec), so what is said in it is sent from this page's session (sentFrom:
+// a page shown inside another carries that session's id as ?via=, and its comments, reviews and saves
+// name it). refUnread says whether a reply is waiting inside the spec a ref names.
+let specURL = null, showSpec = null, refUnread = file => false;
+const sentFrom = new URLSearchParams(location.search).get('via') || undefined;
 function openSpec(r) {
-  if (!specURL) { toast('Opening another diagram needs a session: open the spec with sbtel open.'); return; }
-  window.open(specURL(r), '_blank', 'noopener');
+  if (!specURL || !showSpec) { toast('Opening another diagram needs a session: open the spec with sbtel open.'); return; }
+  showSpec(r);
 }
 // The block a file opened from a comment can be added to (the comments say: the open chat's block).
 let refAddTo = () => null;
@@ -4395,7 +4400,7 @@ function sessionComments({ version, closed }) {
       const was = c.status;
       c.status = 'sending'; refreshChat();
       try {
-        const res = await fetch(SBTEL.base + 'comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target: c.target, targetLabel: targetLabel(c.target), text: c.text, version: version(), source: targetSource(c.target) }) });
+        const res = await fetch(SBTEL.base + 'comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target: c.target, targetLabel: targetLabel(c.target), from: sentFrom, text: c.text, version: version(), source: targetSource(c.target) }) });
         if (!res.ok) throw new Error(await errText(res));
         const j = await res.json();
         c.status = 'sent'; c.sid = c.id = j.id; c.replies = c.replies || []; sent++;
@@ -4778,7 +4783,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     computeEdits();
     const list = pending(), E = R.edits, edits = !!(E && E.has), msg = R.message.replace(/\s+$/, '');
     if (!list.length && !edits && !msg.trim()) { toast('Nothing to send: add comments, edits or a message.'); return; }
-    const body = { message:msg, version:o.version(), comments:list.map(c => ({ target:c.target, targetLabel:targetLabel(c.target), text:c.text, source:targetSource(c.target) })),
+    const body = { from: sentFrom, message:msg, version:o.version(), comments:list.map(c => ({ target:c.target, targetLabel:targetLabel(c.target), text:c.text, source:targetSource(c.target) })),
       proposal: edits ? { src:state.src, base:E.base.hash, baseVersion:E.base.version } : null, supersedes: edits && E.supersedes ? E.supersedes : '' };
     const json = JSON.stringify(body), src = state.src;
     if (new Blob([json]).size > 64 * 1024 * 1024) { toast('Not sent: the review is larger than the 64 MiB the server accepts.'); return; }
@@ -4918,6 +4923,9 @@ SBTEL.modes.server = (() => {
 .sb-cmp { position:fixed; inset:0; z-index:2940; background:var(--canvas); display:flex; flex-direction:column; }
 .sb-cmp header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--panel-line); font-size:14px; }
 .sb-cmp header b { font-weight:600; }
+.sb-ref .trail { display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:0; }
+.sb-ref .trail .sep { color:var(--muted); }
+.sb-ref .trail .btn { padding:4px 10px; }
 .sb-cmp header .note { color:var(--muted); font-size:12.5px; }
 .sb-cmp header .spacer { flex:1; }
 .sb-cmp iframe { flex:1; width:100%; border:0; min-height:0; }
@@ -4944,7 +4952,54 @@ SBTEL.modes.server = (() => {
     if (!res.ok) throw new Error(await errText(res));
     return (await res.json()).path;
   };
-  specURL = r => url('open?path=' + encodeURIComponent(r.file));
+  // ---------- A ref to another spec: its diagram over this page ----------
+  // The frame shows that spec's own session, with ?via= naming the session at the top of the trail, so
+  // what is said in it reaches this page's agent. A framed page asks the top page to move on to a spec
+  // it refs, so there is one overlay and a trail, never a frame in a frame.
+  const framed = !!sentFrom && window.parent !== window;
+  specURL = r => location.origin + url('open?path=' + encodeURIComponent(r.file));
+  let refEl = null, trail = [];
+  const RR = 'sbtel-refread:' + SBTEL.session, refN = new Map(), refRead = store.get(RR, {}) || {};
+  refUnread = file => (refN.get(file) || 0) > (refRead[file] || 0);
+  const readRef = file => { if (refUnread(file)) { refRead[file] = refN.get(file); store.set(RR, refRead); render(); } };
+  function refEvent(e, live) {
+    if (!e || e.kind !== 'ref' || !e.ref || e.ref.kind !== 'reply') return;
+    refN.set(e.file, (refN.get(e.file) || 0) + 1);
+    if (!live) return;
+    if (trail.length && trail[trail.length - 1].file === e.file) { refRead[e.file] = refN.get(e.file); store.set(RR, refRead); return; }
+    render(); toast(`Agent replied in ${e.file}`);
+  }
+  function drawTrail() {
+    const h = refEl.querySelector('.trail'), last = trail.length - 1;
+    h.innerHTML = `<button class="btn" data-i="-1">${esc(S.meta?.label || 'Back')}</button>` + trail.map((t, i) => `<span class="sep">›</span>` + (i === last ? `<b>${esc(t.name)}</b>` : `<button class="btn" data-i="${i}">${esc(t.name)}</button>`)).join('');
+    refEl.querySelector('iframe').src = trail[last].url; refEl.querySelector('iframe').title = trail[last].name;
+    if (trail[last].file) readRef(trail[last].file);
+  }
+  function closeSpec() { refEl?.remove(); refEl = null; trail = []; }
+  function showHere(t) {
+    if (!refEl) {
+      refEl = document.createElement('div'); refEl.className = 'sb-cmp sb-ref'; refEl.setAttribute('role', 'dialog'); refEl.setAttribute('aria-label', 'A diagram this one refers to');
+      refEl.innerHTML = `<header><span class="trail"></span><span class="spacer"></span><button class="btn" data-x="tab">Open in a tab</button><button class="btn primary" data-x="close">Close</button></header><iframe></iframe>`;
+      refEl.addEventListener('click', e => {
+        const x = e.target.closest('[data-x]')?.dataset.x, i = e.target.closest('[data-i]')?.dataset.i;
+        if (x === 'close' || i === '-1') closeSpec();
+        else if (x === 'tab') { try { window.open(refEl.querySelector('iframe').contentWindow.location.pathname, '_blank', 'noopener'); } catch (err) { window.open(trail[trail.length - 1].url.replace(/&via=.*/, ''), '_blank', 'noopener'); } }
+        else if (i != null) { trail.length = +i + 1; drawTrail(); }
+      });
+      refEl.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeSpec(); } });
+      document.body.appendChild(refEl);
+    }
+    trail.push(t); drawTrail(); refEl.querySelector('[data-x="close"]').focus();
+  }
+  showSpec = r => {
+    const t = { name: r.file.split('/').pop(), url: specURL(r) + '&via=' + (sentFrom || SBTEL.session), file: framed ? null : r.file };
+    if (framed) window.parent.postMessage({ sbtel: 'open-spec', name: t.name, url: t.url }, location.origin); else showHere(t);
+  };
+  addEventListener('message', e => {
+    if (e.origin !== location.origin || !refEl || e.source !== refEl.querySelector('iframe').contentWindow || e.data?.sbtel !== 'open-spec') return;
+    const u = String(e.data.url || ''); if (!u.startsWith(location.origin + '/s/')) return;
+    showHere({ name: String(e.data.name || 'spec').slice(0, 80), url: u, file: null });
+  });
   loadRef = async r => { const q = 'ref?path=' + encodeURIComponent(r.file); const d = await getJSON(q); if (d.image) d.src = q + '&raw=1'; return d; };
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
   // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.
@@ -5060,7 +5115,7 @@ SBTEL.modes.server = (() => {
     const src = state.src;
     // Measure the request in UTF-8 bytes, as the server does, and refuse locally rather than upload a
     // body the server would cut off. The edits stay in the tab (still dirty).
-    const body = JSON.stringify({ base: S.base, src, tab: S.tab, force: force === true });
+    const body = JSON.stringify({ base: S.base, src, tab: S.tab, force: force === true, from: sentFrom });
     const bytes = new Blob([body]).size;
     if (bytes > SAVE_LIMIT) {
       S.saving = false; syncSave();
@@ -5142,6 +5197,7 @@ SBTEL.modes.server = (() => {
       versionToast(d);
     });
     es.addEventListener('reply', e => { seq(e); SC.onReply(JSON.parse(e.data)); });
+    es.addEventListener('ref', e => { seq(e); refEvent(JSON.parse(e.data), true); });
     es.addEventListener('closed', () => closedState());
     es.onerror = () => {
       if (S.closed || S.es !== es) return;
@@ -5211,6 +5267,7 @@ SBTEL.modes.server = (() => {
           try { const old = await getJSON('versions/' + draft.version); if (old.hash === draft.base) { S.base = old.hash; S.version = old.version; S.loaded = old.src; } } catch (e) {}
         }
         S.lastSeq = Math.max(S.lastSeq, SC.rebuild(log.events || []));
+        refN.clear(); (log.events || []).forEach(e => refEvent(e, false));
         break;
       } catch (e) {
         if (e.status === 404) { R.forget(); setSource('; This sbtel session no longer exists.\n'); closedState(); return; }
