@@ -317,9 +317,8 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     at(sent, () => { chat.classList.add('done'); on('sent'); on('cb'); });
     at(sent + 700, () => { cap(2); on('think'); });                            // the agent thinks
     at(sent + 3000, () => { cap(3); on('think', false); el('last').textContent = '    (block Store (~ Keeps notes on disk. ~))'; el('new').hidden = false; el('lvl').textContent = `  (level :name "${NEW}"`; el('lvl').classList.add('new'); });
-    at(sent + 3400, () => { el('reply').hidden = false; });
-    at(sent + 5600, () => { on('chat', false); target.classList.remove('sel'); });
-    at(sent + 5900, () => { on('hist'); on('bar'); rename('diff'); });                         // the proposal: a new block, and a notification
+    at(sent + 3400, () => { el('reply').hidden = false; on('hist'); on('bar'); rename('diff'); });   // the reply and the proposal arrive together: a new block, and a notification
+    at(sent + 6400, () => { on('chat', false); target.classList.remove('sel'); });
     at(sent + 7300, () => { cap(4); point(el('accept'), .55, .6); });          // the pointer goes to Accept
     at(sent + 8300, () => { click(); el('accept').classList.add('press'); });
     at(sent + 8650, () => { el('accept').classList.remove('press'); on('bar', false); el('hist').classList.add('kept'); el('new').classList.add('kept'); rename('new'); });
