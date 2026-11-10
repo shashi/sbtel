@@ -362,3 +362,9 @@ details.spec > pre.code { margin-top:10px; }
 #lv .row[data-note]::after { content:attr(data-note); position:absolute; right:10px; bottom:8px; font:600 12px/1 var(--ff-ui); color:var(--ok); animation:flow-in .3s ease both; }
 #lv .lvl.cant .row[data-note]::after { color:var(--muted); }
 #lv .blk.sel { box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+/* Levels: the calls the levels allow are not part of sbtel. They show, dotted, while a block moves, and fade when it is let go. */
+#lv .edges .oks { opacity:0; transition:opacity 1.4s ease .25s; }
+#lv.moving .edges .oks { opacity:1; transition:opacity .15s ease; }
+#lv .edges .oks path:not(.head) { stroke-dasharray:1.5 5.5; stroke-linecap:round; stroke-width:1.8; }
+.gives { margin:0 0 18px; padding-left:22px; }
+.gives li { margin:4px 0; color:var(--ink-2); }

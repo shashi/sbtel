@@ -220,9 +220,13 @@
   <h2 class="term" id="t-levels">Levels</h2>
   <div class="pair">
     <div class="txt">
-      <p class="lead">Each level is a vocabulary built from the level below. A block may use what is below it, never what is above.</p>
-      <p>In a small shop, pages are made of shopping, shopping of prices, and prices of what is stored. Each line is a barrier: a page talks about carts and checkouts, never about tables and rows. This is the stratified design of <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/full-text/book/book-Z-H-14.html"><abbr title="Structure and Interpretation of Computer Programs">SICP</abbr></a>.</p>
-      <p>Levels run top to bottom. Level 1 is the lowest, and knows nothing of the rest.</p>
+      <p class="lead">Low-level details stay in the lower levels.</p>
+      <p>Levels create an &ldquo;abstraction barrier&rdquo;: a dependency can only point downward, across levels. This is the stratified design of <a href="https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/full-text/book/book-Z-H-14.html"><abbr title="Structure and Interpretation of Computer Programs">SICP</abbr></a>. It gives you two things:</p>
+      <ol class="gives">
+        <li>An obvious path into the system, top-down or bottom-up.</li>
+        <li>Parts organized so they are easy to find when you need them.</li>
+      </ol>
+      <p>One opinionated omission: there is no arrow from every block to each block it depends on. Levels give most of the benefit of those arrows without their noise, because they define which blocks may depend on which.</p>
 <details class="spec"><summary>The text your agent writes</summary>
 <pre class="code" data-lang="sbtel">(block Shop
   (level :name "Pages"
@@ -251,11 +255,11 @@
         <span class="cur" id="lv-cur" aria-hidden="true"><svg viewBox="0 0 22 24" width="22" height="24"><path d="M3 2l15.5 9.6-6.9 1.5 4 7.6-3 1.6-4-7.7L3 19.5z"/></svg></span>
       </div>
       <div class="capline">
-        <span class="grow hint" id="lv-help">It plays by itself. Drag a block to another level to try your own, or focus one and press <kbd>↑</kbd> or <kbd>↓</kbd>.</span>
+        <span class="grow hint" id="lv-help">Drag a block to another level, or focus one and press <kbd>↑</kbd> or <kbd>↓</kbd>. The dotted arrows are what the code calls; they show only while a block moves.</span>
         <button class="btn" type="button" id="lv-reset">Put them back</button>
       </div>
       <div class="check-out">
-        <div class="verdict" id="lv-say" aria-live="polite"><p class="fine">Every arrow points down. <code>sbtel check</code> finds nothing to fix.</p></div>
+        <div class="verdict" id="lv-say" aria-live="polite"><p class="fine">Every dependency points down. <code>sbtel check</code> finds nothing to fix.</p></div>
         <details id="lv-raw">
           <summary>See the real sbtel check output</summary>
 <pre class="code wrapline term-out" id="lv-out"><span class="hl-prompt">$ </span>sbtel check shop.sbtel --bindings edges.txt

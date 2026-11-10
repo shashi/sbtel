@@ -394,7 +394,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   const rowOf = id => drag && drag.el === B[id] ? drag.row : rows.indexOf(B[id].parentElement);
   const rule = (a, b) => { const ra = rowOf(a), rb = rowOf(b); return ra < rb ? 'ok' : ra === rb ? 'same-level' : 'upward'; };
   function draw() {
-    let s = '';
+    let s = '', ok = ''; // the calls the levels allow are implicit: they are drawn only while a block moves
     const broken = rows.map(() => ({ rules: new Set(), src: new Set() })); // per row: the rules its blocks break
     E.forEach(([a, b]) => {
       const r = rule(a, b), A = box(B[a], svg), Z = box(B[b], svg);
@@ -405,10 +405,10 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
         const s0 = [A.cx + dir * Math.min(14, A.w / 4), A.y], t0 = [Z.cx - dir * Math.min(14, Z.w / 4), Z.y - 1];
         ar = finish(s0, [s0[0], s0[1] - h], [t0[0], t0[1] - h], t0);
       } else ar = arrow(A, Z);
-      s += arrowSVG(ar, r === 'ok' ? '' : 'bad');
+      if (r === 'ok') ok += arrowSVG(ar, ''); else s += arrowSVG(ar, 'bad');
       if (r !== 'ok') { const k = broken[rowOf(a)]; k.rules.add(r); k.src.add(a); }
     });
-    svg.innerHTML = s;
+    svg.innerHTML = `<g class="oks">${ok}</g>` + s;
     // One tag per level whose blocks break a rule, under those blocks and below every card in the row,
     // so it never meets a level's name, a card or another tag.
     broken.forEach((k, ri) => {
@@ -436,7 +436,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     });
     out.innerHTML = `<span class="hl-prompt">$ </span>sbtel check shop.sbtel --bindings edges.txt\n` + lines.map(l => l + '\n').join('') +
       `shop.sbtel: ${E.length} bindings, ${bad ? `<span class="hl-warn">${bad} not allowed</span>, 0 explained` : '<span class="hl-ok">0 not allowed</span>'}`;
-    say.innerHTML = plain.length ? plain.join('') : '<p class="fine">Every arrow points down. <code>sbtel check</code> finds nothing to fix.</p>';
+    say.innerHTML = plain.length ? plain.join('') : '<p class="fine">Every dependency points down. <code>sbtel check</code> finds nothing to fix.</p>';
   }
   // A level left with no block leaves the spec (sbtel numbers only the levels that hold blocks), so it
   // leaves the picture too: the diagram and the check output always describe the same spec.
@@ -458,7 +458,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
       const move = ev => {
         const dx = ev.clientX - sx, dy = ev.clientY - sy;
         if (!moved && Math.hypot(dx, dy) < 5) return;
-        if (!moved) { moved = true; el.classList.add('drag'); drag = { el, row: rows.indexOf(el.parentElement) }; }
+        if (!moved) { moved = true; el.classList.add('drag'); fr.classList.add('moving'); drag = { el, row: rows.indexOf(el.parentElement) }; }
         el.style.transform = `translate(${dx}px, ${dy}px)`;
         drag.row = rowAt(ev.clientY);
         rows.forEach((r, i) => { r.classList.toggle('over', i === drag.row); r.classList.remove('no'); });
@@ -470,7 +470,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
         el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
         if (!moved) return;
         const ri = drag.row; drag = null;
-        el.classList.remove('drag');
+        el.classList.remove('drag'); fr.classList.remove('moving');
         rows.forEach(r => r.classList.remove('over', 'no'));
         moveTo(el, ri, false);
       };
@@ -482,7 +482,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
       const here = rows.indexOf(el.parentElement);
       let ri = here + d;
       while (ri >= 0 && ri < rows.length && rows[ri].parentElement.hidden) ri += d;
-      if (ri >= 0 && ri < rows.length) moveTo(el, ri, true);
+      if (ri >= 0 && ri < rows.length) { fr.classList.add('moving'); moveTo(el, ri, true); setTimeout(() => fr.classList.remove('moving'), 500); }
     });
   });
   $('#lv-reset').addEventListener('click', () => {
@@ -513,7 +513,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   function autoDrag(el, ri, ms) {
     const a = el.getBoundingClientRect(), z = rows[ri].getBoundingClientRect();
     const dy = z.top + z.height / 2 - (a.top + a.height / 2) - 8, dx = ri > rows.indexOf(el.parentElement) ? 54 : 0;
-    el.classList.add('drag'); drag = { el, row: rows.indexOf(el.parentElement) };
+    el.classList.add('drag'); fr.classList.add('moving'); drag = { el, row: rows.indexOf(el.parentElement) };
     const t0 = performance.now();
     const step = t => {
       if (!auto) return;
@@ -524,13 +524,13 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
       rows.forEach((x, i) => { x.classList.toggle('over', i === drag.row); x.classList.toggle('no', i === drag.row && bad); });
       draw(); point(el, .6, .65, false);
       if (k < 1) { raf = requestAnimationFrame(step); return; }
-      const to = drag.row; drag = null; el.classList.remove('drag'); rows.forEach(x => x.classList.remove('over', 'no'));
+      const to = drag.row; drag = null; el.classList.remove('drag'); fr.classList.remove('moving'); rows.forEach(x => x.classList.remove('over', 'no'));
       moveTo(el, to, false);
     };
     raf = requestAnimationFrame(step);
   }
   function home(animate) {
-    blks.forEach(b => { b.classList.remove('drag'); b.style.transform = ''; }); drag = null; rows.forEach(r => r.classList.remove('over', 'no')); reach(null);
+    blks.forEach(b => { b.classList.remove('drag'); b.style.transform = ''; }); fr.classList.remove('moving'); drag = null; rows.forEach(r => r.classList.remove('over', 'no')); reach(null);
     if (blks.some(b => rows.indexOf(b.parentElement) !== +b.dataset.home)) {
       if (animate) flip(blks, () => { blks.forEach(b => rows[+b.dataset.home].appendChild(b)); prune(); }, draw);
       else { blks.forEach(b => rows[+b.dataset.home].appendChild(b)); prune(); }
@@ -551,7 +551,7 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
   function stop() { // a person takes over: the picture is theirs from here
     if (!auto) return; auto = false;
     timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); cur.style.opacity = 0;
-    blks.forEach(b => { b.classList.remove('drag'); b.style.transform = ''; }); drag = null; rows.forEach(r => r.classList.remove('over', 'no')); reach(null); draw(); report();
+    blks.forEach(b => { b.classList.remove('drag'); b.style.transform = ''; }); fr.classList.remove('moving'); drag = null; rows.forEach(r => r.classList.remove('over', 'no')); reach(null); draw(); report();
   }
   let manual = false;
   const take = e => { if (e.isTrusted) { manual = true; stop(); } };
