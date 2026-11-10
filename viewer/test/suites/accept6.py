@@ -19,14 +19,14 @@ window.__t = {
   center: (id, k) => { const B = state.lay.blocks.find(b => b.id === id); state.cam = { k, x: innerWidth / 2 - (B.x + B.w / 2) * k, y: innerHeight / 2 - (B.y + B.h / 2) * k }; applyCam(); },
 };
 """
-CARRY = """(message Selection (sketch "Selected ids."))
-(message Camera (sketch "Pan and zoom."))
-(message Snapshot (carries Selection Camera)
+CARRY = """(shape Selection (sketch "Selected ids."))
+(shape Camera (sketch "Pan and zoom."))
+(shape Snapshot (carries Selection Camera)
   (~ What undo restores. ~))
-(message Named (refines Snapshot))
+(shape Named (refines Snapshot))
 (block App
-  (level :name "Edits" (block Undo (port :in Named :as keep)))
-  (level (block Cam (port :out Camera :as cam)) (block Other)))
+  (level :name "Edits" (block Undo (takes Named :as keep)))
+  (level (block Cam (gives Camera :as cam)) (block Other)))
 """
 
 def desktop(p, b):
@@ -77,7 +77,7 @@ def desktop(p, b):
         E("() => { const f = co.el.querySelector('form'); f.elements.sketch.value = 'Opens the palette; ~) included.'; f.elements.name.value = 'keys'; }")
         pg.keyboard.press('Control+Enter'); pg.wait_for_timeout(150)
         s = E("() => __t.src()"); n1 = E("() => hist.undo.length")
-        if '(port :in KeyChord :as keys (~~ Opens the palette; ~) included. ~~))' not in s or n1 != n0 + 1: return 'fail: ' + s[s.find('(port :in KeyChord'):][:80] + f' undo {n0}->{n1}'
+        if '(takes KeyChord :as keys (~~ Opens the palette; ~) included. ~~))' not in s or n1 != n0 + 1: return 'fail: ' + s[s.find('(takes KeyChord'):][:80] + f' undo {n0}->{n1}'
         E("() => undo()"); pg.wait_for_timeout(100)
         return 'pass' if E("() => __t.src()") == original else 'fail: one undo does not restore'
     step('clickEditsOneUndo', click_edit)
@@ -88,7 +88,7 @@ def desktop(p, b):
         x, y = palette(); pg.mouse.click(x, y); pg.wait_for_timeout(80)
         pg.fill('.callout [name=name]', 'keyChord'); pg.keyboard.press('Enter'); pg.wait_for_timeout(150)
         a = E("() => __t.src()")
-        if '(port :in KeyChord (~ Opens the palette. ~))' not in a or ':as keyChord' in a: return 'fail: rename to default: ' + a[a.find('(block Shell.CommandPalette'):][:160]
+        if '(takes KeyChord (~ Opens the palette. ~))' not in a or ':as keyChord' in a: return 'fail: rename to default: ' + a[a.find('(block Shell.CommandPalette'):][:160]
         E("() => undo()"); pg.wait_for_timeout(100)
         E("() => { setDrawer('Shell.Router', 'top', true); __t.center('Shell.Router', 1); }"); pg.wait_for_timeout(150)
         x2, y2 = E("() => __t.mid(__t.row('Shell.Router', 'top', 'Intent'))"); pg.mouse.click(x2, y2); pg.wait_for_timeout(80)
@@ -96,7 +96,7 @@ def desktop(p, b):
         follows = E("() => co.el.querySelector('[name=name]').value")
         pg.fill('.callout [name=kind]', 'KeyChord'); pg.keyboard.press('Enter'); pg.wait_for_timeout(150)
         b2 = E("() => __t.src()")
-        if follows != 'turnAdded' or '(port :in KeyChord)' not in b2 or ':as' in b2[b2.find('(block Shell.Router'):][:120]: return f'fail: follow {follows}: ' + b2[b2.find('(block Shell.Router'):][:160]
+        if follows != 'turnAdded' or '(takes KeyChord)' not in b2 or ':as' in b2[b2.find('(block Shell.Router'):][:120]: return f'fail: follow {follows}: ' + b2[b2.find('(block Shell.Router'):][:160]
         E("() => undo()"); pg.wait_for_timeout(100)
         return 'pass' if E("() => __t.src()") == original else 'fail: undo'
     step('editorDefaultName', editor_default_name)
@@ -110,7 +110,7 @@ def desktop(p, b):
         E("() => openEdit('Shell.Router')"); pg.wait_for_timeout(150)
         E("(f) => { eval(f)().value = 'intent'; document.querySelector('[data-m=\"save\"]').click(); }", row); pg.wait_for_timeout(150)
         b2 = E("() => __t.src()")
-        return 'pass' if '(port :in Intent :as route)' in a and b2 == original else 'fail: ' + a[a.find('(block Shell.Router'):][:120] + ' | ' + b2[b2.find('(block Shell.Router'):][:120]
+        return 'pass' if '(takes Intent :as route)' in a and b2 == original else 'fail: ' + a[a.find('(block Shell.Router'):][:120] + ' | ' + b2[b2.find('(block Shell.Router'):][:120]
     step('dialogPortName', dialog_port_name)
 
     def esc_cancels():
@@ -183,7 +183,7 @@ def desktop(p, b):
         E("() => { openEdit('Shell.Theme'); const f = modalEl.querySelector('form'); f.elements.sketch.value = 'Design tokens, light and dark.'; f.requestSubmit(); }"); pg.wait_for_timeout(100)
         E("() => { openEdit('Shell.Router'); const f = modalEl.querySelector('form'); f.querySelector('.psk').value = 'Every intent.'; f.requestSubmit(); }"); pg.wait_for_timeout(100)
         s = E("() => __t.src()")
-        want = ['(adjacent (~ Shortcuts become intents. ~)', '(block Shell.Theme (sketch "Design tokens, light and dark."))', '(port :in Intent (~ Every intent. ~))']
+        want = ['(adjacent (~ Shortcuts become intents. ~)', '(block Shell.Theme (sketch "Design tokens, light and dark."))', '(takes Intent (~ Every intent. ~))']
         miss = [w for w in want if w not in s]
         return 'pass' if not miss and E("() => parse(__t.src()).warnings.length") == 0 else 'fail: missing ' + json.dumps(miss)
     step('tildePreserved', tilde_kept)
@@ -230,7 +230,7 @@ def touch(p, b):
         # A tap elsewhere saves.
         ex, ey = E("() => { for (let y = innerHeight - 160; y > 90; y -= 8) for (let x = 12; x < innerWidth - 12; x += 8) { const t = document.elementFromPoint(x, y); if (t && t.id === 'vp') return [x, y]; } return null; }")
         tap(ex, ey)
-        ok = '(port :in KeyChord :as chord (~ Opens it. ~))' in E("() => __t.src()") and E("() => __t.co()") is None
+        ok = '(takes KeyChord :as chord (~ Opens it. ~))' in E("() => __t.src()") and E("() => __t.co()") is None
         # An inherited port: no Edit button, a link to the behavior instead.
         E("() => { setDrawer('Shell.Sidebar', 'top', true); __t.center('Shell.Sidebar', 1); }"); pg.wait_for_timeout(200)
         x3, y3 = E("() => __t.mid(__t.row('Shell.Sidebar', 'top', 'Frame'))"); tap(x3, y3)

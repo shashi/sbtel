@@ -132,9 +132,9 @@ func TestQueryText(t *testing.T) {
 		"; Shell.Keymap: block in Shell, lines 80-82\n" +
 		"(block Shell :type \"Module\"\n" +
 		"  (sketch \"The UI shell user interacts via.\")\n" +
-		"  (message KeyChord (sketch \"A normalized key combination.\"))\n" +
+		"  (shape KeyChord (sketch \"A normalized key combination.\"))\n" +
 		"  (block Shell.Keymap\n" +
-		"    (port :out KeyChord :as chord)\n" +
+		"    (gives KeyChord :as chord)\n" +
 		"    (sketch \"Turns raw key events into chords.\")))\n"
 	wantErr := "sbtel query: no element Shell.Kemap (did you mean Shell.Keymap?)\nsbtel query: no element Clipbord (did you mean Shell.Clipboard?)\n"
 	if c != 2 || out != want || errs != wantErr {
@@ -261,8 +261,8 @@ func TestDiffTextFixture(t *testing.T) {
 	want := `+ block Shell.Banner2 (in Shell.Notification)
 ~ block Shell.Turn: renamed from Shell.Item (0.83); moved from Shell.Transcript level 2 to Shell.SessionView level 1; type "A" -> "B"; sketch [-old words-] {+new words+}; implements +Durable; ports +in x: Foo -out y: Bar ~in z: Z -> out z: Z ~in w: W sketch {+Once+}; drawer in +x: Foo out -y: Bar; adjacency +Shell.TurnActions -Shell.Old; level 1 name none -> "Core"; level 1 sketch [-a-] {+b¶c+}; level 1 adjacent (X Y) sketch {+why+}
 ~ behavior Box: params (T) -> (T K)
-~ message Ack: moved from A to the file; refines Msg -> none
-- message Notice (was in Shell)
+~ shape Ack: moved from A to the file; refines Msg -> none
+- shape Notice (was in Shell)
 ! port Shell.Router.intent (in Intent): lost Shell.Composer.submit; gained Shell.X.y
 5 changes (1 added, 1 removed, 2 moved, 1 renamed, 3 changed), 1 affected port
 `
@@ -292,14 +292,14 @@ func TestDiffNotImplemented(t *testing.T) {
 // A generated spec of about 600 blocks: every command stays fast. Timings go to the test log (-v).
 func TestLargeSpec(t *testing.T) {
 	var b strings.Builder
-	b.WriteString("(message Req)\n(message Evt (refines Req))\n(behavior Durable (port :in Evt :as keep))\n(block Sys\n")
+	b.WriteString("(shape Req)\n(shape Evt (refines Req))\n(behavior Durable (takes Evt :as keep))\n(block Sys\n")
 	n, names := 1, []string{"Sys"}
 	var block func(depth int, ind string)
 	block = func(depth int, ind string) {
 		name := fmt.Sprintf("B%d", n)
 		n++
 		names = append(names, name)
-		fmt.Fprintf(&b, "%s(block %s (port :in Req :as in%d) (port :out Evt :as out%d) (implements Durable) (sketch \"block %d\")", ind, name, n, n, n)
+		fmt.Fprintf(&b, "%s(block %s (takes Req :as in%d) (gives Evt :as out%d) (implements Durable) (sketch \"block %d\")", ind, name, n, n, n)
 		if depth < 3 {
 			for l := 0; l < 2; l++ {
 				fmt.Fprintf(&b, "\n%s  (level (adjacent\n", ind)

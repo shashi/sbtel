@@ -478,7 +478,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
     <li>Point at a port in a drawer to see its sketch and outline every block it can talk to; click it to edit the port. The arrow goes to the type's card.</li>
     <li>Point at a level's name, or a line between adjacent blocks, to read its sketch; click to edit it.</li>
     <li>Drag a block to move it (on a touch screen, tap it first, then drag it). Drop it between two linked blocks to join their group.</li>
-    <li>Shift-drag a behavior onto a block, or a message type onto an ear, to attach it.</li>
+    <li>Shift-drag a behavior onto a block, or a shape onto an ear, to attach it.</li>
     <li>Select something and choose Edit to rename it or change its type and sketch.</li>
     <li>⌘/Ctrl-click a block or line to comment on it.</li>
   </ul>
@@ -496,18 +496,18 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
   <button class="tb hide-sm" id="expAll" title="Open every block"><span>Open all</span></button>
   <button class="tb hide-sm" id="colAll" title="Close every block"><span>Close all</span></button>
   <span class="sep"></span>
-  <button class="tb" id="msgBtn" aria-expanded="false" aria-controls="msgSheet"><svg class="i" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M6.5 6.5V13"/></svg><span class="lbl">Messages</span></button>
+  <button class="tb" id="msgBtn" aria-expanded="false" aria-controls="msgSheet"><svg class="i" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M6.5 6.5V13"/></svg><span class="lbl">Shapes</span></button>
   <button class="tb" id="srcBtn" aria-expanded="false" aria-controls="srcSheet"><svg class="i" viewBox="0 0 16 16"><path d="M6 4L2 8l4 4M10 4l4 4-4 4"/></svg><span class="lbl">Source</span></button>
   <button class="tb chkpill" id="chkBtn" title="Layout and spec checks"></button>
   <button class="tb sendbtn" id="sendBtn" hidden title="Send saved comments to an agent"><svg class="i" viewBox="0 0 16 16"><path d="M2.5 8L13.5 2.5 10 13.5 7.5 9z"/><path d="M7.5 9L13.5 2.5"/></svg><span id="sendN"></span></button>
   <button class="tb icon" id="setBtn" title="Settings" aria-label="Settings"><svg class="i" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4L5 11M11 5l1.4-1.4"/></svg></button>
 </div>
 
-<aside class="float sheet right closed" id="msgSheet" aria-label="Message types">
-  <header><h2>Message types</h2><span class="sub" id="msgCount"></span><span class="spacer"></span>
-    <button class="xbtn" id="msgClose" aria-label="Close message types"><svg class="i" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></header>
+<aside class="float sheet right closed" id="msgSheet" aria-label="Shapes">
+  <header><h2>Shapes</h2><span class="sub" id="msgCount"></span><span class="spacer"></span>
+    <button class="xbtn" id="msgClose" aria-label="Close shapes"><svg class="i" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></header>
   <div class="body">
-    <input class="search" id="msgQ" type="search" placeholder="Search names, sketches, blocks" aria-label="Search message types">
+    <input class="search" id="msgQ" type="search" placeholder="Search names, sketches, blocks" aria-label="Search shapes">
     <div class="tctl"><span>Sort by</span><div class="seg" role="group" aria-label="Sort"><button id="sortName" class="on">Name</button><button id="sortUses">Uses</button></div><span id="ownerFilter"></span></div>
     <table class="mt"><thead><tr><th>Name</th><th class="n">Uses</th><th>Declared in</th></tr></thead><tbody id="msgRows"></tbody></table>
   </div>
@@ -550,19 +550,19 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
 (block Shell
   :type "Module"
   (sketch "The UI shell user interacts via.")
-  (message Intent (sketch "A command id plus its arguments."))
-  (message Frame (sketch "A rendered view-model for one surface."))
-  (message SessionEvent (sketch "A turn was added, edited or removed."))
+  (shape Intent (sketch "A command id plus its arguments."))
+  (shape Frame (sketch "A rendered view-model for one surface."))
+  (shape SessionEvent (sketch "A turn was added, edited or removed."))
   ; Notice, TurnAdded and Scrollable sit above their one user on purpose: the playground shows
   ; attaching across blocks and refusing it out of scope. sbtel lint says where each could live.
-  (message Notice (sketch "A short message for the user, with a severity."))
-  (message KeyChord (sketch "A normalized key combination."))
+  (shape Notice (sketch "A short message for the user, with a severity."))
+  (shape KeyChord (sketch "A normalized key combination."))
   (behavior Surface
-    (port :in Frame)
-    (port :out Intent)
+    (takes Frame)
+    (gives Intent)
     (sketch "A behavior shared by surfaces."))
   (behavior Durable
-    (port :in SessionEvent :as event)
+    (takes SessionEvent :as event)
     (sketch "Retains every accepted event until it is acknowledged."))
 
   (level :name "Surfaces"
@@ -570,7 +570,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
       (block Shell.Notification
         :type "Process"
         (implements Surface)
-        (port :in Notice)
+        (takes Notice)
         (sketch "Shows transient notices above the session.")
         (level
           (adjacent
@@ -583,11 +583,11 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
       (block Shell.SessionView
         :type "Process"
         (implements Surface)
-        (port :in SessionEvent :as events)
+        (takes SessionEvent :as events)
         (sketch "View of the Session")
-        (message TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
+        (shape TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
         (behavior Scrollable
-          (port :out Frame :as position)
+          (gives Frame :as position)
           (sketch "Keeps a scroll position and reports what is visible."))
         (level
           (adjacent
@@ -599,7 +599,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
               (level
                 (adjacent
                   (block Shell.Turn
-                    (port :in TurnAdded :as added)
+                    (takes TurnAdded :as added)
                     (sketch "One user or agent turn.")
                     (level
                       (adjacent
@@ -608,7 +608,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
                         (block Shell.ToolCall (sketch "Collapsible tool invocation and its result.")))))
                   (block Shell.TurnActions (sketch "Copy, retry and edit controls.")))))
             (block Shell.Composer
-              (port :out Intent :as submit)
+              (gives Intent :as submit)
               (sketch "Multiline input with attachments and slash commands."))))
         (level
           (block Shell.ScrollAnchor
@@ -617,18 +617,18 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
         (implements Surface)
         (sketch "Recent sessions and the project switcher.")))
     (block Shell.CommandPalette
-      (port :in KeyChord :as chord (~ Opens the palette. ~))
-      (port :out Intent :as run)
+      (takes KeyChord :as chord (~ Opens the palette. ~))
+      (gives Intent :as run)
       (sketch "Fuzzy search over every command.")))
 
   (level :name "Services"
     (block Shell.Theme (sketch "Resolves design tokens for light and dark."))
     (adjacent (~ Clipboard and keymap shortcuts route as intents. ~)
       (block Shell.Router
-        (port :in Intent)
+        (takes Intent)
         (sketch "Maps intents to handlers; unknown intents become notices."))
       (block Shell.Keymap
-        (port :out KeyChord :as chord)
+        (gives KeyChord :as chord)
         (sketch "Turns raw key events into chords."))
       (block Shell.Clipboard (sketch "Copy and paste with rich formats."))))
 
@@ -641,7 +641,7 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
     (block Shell.SessionStore
       :type "Store"
       (implements Durable)
-      (port :out SessionEvent :as events)
+      (gives SessionEvent :as events)
       (sketch "Keeps session events on disk and replays them on launch."))))
 `;
 
@@ -681,7 +681,7 @@ const ICON = {
 // @sbtel end App.Kit
 // @sbtel begin App.Document
 // glyphFor sits among the canvas helpers, but it is a query on the page's model (a behavior's glyph by
-// its declaration order) that the canvas, the popovers and the message table all use.
+// its declaration order) that the canvas, the popovers and the shape table all use.
 function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.behaviorOrder.indexOf(name)) % GLYPH.length; return { g:GLYPH[i], c:GCOL[i] }; }
 
 // @sbtel end App.Document
@@ -857,7 +857,7 @@ function paint(lay, keep) {
     lay.connectors.map((c, i) => `<path class="hit" data-ci="${i}" d="${d(c.pts)}"><title>${esc(c.a)} — ${esc(c.b)}${c.bad ? ' (not adjacent!)' : ''}</title></path><path class="vis ${c.bad ? 'bad' : ''}" data-key="${esc(c.a + '|' + c.b)}" d="${d(c.pts)}"/>`).join('');
   if (world.classList.contains('anim')) { svg.classList.add('fading'); clearTimeout(render._t); render._t = setTimeout(() => svg.classList.remove('fading'), 330); }
 
-  // The file's own appendix (top-level behaviors and message types): tint and band labels on the canvas.
+  // The file's own appendix (top-level behaviors and shapes): tint and band labels on the canvas.
   world.querySelectorAll('.cvx').forEach(n => n.remove());
   if (lay.canvas && lay.canvas.appendixY != null) {
     const cx = document.createElement('div'); cx.className = 'cvx';
@@ -975,7 +975,7 @@ function tabsHTML(n) {
       (card ? `<button class="dgo" data-gocard="${esc(p.kind)}" title="Go to the ${esc(p.kind)} card" aria-label="Go to the ${esc(p.kind)} card">${ICON.go}</button>` : '') + `</div>`;
   }).join('');
   const mini = side => `<div class="dmin"><button class="dminb" data-dmin="${side}" title="Close" aria-label="Close ${side === 'top' ? 'inputs' : 'outputs'}">−</button></div>`;
-  const tab = (side, list, label) => list.length ? `<div class="tab ${side}${dr[side] ? ' open' : ''}"${dr[side] ? ` style="height:${drawerH(list.length)}px"` : ''} data-drawer="${side}" role="button" tabindex="0" aria-expanded="${!!dr[side]}" aria-label="${label}: ${list.length} message type${list.length === 1 ? '' : 's'}">${dr[side] ? (side === 'top' ? mini(side) + rows(list, side) : rows(list, side) + mini(side)) : plain(list, side)}</div>` : '';
+  const tab = (side, list, label) => list.length ? `<div class="tab ${side}${dr[side] ? ' open' : ''}"${dr[side] ? ` style="height:${drawerH(list.length)}px"` : ''} data-drawer="${side}" role="button" tabindex="0" aria-expanded="${!!dr[side]}" aria-label="${label}: ${list.length} shape${list.length === 1 ? '' : 's'}">${dr[side] ? (side === 'top' ? mini(side) + rows(list, side) : rows(list, side) + mini(side)) : plain(list, side)}</div>` : '';
   return tab('top', d.in, 'Inputs') + tab('bot', d.out, 'Outputs');
 }
 // A message card's ear: one dot per type it carries (its own, then inherited from what it refines, dimmed).
@@ -1230,7 +1230,7 @@ vp.addEventListener('pointerout', e => { if (e.target.closest('[data-msg], [data
 // ---------- Selection, handles, action strip ----------
 function connectorKey(c) { return c.a + '|' + c.b; }
 function targetKey(id) { return id.startsWith('β:') ? 'beh:' + id.slice(2) : id.startsWith('μ:') ? 'msg:' + id.slice(2) : 'block:' + id; }
-// ---------- Who can talk to whom over one message type ----------
+// ---------- Who can talk to whom over one shape ----------
 function talkTargets(t) {
   const m = state.model, hits = [];
   state.lay.blocks.forEach(B => {
@@ -1297,7 +1297,7 @@ function renderStrip() {
   } else if (state.sel) {
     const n = state.model.node(state.sel), isFrame = state.lay.blocks.find(b => b.id === state.sel)?.kind === 'frame';
     const isM = n && n.form === 'message';
-    strip.innerHTML = (isM ? `<button class="tb" data-a="table" title="Open in the message table">${ICON.details}<span class="lbl">Table</span></button>` : '') + 
+    strip.innerHTML = (isM ? `<button class="tb" data-a="table" title="Open in the shape table">${ICON.details}<span class="lbl">Table</span></button>` : '') + 
       `<button class="tb" data-a="edit" title="Edit name and sketch">${ICON.edit}<span class="lbl">Edit</span></button>` +
       `<button class="tb" data-a="code" title="Show source">${ICON.code}<span class="lbl">Code</span></button>` +
       `<button class="tb" data-a="comment" title="Comment (⌘-click)">${ICON.comment}<span class="lbl">Comment</span></button>` +
@@ -1421,7 +1421,7 @@ function moveZones(id) {
     let r, sp; try { r = applyEdit(state.src, state.model, act); if (seen.has(r.src)) continue; seen.add(r.src); sp = specLayout(r.src); } catch (_) { continue; }
     const noop = r.src === state.src;
     // Drops that would leave the source broken (parse warnings, failing layout checks) are not offered.
-    // A drop that would break a spec check (the block, or something in it, uses a behavior or message type
+    // A drop that would break a spec check (the block, or something in it, uses a behavior or shape
     // that would be out of its scope there) stays a zone, marked `bad` with the reason: it previews as
     // usual, and releasing on it bounces the block back with that reason in a toast.
     if (!noop && (sp.m.warnings.length || sp.lay.checks.some(c => c.f.length))) continue;
@@ -1625,7 +1625,7 @@ function containerItems(P, wy, visible) {
   if (li >= 0) items.push({ label:'Add a block to this level', act:{ t:'append', L:P.levels[li] }, ...open },
     { label:'Insert a level above', act:{ t:'level', block:P, at:li }, ...open }, { label:'Insert a level below', act:{ t:'level', block:P, at:li + 1 }, ...open });
   else items.push({ label: P.levels.length ? 'Add a block inside' : 'Add a level', act:{ t:'level', block:P, at:P.levels.length }, ...open });
-  items.push({ label:'Add a behavior', act:{ t:'decl', block:P, form:'behavior' }, ...open }, { label:'Add a message type', act:{ t:'decl', block:P, form:'message' }, ...open });
+  items.push({ label:'Add a behavior', act:{ t:'decl', block:P, form:'behavior' }, ...open }, { label:'Add a shape', act:{ t:'decl', block:P, form:'message' }, ...open });
   return items;
 }
 function menuItems(target, wy) {
@@ -1639,7 +1639,7 @@ function menuItems(target, wy) {
     if (hasInside(n)) items.push({ label: isFrame ? 'Close' : 'Open', run:() => toggle(n.id) });
     items.push(...containerItems(n, wy, isFrame), '-');
   }
-  if (n.form === 'message') items.push({ label:'Open in the message table', run:() => openMessages({ open:n.name }) });
+  if (n.form === 'message') items.push({ label:'Open in the shape table', run:() => openMessages({ open:n.name }) });
   items.push({ label:'Edit', run:() => openEdit(n.id) }, { label:'Code', run:() => openCode(n.id) },
     { label:'Comment', run:() => openComposer(targetKey(n.id)) }, { label:'Delete', danger:true, run:() => askDelete(n.id) });
   return { title:n.name, items };
@@ -1701,13 +1701,13 @@ function followKind(nameEl, kindEl, ev) {
 }
 function openEdit(id) {
   const n = state.model.node(id); if (!n) return;
-  const isBlk = n.form === 'block', kind = isBlk ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
+  const isBlk = n.form === 'block', kind = isBlk ? 'block' : n.form === 'behavior' ? 'behavior' : 'shape';
   const md = modal(`Edit ${n.name}`, `<form class="editf" autocomplete="off">
     <label class="fld"><span>Name</span><input name="name" value="${esc(n.name)}" spellcheck="false"></label>
     <label class="fld"><span>Type</span><input name="type" value="${esc(n.type || '')}" placeholder="${isBlk ? 'None' : n.form === 'behavior' ? 'None (an interface, a trait, a protocol…)' : 'None (a struct, a record, a schema…)'}" spellcheck="false"></label>
     <label class="fld"><span>Sketch</span><textarea name="sketch" rows="4">${esc(n.sketch || '')}</textarea></label>
     ${n.form !== 'message' ? editBehaviorsHTML(n) : ''}
-    ${n.form === 'message' ? `<label class="fld"><span>Carries</span><input name="carries" value="${esc(n.carries.join(' '))}" placeholder="Message types a value of ${esc(n.name)} holds" spellcheck="false" list="edCarry"><datalist id="edCarry">${typesInScope(state.model, n).map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>` : ''}
+    ${n.form === 'message' ? `<label class="fld"><span>Carries</span><input name="carries" value="${esc(n.carries.join(' '))}" placeholder="Shapes a value of ${esc(n.name)} holds" spellcheck="false" list="edCarry"><datalist id="edCarry">${typesInScope(state.model, n).map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>` : ''}
     ${isBlk || n.form === 'behavior' ? `<fieldset class="fset"><legend>Ports</legend><div class="prows"></div><div class="pinh"></div>
       <button type="button" class="btn small" data-m="addport">Add port</button></fieldset>` : ''}
     <p class="merr" role="alert" hidden></p>
@@ -1724,7 +1724,7 @@ function openEdit(id) {
     const opts = (p.kind && !types.includes(p.kind) ? [p.kind] : []).concat(types);
     row.innerHTML = `<input class="pname" aria-label="Port name" value="${esc(p.name || '')}" spellcheck="false">
       <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${p.dir === 'in'}">in</button><button type="button" data-dir="out" aria-pressed="${p.dir === 'out'}">out</button></span>
-      <select class="pkind" aria-label="Message type"><option value="">Type…</option>${opts.map(t => `<option${t === p.kind ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
+      <select class="pkind" aria-label="Shape"><option value="">Type…</option>${opts.map(t => `<option${t === p.kind ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
       <button type="button" class="pdel" aria-label="Remove port" title="Remove port">${ICON.close}</button>
       <textarea class="psk" rows="1" aria-label="Port sketch" placeholder="Sketch: what this port promises (optional)">${esc(p.sketch || '')}</textarea>`;
     row.dataset.dir = p.dir;
@@ -1757,7 +1757,7 @@ function openEdit(id) {
     if (n.form === 'message') {
       act.carries = [...new Set(f.elements.carries.value.split(/\s+/).filter(Boolean))];
       const scope = new Set(typesInScope(state.model, n)), out = act.carries.find(t => !scope.has(t));
-      if (out) { err.textContent = `${out} is not a message type in scope here.`; err.hidden = false; f.elements.carries.focus(); return; }
+      if (out) { err.textContent = `${out} is not a shape in scope here.`; err.hidden = false; f.elements.carries.focus(); return; }
     }
     if (hasPorts) {
       act.ports = readRows();
@@ -1813,11 +1813,11 @@ function msgInfoHTML(name, withActs) {
   const m = state.model.messages.get(name);
   const info = messageIndex(state.model).find(x => x.name === name);
   if (!m) return `<h3><i class="d" style="width:9px;height:9px;border-radius:50%;background:${msgColor(name)}"></i>${esc(name)}</h3><p class="meta">Not declared anywhere. The spec checks flag this.</p>`;
-  return `<div class="kind">Message type</div><h3><i style="width:9px;height:9px;border-radius:50%;background:${msgColor(name)};display:inline-block"></i>${esc(name)}</h3>` +
+  return `<div class="kind">Shape</div><h3><i style="width:9px;height:9px;border-radius:50%;background:${msgColor(name)};display:inline-block"></i>${esc(name)}</h3>` +
     (m.sketch ? `<p>${esc(m.sketch)}</p>` : '') +
     (m.refines ? `<div class="meta">refines ${esc(m.refines)}</div>` : '') +
     `<div class="meta">used by ${info.uses.length} port${info.uses.length === 1 ? '' : 's'} · declared in ${esc(m.owner ? m.owner.name : '—')}</div>` +
-    (withActs ? `<div class="acts"><button class="btn primary" data-pa="table" data-v="${esc(name)}">Open in message table</button></div>` : `<div class="tip">Click to open it in the message table.</div>`);
+    (withActs ? `<div class="acts"><button class="btn primary" data-pa="table" data-v="${esc(name)}">Open in shape table</button></div>` : `<div class="tip">Click to open it in the shape table.</div>`);
 }
 function behInfoHTML(name, withActs) {
   const b = state.model.behaviors.get(name); const g = glyphFor(name);
@@ -1832,7 +1832,7 @@ function behInfoHTML(name, withActs) {
 }
 function showInfo(t, hover) {
   let html = t.dataset.msg ? msgInfoHTML(t.dataset.msg, !hover) : behInfoHTML(t.dataset.beh, !hover);
-  if (t.classList.contains('drow')) html = html.replace('Click to open it in the message table.', 'Click to outline the blocks that can talk to this one with it.');
+  if (t.classList.contains('drow')) html = html.replace('Click to open it in the shape table.', 'Click to outline the blocks that can talk to this one with it.');
   pop(hover ? 'info-hover' : 'info-pin', t, html, hover ? 'hover' : '');
 }
 function onMsgClick(name, el) { clearTimeout(hoverT); if (lastPointer === 'mouse') { closePop('info'); openMessages({ open:name }); } else showInfo(el, false); }
@@ -1956,7 +1956,7 @@ function portEditor(at, find) {
   const el = showCallout(at.key, find, `<form class="cedit" autocomplete="off">
     <div class="r"><input class="mono" name="name" aria-label="Port name" value="${esc(node.name)}" spellcheck="false">
       <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${node.dir === 'in'}">in</button><button type="button" data-dir="out" aria-pressed="${node.dir === 'out'}">out</button></span></div>
-    <input class="mono" name="kind" aria-label="Message type" value="${esc(node.kind || '')}" list="${lid}" spellcheck="false" placeholder="Message type">
+    <input class="mono" name="kind" aria-label="Shape" value="${esc(node.kind || '')}" list="${lid}" spellcheck="false" placeholder="Shape">
     <datalist id="${lid}">${types.map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist>
     <div class="lab">Sketch</div><textarea name="sketch" rows="3" aria-label="Sketch" placeholder="What this port promises, beyond its type.">${esc(node.sketch || '')}</textarea>
     <p class="merr" role="alert" hidden></p>
@@ -2067,7 +2067,7 @@ function groupEditor(g, focus) {
   if (focus) setTimeout(() => { if (co.el.contains(f)) f.elements.sketch.focus({ preventScroll:true }); }, 0);
 }
 
-// ---------- Carriers: who holds a message type ----------
+// ---------- Carriers: who holds a shape ----------
 // Hovering a type (its card, a chip that names it, or a dot on a card's carries ear) outlines every message
 // type that carries it, transitively, and every block with a port typed with one of those; the drawer rows
 // of those ports light up. The same look as a port's partners. On touch, selecting the type's card does it.
@@ -2164,7 +2164,7 @@ function targetLabel(key) {
   const [kind, rest] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
   if (kind === 'line') { const [a, b] = rest.split('|'); return `the link between ${a} and ${b}`; }
   if (kind === 'block' && !rest) return 'the file';
-  return ({ block:'block', beh:'behavior', msg:'message type' }[kind] || kind) + ' ' + rest;
+  return ({ block:'block', beh:'behavior', msg:'shape' }[kind] || kind) + ' ' + rest;
 }
 function targetSource(key) {
   const kind = key.slice(0, key.indexOf(':')), rest = key.slice(key.indexOf(':') + 1), m = state.model;
@@ -2285,7 +2285,7 @@ function askDelete(id) {
   const m = state.model, n = m.node(id); if (!n) return;
   const loc = state.lay.loc.get(id);
   if (n.form === 'block' && !loc) { toast('Open its parent block first, then delete it.'); return; }
-  const kind = n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
+  const kind = n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'shape';
   let detail;
   if (n.form === 'block') { const s = stats(n); detail = s.n ? `It contains ${s.n} block${s.n === 1 ? '' : 's'}, which will be deleted with it.` : 'It has no blocks inside it.'; }
   else if (n.form === 'behavior') { const users = [...m.blocks.values()].filter(b => b.impl.includes(n.name)).map(b => b.name); detail = users.length ? `${users.length} block${users.length === 1 ? ' implements' : 's implement'} it (${users.slice(0, 3).join(', ')}${users.length > 3 ? ', …' : ''}). Those lines stay and will fail the spec checks until you change them.` : 'No block implements it.'; }
@@ -2308,7 +2308,7 @@ function askDeleteMany(ids) {
   const m = state.model;
   const ns = ids.map(id => m.node(id)).filter(n => n && (n.form !== 'block' || state.lay.loc.has(n.id)));
   if (!ns.length) return; if (ns.length === 1) { askDelete(ns[0].id); return; }
-  const kindOf = n => n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'message type';
+  const kindOf = n => n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'shape';
   const inner = ns.reduce((s, n) => s + (n.form === 'block' && !ns.some(o => o !== n && o.form === 'block' && isWithin(n, o)) ? stats(n).n : 0), 0);
   const md = modal(`Delete ${ns.length} items?`, `<p style="margin:0 0 8px;line-height:1.5">This removes from the source:</p>
     <ul style="margin:0 0 8px;padding-left:20px;line-height:1.5">${ns.map(n => `<li><b>${esc(n.name)}</b> <span style="color:var(--muted)">${kindOf(n)}</span></li>`).join('')}</ul>
@@ -2421,7 +2421,7 @@ function renderMsgTable() {
         <h4>Used by</h4>${r.uses.length ? `<div class="uses">${r.uses.map(u => `<button class="ulink" data-go="${esc(u.id)}">${esc(u.name)} <span>${esc(u.port)} ${esc(u.dir)}</span></button>`).join('')}</div>` : '<p class="none">No ports use this type.</p>'}
         <div class="mfoot" style="justify-content:flex-start"><button class="btn" data-go="${esc('μ:' + r.name)}">Show on canvas</button><button class="btn" data-cmsg="${esc(r.name)}">${ICON.comment.replace('class="i"', 'class="i" style="vertical-align:-3px;margin-right:4px"')}Comment</button>${ck ? `<button class="btn" data-tmsg="${esc(r.name)}">View comments</button>` : ''}</div>
       </div></td></tr>` : '');
-  }).join('') : `<tr><td colspan="3" class="none" style="padding:16px 8px">No message types match.</td></tr>`;
+  }).join('') : `<tr><td colspan="3" class="none" style="padding:16px 8px">No shapes match.</td></tr>`;
 }
 $('msgRows').addEventListener('click', e => {
   const go = e.target.closest('[data-go]'); if (go) { goTo(go.dataset.go); return; }

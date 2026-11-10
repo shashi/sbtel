@@ -89,7 +89,7 @@ var __api = (function () {
     r.warnings.forEach(function (w) { out += at(name, w) + 'warning: ' + w.message + '\n'; });
     r.checks.forEach(function (c) { c.failures.forEach(function (f) { out += name + ': ' + c.label + ': ' + f + '\n'; }); });
     (r.info || []).forEach(function (f) { out += at(name, f) + 'info: ' + f.message + '\n'; });
-    var tally = plural(r.counts.blocks, 'block') + ', ' + plural(r.counts.behaviors, 'behavior') + ', ' + plural(r.counts.messages, 'message type');
+    var tally = plural(r.counts.blocks, 'block') + ', ' + plural(r.counts.behaviors, 'behavior') + ', ' + plural(r.counts.messages, 'shape');
     return out + name + ': ' + (r.ok ? 'ok' : plural(r.problems, 'problem')) + ' (' + tally + ')\n';
   }
 
@@ -204,10 +204,10 @@ var __api = (function () {
   // The core drops what it does not understand (an unknown form, a stray word, a port without a type).
   // These walk the reader's output and report each such thing as a warning, after the core's own.
   var ALLOWED = {
-    file: ['block', 'level', 'adjacent', 'message', 'behavior'],
-    block: ['block', 'level', 'adjacent', 'port', 'message', 'behavior', 'implements', 'sketch'],
+    file: ['block', 'level', 'adjacent', 'shape', 'message', 'behavior'],
+    block: ['block', 'level', 'adjacent', 'takes', 'gives', 'port', 'shape', 'message', 'behavior', 'implements', 'sketch'],
     level: ['block', 'adjacent', 'sketch'], adjacent: ['block', 'adjacent', 'sketch'], port: ['sketch'],
-    message: ['sketch', 'refines', 'carries'], behavior: ['port', 'sketch', 'implements']
+    message: ['sketch', 'refines', 'carries'], behavior: ['takes', 'gives', 'port', 'sketch', 'implements']
   };
   function formWarnings(src) {
     var out = [], starts = lineStarts(src);
@@ -251,6 +251,11 @@ var __api = (function () {
     }
     function form(h, x, inAdjacent) {
       var it = x.list.slice(1), nm = it[0];
+      // (takes Shape …) and (gives Shape …) are checked as ports; the 0.3 (port :in|:out …) and (message …)
+      // still are, and the core says how to write them now.
+      var verb = h === 'takes' || h === 'gives' ? h : null;
+      if (verb) { it = [{ t: 'sym', v: verb === 'takes' ? ':in' : ':out', s: x.s, e: x.s }].concat(it); h = 'port'; }
+      if (h === 'shape') h = 'message';
       if (h === 'block') {
         if (!isName(nm)) { warn('block needs a name', x.s); return kids('block', 'a block', it.filter(function (y) { return y.list; })); }
         return kids('block', 'block ' + nm.v, it.slice(keywords('block', nm.v, it)));
@@ -275,7 +280,8 @@ var __api = (function () {
         // ports with one name.
         var pp = portParts(it);
         if (pp.legacy || (pp.dir !== 'in' && pp.dir !== 'out')) return;
-        if (!isName(it[1])) { warn('port needs a message type after :' + pp.dir + ': (port :' + pp.dir + ' Type [:as name])', x.s); return; }
+        var vb = pp.dir === 'in' ? 'takes' : 'gives';
+        if (!isName(it[1])) { warn(vb + ' needs a shape: (' + vb + ' Shape [:as name])', x.s); return; }
         var pn = 'port ' + pp.name, j = 2, named = false;
         for (; j < it.length && isSym(it[j]) && it[j].v.charAt(0) === ':'; j += 2) {
           var av = it[j + 1];
@@ -287,21 +293,21 @@ var __api = (function () {
         // After the type and :as, only a sketch: (port :in KeyChord (sketch "…")) or (~ … ~).
         var extra = it.slice(j), bad = extra.filter(function (y) { return !(y.list && isSym(y.list[0]) && y.list[0].v === 'sketch'); });
         kids('port', pn, extra.filter(function (y) { return bad.indexOf(y) < 0; }));
-        if (bad.length) warn(pn + ' has extra items after its message type' + (isSym(bad[0]) && !named && j === 2 && extra.length === 1 ? ' (to name it, write :as ' + bad[0].v + ')' : ''), bad[0].s);
+        if (bad.length) warn(pn + ' has extra items after its shape' + (isSym(bad[0]) && !named && j === 2 && extra.length === 1 ? ' (to name it, write :as ' + bad[0].v + ')' : ''), bad[0].s);
         return;
       }
       // (implements Name), or (implements (Name Arg ...)) for a behavior with parameters.
       if (h === 'implements') { if (it.length !== 1 || !(isName(nm) || (nm.list && nm.list.length > 1 && nm.list.every(isName)))) warn('implements names exactly one behavior, as Name or (Name Arg ...)', x.s); return; }
-      if (h === 'refines') { if (it.length !== 1 || !isName(nm)) warn('refines names exactly one message type', x.s); return; }
+      if (h === 'refines') { if (it.length !== 1 || !isName(nm)) warn('refines names exactly one shape', x.s); return; }
       if (h === 'carries') {
-        if (!it.length || !it.every(isName)) warn('carries names one or more message types', x.s);
+        if (!it.length || !it.every(isName)) warn('carries names one or more shapes', x.s);
         var seenC = {}; it.forEach(function (y) { if (isName(y)) { if (seenC[y.v]) warn('carries names ' + y.v + ' twice', y.s); seenC[y.v] = true; } });
         return;
       }
       if (h === 'sketch') { if (!it.length || it.some(function (y) { return y.list; })) warn('sketch takes a "string"', x.s); return; }
       if (h === 'message') {
-        if (!isName(nm)) { warn('message needs a name', x.s); return; }
-        return kids('message', 'message ' + nm.v, it.slice(keywords('message', nm.v, it)));
+        if (!isName(nm)) { warn('shape needs a name', x.s); return; }
+        return kids('message', 'shape ' + nm.v, it.slice(keywords('shape', nm.v, it)));
       }
       if (h === 'behavior') {
         var ok = isName(nm) || (nm && nm.list && nm.list.length && nm.list.every(isName));
@@ -354,7 +360,7 @@ var __api = (function () {
     if (!miss) return '';
     var bare = miss.replace(/^(β|beh):/, '');
     if (caller && (model.behaviors.has(a) || /^(β|beh):/.test(a) && model.behaviors.has(bare))) return ' (' + bare + ' is a behavior; a binding\'s caller is a block)';
-    if (model.messages.has(bare)) return ' (' + bare + ' is a message type; bindings name blocks' + (caller ? '' : ' and behaviors') + ')';
+    if (model.messages.has(bare)) return ' (' + bare + ' is a shape; bindings name blocks' + (caller ? '' : ' and behaviors') + ')';
     var s = suggestIds(model, miss, caller ? 'block' : 'block,behavior');
     return s.length ? ' (did you mean ' + s.join(', ') + '?)' : '';
   }
@@ -487,7 +493,7 @@ var __api = (function () {
     if (!r.results.length) return '';
     var out = '; sbtel query ' + name + ' ' + ids.join(' ') + (withDeps ? ' --with-deps' : '') + '\n';
     r.results.forEach(function (e) {
-      out += '; ' + e.id + ': ' + e.kind + ' in ' + (e.path.length ? e.path.join(' > ') : 'the file') + ', lines ' + e.lines.start + '-' + e.lines.end + '\n';
+      out += '; ' + e.id + ': ' + (e.kind === 'message' ? 'shape' : e.kind) + ' in ' + (e.path.length ? e.path.join(' > ') : 'the file') + ', lines ' + e.lines.start + '-' + e.lines.end + '\n';
       if (e.kind === 'message' && e.carriers.messages.length) out += ';   carried by ' + e.carriers.messages.join(', ') + (e.carriers.blocks.length ? '; on the ports of ' + e.carriers.blocks.join(', ') : '') + '\n';
     });
     if (withDeps) out += '; may bind to (collapsed): ' + (F.stubs.length ? F.stubs.join(', ') : 'nothing else') + '\n';
@@ -512,7 +518,7 @@ var __api = (function () {
     };
     var set = function (s, fmt) { fmt = fmt || String; return [].concat((s.added || []).map(function (x) { return '+' + fmt(x); }), (s.removed || []).map(function (x) { return '-' + fmt(x); })).join(' '); };
     (d.changes || []).forEach(function (c) {
-      var r = c.b || c.a, head = c.element === 'file' ? 'the file' : c.element + ' ' + refName(c.element, r);
+      var r = c.b || c.a, head = c.element === 'file' ? 'the file' : (c.element === 'message' ? 'shape' : c.element) + ' ' + refName(c.element, r);
       if (c.tags.indexOf('added') >= 0) { out += '+ ' + head + ' (in ' + where(c.b.in) + ')\n'; return; }
       if (c.tags.indexOf('removed') >= 0) { out += '- ' + head + ' (was in ' + where(c.a.in) + ')\n'; return; }
       var parts = [], f = c.fields || {};
@@ -577,12 +583,13 @@ var __api = (function () {
     return J({ exit: exit, stdout: out, stderr: err });
   }
 
-  // ---------- fmt --migrate-ports: 0.2 ports rewritten in the 0.3 form (docs/DESIGN.md §3.15) ----------
-  // Every (port name in|out Type …) becomes (port :in|:out Type [:as name] …): :as only when name is not
-  // the type's default name. Only the head of each port changes; its sketch, comments, spacing and the
-  // rest of the file stay byte for byte. Works on the reader's output, so it needs a file that reads
-  // (balanced parentheses, closed strings) but not one that lints. Returns { error, src, ports: [{ line,
-  // col, from, to }] }.
+  // ---------- fmt --migrate: older forms rewritten in the 0.4 ones (docs/DESIGN.md §3.15) ----------
+  // (port name in|out Type …) (0.2) and (port :in|:out Type [:as name] …) (0.3) become (takes Type [:as name] …)
+  // or (gives …), with :as only when the name is not the type's default one; (message Name …) becomes
+  // (shape Name …). Only the head of each form changes: its sketch, comments, spacing and the rest of the
+  // file stay byte for byte. Works on the reader's output, so it needs a file that reads (balanced
+  // parentheses, closed strings) but not one that lints. Returns { error, src, ports: [{ line, col, from,
+  // to }] } (ports: every rewrite, whatever its form; the name is the 0.3 one, kept for callers).
   function migratePorts(src) {
     var forms;
     try { forms = readAll(src); } catch (e) { return { error: errorOf(e), src: src, ports: [] }; }
@@ -591,12 +598,17 @@ var __api = (function () {
       xs.forEach(function (x) {
         if (!x.list) return;
         var it = x.list, h = it[0];
+        if (h && h.t === 'sym' && h.v === 'message' && !x.tilde) {
+          var at0 = posOf(starts, x.s), nm0 = it[1] && it[1].t === 'sym' ? ' ' + it[1].v : '', more0 = it.length > 2 ? ' …)' : ')';
+          reps.push({ s: h.s, e: h.e, t: 'shape', line: at0.line, col: at0.col, from: '(message' + nm0 + more0, to: '(shape' + nm0 + more0 });
+        }
         if (h && h.t === 'sym' && h.v === 'port' && !x.tilde) {
-          var p = portParts(it.slice(1));
-          if (p.legacy && it[3]) {
-            var head = ':' + p.dir + ' ' + src.slice(it[3].s, it[3].e) + (p.name !== defaultPortName(p.kind) ? ' :as ' + p.name : '');
-            var more = it.length > 4 ? ' …)' : ')', at = posOf(starts, x.s);
-            reps.push({ s: it[1].s, e: it[3].e, t: head, line: at.line, col: at.col, from: '(port ' + src.slice(it[1].s, it[3].e).replace(/\s+/g, ' ') + more, to: '(port ' + head + more });
+          var p = portParts(it.slice(1)), last = p.legacy ? it[3] : it[p.body], ok = p.legacy ? !!it[3] : (p.dir === 'in' || p.dir === 'out') && !!p.kind;
+          if (ok) {
+            var typeIt = p.legacy ? it[3] : it[2], end = p.legacy ? it[3].e : it[p.body].e;
+            var head = (p.dir === 'in' ? 'takes' : 'gives') + ' ' + src.slice(typeIt.s, typeIt.e) + (p.name !== defaultPortName(p.kind) ? ' :as ' + p.name : '');
+            var more = it.length > (p.legacy ? 4 : p.body + 1) ? ' …)' : ')', at = posOf(starts, x.s);
+            reps.push({ s: h.s, e: end, t: head, line: at.line, col: at.col, from: '(' + src.slice(h.s, end).replace(/\s+/g, ' ') + more, to: '(' + head + more });
           }
         }
         walk(it);
@@ -604,6 +616,7 @@ var __api = (function () {
     })(forms);
     var out = src;
     reps.slice().sort(function (a, b) { return b.s - a.s; }).forEach(function (r) { out = out.slice(0, r.s) + r.t + out.slice(r.e); });
+    reps.sort(function (a, b) { return a.s - b.s; });
     return { error: null, src: out, ports: reps.map(function (r) { return { line: r.line, col: r.col, from: r.from, to: r.to }; }) };
   }
 

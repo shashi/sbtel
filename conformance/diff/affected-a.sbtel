@@ -1,17 +1,17 @@
 ; Ports keep their kinds, but refines changes what they accept.
 (block Net
-  (message Msg (sketch "Any message."))
-  (message Data (refines Wire) (sketch "A payload."))
-  (message Wire (sketch "What travels on the wire."))
-  (message Ping (refines Wire) (sketch "A liveness probe."))
-  (message Ack (refines Msg) (sketch "An acknowledgement."))
+  (shape Msg (sketch "Any message."))
+  (shape Data (refines Wire) (sketch "A payload."))
+  (shape Wire (sketch "What travels on the wire."))
+  (shape Ping (refines Wire) (sketch "A liveness probe."))
+  (shape Ack (refines Msg) (sketch "An acknowledgement."))
   (level
     (block Sender
-      (port :out Ping :as probe)
-      (port :out Ack)
-      (port :out Data)
+      (gives Ping :as probe)
+      (gives Ack)
+      (gives Data)
       (sketch "Sends things."))
     (block Receiver
-      (port :in Wire)
-      (port :in Msg :as any)
+      (takes Wire)
+      (takes Msg :as any)
       (sketch "Receives things."))))

@@ -1,20 +1,20 @@
 ; (~ … ~) is (sketch "…"): nothing inside is special, the first closer of the same length ends it.
-(message M (~ quotes "x", a semicolon; # hash, \ backslash, (unbalanced, ~5 ms, ~/.sbtel/ ~))
-(message N (~~ a literal ~) inside ~~))
-(message O (~~~ even ~~) inside ~~~))
-(message P (~ ~))
-(message Q (~ unicode: λ → ✓ 日本 ~))
-(message R (~
+(shape M (~ quotes "x", a semicolon; # hash, \ backslash, (unbalanced, ~5 ms, ~/.sbtel/ ~))
+(shape N (~~ a literal ~) inside ~~))
+(shape O (~~~ even ~~) inside ~~~))
+(shape P (~ ~))
+(shape Q (~ unicode: λ → ✓ 日本 ~))
+(shape R (~
     First paragraph,
     two lines.
 
     Second   paragraph.
   ~))
-(message S (sketch "A string sketch: still one
+(shape S (sketch "A string sketch: still one
   line, and
 
   no paragraphs."))
 (block A
-  (port :in M :as p (~ a port's own sketch ~))
+  (takes M :as p (~ a port's own sketch ~))
   (adjacent (~ group ~) (block B) (block C))
   (level (block D)))

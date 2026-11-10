@@ -1,17 +1,17 @@
 (block Pipeline
-  (message Text (sketch "Raw input."))
-  (message Ast (sketch "A syntax tree."))
-  (message Ir (sketch "Checked program."))
+  (shape Text (sketch "Raw input."))
+  (shape Ast (sketch "A syntax tree."))
+  (shape Ir (sketch "Checked program."))
   (level
     (adjacent
       (block Parser
-        (port :in Text :as src)
-        (port :out Ast :as tree)
+        (takes Text :as src)
+        (gives Ast :as tree)
         (sketch "Parses the source."))
       (block Checker
-        (port :in Ast :as tree)
-        (port :out Ir)
+        (takes Ast :as tree)
+        (gives Ir)
         (sketch "Checks the types of every expression.")))
     (block Backend
-      (port :in Ir)
+      (takes Ir)
       (sketch "Emits machine code."))))

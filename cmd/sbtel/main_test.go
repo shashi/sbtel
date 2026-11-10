@@ -35,7 +35,7 @@ func TestLintEndToEnd(t *testing.T) {
 	if c, out, _ := runT("(block A)", "--json" /* flag before command is not allowed */); c != 2 {
 		t.Errorf("flag as command: exit %d %q", c, out)
 	}
-	c, out, _ = runT("(block A (port :in Nope :as p))", "lint", "--json", "-")
+	c, out, _ = runT("(block A (takes Nope :as p))", "lint", "--json", "-")
 	if c != 1 || !strings.Contains(out, `"file":"<stdin>"`) || strings.Count(out, "\n") != 1 {
 		t.Errorf("stdin json: exit %d %q", c, out)
 	}

@@ -12,14 +12,14 @@ PAGE, SBTEL = sys.argv[1], sys.argv[2]
 # stay literal; and one line ends in CR LF, which an HTML parser would turn into LF if it were not escaped.
 NOTES = ('(block Notes\n'
          '  (~ Ends </script><script>window.pwned = 1</script> and </SCRIPT > <!-- <script> &lt; &amp; & a < b ~)\r\n'
-         '  (message Edit (sketch "A change to one note\'s text."))\n'
+         '  (shape Edit (sketch "A change to one note\'s text."))\n'
          '  (behavior Durable (sketch "Keeps what it is given."))\n'
          '  (level :name "Editing"\n'
          '    (adjacent (~ The preview follows the editor. ~)\n'
-         '      (block Notes.Editor (port :out Edit) (sketch "The text area."))\n'
+         '      (block Notes.Editor (gives Edit) (sketch "The text area."))\n'
          '      (block Notes.Preview (sketch "Renders the note beside the editor — ünïcode."))))\n'
          '  (level :name "Storage"\n'
-         '    (block Notes.Store (implements Durable) (port :in Edit) (sketch "Writes notes to disk."))))\n')
+         '    (block Notes.Store (implements Durable) (takes Edit) (sketch "Writes notes to disk."))))\n')
 OTHER = '(block Other (sketch "Another spec.")\n  (level (block Other.A (sketch "a")) (block Other.B (sketch "b"))))\n'
 EDGES = ('# VIOLATION: the store tells the editor that a write finished.\n'
          'Notes.Store -> Notes.Editor  # store.ts:40\n'

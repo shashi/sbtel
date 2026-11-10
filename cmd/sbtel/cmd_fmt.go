@@ -2,8 +2,9 @@
 
 package main
 
-// sbtel fmt --migrate-ports [--check] <spec>|- ...   (DESIGN.md §3.15, v0.3.0)
-// Rewrites the 0.2 port form, (port name in Type), as 0.3's, (port :in Type :as name), in place. The
+// sbtel fmt --migrate [--check] <spec>|- ...   (DESIGN.md §3.15; --migrate-ports is the 0.3 name, kept)
+// Rewrites the forms of 0.2 and 0.3 as 0.4's, in place: (port name in Type) and (port :in Type) become
+// (takes Type), (port :out Type) becomes (gives Type), and (message Name) becomes (shape Name). The
 // rewrite itself is __api.migratePorts (core/api.js); this only reads, writes and reports.
 
 import (
@@ -15,7 +16,7 @@ import (
 	"github.com/shashi/sbtel/internal/engine"
 )
 
-var errNoRewrite = errors.New("say which rewrite: --migrate-ports (the only one so far)")
+var errNoRewrite = errors.New("say which rewrite: --migrate (the only one so far)")
 
 type migration struct {
 	Error *struct {
@@ -33,11 +34,11 @@ type migration struct {
 }
 
 func cmdFmt(e env, args []string) int {
-	f, err := parseArgs(args, []string{"migrate-ports", "check"}, nil)
+	f, err := parseArgs(args, []string{"migrate", "migrate-ports", "check"}, nil)
 	if err != nil {
 		return usageErr(e, "fmt", err)
 	}
-	if !f.has("migrate-ports") {
+	if !f.has("migrate") && !f.has("migrate-ports") {
 		return usageErr(e, "fmt", errNoRewrite)
 	}
 	if len(f.pos) == 0 {
@@ -79,7 +80,7 @@ func cmdFmt(e env, args []string) int {
 		n := len(m.Ports)
 		switch {
 		case f.has("check"):
-			fmt.Fprintf(report, "%s: %s in the 0.2 form\n", file.Name, portCount(n))
+			fmt.Fprintf(report, "%s: %s in an older form\n", file.Name, portCount(n))
 			if n > 0 && exit == 0 {
 				exit = 1
 			}
@@ -103,10 +104,10 @@ func cmdFmt(e env, args []string) int {
 	return exit
 }
 
-// portCount is "1 port" or "N ports" (cmd_fmt.go keeps its own, rather than borrow cmd_b.go's plural).
+// portCount is "1 form" or "N forms" (cmd_fmt.go keeps its own, rather than borrow cmd_b.go's plural).
 func portCount(n int) string {
 	if n == 1 {
-		return "1 port"
+		return "1 form"
 	}
-	return fmt.Sprintf("%d ports", n)
+	return fmt.Sprintf("%d forms", n)
 }

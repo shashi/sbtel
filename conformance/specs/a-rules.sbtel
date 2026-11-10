@@ -1,20 +1,20 @@
 ; Workstream A: one block pair per binding rule (docs/DESIGN.md §2.5), duplicates, and a block
 ; that sits in no level. Read with a-rules.bindings.txt.
-(message Ping (sketch "A liveness probe."))
-(message Pong (refines Ping))
-(message Wire)
-(message Ping2 (refines Wire))
+(shape Ping (sketch "A liveness probe."))
+(shape Pong (refines Ping))
+(shape Wire)
+(shape Ping2 (refines Wire))
 (behavior (Relay T)
-  (port :in T :as take)
-  (port :out Wire :as give)
+  (takes T :as take)
+  (gives Wire :as give)
   (sketch "Passes values through."))
 (block Top
   :type "System" :owner "team-a"
   (sketch "Holds everything.")
-  (behavior Durable (port :in Ping :as keep))
+  (behavior Durable (takes Ping :as keep))
   (level
     (adjacent
-      (block Ui (port :out Ping)
+      (block Ui (gives Ping)
         (level (block Ui.Button) (block Ui.Menu))
         (level (block Ui.Theme)))
       (block Cli (implements Relay)))
@@ -22,10 +22,10 @@
   (level
     (block Core
       (implements Durable)
-      (message Job (refines Ping))
-      (port :in Job :as jobs)
-      (level (block Core.Queue (port :out Job :as next)))
-      (message Stray (block Orphan))))
+      (shape Job (refines Ping))
+      (takes Job :as jobs)
+      (level (block Core.Queue (gives Job :as next)))
+      (shape Stray (block Orphan))))
   (level
     (block Dup (sketch "first"))
     (block Dup (sketch "second"))))

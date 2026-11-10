@@ -12,21 +12,21 @@ SBTEL.modes.diff = (() => {
   // Side b for the dev hook: the playground sample with the edits of conformance/diff/shell-b.sbtel.
   const DEV_EDITS = [
     ['; The Shell from the sketch: one block holding 23 blocks, in three named levels.', '; The Shell, revised: renames, moves, removals and new blocks.'],
-    ['    (port :out Intent)\n    (sketch "A behavior shared by surfaces.")', '    (port :out Intent (~ What the user asked for. ~))\n    (sketch "A behavior shared by surfaces.")'],
+    ['    (gives Intent)\n    (sketch "A behavior shared by surfaces.")', '    (gives Intent (~ What the user asked for. ~))\n    (sketch "A behavior shared by surfaces.")'],
     ['(level :name "Services"', '(level :name "Routing"'],
     ['(~ Clipboard and keymap shortcuts route as intents. ~)', '(~ Keymap and search shortcuts route as intents. ~)'],
     ['(~ Knows nothing of surfaces. ~)', '(~ Knows nothing of the levels above. ~)'],
-    ['(message Notice (sketch "A short message for the user, with a severity."))', '(message Alert (sketch "A short message for the user, with a severity."))'],
-    ['(port :in Notice)', '(port :in Alert :as notice)'],
-    ['(message KeyChord (sketch "A normalized key combination."))', '(message KeyChord (refines Intent) (sketch "A normalized key combination."))'],
-    ['(block Shell.Toast (sketch "One notice with an auto-dismiss timer."))', '(block Shell.Toast\n              (port :in Alert :as notice)\n              (sketch "One notice with an auto-dismiss timer."))'],
+    ['(shape Notice (sketch "A short message for the user, with a severity."))', '(shape Alert (sketch "A short message for the user, with a severity."))'],
+    ['(takes Notice)', '(takes Alert :as notice)'],
+    ['(shape KeyChord (sketch "A normalized key combination."))', '(shape KeyChord (refines Intent) (sketch "A normalized key combination."))'],
+    ['(block Shell.Toast (sketch "One notice with an auto-dismiss timer."))', '(block Shell.Toast\n              (takes Alert :as notice)\n              (sketch "One notice with an auto-dismiss timer."))'],
     ['(block Shell.Banner (sketch "A persistent notice pinned to the top."))', '(block Shell.PinnedBanner (sketch "A persistent notice pinned to the top."))'],
     ['                  (block Shell.TurnActions (sketch "Copy, retry and edit controls.")))))', '                  (block Shell.TurnActions (sketch "Copy, retry and edit controls."))))\n              (level\n                (block Shell.ScrollAnchor\n                  (sketch "Keeps the reading position when content above grows."))))'],
     ['        (level\n          (block Shell.ScrollAnchor\n            (sketch "Keeps the reading position when content above grows."))))\n      (block Shell.Sidebar', '        )\n      (block Shell.Sidebar'],
     ['(sketch "Multiline input with attachments and slash commands.")', '(sketch "Multiline input with attachments, mentions and slash commands.")'],
-    ['    (block Shell.CommandPalette\n      (port :in KeyChord :as chord (~ Opens the palette. ~))\n      (port :out Intent :as run)', '    (block Shell.CommandPalette\n      (port :out Intent :as run)'],
-    ['      (block Shell.Router\n        (port :in Intent)', '      (block Shell.Router\n        :type "Service"\n        (port :in Intent)'],
-    ['        (port :out KeyChord :as chord)', '        (implements Durable)\n        (port :out KeyChord :as chord)'],
+    ['    (block Shell.CommandPalette\n      (takes KeyChord :as chord (~ Opens the palette. ~))\n      (gives Intent :as run)', '    (block Shell.CommandPalette\n      (gives Intent :as run)'],
+    ['      (block Shell.Router\n        (takes Intent)', '      (block Shell.Router\n        :type "Service"\n        (takes Intent)'],
+    ['        (gives KeyChord :as chord)', '        (implements Durable)\n        (gives KeyChord :as chord)'],
     ['      (block Shell.Clipboard (sketch "Copy and paste with rich formats."))))', '      (block Shell.Search (sketch "Full-text search across sessions and files."))))'],
     ['    (block Shell.LowLevelThing (sketch "Low level module thing."))\n', ''],
     [':type "Store"', ':type "Database"'],
@@ -508,7 +508,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     const na = D.res.affected.length;
     $('dCount').textContent = n ? `${D.res.changes.length} change${D.res.changes.length === 1 ? '' : 's'}${na ? `, ${na} affected port${na === 1 ? '' : 's'}` : ''}` : '';
     $('dN').textContent = String(D.res.changes.length);
-    if (!n) { body.innerHTML = `<div class="d-empty"><b>No changes.</b><br>Both sides describe the same blocks, behaviors and message types. Formatting, comments and the order of blocks within a level are not changes.</div>`; return; }
+    if (!n) { body.innerHTML = `<div class="d-empty"><b>No changes.</b><br>Both sides describe the same blocks, behaviors and shapes. Formatting, comments and the order of blocks within a level are not changes.</div>`; return; }
     body.innerHTML = changeSummaryHTML(S) + changeListHTML(D.items);
   }
   function highlightItem(id) {

@@ -156,8 +156,8 @@ func TestCLILint(t *testing.T) {
 		src, want string
 		exit      int
 	}{
-		{"(block A (sketch \"x\"))", "a.sbtel: ok (1 block, 0 behaviors, 0 message types)\n", 0},
-		{"(block A (port :in Nope :as p))", "a.sbtel: Every port uses a declared message type: A.p: Nope\na.sbtel: 1 problem (1 block, 0 behaviors, 0 message types)\n", 1},
+		{"(block A (sketch \"x\"))", "a.sbtel: ok (1 block, 0 behaviors, 0 shapes)\n", 0},
+		{"(block A (takes Nope :as p))", "a.sbtel: Every port uses a declared shape: A.p: Nope\na.sbtel: 1 problem (1 block, 0 behaviors, 0 shapes)\n", 1},
 		{"(block A\n  (sketch \"x)", "a.sbtel:2:11: error: Unclosed string\n", 1},
 	} {
 		r, err := e.CLI("lint", map[string]any{"files": []File{{"a.sbtel", tc.src}}})

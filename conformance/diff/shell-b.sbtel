@@ -2,19 +2,19 @@
 (block Shell
   :type "Module"
   (sketch "The UI shell user interacts via.")
-  (message Intent (sketch "A command id plus its arguments."))
-  (message Frame (sketch "A rendered view-model for one surface."))
-  (message SessionEvent (sketch "A turn was added, edited or removed."))
+  (shape Intent (sketch "A command id plus its arguments."))
+  (shape Frame (sketch "A rendered view-model for one surface."))
+  (shape SessionEvent (sketch "A turn was added, edited or removed."))
   ; Notice, TurnAdded and Scrollable sit above their one user on purpose: the playground shows
   ; attaching across blocks and refusing it out of scope. sbtel lint says where each could live.
-  (message Alert (sketch "A short message for the user, with a severity."))
-  (message KeyChord (refines Intent) (sketch "A normalized key combination."))
+  (shape Alert (sketch "A short message for the user, with a severity."))
+  (shape KeyChord (refines Intent) (sketch "A normalized key combination."))
   (behavior Surface
-    (port :in Frame)
-    (port :out Intent (~ What the user asked for. ~))
+    (takes Frame)
+    (gives Intent (~ What the user asked for. ~))
     (sketch "A behavior shared by surfaces."))
   (behavior Durable
-    (port :in SessionEvent :as event)
+    (takes SessionEvent :as event)
     (sketch "Retains every accepted event until it is acknowledged."))
 
   (level :name "Surfaces"
@@ -22,12 +22,12 @@
       (block Shell.Notification
         :type "Process"
         (implements Surface)
-        (port :in Alert :as notice)
+        (takes Alert :as notice)
         (sketch "Shows transient notices above the session.")
         (level
           (adjacent
             (block Shell.Toast
-              (port :in Alert :as notice)
+              (takes Alert :as notice)
               (sketch "One notice with an auto-dismiss timer."))
             (block Shell.PinnedBanner (sketch "A persistent notice pinned to the top."))))
         (level
@@ -37,11 +37,11 @@
       (block Shell.SessionView
         :type "Process"
         (implements Surface)
-        (port :in SessionEvent :as events)
+        (takes SessionEvent :as events)
         (sketch "View of the Session")
-        (message TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
+        (shape TurnAdded (refines SessionEvent) (sketch "Also carries the new turn's id and author."))
         (behavior Scrollable
-          (port :out Frame :as position)
+          (gives Frame :as position)
           (sketch "Keeps a scroll position and reports what is visible."))
         (level
           (adjacent
@@ -53,7 +53,7 @@
               (level
                 (adjacent
                   (block Shell.Turn
-                    (port :in TurnAdded :as added)
+                    (takes TurnAdded :as added)
                     (sketch "One user or agent turn.")
                     (level
                       (adjacent
@@ -65,14 +65,14 @@
                 (block Shell.ScrollAnchor
                   (sketch "Keeps the reading position when content above grows."))))
             (block Shell.Composer
-              (port :out Intent :as submit)
+              (gives Intent :as submit)
               (sketch "Multiline input with attachments, mentions and slash commands."))))
         )
       (block Shell.Sidebar
         (implements Surface)
         (sketch "Recent sessions and the project switcher.")))
     (block Shell.CommandPalette
-      (port :out Intent :as run)
+      (gives Intent :as run)
       (sketch "Fuzzy search over every command.")))
 
   (level :name "Routing"
@@ -80,11 +80,11 @@
     (adjacent (~ Keymap and search shortcuts route as intents. ~)
       (block Shell.Router
         :type "Service"
-        (port :in Intent)
+        (takes Intent)
         (sketch "Maps intents to handlers; unknown intents become notices."))
       (block Shell.Keymap
         (implements Durable)
-        (port :out KeyChord :as chord)
+        (gives KeyChord :as chord)
         (sketch "Turns raw key events into chords."))
       (block Shell.Search (sketch "Full-text search across sessions and files."))))
 
@@ -96,5 +96,5 @@
     (block Shell.SessionStore
       :type "Database"
       (implements Durable)
-      (port :out SessionEvent :as events)
+      (gives SessionEvent :as events)
       (sketch "Keeps session events on disk and replays them on launch."))))

@@ -1,7 +1,7 @@
 ; Formatting only.
 (block Svc :type "Service"
-  (message Ping (sketch "Are you there?"))
-  (port :in Ping)
+  (shape Ping (sketch "Are you there?"))
+  (takes Ping)
   (sketch "Answers pings.")
   (level (block Clock (sketch "Ticks once a second."))
          (block Log (sketch "Appends lines."))))

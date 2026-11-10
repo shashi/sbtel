@@ -30,15 +30,15 @@ language.
 ; comment to end of line                       "string" with \" and \\ escapes
 (block Name :type "Module"                         ; :type is a block's only keyword: what it maps to
   (~ One sentence: what this block is for. ~)      ; = (sketch "…"); nothing inside is special
-  (port :in Type)                                  ; :in or :out, then a message type; named `type`
-  (port :out Type :as cmd (~ Only what the type does not say. ~))   ; :as names it; a sketch comes last
+  (takes Type)                                  ; :in or :out, then a shape; named `type`
+  (gives Type :as cmd (~ Only what the type does not say. ~))   ; :as names it; a sketch comes last
   (implements Behavior)                            ; one behavior name; its ports become this block's
-  (message Super :type "struct" (sketch "A general kind of data."))   ; :type: what it is in code
-  (message Type (refines Super))                   ; is-a: a Type is a Super
-  (message Pair (carries Type Super))              ; has-a: a Pair holds a Type and a Super
+  (shape Super :type "struct" (sketch "A general kind of data."))   ; :type: what it is in code
+  (shape Type (refines Super))                   ; is-a: a Type is a Super
+  (shape Pair (carries Type Super))              ; has-a: a Pair holds a Type and a Super
   (behavior Behavior :type "trait"                 ; a block's grammar: :type, sketch, ports, implements
-    (port :in Type :as p) (sketch "…"))            ; shared vocabulary, visible here and below
-  (behavior (Store T) (port :in T :as put))        ; a behavior with a parameter T
+    (takes Type :as p) (sketch "…"))            ; shared vocabulary, visible here and below
+  (behavior (Store T) (takes T :as put))        ; a behavior with a parameter T
   (behavior Keeps (implements (Store Type)))       ; extends Store, with T = Type
   (level :name "Screens"                           ; first level, the top; :name labels it
     (~ What the level above may know of it. ~)     ; a level may have a sketch
@@ -53,8 +53,8 @@ language.
 | `(block Name [:type "T"] body…)` | file, block, level, adjacent | a part of the system; it may contain levels |
 | `(level [:name "N"] block-or-adjacent…)` | file, block | one level; levels are ordered **top to bottom** |
 | `(adjacent block-or-adjacent…)` | file, block, level, adjacent | peers in one level that may bind each other (≥ 2 members) |
-| `(port :in\|:out Type [:as name] [sketch])` | block, behavior | a typed input or output; named after its type (`NoteSaved` → `noteSaved`) unless `:as` names it |
-| `(message Name [:type "T"] …)` | file, block | a data type; `(sketch)`, `(refines T)`, `(carries A B…)` inside |
+| `(takes Shape [:as name] [sketch])` / `(gives Shape …)` | block, behavior | a port: what the block takes, or gives; named after its type (`NoteSaved` → `noteSaved`) unless `:as` names it |
+| `(shape Name [:type "T"] …)` | file, block | a data type; `(sketch)`, `(refines T)`, `(carries A B…)` inside |
 | `(behavior Name [:type "T"] …)` / `(behavior (Name P…) …)` | file, block | a named set of ports a block can promise; `(sketch)`, `(port …)`, `(implements …)` inside |
 | `(implements Name)` / `(implements (Name Arg…))` | block, behavior | the block (or behavior) has that behavior's ports, and counts as implementing it |
 | `(sketch "text")` or `(~ text ~)` | block, message, behavior, level, adjacent, port | the prose description |
@@ -74,14 +74,14 @@ language.
 - **Messages** are data exchanged where neither side names the other: the counterpart is chosen
   elsewhere. Ports are typed with messages. `accepts(U, T)`: an `in U` port takes an `out T` value when
   U = T or T refines U (transitively). `carries` (has-a) never changes what a port accepts.
-- **Scope.** A behavior or message type declared in block D is usable in D and everything inside D.
+- **Scope.** A behavior or shape declared in block D is usable in D and everything inside D.
   Declared at file level, it is usable everywhere. Declare it where its users meet (lint notes it when
   it sits higher).
-- **Ports.** `(port :in NoteSaved)` is named `noteSaved`: the type's name with its first letter
+- **Ports.** `(takes NoteSaved)` is named `noteSaved`: the type's name with its first letter
   lowercased (§3.5). Write `:as name` only when that name is taken, as when two ports have one type:
-  `(port :in Item :as backlog)`. Port names are unique per block, inherited ports included. The 0.2
-  form `(port name in Type)` is reported; `sbtel fmt --migrate-ports` rewrites it.
-- **`:type`** grounds a block, a behavior or a message type in code: what it is there (a module, a
+  `(takes Item :as backlog)`. Port names are unique per block, inherited ports included. The 0.2
+  forms `(port name in Type)` (0.2) and `(port :in Type)`, `(message Name)` (0.3) are reported; `sbtel fmt --migrate` rewrites them.
+- **`:type`** grounds a block, a behavior or a shape in code: what it is there (a module, a
   trait, a struct…). It shows as a pill. Keep the kinds consistent within a spec.
 - **Names** are any run of characters without whitespace, `(`, `)`, `"` or `;`, so a path
   (`src/store.ts`), a kebab-case service (`billing-api`) and a dotted name (`Shell.Router`) are all
@@ -92,7 +92,7 @@ direction, `adjacent` with fewer than 2 members, empty level, the old `(layer �
 0.2 port forms); structure warnings
 (unknown or misplaced forms and keywords, stray words, malformed ports, levels and `carries`, second
 sketches, blocks, levels and declarations inside a behavior…); six rules: every implemented behavior is
-declared, behaviors are used in scope, every port's type is declared, message types are used in scope,
+declared, behaviors are used in scope, every port's type is declared, shapes are used in scope,
 `refines`/`carries` name declared types, and no behavior implements itself;
 and placement notes (information, never a failure). `sbtel check spec --bindings edges.txt` applies the
 binding rules to `Caller -> Callee  # file:line` edges.
@@ -109,16 +109,16 @@ A complete, clean spec:
 (block Notes
   :type "App"
   (sketch "Write notes, see them rendered, keep them on disk.")
-  (message Edit (sketch "A change to one note's text."))
-  (message Saved (sketch "A note was written to disk."))
+  (shape Edit (sketch "A change to one note's text."))
+  (shape Saved (sketch "A note was written to disk."))
   (behavior Durable
-    (port :in Edit)
+    (takes Edit)
     (sketch "Keeps every accepted edit until it is on disk."))
 
   (level :name "Editing"
     (adjacent (~ The preview scrolls with the editor. ~)
       (block Notes.Editor
-        (port :out Edit)
+        (gives Edit)
         (sketch "The text area where the user types."))
       (block Notes.Preview
         (sketch "Renders the note beside the editor."))))
@@ -127,14 +127,14 @@ A complete, clean spec:
     (block Notes.Store
       :type "Store"
       (implements Durable)
-      (port :out Saved)
+      (gives Saved)
       (sketch "Writes notes to disk and reloads them on launch."))))
 ```
 
 **Reading a slice.** `sbtel query` prints the named elements as a **fragment**: one spec that lints
 clean on its own. It holds the elements' own source, their enclosing blocks as skeletons (header,
 first sketch, and only the levels that lead to what is shown, with their names and sketches), and every
-behavior and message type the shown text uses (the types they carry too), in the block that declares it. `--with-deps` also adds the blocks
+behavior and shape the shown text uses (the types they carry too), in the block that declares it. `--with-deps` also adds the blocks
 the selection may bind to (lower levels and adjacent peers, of the element and of each of its
 ancestors) as collapsed stubs. `sbtel query spec.sbtel Notes.Editor --with-deps` prints:
 
@@ -144,16 +144,16 @@ ancestors) as collapsed stubs. `sbtel query spec.sbtel Notes.Editor --with-deps`
 ; may bind to (collapsed): Notes.Preview, Notes.Store
 (block Notes :type "App"
   (sketch "Write notes, see them rendered, keep them on disk.")
-  (message Edit (sketch "A change to one note's text."))
-  (message Saved (sketch "A note was written to disk."))
+  (shape Edit (sketch "A change to one note's text."))
+  (shape Saved (sketch "A note was written to disk."))
   (behavior Durable
-    (port :in Edit)
+    (takes Edit)
     (sketch "Keeps every accepted edit until it is on disk."))
   (level :name "Editing"
     (adjacent
       (~ The preview scrolls with the editor. ~)
       (block Notes.Editor
-        (port :out Edit)
+        (gives Edit)
         (sketch "The text area where the user types."))
       (block Notes.Preview
         (sketch "Renders the note beside the editor."))))
@@ -161,7 +161,7 @@ ancestors) as collapsed stubs. `sbtel query spec.sbtel Notes.Editor --with-deps`
     (~ Editing sends Edits; it never touches files. ~)
     (block Notes.Store :type "Store"
       (implements Durable)
-      (port :out Saved)
+      (gives Saved)
       (sketch "Writes notes to disk and reloads them on launch."))))
 ```
 
@@ -192,9 +192,10 @@ k tildes followed by `)`. Nothing inside is special: quotes, `;`, `#`, backslash
 goes, so put a space after it: `(~ ~)` is the empty sketch. An opener with no closer is a parse error at
 the opener (§7.1).
 
-Every form is a parenthesised list whose first item is a symbol naming the form. The ten forms are
-`block`, `level`, `adjacent`, `port`, `message`, `refines`, `carries`, `behavior`, `implements` and
-`sketch`. Anything else is reported by lint (§7.3) and otherwise ignored. 0.2 renamed `layer` to
+Every form is a parenthesised list whose first item is a symbol naming the form. The eleven forms are
+`block`, `level`, `adjacent`, `takes`, `gives`, `shape`, `refines`, `carries`, `behavior`, `implements` and
+`sketch`. The 0.3 forms `(port :in|:out Type)` and `(message Name)` still read; lint reports each with the
+way to write it now, and `sbtel fmt --migrate` rewrites them. Anything else is reported by lint (§7.3) and otherwise ignored. 0.2 renamed `layer` to
 `level` and removed `either`; both are reported with what to write instead (§7.2).
 
 Positions in messages are `line:col`, both 1-based; `col` counts UTF-16 code units, so for ASCII it is
@@ -213,11 +214,11 @@ file behaves as an unnamed root block:
 Most specs have one top-level block. Several are fine:
 
 ```sbtel
-(message Request (sketch "An HTTP request."))
+(shape Request (sketch "An HTTP request."))
 (level
-  (block Frontend (port :out Request :as call) (sketch "The browser app.")))
+  (block Frontend (gives Request :as call) (sketch "The browser app.")))
 (level
-  (block Backend (port :in Request :as serve) (sketch "The API server.")))
+  (block Backend (takes Request :as serve) (sketch "The API server.")))
 ```
 
 ## 3. Forms
@@ -236,9 +237,9 @@ A block is a part of the system. `Name` is its id; ids must be unique (a duplica
 the block maps to (`"Service"`, `"Module"`, `"File"`, `"Function"`…) and shows as a pill in the viewer.
 Keep the kinds consistent within a spec, so the pills mean something. The value may be a string or a
 symbol. Any other keyword (0.1's `:fill` included), or a keyword after the body has started, is a
-warning; the viewer picks its own colours. Behaviors (§3.7) and message types (§3.6) take `:type` the
+warning; the viewer picks its own colours. Behaviors (§3.7) and shapes (§3.6) take `:type` the
 same way, with the same warnings: a block says which code artifact it is, a behavior which abstraction
-(`"trait"`, `"interface"`, `"Protocol"`, `"typeclass"`), a message type which data shape (`"struct"`,
+(`"trait"`, `"interface"`, `"Protocol"`, `"typeclass"`), a shape which data shape (`"struct"`,
 `"record"`, `"protobuf message"`, `"JSON schema"`). It is optional: write it where it helps a reader
 find the thing in the code.
 
@@ -265,9 +266,9 @@ needs the other: write whichever reads better. Say one thing, in as few words as
 `sbtel-design` skill.
 
 ```sbtel
-(message Path (~ A file path, like ~/.sbtel/sessions or "C:\Temp" (quotes and all). ~))
-(message Note (~~ Ends with ~) inside, so it takes two tildes. ~~))
-(message Long (~
+(shape Path (~ A file path, like ~/.sbtel/sessions or "C:\Temp" (quotes and all). ~))
+(shape Note (~~ Ends with ~) inside, so it takes two tildes. ~~))
+(shape Long (~
   First paragraph.
 
   Second paragraph. ~))
@@ -328,14 +329,14 @@ In the viewer, adjacent blocks sit side by side joined by a line.
 ### 3.5 `port`
 
 ```lisp
-(port :in Type [:as name] [sketch])
-(port :out Type [:as name] [sketch])
+(takes Type [:as name] [sketch])
+(gives Type [:as name] [sketch])
 ```
 
 A typed input or output of a block or a behavior. The direction keyword comes first, then `Type`, a
-message type in scope (§4) or, in a behavior with parameters, one of its parameters. After the type, a
+shape in scope (§4) or, in a behavior with parameters, one of its parameters. After the type, a
 port may have `:as name`, then one sketch: write the sketch only when the type alone does not say what
-the port promises (`(port :in KeyChord (~ Opens the palette. ~))`).
+the port promises (`(takes KeyChord (~ Opens the palette. ~))`).
 
 **The port's name.** Without `:as`, a port is named after its type: the type's name with its first
 letter lowercased, exactly as written otherwise.
@@ -351,13 +352,13 @@ letter lowercased, exactly as written otherwise.
 
 The viewer names a port it adds the same way (and adds `2`, `3`… when the name is taken). Write
 `:as name` only when the default does not fit, typically because two ports of one block have the
-same type: `(port :out Item)` and `(port :in Item :as backlog)`. `:as` with the default name
-(`(port :in Item :as item)`) is allowed and means the same; the viewer drops it when it rewrites the
+same type: `(gives Item)` and `(takes Item :as backlog)`. `:as` with the default name
+(`(takes Item :as item)`) is allowed and means the same; the viewer drops it when it rewrites the
 port. Port names are unique within a block or behavior, counting the ports it gets from the behaviors
 it implements: two ports with one name are a lint warning that says to tell them apart with `:as`.
 The name is what everything else uses: anchors (`@sbtel port Block.noteSaved`, §9), `sbtel query`,
 `sbtel diff` (writing the default name out with `:as`, or dropping it, is no change) and the viewer.
-Renaming a message type renames the ports named after it, so give a port `:as` when its name must not
+Renaming a shape renames the ports named after it, so give a port `:as` when its name must not
 change with its type.
 
 A block's ports are its own ports followed by the ports of every behavior it implements, sketches
@@ -371,10 +372,10 @@ when it edits the port). `sbtel fmt --migrate-ports spec.sbtel` rewrites every 0
 ### 3.6 `message`, `refines`, `carries`
 
 ```lisp
-(message Name [:type "T"] [sketch] [(refines Super)] [(carries A B …)])
+(shape Name [:type "T"] [sketch] [(refines Super)] [(carries A B …)])
 ```
 
-A message type is a kind of data. Two relations between types, and only these two:
+A shape is a kind of data. Two relations between types, and only these two:
 
 - **is-a**: `(refines Super)` makes `Name` a subtype of `Super`: a port that takes `Super` also takes
   `Name`. A union is a supertype that each alternative refines (0.1's `either` is gone).
@@ -382,17 +383,17 @@ A message type is a kind of data. Two relations between types, and only these tw
   names or counts (the sketch says those). A subtype carries what its supertype carries. Recursion and
   cycles are fine (a `Turn` may carry `Turn`s). `carries` never changes what a port accepts.
 
-Each names declared message types; a carried type must be in scope where the message is declared, as a
-port's type must be (§4). `:type` says what the data is in code (§3.1): `(message Edit :type "struct")`. Only the first `refines` and the first `carries` count; a name twice in one
+Each names declared shapes; a carried type must be in scope where the message is declared, as a
+port's type must be (§4). `:type` says what the data is in code (§3.1): `(shape Edit :type "struct")`. Only the first `refines` and the first `carries` count; a name twice in one
 `carries` is a warning.
 
 ```sbtel
-(message Event (sketch "Something the user did."))
-(message Click (refines Event))
-(message Key (refines Event))
-(message Selection (sketch "The selected ids."))
-(message Camera (sketch "Pan and zoom."))
-(message Snapshot (carries Selection Camera) (~ What undo restores. ~))
+(shape Event (sketch "Something the user did."))
+(shape Click (refines Event))
+(shape Key (refines Event))
+(shape Selection (sketch "The selected ids."))
+(shape Camera (sketch "Pan and zoom."))
+(shape Snapshot (carries Selection Camera) (~ What undo restores. ~))
 ```
 
 Who carries a type, transitively, and which ports and blocks use those carriers, is the core's
@@ -403,7 +404,7 @@ outlines them.
 
 ```lisp
 (behavior Name [:type "T"] (port …)… [(implements Other)…] [(sketch "…")])
-(behavior (Name Param …) (port :in Param :as p)… [(sketch "…")])
+(behavior (Name Param …) (takes Param :as p)… [(sketch "…")])
 (implements Name)
 (implements (Name Arg …))
 ```
@@ -422,23 +423,23 @@ the behavior is declared (§4). A behavior that implements itself, through any c
 implements `A`), fails the rule "No behavior implements itself" (§7.4).
 
 **Parameters.** A behavior may take parameters, written `(Name P …)`. A port typed with a parameter is
-not checked against declared message types. `(implements Name)` leaves the parameters as they are (the
+not checked against declared shapes. `(implements Name)` leaves the parameters as they are (the
 ports keep the parameter as their type). `(implements (Name Arg …))` passes one argument per parameter,
 in order: each port typed with a parameter takes the argument's type, in the ports the implementer gets.
-An argument is a message type in scope, or, inside a behavior with parameters, one of its own
+An argument is a shape in scope, or, inside a behavior with parameters, one of its own
 parameters, which its own implementer's argument replaces in turn: `(behavior (Cache K) (implements
 (Store K)))` and `(implements (Cache Entry))` give Store's ports the type Entry. Arguments must fill
 every parameter (a warning otherwise).
 
-**What a behavior does not contain.** Blocks, levels, adjacent groups, message types and behaviors are
+**What a behavior does not contain.** Blocks, levels, adjacent groups, shapes and behaviors are
 not allowed inside a behavior; each is a warning at its position, `behaviors don't contain blocks,
 levels or declarations; declare … beside the behavior instead`, and is left out of the model.
 
 ```sbtel
-(message Event :type "struct" (sketch "One state change."))
+(shape Event :type "struct" (sketch "One state change."))
 (behavior (Store T) :type "trait"
-  (port :in T :as put)
-  (port :out T :as get)
+  (takes T :as put)
+  (gives T :as get)
   (sketch "Keeps values of T and returns them on request."))
 (behavior Durable :type "trait"
   (implements (Store Event))
@@ -453,33 +454,33 @@ Durable and Store.
 
 ## 4. Scope
 
-Behaviors and message types are **scoped**. A declaration inside block D is visible in D and in every
+Behaviors and shapes are **scoped**. A declaration inside block D is visible in D and in every
 block nested in D, at any depth. A declaration at file level is visible everywhere.
 
 - A block may implement only behaviors in its scope; a behavior, only those in scope where it is
-  declared. The message types passed as arguments (`(implements (Store Event))`) follow the same rule.
-- A block's ports may use only message types in its scope.
-- A behavior's ports may use only message types in scope **where the behavior is declared** (not where
+  declared. The shapes passed as arguments (`(implements (Store Event))`) follow the same rule.
+- A block's ports may use only shapes in its scope.
+- A behavior's ports may use only shapes in scope **where the behavior is declared** (not where
   it is implemented).
-- A message type may carry only message types in scope where it is declared.
+- A shape may carry only shapes in scope where it is declared.
 - Code may bind a behavior only where the behavior is in scope (§8, the `abstraction` rule).
 
-Scope follows nesting, not levels: a message type declared in a block is visible to all of its
+Scope follows nesting, not levels: a shape declared in a block is visible to all of its
 children in every level, and to none of its siblings.
 
 ```sbtel
 (block App
-  (message Order (sketch "A customer's order."))
+  (shape Order (sketch "A customer's order."))
   (level
     (block App.Checkout
-      (message CardToken (sketch "Opaque payment token; never leaves Checkout."))
-      (port :out Order)
+      (shape CardToken (sketch "Opaque payment token; never leaves Checkout."))
+      (gives Order)
       (level
-        (block App.Checkout.Form (port :out CardToken :as token)))
+        (block App.Checkout.Form (gives CardToken :as token)))
       (level
-        (block App.Checkout.Gateway (port :in CardToken :as token)))))
+        (block App.Checkout.Gateway (takes CardToken :as token)))))
   (level
-    (block App.Fulfilment (port :in Order))))
+    (block App.Fulfilment (takes Order))))
 ```
 
 Declare a type in the smallest block that holds every use of it. Declaring everything at the top
@@ -517,7 +518,7 @@ There are two ways for parts to depend on each other:
   an `in` port, and the counterpart is chosen elsewhere (by a higher level, a router, configuration, a
   bus). Messages are how levels and peers talk without binding.
 
-Ports are typed with message types, and `accepts(U, T)` decides whether an `in U` port can receive
+Ports are typed with shapes, and `accepts(U, T)` decides whether an `in U` port can receive
 from an `out T` port:
 
 1. U and T are the same type; or
@@ -597,14 +598,14 @@ that each alternative refines. The viewer shows these too:
 ```sbtel fails
 (block A
   (layer (block B)))
-(message Input (either Click Key))
+(shape Input (either Click Key))
 ```
 
 ```text
 spec.sbtel:2:3: warning: unknown form (layer) in block A (did you mean level?)
 spec.sbtel:3:16: warning: either was removed in 0.2; declare each alternative with (refines Union) instead
 spec.sbtel:3:1: info: Input is never used.
-spec.sbtel: 2 problems (1 block, 0 behaviors, 1 message type)
+spec.sbtel: 2 problems (1 block, 0 behaviors, 1 shape)
 ```
 
 A duplicate block name (the second block's id becomes `A#2`):
@@ -616,14 +617,14 @@ A duplicate block name (the second block's id becomes `A#2`):
 
 ```text
 spec.sbtel:2:1: warning: Duplicate block name A
-spec.sbtel: 1 problem (2 blocks, 0 behaviors, 0 message types)
+spec.sbtel: 1 problem (2 blocks, 0 behaviors, 0 shapes)
 ```
 
-A duplicate message type or behavior (the later declaration wins):
+A duplicate shape or behavior (the later declaration wins):
 
 ```sbtel fails
-(message M)
-(message M)
+(shape M)
+(shape M)
 (behavior B)
 (behavior B)
 ```
@@ -633,20 +634,20 @@ spec.sbtel:2:1: warning: Duplicate message M
 spec.sbtel:4:1: warning: Duplicate behavior B
 spec.sbtel:2:1: info: M is never used.
 spec.sbtel:4:1: info: B is never used.
-spec.sbtel: 2 problems (0 blocks, 1 behavior, 1 message type)
+spec.sbtel: 2 problems (0 blocks, 1 behavior, 1 shape)
 ```
 
 A port direction other than `:in` or `:out` (a bare `in` or `out` adds `(write :in, not in)`):
 
 ```sbtel fails
-(message M)
+(shape M)
 (block A (port :sideways M))
 ```
 
 ```text
 spec.sbtel:2:10: warning: port direction must be :in or :out
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
-spec.sbtel: 1 problem (1 block, 0 behaviors, 1 message type)
+spec.sbtel: 1 problem (1 block, 0 behaviors, 1 shape)
 ```
 
 A port in the 0.2 form, with the 0.3 text to write (`:as` only when the name is not the default one,
@@ -654,19 +655,19 @@ and `…` for the sketch or anything else after the type). The diagram still dra
 `sbtel fmt --migrate-ports` rewrites it (§3.5):
 
 ```sbtel fails
-(message KeyChord)
-(message Intent)
+(shape KeyChord)
+(shape Intent)
 (block Palette
   (port chord in KeyChord (~ Opens the palette. ~))
   (port intent out Intent))
 ```
 
 ```text
-spec.sbtel:4:3: warning: (port chord in KeyChord …) is the 0.2 form; write (port :in KeyChord :as chord …)
-spec.sbtel:5:3: warning: (port intent out Intent) is the 0.2 form; write (port :out Intent)
+spec.sbtel:4:3: warning: (port chord in KeyChord …) is the 0.2 form; write (takes KeyChord :as chord …)
+spec.sbtel:5:3: warning: (port intent out Intent) is the 0.2 form; write (gives Intent)
 spec.sbtel:1:1: info: KeyChord is declared at the top level but only used within Palette; it could live there.
 spec.sbtel:2:1: info: Intent is declared at the top level but only used within Palette; it could live there.
-spec.sbtel: 2 problems (1 block, 0 behaviors, 2 message types)
+spec.sbtel: 2 problems (1 block, 0 behaviors, 2 shapes)
 ```
 
 Two ports of one block or behavior with the same name: its own ports, its own and one it gets from a
@@ -674,14 +675,14 @@ behavior, or two from behaviors. A clash inside a behavior is reported on the be
 every block that implements it:
 
 ```sbtel fails
-(message Item)
-(behavior Feed (port :out Item))
+(shape Item)
+(behavior Feed (gives Item))
 (block Queue
   (implements Feed)
-  (port :in Item)
-  (port :in Item))
+  (takes Item)
+  (takes Item))
 (block Mixer (implements Feed) (implements Other))
-(behavior Other (port :out Item))
+(behavior Other (gives Item))
 ```
 
 ```text
@@ -689,7 +690,7 @@ spec.sbtel:6:3: warning: block Queue has two ports named item; tell them apart w
 spec.sbtel:5:3: warning: block Queue has two ports named item: its own and one from behavior Feed; tell them apart with :as
 spec.sbtel:7:32: warning: block Mixer has two ports named item, from behaviors Feed and Other; tell them apart with :as
 spec.sbtel:8:1: info: Other is declared at the top level but only used within Mixer; it could live there.
-spec.sbtel: 3 problems (2 blocks, 2 behaviors, 1 message type)
+spec.sbtel: 3 problems (2 blocks, 2 behaviors, 1 shape)
 ```
 
 An adjacent group with one member:
@@ -701,18 +702,18 @@ An adjacent group with one member:
 
 ```text
 spec.sbtel:2:3: warning: adjacent needs two or more members
-spec.sbtel: 1 problem (2 blocks, 0 behaviors, 0 message types)
+spec.sbtel: 1 problem (2 blocks, 0 behaviors, 0 shapes)
 ```
 
 What a behavior does not contain, and arguments that do not fill a behavior's parameters:
 
 ```sbtel fails
-(message M)
-(behavior (Box T) (port :in T :as b))
+(shape M)
+(behavior (Box T) (takes T :as b))
 (behavior Durable
   (block Inner)
   (level (block L))
-  (message Mm)
+  (shape Mm)
   (implements (Box M M)))
 ```
 
@@ -722,7 +723,7 @@ spec.sbtel:5:3: warning: behavior Durable: behaviors don't contain blocks, level
 spec.sbtel:6:3: warning: behavior Durable: behaviors don't contain blocks, levels or declarations; declare message Mm beside the behavior instead
 spec.sbtel:7:3: warning: (implements (Box M M)) passes 2 arguments, but Box takes 1
 spec.sbtel:3:1: info: Durable is never used.
-spec.sbtel: 4 problems (0 blocks, 2 behaviors, 1 message type)
+spec.sbtel: 4 problems (0 blocks, 2 behaviors, 1 shape)
 ```
 
 A level with no block:
@@ -734,7 +735,7 @@ A level with no block:
 
 ```text
 spec.sbtel:2:3: warning: level needs at least one block
-spec.sbtel: 1 problem (1 block, 0 behaviors, 0 message types)
+spec.sbtel: 1 problem (1 block, 0 behaviors, 0 shapes)
 ```
 
 ### 7.3 Structure warnings
@@ -749,16 +750,16 @@ An unknown form (often a typo):
 
 ```text
 spec.sbtel:1:10: warning: unknown form (skecth) in block A
-spec.sbtel: 1 problem (1 block, 0 behaviors, 0 message types)
+spec.sbtel: 1 problem (1 block, 0 behaviors, 0 shapes)
 ```
 
 A form in a place where it has no meaning:
 
 ```sbtel fails
-(port :in Nothing :as loose)
+(takes Nothing :as loose)
 (block Top
   (level (implements Nothing))
-  (adjacent (block A) (block B) (port :in X :as p)))
+  (adjacent (block A) (block B) (takes X :as p)))
 ```
 
 ```text
@@ -766,7 +767,7 @@ spec.sbtel:3:3: warning: level needs at least one block
 spec.sbtel:1:1: warning: (port) is not allowed in the file
 spec.sbtel:3:10: warning: (implements) is not allowed in a level
 spec.sbtel:4:33: warning: (port) is not allowed in an adjacent group
-spec.sbtel: 4 problems (3 blocks, 0 behaviors, 0 message types)
+spec.sbtel: 4 problems (3 blocks, 0 behaviors, 0 shapes)
 ```
 
 A word or string that is not inside a form:
@@ -778,7 +779,7 @@ A word or string that is not inside a form:
 ```text
 spec.sbtel:1:10: warning: stray string in block A (expected a form)
 spec.sbtel:1:27: warning: stray oops in block A (expected a form)
-spec.sbtel: 2 problems (1 block, 0 behaviors, 0 message types)
+spec.sbtel: 2 problems (1 block, 0 behaviors, 0 shapes)
 ```
 
 A list that does not start with a form name, and an empty list:
@@ -790,7 +791,7 @@ A list that does not start with a form name, and an empty list:
 ```text
 spec.sbtel:1:10: warning: a form must start with its name in block A
 spec.sbtel:1:21: warning: empty form () in block A
-spec.sbtel: 2 problems (1 block, 0 behaviors, 0 message types)
+spec.sbtel: 2 problems (1 block, 0 behaviors, 0 shapes)
 ```
 
 A keyword after the body has started:
@@ -801,7 +802,7 @@ A keyword after the body has started:
 
 ```text
 spec.sbtel:1:23: warning: keyword :type must come right after the name of block A
-spec.sbtel: 1 problem (1 block, 0 behaviors, 0 message types)
+spec.sbtel: 1 problem (1 block, 0 behaviors, 0 shapes)
 ```
 
 A keyword without a value. The core takes the next item as the value, so the `sketch` here is lost:
@@ -812,7 +813,7 @@ A keyword without a value. The core takes the next item as the value, so the `sk
 
 ```text
 spec.sbtel:1:10: warning: keyword :type of block A needs a value
-spec.sbtel: 1 problem (1 block, 0 behaviors, 0 message types)
+spec.sbtel: 1 problem (1 block, 0 behaviors, 0 shapes)
 ```
 
 A block, message or behavior without a name:
@@ -827,31 +828,31 @@ A block, message or behavior without a name:
 spec.sbtel:1:1: warning: block needs a name
 spec.sbtel:2:1: warning: message needs a name
 spec.sbtel:3:1: warning: behavior needs a name, or (Name Param ...)
-spec.sbtel: 3 problems (1 block, 1 behavior, 1 message type)
+spec.sbtel: 3 problems (1 block, 1 behavior, 1 shape)
 ```
 
 A port without a type, an extra item after the type (a single word gets a hint), an unknown keyword,
 `:as` without a name, and so two ports with one name (both `m`):
 
 ```sbtel fails
-(message M)
+(shape M)
 (block A
   (port :in)
-  (port :out M :as y extra)
-  (port :in M :as w :sort 1)
-  (port :in M :as)
-  (port :out M source))
+  (gives M :as y extra)
+  (takes M :as w :sort 1)
+  (takes M :as)
+  (gives M source))
 ```
 
 ```text
 spec.sbtel:7:3: warning: block A has two ports named m; tell them apart with :as
-spec.sbtel:3:3: warning: port needs a message type after :in: (port :in Type [:as name])
-spec.sbtel:4:22: warning: port y has extra items after its message type
+spec.sbtel:3:3: warning: port needs a shape after :in: (takes Type [:as name])
+spec.sbtel:4:22: warning: port y has extra items after its shape
 spec.sbtel:5:21: warning: unknown keyword :sort in a port; a port takes only :as name
 spec.sbtel:6:15: warning: keyword :as of a port needs a name
-spec.sbtel:7:16: warning: port m has extra items after its message type (to name it, write :as source)
+spec.sbtel:7:16: warning: port m has extra items after its shape (to name it, write :as source)
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
-spec.sbtel: 6 problems (1 block, 0 behaviors, 1 message type)
+spec.sbtel: 6 problems (1 block, 0 behaviors, 1 shape)
 ```
 
 A second `:as` counts once too (`port w has more than one :as; only the first counts`).
@@ -860,26 +861,26 @@ A second `:as` counts once too (`port w has more than one :as; only the first co
 one name:
 
 ```sbtel fails
-(message M)
-(message N (refines M M))
-(behavior (Store T) (port :in T :as put))
+(shape M)
+(shape N (refines M M))
+(behavior (Store T) (takes T :as put))
 (block A (implements Store Store))
 ```
 
 ```text
-spec.sbtel:2:12: warning: refines names exactly one message type
+spec.sbtel:2:12: warning: refines names exactly one shape
 spec.sbtel:4:10: warning: implements names exactly one behavior, as Name or (Name Arg ...)
 spec.sbtel:2:1: info: N is never used.
 spec.sbtel:3:1: info: Store is declared at the top level but only used within A; it could live there.
-spec.sbtel: 2 problems (1 block, 1 behavior, 2 message types)
+spec.sbtel: 2 problems (1 block, 1 behavior, 2 shapes)
 ```
 
-A keyword a block, a behavior or a message type does not take (`:type` is the only one):
+A keyword a block, a behavior or a shape does not take (`:type` is the only one):
 
 ```sbtel fails
 (block A :fill "blue" :owner "team-a")
 (behavior B :kind "trait")
-(message C :fill "red")
+(shape C :fill "red")
 ```
 
 ```text
@@ -889,7 +890,7 @@ spec.sbtel:2:13: warning: unknown keyword :kind in behavior B; a behavior takes 
 spec.sbtel:3:12: warning: unknown keyword :fill in message C; a message takes only :type
 spec.sbtel:2:1: info: B is never used.
 spec.sbtel:3:1: info: C is never used.
-spec.sbtel: 4 problems (1 block, 1 behavior, 1 message type)
+spec.sbtel: 4 problems (1 block, 1 behavior, 1 shape)
 ```
 
 A level's keywords: `:name` is its only one, once, as a non-empty string, right after `level`:
@@ -909,43 +910,43 @@ spec.sbtel:2:14: warning: level :name takes a "string"
 spec.sbtel:3:14: warning: level :name is empty
 spec.sbtel:4:8: warning: keyword :name of a level needs a value
 spec.sbtel:5:18: warning: keyword :name must come right after (level
-spec.sbtel: 6 problems (5 blocks, 0 behaviors, 0 message types)
+spec.sbtel: 6 problems (5 blocks, 0 behaviors, 0 shapes)
 ```
 
 A second sketch on a level, on a port or anywhere else (in either form), something other than a sketch
 after a port's type, and a sketch on a nested adjacent group:
 
 ```sbtel fails
-(message M)
+(shape M)
 (level (~ one ~) (sketch "two")
-  (block A (port :in M :as p (~ a ~) (~ b ~)) (port :in M :as q extra))
+  (block A (takes M :as p (~ a ~) (~ b ~)) (takes M :as q extra))
   (adjacent (block B) (adjacent (~ nested ~) (block C) (block D))))
 ```
 
 ```text
 spec.sbtel:2:18: warning: a level has more than one (sketch); only the first counts
 spec.sbtel:3:38: warning: port p has more than one (sketch); only the first counts
-spec.sbtel:3:65: warning: port q has extra items after its message type
+spec.sbtel:3:65: warning: port q has extra items after its shape
 spec.sbtel:4:33: warning: a nested adjacent group has no sketch of its own; put it in the outer (adjacent)
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
-spec.sbtel: 4 problems (4 blocks, 0 behaviors, 1 message type)
+spec.sbtel: 4 problems (4 blocks, 0 behaviors, 1 shape)
 ```
 
 A `carries` with no name, the same name twice, and a second `carries`:
 
 ```sbtel fails
-(message A)
-(message B (carries))
-(message C (carries A A) (carries B))
+(shape A)
+(shape B (carries))
+(shape C (carries A A) (carries B))
 ```
 
 ```text
-spec.sbtel:2:12: warning: carries names one or more message types
+spec.sbtel:2:12: warning: carries names one or more shapes
 spec.sbtel:3:23: warning: carries names A twice
 spec.sbtel:3:26: warning: message C has more than one (carries); only the first counts
 spec.sbtel:2:1: info: B is never used.
 spec.sbtel:3:1: info: C is never used.
-spec.sbtel: 3 problems (0 blocks, 0 behaviors, 3 message types)
+spec.sbtel: 3 problems (0 blocks, 0 behaviors, 3 shapes)
 ```
 
 A `sketch` without a string, and a second sketch:
@@ -958,7 +959,7 @@ A `sketch` without a string, and a second sketch:
 ```text
 spec.sbtel:1:10: warning: sketch takes a "string"
 spec.sbtel:2:25: warning: block C has more than one (sketch); only the first counts
-spec.sbtel: 2 problems (2 blocks, 0 behaviors, 0 message types)
+spec.sbtel: 2 problems (2 blocks, 0 behaviors, 0 shapes)
 ```
 
 ### 7.4 The six rules
@@ -971,7 +972,7 @@ spec.sbtel: 2 problems (2 blocks, 0 behaviors, 0 message types)
 
 ```text
 spec.sbtel: Every implemented behavior is declared: A → Missing
-spec.sbtel: 1 problem (1 block, 0 behaviors, 0 message types)
+spec.sbtel: 1 problem (1 block, 0 behaviors, 0 shapes)
 ```
 
 **Behaviors are used only inside the block that declares them.** `Private` is visible in `Left` and
@@ -985,42 +986,42 @@ its descendants only:
 
 ```text
 spec.sbtel: Behaviors are used only inside the block that declares them: Right uses Private, declared in Left
-spec.sbtel: 1 problem (2 blocks, 1 behavior, 0 message types)
+spec.sbtel: 1 problem (2 blocks, 1 behavior, 0 shapes)
 ```
 
-**Every port uses a declared message type** (block ports and behavior ports; behavior parameters
+**Every port uses a declared shape** (block ports and behavior ports; behavior parameters
 excepted):
 
 ```sbtel fails
-(block A (port :in Nothing :as x))
-(behavior B (port :out Nowhere :as y))
+(block A (takes Nothing :as x))
+(behavior B (gives Nowhere :as y))
 ```
 
 ```text
-spec.sbtel: Every port uses a declared message type: A.x: Nothing
-spec.sbtel: Every port uses a declared message type: B.y: Nowhere
+spec.sbtel: Every port uses a declared shape: A.x: Nothing
+spec.sbtel: Every port uses a declared shape: B.y: Nowhere
 spec.sbtel:2:1: info: B is never used.
-spec.sbtel: 2 problems (1 block, 1 behavior, 0 message types)
+spec.sbtel: 2 problems (1 block, 1 behavior, 0 shapes)
 ```
 
-**Message types are used only inside the block that declares them.** For a behavior, and for a
+**Shapes are used only inside the block that declares them.** For a behavior, and for a
 message that carries the type, the scope that counts is where the behavior or message is declared:
 
 ```sbtel fails
 (block Left
-  (message Secret (sketch "Left's own data.")))
-(block Right (port :in Secret :as s))
-(behavior Leak (port :out Secret :as s))
-(message Bundle (carries Secret))
+  (shape Secret (sketch "Left's own data.")))
+(block Right (takes Secret :as s))
+(behavior Leak (gives Secret :as s))
+(shape Bundle (carries Secret))
 ```
 
 ```text
-spec.sbtel: Message types are used only inside the block that declares them: Right.s uses Secret, declared in Left
-spec.sbtel: Message types are used only inside the block that declares them: Leak.s uses Secret, declared in Left
-spec.sbtel: Message types are used only inside the block that declares them: Bundle carries Secret, declared in Left
+spec.sbtel: Shapes are used only inside the block that declares them: Right.s uses Secret, declared in Left
+spec.sbtel: Shapes are used only inside the block that declares them: Leak.s uses Secret, declared in Left
+spec.sbtel: Shapes are used only inside the block that declares them: Bundle carries Secret, declared in Left
 spec.sbtel:4:1: info: Leak is never used.
 spec.sbtel:5:1: info: Bundle is never used.
-spec.sbtel: 3 problems (2 blocks, 1 behavior, 2 message types)
+spec.sbtel: 3 problems (2 blocks, 1 behavior, 2 shapes)
 ```
 
 **No behavior implements itself**, through any chain of `implements`. Each cycle is reported once,
@@ -1037,32 +1038,32 @@ from its first behavior in the file:
 spec.sbtel: No behavior implements itself: A → B → C → A
 spec.sbtel: No behavior implements itself: Self → Self
 spec.sbtel:4:1: info: Self is never used.
-spec.sbtel: 2 problems (0 blocks, 4 behaviors, 0 message types)
+spec.sbtel: 2 problems (0 blocks, 4 behaviors, 0 shapes)
 ```
 
 **`refines` and `carries` name declared types.**
 
 ```sbtel fails
-(message A (refines Ghost))
-(message B (carries A Phantom))
+(shape A (refines Ghost))
+(shape B (carries A Phantom))
 ```
 
 ```text
 spec.sbtel: refines and carries name declared types: A → Ghost
 spec.sbtel: refines and carries name declared types: B → Phantom
 spec.sbtel:2:1: info: B is never used.
-spec.sbtel: 2 problems (0 blocks, 0 behaviors, 2 message types)
+spec.sbtel: 2 problems (0 blocks, 0 behaviors, 2 shapes)
 ```
 
 ### 7.5 Placement notes
 
-A message type or behavior belongs in the lowest block that holds all its users (the lowest common
+A shape or behavior belongs in the lowest block that holds all its users (the lowest common
 ancestor; the file counts, as the top). Lint notes a declaration that sits higher than that, or that
 nothing uses. Notes are information: they are not problems, never change the exit code, and the viewer
 shows them in the checks popover, muted, with a "Move to …" that makes the move (one undo step). Lint
 never suggests moving below the common ancestor: that is a scope failure.
 
-- **Users of a message type T**: blocks with a port of type T (inherited from behaviors too); blocks
+- **Users of a shape T**: blocks with a port of type T (inherited from behaviors too); blocks
   with a port of a type that carries T (transitively) or refines T; and the places that must see T: where
   each such type, and each behavior with a port of one of them, is declared.
 - **Users of a behavior**: the blocks that implement it, directly or through behaviors that extend it,
@@ -1072,20 +1073,20 @@ never suggests moving below the common ancestor: that is a scope failure.
   implementers: keep it where the callers see it, and say why in a `;` comment.
 
 ```sbtel
-(message Deep (sketch "Carried by Note at the top: it must stay where Note can see it."))
-(message Note (carries Deep))
-(message Unused)
+(shape Deep (sketch "Carried by Note at the top: it must stay where Note can see it."))
+(shape Note (carries Deep))
+(shape Unused)
 (block Shell
-  (message Selection (sketch "Only Shell.View uses it."))
-  (level (block Shell.View (port :in Selection :as sel)))
-  (level (block Shell.Log (port :in Note :as n))))
-(block Other (port :out Note :as n))
+  (shape Selection (sketch "Only Shell.View uses it."))
+  (level (block Shell.View (takes Selection :as sel)))
+  (level (block Shell.Log (takes Note :as n))))
+(block Other (gives Note :as n))
 ```
 
 ```text
 spec.sbtel:3:1: info: Unused is never used.
 spec.sbtel:5:3: info: Selection is declared in Shell but only used within Shell.View; it could live there.
-spec.sbtel: ok (4 blocks, 0 behaviors, 4 message types)
+spec.sbtel: ok (4 blocks, 0 behaviors, 4 shapes)
 ```
 
 `--json` gives each note as `{severity: "info", message, line, col, kind, name, in, home}`, where `home`
@@ -1132,7 +1133,7 @@ and B.
 | `upward` | **no** | a2's level is below b2's |
 | `abstraction` | yes | B is a behavior in A's scope: declared in A, in an ancestor of A, or in the file |
 | `scope` | **no** | B is a behavior declared outside A's scope |
-| `unknown` | **no** | A is not a block, B is neither a block nor a behavior (message types are neither), or a block is not placed in a level |
+| `unknown` | **no** | A is not a block, B is neither a block nor a behavior (shape types are neither), or a block is not placed in a level |
 
 **Calls through an abstraction.** When code in A calls through an interface, trait or protocol that a
 behavior stands for, the binding is `A -> Behavior`, not A to whichever block implements it: A names
@@ -1263,8 +1264,8 @@ anchors, and no others:
 | `@sbtel Name` | the next declaration (function, class, type, constant…) belongs to block `Name`, or to behavior `Name` when it is an interface, trait, protocol or typedef that the behavior stands for (`beh:Name` when a block has that name too). One per declaration: a second one before the same declaration is an error |
 | `@sbtel begin Name` … `@sbtel end Name` | the region between belongs to `Name`. Regions nest; the innermost wins. The `end` name must match its `begin` |
 | `@sbtel file Name` | from here to the end of the file belongs to `Name` |
-| `@sbtel message Name` | anchor: where message type `Name`'s shape is defined in code. It owns no code |
-| `@sbtel port Block.port` | anchor: where port `port` of block `Block` is handled; `port` is the port's name, the default one when it has no `:as` (`Shell.Router.intent` for `(port :in Intent)`). It owns no code |
+| `@sbtel message Name` | anchor: where shape `Name`'s shape is defined in code. It owns no code |
+| `@sbtel port Block.port` | anchor: where port `port` of block `Block` is handled; `port` is the port's name, the default one when it has no `:as` (`Shell.Router.intent` for `(takes Intent)`). It owns no code |
 
 An anchor changes no ownership: the lines after it belong to whoever owned them anyway, and an
 `@sbtel Name` directly above an anchor still applies to the declaration below it.
@@ -1311,7 +1312,7 @@ Each of these names a leaf block (here, the leaf blocks Billing.Invoices and App
 with a container's name would make the whole file container code, which is an error (below).
 
 Names use the spec's name syntax. An annotation checker reports: an unknown block name, or an
-anchor's unknown message type or port; an `end` without a `begin` or with a different name; a `begin`
+anchor's unknown shape or port; an `end` without a `begin` or with a different name; a `begin`
 never ended; code in no block; code owned only by a container block (one with child levels), since
 code belongs to leaves; and a second `@sbtel Name` before one declaration, or a second `@sbtel file`
 in one file. Anything else after `@sbtel` is an error too: there is no long form. An `@sbtel` inside a
@@ -1335,7 +1336,7 @@ violation and `sbtel open --bindings` shows it beside it (§8). [DESIGN.md §8](
 | Command | Use |
 |---|---|
 | `sbtel lint spec.sbtel…` | every check of §7. Run it after every edit |
-| `sbtel query spec.sbtel Id… [--with-deps]` | print the named elements (ids: block ids, `beh:Name`, `msg:Name`; headers print these as `β:Name` and `μ:Name`, which are accepted too) as a fragment that lints clean on its own, with the behaviors and message types they use (carried ones too); a message type's header line says which types carry it and which blocks' ports use those; `--with-deps` adds the blocks they may bind to as collapsed stubs. An unknown id is exit 2 |
+| `sbtel query spec.sbtel Id… [--with-deps]` | print the named elements (ids: block ids, `beh:Name`, `msg:Name`; headers print these as `β:Name` and `μ:Name`, which are accepted too) as a fragment that lints clean on its own, with the behaviors and shapes they use (carried ones too); a shape's header line says which types carry it and which blocks' ports use those; `--with-deps` adds the blocks they may bind to as collapsed stubs. An unknown id is exit 2 |
 | `sbtel check spec.sbtel --bindings edges.txt` | judge code bindings (§8) |
 | `sbtel diff a.sbtel b.sbtel` | what changed between two versions |
 | `sbtel fmt --migrate-ports spec.sbtel` | rewrite 0.2 ports in the 0.3 form, in place (§3.5); `--check` only reports |

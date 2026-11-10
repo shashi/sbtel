@@ -277,7 +277,7 @@ sbtel check spec.sbtel --bindings edges.txt
 
 `sbtel_owners.py` accepts every form in annotations.md: `@sbtel Name`, `begin`/`end`, `file`, and the
 anchors `@sbtel message Name` and `@sbtel port Block.port`, which own no code. It reports unknown
-block names, anchors naming an unknown message type or port, unmatched `begin`/`end`, regions that
+block names, anchors naming an unknown shape or port, unmatched `begin`/`end`, regions that
 never end, code in no block, code owned by a container block, two `@sbtel Name` lines before one
 declaration, a second `@sbtel file` in a file, and any other `@sbtel` text. It ignores `@sbtel` inside
 string literals, and keeps the lines of a multi-line string literal (a Go or JS backtick string, a

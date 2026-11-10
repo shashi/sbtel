@@ -22,10 +22,10 @@ import sbtel_sccs as sc  # noqa: E402
 
 SPEC = '''
 (block App
-  (message Req (sketch "A request."))
-  (message Reply)
-  (behavior Logs (port :out Req :as log))
-  (level (block App.Ui (port :out Req :as submit) (port :in Reply :as done)) (block App.Api (implements Logs) (port :in Req)))
+  (shape Req (sketch "A request."))
+  (shape Reply)
+  (behavior Logs (gives Req :as log))
+  (level (block App.Ui (gives Req :as submit) (takes Reply :as done)) (block App.Api (implements Logs) (takes Req)))
   (level (block App.Store)))
 '''
 
@@ -59,7 +59,7 @@ class SpecReading(unittest.TestCase):
 
     def test_tilde_sketches(self):
         # (~ ~) sketches hide everything inside, quotes, parens and ~) included (more tildes on both ends).
-        sp = so.read_spec('(block A (~~ (block Fake) "q ; ~) x ~~) (level :name "L" (~~ a ~) (block Nope ~~) (block B (port :in M :as p (~ (port :in M :as q) ~)))))')
+        sp = so.read_spec('(block A (~~ (block Fake) "q ; ~) x ~~) (level :name "L" (~~ a ~) (block Nope ~~) (block B (takes M :as p (~ (takes M :as q) ~)))))')
         self.assertEqual(sp.blocks, {'A', 'B'})
         self.assertEqual(sp.ports['B'], {'p'})
 
@@ -131,10 +131,10 @@ class Anchors(unittest.TestCase):
         self.assertEqual(ranges(out), [('m.js', '1', '6', 'App.Ui')])
 
     def test_port_names_v03(self):
-        # sbtel 0.3: (port :in Type [:as name]); the name defaults to the type's, first letter lowercased.
+        # sbtel 0.3: (takes Type [:as name]); the name defaults to the type's, first letter lowercased.
         self.assertEqual([so.default_port_name(k) for k in ('NoteSaved', 'URL', 'shell.Intent', 'pkg::Item', 'List<Item>', 'T')],
                          ['noteSaved', 'uRL', 'intent', 'item', 'list', 't'])
-        sp = so.read_spec('(message Item) (block A (port :in Item) (port :out Item :as feed (~ x ~)) (port old in Item))')
+        sp = so.read_spec('(shape Item) (block A (takes Item) (gives Item :as feed (~ x ~)) (port old in Item))')
         self.assertEqual(sp.ports['A'], {'item', 'feed', 'old'})
 
     def test_port_anchor_owns_no_code(self):
@@ -182,12 +182,12 @@ class Anchors(unittest.TestCase):
             'x();\n')})
         self.assertEqual(code, 1)
         self.assertEqual(err.splitlines(), [
-            'e.js:2: unknown message type Nope',
+            'e.js:2: unknown shape Nope',
             'e.js:3: block App.Ui has no port nope',
             'e.js:4: unknown block Missing',
             'e.js:5: port anchor needs Block.port: nodot',
             'e.js:6: unknown block or behavior message',
-            'e.js:7: not one of the annotation forms (Name, begin Name, end Name, file Name, message Name, '
+            'e.js:7: not one of the annotation forms (Name, begin Name, end Name, file Name, shape Name, '
             'port Block.port): port App.Store.req extra',
         ])
 
@@ -224,7 +224,7 @@ class Errors(unittest.TestCase):
     def test_long_form_is_gone(self):
         code, _, err = run_owners({'l.js': '// @sbtel (owns App.Ui)\nx();\n'})
         self.assertEqual(code, 1)
-        self.assertIn('l.js:1: not one of the annotation forms (Name, begin Name, end Name, file Name, message Name, '
+        self.assertIn('l.js:1: not one of the annotation forms (Name, begin Name, end Name, file Name, shape Name, '
                       'port Block.port): (owns App.Ui)', err)
 
 
@@ -268,8 +268,8 @@ class Edges(unittest.TestCase):
 # Dependency inversion (sbtel 0.2.2): an interface owned by a behavior, an implementer, a caller that
 # calls only through the interface, and a composition root that builds the implementer and hands it over.
 INV_SPEC = '''
-(message Line)
-(behavior Durable :type "interface" (port :in Line :as save))
+(shape Line)
+(behavior Durable :type "interface" (takes Line :as save))
 (behavior Journaled :type "interface" (implements Durable))
 (behavior Tools (sketch "A behavior with a block's name."))
 (block Inv
@@ -328,7 +328,7 @@ def run_inv(files, stdin=None):
 
 class Behaviors(unittest.TestCase):
     def test_spec_reads_behaviors_and_extension(self):
-        sp = so.read_spec(INV_SPEC + '(behavior (Store T) (port :in T :as put)) (block P (implements (Store Line)))')
+        sp = so.read_spec(INV_SPEC + '(behavior (Store T) (takes T :as put)) (block P (implements (Store Line)))')
         self.assertEqual(sp.behaviors, {'Durable', 'Journaled', 'Tools', 'Store'})
         self.assertEqual(sp.implemented('Inv.Disk'), {'Journaled', 'Durable'})  # through Journaled
         self.assertEqual(sp.implemented('beh:Journaled'), {'Durable'})

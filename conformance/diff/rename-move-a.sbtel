@@ -1,12 +1,12 @@
 (block Sys
-  (message Job (sketch "A unit of work."))
+  (shape Job (sketch "A unit of work."))
   (level
     (block Api
       (sketch "Public HTTP surface.")
       (level
         (block Handlers (sketch "One handler per route."))
         (block Limiter
-          (port :in Job)
+          (takes Job)
           (sketch "Token bucket per client, refilled every second."))))
     (block Worker
       (sketch "Runs jobs in the background.")

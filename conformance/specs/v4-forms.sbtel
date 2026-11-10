@@ -1,0 +1,46 @@
+; v0.4: (shape Name …), (takes Shape [:as name] [sketch]) and (gives Shape …). Default names, :as, the 0.3 and 0.2 forms (read, and reported), clashes.
+(shape NoteSaved (~ A note reached the disk. ~))
+(shape Item)
+(shape URL)
+(shape shell.Intent)
+(shape List<Item>)
+(shape Élan)
+(behavior Feed (gives Item (~ The next item. ~)))
+(behavior Other (gives Item))
+(behavior Both (implements Feed) (implements Other))
+(behavior Echo (implements Feed) (takes Item))
+(behavior (Store T) (takes T) (gives T :as get))
+(block Notes
+  (level
+    (block Notes.Editor
+      (takes NoteSaved (~ Refresh after a save. ~))
+      (gives Item)
+      (takes Item :as backlog)
+      (takes URL)
+      (takes shell.Intent)
+      (takes List<Item>)
+      (takes Élan)
+      (takes Item :as item2 (sketch "Named explicitly."))))
+  (level
+    (block Notes.Store (implements (Store Item)) (gives NoteSaved) (takes Item :as feed))
+    (block Notes.Legacy
+      (port chord in Item)
+      (port item out Item (~ Same name as the default. ~))
+      (port saved in NoteSaved))
+    (block Notes.Old
+      (port :in Item)
+      (port :out NoteSaved :as done (~ The 0.3 form, with a name and a sketch. ~)))))
+(message OldShape (~ The 0.3 name for a shape. ~))
+(block Clash
+  (takes Item)
+  (gives Item)
+  (implements Feed))
+(block Twice (implements Feed) (implements Other))
+(block ViaBoth (implements Both))
+(block Bad
+  (takes)
+  (gives :as x)
+  (port in Item)
+  (port :sideways Item)
+  (takes Item extra)
+  (takes Item :as x (sketch "a") (sketch "b")))

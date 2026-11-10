@@ -1,23 +1,23 @@
 ; Every Fields key (level names and sketches, port and group sketches too), plus renamed and moved behaviors and message types.
 (block Kit
-  (message Data (sketch "Bytes."))
-  (message Text (sketch "Characters."))
-  (message Num (sketch "A number."))
-  (message Any (refines Data) (sketch "Text or a number."))
-  (message Event (sketch "Something happened."))
-  (message Click (refines Data) (sketch "A pointer press."))
-  (message Hint (sketch "A tip for the user."))
-  (behavior Logging (port :out Text :as log) (sketch "Writes log lines."))
-  (behavior (Box T K) (port :in T :as item) (sketch "Holds one value."))
+  (shape Data (sketch "Bytes."))
+  (shape Text (sketch "Characters."))
+  (shape Num (sketch "A number."))
+  (shape Any (refines Data) (sketch "Text or a number."))
+  (shape Event (sketch "Something happened."))
+  (shape Click (refines Data) (sketch "A pointer press."))
+  (shape Hint (sketch "A tip for the user."))
+  (behavior Logging (gives Text :as log) (sketch "Writes log lines."))
+  (behavior (Box T K) (takes T :as item) (sketch "Holds one value."))
   (level
     (block Panel
       :type "Card"
       (implements Logging)
       (implements Box)
-      (port :in Data (~ Raw bytes, never parsed here. ~))
-      (port :out Num :as size)
-      (port :in Text :as label)
-      (port :in Text :as mode2)
+      (takes Data (~ Raw bytes, never parsed here. ~))
+      (gives Num :as size)
+      (takes Text :as label)
+      (takes Text :as mode2)
       (sketch "Shows one thing at a time, with a header.")
       (level :name "Frame" (~ Panel draws it; content never does. ~)
         (adjacent (~ Share one grid. ~)
@@ -25,5 +25,5 @@
           (block Body (sketch "Content area."))
           (block Footer (sketch "Status row.")))))
     (block Sidebar
-      (behavior Focusable (port :in Event :as focus) (sketch "Takes keyboard focus."))
+      (behavior Focusable (takes Event :as focus) (sketch "Takes keyboard focus."))
       (sketch "Lists things."))))

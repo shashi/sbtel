@@ -10,7 +10,7 @@ a `;` comment. Tell the human which items you kept.
 - Levels
 - Adjacency
 - Messages, bindings and ports
-- Vocabulary (behaviors and message types)
+- Vocabulary (behaviors and shapes)
 - The whole spec
 
 ## Blocks
@@ -44,7 +44,7 @@ a `;` comment. Tell the human which items you kept.
 - **Wrong way up.** Is a block that changes often below one that rarely changes? Lower levels should
   be the more stable ones. *Fix*: invert the dependency through a message, or move the block.
 - **Ancestor reach.** Does a child need something from its container? Binding the container is
-  forbidden (`ancestor`). *Fix*: the needed thing is a lower-level block (or a message type) inside the
+  forbidden (`ancestor`). *Fix*: the needed thing is a lower-level block (or a shape) inside the
   container. Make it explicit.
 
 ## Adjacency
@@ -59,7 +59,7 @@ a `;` comment. Tell the human which items you kept.
 
 ## Messages, bindings and ports
 
-- **Fake message.** Does a message type have exactly one producer and one consumer, fixed at design
+- **Fake message.** Does a shape have exactly one producer and one consumer, fixed at design
   time? *Fix*: use a binding (if the levels allow it), or explain why the counterpart must stay
   open.
 - **Hidden binding.** Does a port pair stand for a direct call that the code will make anyway? *Fix*:
@@ -69,24 +69,24 @@ a `;` comment. Tell the human which items you kept.
   connect it, or name its external source in the sketch.
 - **Port soup.** Does a block have many ports of the same type? *Fix*: it may be two blocks, or the type
   may need refining.
-- **Unsaid promise.** Does a port promise something its message type does not say (it opens the
+- **Unsaid promise.** Does a port promise something its shape does not say (it opens the
   palette; it is the only writer)? *Fix*: give the port a one-sentence sketch. If the type says it all,
   the port needs none.
 
-## Vocabulary (behaviors and message types)
+## Vocabulary (behaviors and shapes)
 
-- **Global vocabulary.** Is every message type and behavior declared in the top block? *Fix*: move each
+- **Global vocabulary.** Is every shape and behavior declared in the top block? *Fix*: move each
   one down to the smallest block that holds every use. Lint notes each one that could live lower, and
   the viewer's checks popover moves it in one click.
 - **One-implementer behavior.** Does only one block implement a behavior? *Fix*: inline its ports into
   that block, unless more implementers are planned (say so in its sketch).
-- **Verb types.** Is a message type named like an action (`SaveNote`)? *Fix*: name the data it carries
+- **Verb types.** Is a shape named like an action (`SaveNote`)? *Fix*: name the data it carries
   (`NoteEdit`), or make it a command type deliberately and say so.
 - **Misused refines.** Is a refining type not really a kind of its supertype (is-a), but a part of it
   (has-a)? *Fix*: use `carries` for has-a, `refines` for is-a.
-- **Braided data.** Does a message type carry many unrelated types? *Fix*: split it into the messages
+- **Braided data.** Does a shape carry many unrelated types? *Fix*: split it into the messages
   its users actually need.
-- **Missing sketches.** Does any message type lack a sketch saying what it is for, beyond its name
+- **Missing sketches.** Does any shape lack a sketch saying what it is for, beyond its name
   and what it carries? *Fix*: add one sentence.
 
 ## The whole spec

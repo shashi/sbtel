@@ -15,7 +15,7 @@ docs/DESIGN.md section 8. There are no others:
   @sbtel begin Name       a region starts; regions nest, the innermost wins
   @sbtel end Name         the region ends; the name must match its begin
   @sbtel file Name        from here to the end of the file
-  @sbtel message Name     anchor: where message type Name's shape is defined; owns no code
+  @sbtel shape Name       anchor: where shape Name is defined; owns no code (0.3 wrote `message Name`)
   @sbtel port Block.port  anchor: where a port of Block is handled; owns no code
 
 A Name is a block, or a behavior: `@sbtel Durable` above an interface, trait, protocol or typedef
@@ -36,7 +36,7 @@ With --edges, each pair is a reference from one owner's code to another owner's 
     behavior. It prints no edge, and it is an error when the spec has no matching (implements ...),
     directly or through behaviors the caller implements;
   - a behavior's own code to anything else prints nothing: a behavior owns its declaration, whose
-    signature is its ports (their types are message types), not code that binds.
+    signature is its ports (their types are shapes), not code that binds.
 
 Anchors are checked (the message type, or the block and its port, must exist in the spec) but
 change no ownership: the lines after one belong to whoever owned them anyway, and a pending
@@ -49,7 +49,7 @@ code in most languages; check the output where it matters. Lines inside a multi-
 (a backtick string in Go or JS, a triple-quoted string in Python) belong to the declaration whatever
 their indentation, and an `@sbtel` inside any string literal is not an annotation.
 
-Errors (stderr, exit 1): unknown block or behavior name, unknown message type or port in an anchor, end without
+Errors (stderr, exit 1): unknown block or behavior name, unknown shape or port in an anchor, end without
 begin or with another name, begin never ended, code in no block, code owned only by a container
 block (one with child blocks), two `@sbtel Name` lines before one declaration, a second `@sbtel file`
 in one file, and any other @sbtel text.
@@ -107,7 +107,7 @@ def strings(lines):
 
 class Spec:
     """What the annotations are checked against: block names, containers (blocks with a child block),
-    message type names, behavior names, each block's ports (its own, plus those of the behaviors it
+    shape names, behavior names, each block's ports (its own, plus those of the behaviors it
     implements, through the behaviors they implement), and what each block and behavior implements."""
 
     def __init__(self, blocks, containers, messages, ports, behaviors=(), impl_block=None, impl_beh=None):
@@ -157,10 +157,12 @@ def read_spec(src):
     word = lambda k: toks[k] if k < len(toks) and toks[k] not in '()' else None
     # (behavior (Name P ...) ...) and (implements (Name Arg ...)): the name is the first word of the list.
     named = lambda k: word(k) or (word(k + 1) if k < len(toks) and toks[k] == '(' else None)
-    def port_name(k):
-        # (port :in Type [:as name] ...) (sbtel 0.3): the :as name, or the default one; the 0.2 form
-        # (port name in Type), which lint reports, by its name.
-        if word(k) in (':in', ':out'):
+    def port_name(k, verb=False):
+        # (takes Shape [:as name] ...) and (gives ...) (sbtel 0.4), or the 0.3 form (port :in Shape [:as name]):
+        # the :as name, or the default one; the 0.2 form (port name in Shape), which lint reports, by its name.
+        if verb:
+            k -= 1  # the shape sits where :in|:out's argument would
+        if verb or word(k) in (':in', ':out'):
             j = k + 2
             while word(j) and word(j).startswith(':'):
                 if word(j) == ':as' and word(j + 1) and not word(j + 1).startswith(':'):
@@ -171,6 +173,8 @@ def read_spec(src):
     for i, t in enumerate(toks):
         if t == '(':
             head = toks[i + 1] if i + 1 < len(toks) else ''
+            verb = head in ('takes', 'gives')
+            head = 'message' if head == 'shape' else 'port' if verb else head
             name = named(i + 2) if head in ('block', 'message', 'behavior') else None
             # The nearest enclosing block or behavior, and whether a message form intervenes.
             owner = next(((f[0], f[1]) for f in reversed(stack) if f[0] in ('block', 'behavior', 'message')), (None, None))
@@ -182,8 +186,8 @@ def read_spec(src):
                 messages.add(name)
             elif head == 'behavior' and name:
                 behaviors.add(name)
-            elif head == 'port' and owner[1] and port_name(i + 2):
-                (own_ports if owner[0] == 'block' else beh_ports if owner[0] == 'behavior' else {}).setdefault(owner[1], set()).add(port_name(i + 2))
+            elif head == 'port' and owner[1] and port_name(i + 2, verb):
+                (own_ports if owner[0] == 'block' else beh_ports if owner[0] == 'behavior' else {}).setdefault(owner[1], set()).add(port_name(i + 2, verb))
             elif head == 'implements' and owner[0] in ('block', 'behavior') and named(i + 2):
                 (implements if owner[0] == 'block' else beh_impl).setdefault(owner[1], set()).add(named(i + 2))
             stack.append((head, name))
@@ -237,9 +241,9 @@ def owners(path, lines, spec, errors):
 
     def anchor(n, kw, name):
         """`message Name` or `port Block.port`: checked, owns nothing."""
-        if kw == 'message':
-            if valid(n, name, 'message type') and name not in spec.messages:
-                err(n, 'unknown message type %s' % name)
+        if kw in ('shape', 'message'):  # `message` is the 0.3 spelling
+            if valid(n, name, 'shape') and name not in spec.messages:
+                err(n, 'unknown shape %s' % name)
             return
         block, dot, port = name.rpartition('.')
         if not dot or not block or not port:
@@ -268,7 +272,7 @@ def owners(path, lines, spec, errors):
         if m:
             ann_lines.add(n)
             words = CLOSE.sub('', m.group(1)).split()
-            if len(words) == 2 and words[0] in ('message', 'port'):
+            if len(words) == 2 and words[0] in ('shape', 'message', 'port'):
                 anchor(n, words[0], words[1])
             elif len(words) == 2 and words[0] in ('begin', 'end', 'file'):
                 kw, name = words
@@ -294,7 +298,7 @@ def owners(path, lines, spec, errors):
                             % (words[0], show(pending[-1][0])))
                     pending.append((key, n))
             else:
-                err(n, 'not one of the annotation forms (Name, begin Name, end Name, file Name, message Name, '
+                err(n, 'not one of the annotation forms (Name, begin Name, end Name, file Name, shape Name, '
                        'port Block.port): %s' % ' '.join(words))
             if decl and n > decl[1]:
                 decl = None

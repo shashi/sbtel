@@ -15,14 +15,14 @@ to a same-origin parent page (`sbtel:size`) so the page can size the frame, and 
 (§6.9). Before that, v0.2.3 (§11, entries 97-103): the viewer is a proper HTML document with a device-width
 viewport, the playground's "sbtel" links to the project's home page, and a standalone page loads a spec
 from its URL (`#src=`, `#example=`) and embeds in docs pages (`?embed`; §6.9). Before that, v0.2.2 (§11, entries 78-96): behaviors are read with a block's grammar (`:type`, ports,
-sketch, `implements`), a behavior may implement (extend) others, message types take `:type`, and
+sketch, `implements`), a behavior may implement (extend) others, shapes take `:type`, and
 `sbtel check` allows a binding to a behavior in the caller's scope (`abstraction`): calls through an
 interface are checkable; the recover skill's helpers map interfaces to behaviors. Before that, v0.2.1 (§11, entries 61-77): levels are numbered from the bottom (level 1 is the lowest), the
 browser sends GitHub-style reviews (pending comments, a message and the edits as a proposed spec, never
 written to the file; §6.7), Save asks before overwriting a newer version, and the undo history and the
 draft persist in the browser. Before that, v0.2.0, the language pass (§11, entries 42-60): `layer` is now `level` (a clean break), levels
 have names, sketches go on levels, ports and adjacent groups, `(~ … ~)` is sugar for `(sketch "…")`,
-`(carries …)` relates message types (has-a), `either`, `:fill` and free keywords are gone, lint adds
+`(carries …)` relates shapes (has-a), `either`, `:fill` and free keywords are gone, lint adds
 placement notes, and the viewer shows sketches in callouts that edit in place. Before that, v0.1.2. The foundation and the four workstreams of §10 (A: check, query, diff; B: server
 and sessions; C: diff core and view; D: docs, install, plugin) are built and integrated (§11,
 entries 27-30). §10 is kept as the record of who built what. v0.1.1 (§11, entries 31-35) fixes
@@ -187,10 +187,10 @@ spread and `Map`/`Set`; newer syntax may not work in goja. `go test ./...` is th
 - **Element ids** in results:
   - blocks: the block name, or `Name#2` for the second block with a duplicate name;
   - behaviors: `β:Name`;
-  - message types: `μ:Name`.
+  - shapes: `μ:Name`.
 
   Inputs (query ids) also accept `beh:Name` and `msg:Name`. A bare name is looked up as a block, then
-  a behavior, then a message type.
+  a behavior, then a shape.
 - **Stability**: `__api.apiVersion` is `2` (v0.2.0: Element's `layers` became `levels` with names and
   sketches, `fill`, `keywords` and `either` went, Ports gained `sketch`, LintResult gained `info`, and
   the diff's `Place.layer` became `Place.level`; v0.2.1, within 2: `Place.level` and
@@ -209,8 +209,8 @@ LintResult = {
   checks:   { k, label, failures: string[] }[],   // lintSpec, always these 6, in this order:
             //  beh    "Every implemented behavior is declared"
             //  scope  "Behaviors are used only inside the block that declares them"
-            //  msg    "Every port uses a declared message type"
-            //  mscope "Message types are used only inside the block that declares them"
+            //  msg    "Every port uses a declared shape"
+            //  mscope "Shapes are used only inside the block that declares them"
             //  rel    "refines and carries name declared types"
             //  cycle  "No behavior implements itself" (v0.2.2; failures read A → B → A)
   info:     Info[],               // placement notes (§2.8 placementFindings); never problems
@@ -262,7 +262,7 @@ Element = {
   sketch: string,                 // "" if none
   lines:  { start, end },         // 1-based, inclusive, of the element's parenthesised form
   source: string,                 // the form's text, re-indented so its first line is at column 0
-  type: string|null,              // :type, every kind (v0.2.2: behaviors and message types too)
+  type: string|null,              // :type, every kind (v0.2.2: behaviors and shapes too)
   // block only:
   implements: string[], ports: Port[] /* own, then inherited (via = the behavior declaring it) */,
   levels: { name: string|null, sketch: string, units: { sketch: string, blocks: string[] }[] }[],
@@ -278,11 +278,11 @@ Port = { name, dir: string|null /* "in"|"out" when valid; else as written, and l
 **Dependencies** are the declarations that the text of the results uses but does not contain, followed
 transitively. Every block, behavior and message lexically inside a result (or a dependency) contributes:
 
-- blocks: their `implements` names (as behaviors), the arguments those pass (as message types) and their
-  own ports' kinds (as message types);
+- blocks: their `implements` names (as behaviors), the arguments those pass (as shapes) and their
+  own ports' kinds (as shapes);
 - behaviors: their port kinds that are not behavior parameters, and their `implements` names and
   arguments as for blocks;
-- message types: their `refines` and `carries` names.
+- shapes: their `refines` and `carries` names.
 
 A declaration inside any result is not repeated as a dependency.
 
@@ -293,7 +293,7 @@ a node property run over every element of every lint-clean spec hold it to that)
 - the enclosing blocks as **skeletons**: `(block Name :k v…`, the first sketch, then only the levels
   and adjacent groups that lead to something shown. One kept level is written bare; several are
   written as `(level …)`, in source order, so the relative order of levels is the original's;
-- every behavior and message type the shown text uses (the dependency rules above, transitively),
+- every behavior and shape the shown text uses (the dependency rules above, transitively),
   placed in the block that declares it, which becomes a skeleton if it is not shown already, so scope
   is exactly the original's;
 - with `withDeps`, the blocks the results may bind to (§2.5 `ok`, other than `same` and
@@ -312,7 +312,7 @@ dropped. The location starts at the first `#` that follows whitespace, so it may
 (`Dup#2` without a space is a name). The part before it must hold exactly one `->`: `A -> B -> C` is
 invalid. Duplicate edges are kept, one per line. A callee may name a behavior (v0.2.2, below). An
 `unknown` text gets a hint: `(did you mean X?)` over blocks (callers) or blocks and behaviors
-(callees), `(X is a behavior; a binding's caller is a block)` or `(X is a message type; bindings name
+(callees), `(X is a behavior; a binding's caller is a block)` or `(X is a shape; bindings name
 blocks and behaviors)`. The parser is `parseBindings(text)` in core.js, shared
 by api.js `check` and the viewer's server mode; `__api.parseBindings(text)` exposes it:
 `{ edges: [{line, caller, callee, location|null, note|null}], invalid: [{line, text}],
@@ -394,7 +394,7 @@ codes. Go reads the files, passes `args` and prints what comes back. `args.files
 - `__api.migratePorts(src)` (v0.3.0): the rewrite behind `sbtel fmt --migrate-ports` (§3.15),
   `{error, src, ports: [{line, col, from, to}]}`. core.js `defaultPortName(Type)` is the default-name
   rule (LANGUAGE.md §3.5) and `portForm(name, dir, Type)` the text the viewer writes for a port.
-- `__api.carriers(src, name)` and core.js `carriers(model, T)`: every message type that carries T,
+- `__api.carriers(src, name)` and core.js `carriers(model, T)`: every shape that carries T,
   transitively (A carries B, B carries T), counting what a subtype inherits from its supertype's
   `carries`; T itself only through a cycle. Then every port typed with one of them (blocks' own,
   behaviors') and every block with such a port (inherited ports count). Cycle-safe, in source order:
@@ -409,8 +409,8 @@ codes. Go reads the files, passes `args` and prints what comes back. `args.files
   arguments that reach it (`(implements (Store Event))`; a behavior's own parameter passed on is
   replaced by its implementer's argument). `bindingTarget(model, name)`: §2.5.
 - core.js `placementFindings(model)`: the placement notes of lint (`info`), shared with the viewer's
-  checks popover. A message type or behavior should be declared at the lowest common ancestor (the
-  file counts) of its users. Users of message type T: blocks with a port of T (inherited ones too),
+  checks popover. A shape or behavior should be declared at the lowest common ancestor (the
+  file counts) of its users. Users of shape T: blocks with a port of T (inherited ones too),
   of a type that carries T, or of a subtype of T (and what carries those); and the declaring sites of
   those carrying types and subtypes, and of behaviors with a port of any of them or passing one as an
   argument. Users of a behavior: its implementers (`implementersOf`), and the declaring sites of the
@@ -479,7 +479,7 @@ This prints, in order:
 - for each warning, `<file>:<line>:<col>: warning: <message>`;
 - for each check failure, `<file>: <check label>: <failure>`;
 - for each placement note, `<file>:<line>:<col>: info: <message>`;
-- then one summary line: `<file>: ok (N blocks, N behaviors, N message types)` or
+- then one summary line: `<file>: ok (N blocks, N behaviors, N shapes)` or
   `<file>: N problems (…)`.
 
 A parse error prints only `<file>:<line>:<col>: error: <message>`. With `--json`, each file gives one
@@ -512,7 +512,7 @@ At least one id is required. The human output is one valid spec that `lint` acce
 ```
 ; sbtel query <file> <ids as given>[ --with-deps]
 ; <id>: <kind> in <path joined by " > " or "the file">, lines <start>-<end>     (one per result)
-;   carried by A, B; on the ports of X, Y              (a message type that something carries)
+;   carried by A, B; on the ports of X, Y              (a shape that something carries)
 ; may bind to (collapsed): A, B, C                     (--with-deps; "nothing else" when none)
 ; unresolved: X, Y                                     (names the shown text uses, declared nowhere)
 <fragment>
@@ -1156,7 +1156,7 @@ These are app features (index.html), in every mode; §11 entries 50-56 record th
   pins the callout with a Go button). Hovering a type (its card, a chip, a dot) outlines every carrier
   of it, the blocks whose ports use it or a carrier, and lights their drawer rows, in the port
   outline's style. On touch, selecting a type card does the same. A drawer row's hover stays the port
-  outline. The Edit dialog of a message type has a Carries field.
+  outline. The Edit dialog of a shape has a Carries field.
 - **Placement notes.** The checks pill shows `· N notes` in muted text and never turns red for them;
   the popover lists them under "Placement notes", each with "Move to X", the same move edit a drag
   makes.
@@ -1234,7 +1234,7 @@ session page asks the server about every other session it holds keys for (`GET /
 
 App features (index.html), in every mode; §11 entries 89-91 record the choices.
 
-- **Pills.** A behavior card and a message type card show their `:type` as a pill, as a block card
+- **Pills.** A behavior card and a shape card show their `:type` as a pill, as a block card
   does (the same `topHTML` and layout row). A behavior that implements others shows their badges.
 - **Implementers and users.** Hovering a behavior, its card or a badge that names it, outlines its
   implementers (`implementersOf`, and the behaviors that extend it) with a solid line in the behavior's
@@ -1245,7 +1245,7 @@ App features (index.html), in every mode; §11 entries 89-91 record the choices.
   nothing and only implementers are shown. On touch, selecting a behavior card does the same. The
   outline gives way to a port's partners or a type's carriers while those are shown. The behavior info
   card counts both ("implemented by N · used by M") and lists what the behavior extends.
-- **Edit.** The Edit dialog has a Type field for blocks, behaviors and message types, and a behavior's
+- **Edit.** The Edit dialog has a Type field for blocks, behaviors and shapes, and a behavior's
   dialog lists the behaviors it may extend (in scope where it is declared), with the inherited ports;
   a choice that would make a cycle is refused with "B already implements A: A cannot implement it too."
 
@@ -1432,7 +1432,7 @@ Affected = {
    An id match whose own score is below 0.5 (a *weak* match) also enters this pairing, with its
    partner as an extra candidate at whatever score it has. It keeps that partner unless a pair it is
    in scores higher. That is how two blocks that swap names come out as two renames rather than as
-   two blocks that changed everything (§11, entry 24). Kinds are paired in the order message types,
+   two blocks that changed everything (§11, entry 24). Kinds are paired in the order shapes,
    behaviors, blocks, so blocks see the message and behavior matches. The whole of step 2 runs twice:
    the second pass sees the first pass's renames, such as a renamed holder or renamed children.
 
@@ -1441,11 +1441,11 @@ Affected = {
    side b is `+<id>`, so the two never meet. The features are:
    - **blocks**: `h:` holder; `L:` level index in the holder; `t:` type; `p:dir:kind` and
      `pn:name` for each own port; `i:` each implemented behavior; `c:` each child block; `db:` and
-     `dm:` each declared behavior and message type;
+     `dm:` each declared behavior and shape;
    - **behaviors**: `h:` declaring block; `p:dir:kind` for each port (a type parameter becomes `$i`)
      and `pn:name`; `n:` the number of parameters; `t:` type; `i:` each behavior it implements; `u:`
      each block that implements it (`implementersOf`, so through extension too);
-   - **message types**: `h:` declaring block; `t:` type; `r:` refines; `k:` each carried type; `u:owner.port`
+   - **shapes**: `h:` declaring block; `t:` type; `r:` refines; `k:` each carried type; `u:owner.port`
      for each port that uses it.
    - **all three**: `w:` each sketch word, with ASCII letters lowercased and ASCII punctuation
      trimmed from both ends. This is ASCII only, so every engine agrees. The word diff (§7.3) still
@@ -1471,7 +1471,7 @@ not count as changing its `implements`.
 - **changed**: any key in `fields`.
 - **Fields details**:
   - `ports` identity is the port name; a repeated name is `name#2`;
-  - `drawer` labels on side a are computed with message types renamed, so a renamed type adds no
+  - `drawer` labels on side a are computed with shapes renamed, so a renamed type adds no
     drawer noise;
   - `adjacency` counts only matched partners, because an added or removed partner is already its own
     change;
@@ -1499,7 +1499,7 @@ in port. The ports are blocks' own ports and behaviors' ports, across the whole 
 - it is matched;
 - it is not in `fields.ports` (added, removed or kind-changed);
 - its set of compatible partners differs between a and b, after mapping. In practice this comes from
-  `refines` changes, or from a renamed, removed or added message type (`carries` changes nothing here).
+  `refines` changes, or from a renamed, removed or added shape (`carries` changes nothing here).
 
 Partners are only *stable* ports, which are ports that meet the first two conditions. An added,
 removed or retyped port is already a change of its own, and makes nobody else affected (§11, entry
@@ -1513,10 +1513,10 @@ Each change is one line, in `changes` order:
 
 ```
 + block Shell.Banner2 (in Shell.Notification)
-- message Notice (was in Shell)
+- shape Notice (was in Shell)
 ~ block Shell.Turn: renamed from Shell.Item (0.83); moved from Shell.Transcript level 2 to Shell.SessionView level 1; type "A" -> "B"; sketch [-old words-] {+new words+}; implements +Durable; ports +in x: Foo -out y: Bar ~in z: Z -> out z: Z; drawer in +x: Foo out -y: Bar; adjacency +Shell.TurnActions
 ~ behavior Box: params (T) -> (T K)
-~ message Ack: moved from Shell to the file; refines Msg -> none; carries +P -Q
+~ shape Ack: moved from Shell to the file; refines Msg -> none; carries +P -Q
 ~ the file: level 1 name none -> "Programs"; level 2 sketch [-old-] {+new+}; level 2 adjacent (A B) sketch {+why+}
 ~ block Shell.Router: ports ~in intent: Intent sketch {+Every intent.+}
 ! port Shell.Router.intent (in Intent): lost Shell.Composer.submit; gained Shell.X.y
@@ -1548,7 +1548,7 @@ belong to the declaration that holds them, whatever their indentation.
 | `@sbtel begin Name` | a region starts; regions nest, and the innermost one wins |
 | `@sbtel end Name` | the region ends; the name MUST match its `begin` |
 | `@sbtel file Name` | from here to the end of the file |
-| `@sbtel message Name` | anchor: where a message type's shape is defined. It owns no code |
+| `@sbtel message Name` | anchor: where a shape's shape is defined. It owns no code |
 | `@sbtel port Block.port` | anchor: where a block's port is handled (the block id, a dot, the port's effective name: its `:as` name, or the default one from its type, LANGUAGE.md §3.5). It owns no code |
 
 - There is no other form (an earlier draft had a long s-expression form; it is gone). Names use the
@@ -1566,11 +1566,11 @@ belong to the declaration that holds them, whatever their indentation.
   tagged `implements` by the reference helpers (a third column after the name) and is no binding:
   `sbtel_owners.py --edges` checks that the spec says the caller implements X, directly or through
   other behaviors, and reports an error when it does not. A behavior's own code binds nothing: its
-  signature is its ports, whose types are message types.
+  signature is its ports, whose types are shapes.
 - **Anchors** change no ownership: the lines after one belong to whoever owned them anyway, and a
   pending `@sbtel Name` above an anchor still applies to the declaration below it.
 - **Errors** an annotation checker reports:
-  - an unknown name: a block, or an anchor's message type, or a port its block does not have (own
+  - an unknown name: a block, or an anchor's shape, or a port its block does not have (own
     ports, plus those of the behaviors it implements);
   - any other text after `@sbtel`;
   - an `end` without a `begin`, or with a different name;
@@ -2059,7 +2059,7 @@ A, B, C and D run in parallel. When they merge:
     violation of the camera's, like the strip. DiffPair carries SpecText, and CommentBatch carries
     Comment: the code's data really nests that way. The level holding Server and Diff is "Page modes".
 59. **The collapsed card's count** (v0.2) is the number of blocks inside, at any depth: "23 blocks",
-    "23 blocks · 1 behavior · 1 message type". Depth is gone from the card and from `query --with-deps`
+    "23 blocks · 1 behavior · 1 shape". Depth is gone from the card and from `query --with-deps`
     stubs; it rarely said anything, and the total says how much a block holds.
 60. **sbtel_owners.py reads `(~ … ~)`** (v0.2). Its tokenizer skips a tilde sketch whole (nothing
     inside names a block), with a test.
@@ -2168,14 +2168,14 @@ A, B, C and D run in parallel. When they merge:
     App.Kit, whose `store` it uses), `Viewer.Review` (with its `Review` message, between the page modes
     and the session) and `Viewer.Changes` (beside Viewer.Session). examples/sbtel.sbtel gains the
     `Review` event and `Sbtel.Viewer.Review`. The page's standalone title is "sbtel Playground".
-78. **One declaration grammar** (v0.2.2, user decision; §2.3). Block, behavior and message type heads are
+78. **One declaration grammar** (v0.2.2, user decision; §2.3). Block, behavior and shape heads are
     read by one function, core.js `declHead` (the name, then keywords; `:type` is the one keyword), and
     lint's form warnings by one `keywords()` in api.js, so the three report unknown, late and valueless
     keywords in the same words (`unknown keyword :k in behavior B; a behavior takes only :type`). A
     behavior's body keeps what has a meaning for a promise: sketch, ports, `implements`. *Red team*:
     "one grammar" could have meant a behavior accepting levels and blocks too; they have no meaning for
     a set of ports, so they are refused by name (entry 83) rather than accepted and ignored.
-79. **`:type` on behaviors and message types** (v0.2.2, user decision). Stored as on blocks, drawn by the
+79. **`:type` on behaviors and shapes** (v0.2.2, user decision). Stored as on blocks, drawn by the
     same pill code (`topHTML`, the layout's top row already measured `n.type` for any card). Query's
     Element has `type` for every kind (null when unset), so every behavior and message Element in the
     conformance records gained `"type":null`; adding a key keeps `apiVersion` 2 (§2.2). The diff
@@ -2244,9 +2244,9 @@ A, B, C and D run in parallel. When they merge:
     T`, if not tagged) is `A -> X`, which the abstraction rule allows: harmless, and the docs say to tag
     it. The reverse mismatch (the spec says implements, the code has no assertion) is not reported: Go
     implements implicitly, so absence proves nothing. Code owned by a behavior binds nothing: its
-    signature is its ports, typed with message types. *Red team*: an interface whose method names a
+    signature is its ports, typed with shapes. *Red team*: an interface whose method names a
     concrete block's type couples every caller to that block, and this hides it; the data shape belongs
-    to a message type, whose `@sbtel message` anchor marks it.
+    to a shape, whose `@sbtel message` anchor marks it.
 88. **sbtel_owners.py and behavior owners** (v0.2.2). Any ownership form may name a behavior: what is a
     type-like declaration differs too much across languages to check reliably (Go `type X interface`,
     a Python `class X(Protocol)`, a JSDoc `@typedef`, a Rust `trait`, an Elixir `defprotocol`), so it
@@ -2398,7 +2398,7 @@ A, B, C and D run in parallel. When they merge:
     (all lower) and avoids cmd_b.go's helpers, a peer's.
 114. **Ports are named after their type** (v0.3.0, owner decision; breaking). `(port name in Type)`
     repeated the type in the name most of the time (`(port edit in Edit)`), so 0.3 writes
-    `(port :in Type)`, named `type` (first letter lowercased), with `:as name` only to tell two ports
+    `(takes Type)`, named `type` (first letter lowercased), with `:as name` only to tell two ports
     apart. The rule is `defaultPortName` (core.js): lowercase the first code point of the type's name;
     for a qualified type the last component after `.` or `:`; for a parameterized one the head before
     `<` or `[`; a behavior parameter `T` gives `t` at the declaration, not after substitution, so a
@@ -2410,7 +2410,7 @@ A, B, C and D run in parallel. When they merge:
     can rewrite it; the viewer rewrites a 0.2 port whenever an edit touches the block's ports. Clashes
     (own, own vs inherited, inherited vs inherited) moved from api.js's form walk into the core
     (`portClashes`), so the viewer shows them and drags that would create one are refused. Renaming a
-    message type renames its implicit ports; that is the rule's point (the name is the type), so the
+    shape renames its implicit ports; that is the rule's point (the name is the type), so the
     viewer does not add `:as` to keep the old name. `portLabel` shows `name: Type` only when the name is
     not the default one.
 115. **Explained violations fail nothing in the viewer** (v0.3.0, owner request). A spec whose every

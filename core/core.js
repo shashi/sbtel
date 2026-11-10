@@ -6,9 +6,11 @@ const FONT = {
   htitle:'600 20px "Hanken Grotesk"', hsketch:'400 14.5px "Hanken Grotesk"',
   chip:'500 12px "JetBrains Mono"', pill:'600 11.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
 };
-const FORMS = new Set(['block','level','adjacent','port','message','behavior','implements','sketch','refines','carries']);
+// 0.4 names: (shape …), (takes …) and (gives …). The 0.3 names (message) and (port :in|:out) still read, with a
+// warning that says how to write them now; a model node keeps the forms 'message' and 'port' either way.
+const FORMS = new Set(['block','level','adjacent','takes','gives','shape','behavior','implements','sketch','refines','carries','port','message']);
 // Forms a behavior does not contain (it is a set of ports, not a part of the system), and what to declare instead.
-const NOT_IN_BEHAVIOR = { block:'the block', level:'the level', adjacent:'the adjacent group', message:'the message type', behavior:'the behavior' };
+const NOT_IN_BEHAVIOR = { block:'the block', level:'the level', adjacent:'the adjacent group', message:'the shape', shape:'the shape', behavior:'the behavior' };
 
 // @sbtel end Core.Constants
 // @sbtel begin Core.Reader
@@ -85,7 +87,7 @@ function defaultPortName(kind) {
   const c = String.fromCodePoint(t.codePointAt(0)); return c.toLowerCase() + t.slice(c.length);
 }
 // The source text of a port: :as only when the name is not the default one.
-function portForm(name, dir, kind) { return `(port :${dir} ${kind}${name && name !== defaultPortName(kind) ? ' :as ' + name : ''})`; }
+function portForm(name, dir, kind) { return `(${dir === 'in' ? 'takes' : 'gives'} ${kind}${name && name !== defaultPortName(kind) ? ' :as ' + name : ''})`; }
 // A (port …) form's reader items (after `port`): { dir, kind, as, name, legacy, body (index of the
 // first item after the head) }. The 0.2 form (port name in|out Type) is recognised as legacy.
 function portParts(items) {
@@ -115,8 +117,8 @@ function parse(src) {
   function conv(sx, owner, where) {
     if (!sx.list) return null;
     const head = sx.list[0]; const h = head && head.t === 'sym' ? head.v : null;
-    const node = { form: FORMS.has(h) ? h : 'raw', s:sx.s, e:sx.e, children:[] };
-    const items = sx.list.slice(1);
+    const node = { form: FORMS.has(h) ? (h === 'takes' || h === 'gives' ? 'port' : h === 'shape' ? 'message' : h) : 'raw', s:sx.s, e:sx.e, children:[] };
+    let items = sx.list.slice(1);
     const at = { toString: () => ' (line ' + lineCol(src, sx.s) + ')' };
     // v0.2 renamed (layer …) to (level …), with no alias: say so here, so the viewer shows it too.
     if (h === 'layer') ctx.warnings.push('unknown form (layer) in ' + (where || 'the file') + ' (did you mean level?)' + at);
@@ -148,27 +150,39 @@ function parse(src) {
         if (h === 'level' && !node.children.some(c => c.form === 'block' || c.form === 'adjacent')) ctx.warnings.push('level needs at least one block' + at);
         break;
       }
-      case 'port': {
-        // (port :in Type [:as name] [sketch]): the direction keyword, the message type, an optional name, a
-        // sketch last. Without :as the name is defaultPortName(Type). node.as is the name as written (or
-        // null); node.name is the effective name, the one everything else uses.
+      case 'takes': case 'gives': case 'port': {
+        // (takes Shape [:as name] [sketch]) and (gives Shape …): the shape, an optional name, a sketch last.
+        // Without :as the name is defaultPortName(Shape). node.as is the name as written (or null); node.name
+        // is the effective name, the one everything else uses. node.typeAt is where the shape sits in the
+        // form's items (1 here, 2 in the 0.3 form (port :in Shape), 3 in the 0.2 form (port name in Shape)).
+        const verb = h !== 'port';
+        if (verb) items = [{ t:'sym', v: h === 'takes' ? ':in' : ':out', s:sx.s, e:sx.s }, ...items];
         const p = portParts(items);
-        node.dir = p.dir; node.kind = p.kind; node.as = p.as; node.name = p.name;
-        if (p.legacy) {
+        node.dir = p.dir; node.kind = p.kind; node.as = p.as; node.name = p.name; node.typeAt = verb ? 1 : p.legacy ? 3 : 2;
+        if (verb && p.legacy) { node.dir = h === 'takes' ? 'in' : 'out'; node.kind = null; node.as = null; node.name = null; p.body = 1; } // (takes x in T): not a port form at all
+        else if (!verb && !p.legacy && (p.dir === 'in' || p.dir === 'out')) {
+          // The 0.3 form: read as it was meant, and reported with the way to write it now.
+          node.old = true;
+          const more = items.length > p.body, fix = portForm(p.name, p.dir, p.kind || 'Shape');
+          ctx.warnings.push(`(port :${p.dir}${p.kind ? ' ' + p.kind : ''}${p.as ? ' :as ' + p.as : ''}${more ? ' …' : ''}) is the 0.3 form; write ${more ? fix.slice(0, -1) + ' …)' : fix}` + at);
+        }
+        if (verb) { /* its problems are the lint walker's (api.js) */ }
+        else if (p.legacy) {
           // The 0.2 form (port name in Type): read as it was meant, so the diagram still draws, and reported.
           node.legacy = true;
-          const more = items.length > 3, fix = portForm(p.name, p.dir, p.kind || 'Type');
+          const more = items.length > 3, fix = portForm(p.name, p.dir, p.kind || 'Shape');
           ctx.warnings.push(`${legacyPortText(p, more)} is the 0.2 form; write ${more ? fix.slice(0, -1) + ' …)' : fix}` + at);
         } else if (p.dir !== 'in' && p.dir !== 'out') {
           const bare = items[0] && items[0].t === 'sym' && (items[0].v === 'in' || items[0].v === 'out') ? items[0].v : null;
-          ctx.warnings.push('port direction must be :in or :out' + (bare ? ` (write :${bare}, not ${bare})` : '') + at);
+          ctx.warnings.push('(port …) is the 0.3 form and needs :in or :out; write (takes Shape) or (gives Shape)' + (bare ? ` (${bare === 'in' ? 'takes' : 'gives'}, for ${bare})` : '') + at);
         }
         node.children = items.slice(p.body).map(x => conv(x, owner, 'port ' + (node.name || '?'))).filter(Boolean); node.sketch = sketchOf(node);
         break;
       }
-      case 'message':
-        node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(declHead(node, items)).map(x => conv(x, owner, 'message ' + node.name)).filter(Boolean);
-        if (ctx.messages.has(node.name)) ctx.warnings.push('Duplicate message ' + node.name + at);
+      case 'shape': case 'message':
+        node.name = symOf(items[0]); node.owner = owner || null; node.children = items.slice(declHead(node, items)).map(x => conv(x, owner, 'shape ' + node.name)).filter(Boolean);
+        if (h === 'message') { node.old = true; ctx.warnings.push(`(message ${node.name || '?'}${items.length > 1 ? ' …' : ''}) is the 0.3 form; write (shape ${node.name || 'Name'}${items.length > 1 ? ' …' : ''})` + at); }
+        if (ctx.messages.has(node.name)) ctx.warnings.push('Duplicate shape ' + node.name + at);
         ctx.messages.set(node.name, node); break;
       case 'behavior': {
         // A behavior is read with a block's grammar (declHead: name, :type), and its body takes what has a
@@ -358,7 +372,7 @@ function countText(b) {
   // Every block inside, at any depth: how much the block holds. Nesting depth says little, so it is not shown.
   if (s.n) parts.push(`${s.n} block${s.n === 1 ? '' : 's'}`);
   if (b.behaviorDecls.length) parts.push(`${b.behaviorDecls.length} behavior${b.behaviorDecls.length === 1 ? '' : 's'}`);
-  if (b.messageDecls.length) parts.push(`${b.messageDecls.length} message type${b.messageDecls.length === 1 ? '' : 's'}`);
+  if (b.messageDecls.length) parts.push(`${b.messageDecls.length} shape${b.messageDecls.length === 1 ? '' : 's'}`);
   return parts.join(' · ');
 }
 function hasInside(b) { return b.form === 'block' && (b.levels.length > 0 || b.behaviorDecls.length > 0 || b.messageDecls.length > 0); }
@@ -468,17 +482,17 @@ function scopeFailures(model) {
   const impls = (n, who, where) => n.impl.forEach(x => { const bh = model.behaviors.get(x); if (!bh) return;
     if (!inScope(bh, where)) add('scope', who, 'behavior', x, bh.owner.name, `${who} uses ${x}, declared in ${bh.owner.name}`);
     (n.implArgs[x] || []).forEach(t => { const m = n.form === 'behavior' && n.params.includes(t) ? null : model.messages.get(t);
-      if (m && !inScope(m, where)) add('mscope', who, 'message type', t, m.owner.name, `${who} passes ${t} to ${x}, declared in ${m.owner.name}`); }); });
+      if (m && !inScope(m, where)) add('mscope', who, 'shape', t, m.owner.name, `${who} passes ${t} to ${x}, declared in ${m.owner.name}`); }); });
   model.blocks.forEach(b => {
     impls(b, b.name, b);
-    b.ownPorts.forEach(p => { const m = model.messages.get(p.kind); if (m && !inScope(m, b)) add('mscope', b.name, 'message type', p.kind, m.owner.name, `${b.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); });
+    b.ownPorts.forEach(p => { const m = model.messages.get(p.kind); if (m && !inScope(m, b)) add('mscope', b.name, 'shape', p.kind, m.owner.name, `${b.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); });
   });
   model.behaviors.forEach(bh => bh.ports.forEach(p => { const m = bh.params.includes(p.kind) ? null : model.messages.get(p.kind);
-    if (m && !inScope(m, bh.owner)) add('mscope', bh.name, 'message type', p.kind, m.owner.name, `${bh.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); }));
+    if (m && !inScope(m, bh.owner)) add('mscope', bh.name, 'shape', p.kind, m.owner.name, `${bh.name}.${p.name} uses ${p.kind}, declared in ${m.owner.name}`); }));
   model.behaviors.forEach(bh => impls(bh, bh.name, bh.owner));
   // A carried type must be visible where the carrying message is declared, as a port's type must.
   model.messages.forEach(m => m.carries.forEach(t => { const d = model.messages.get(t);
-    if (d && !inScope(d, m.owner)) add('mscope', m.name, 'message type', t, d.owner.name, `${m.name} carries ${t}, declared in ${d.owner.name}`); }));
+    if (d && !inScope(d, m.owner)) add('mscope', m.name, 'shape', t, d.owner.name, `${m.name} carries ${t}, declared in ${d.owner.name}`); }));
   return out;
 }
 // Why an edit that turns src0's model into m1 would break the spec, or '' if it breaks nothing new.
@@ -491,7 +505,7 @@ function newFailureText(m0, m1, moved) {
     const before = new Set(lintSpec(m0).flatMap(c => c.f)), added = lintSpec(m1).flatMap(c => c.f).filter(t => !before.has(t));
     return added.length ? `That would break a spec check: ${added[0]}.${added.length > 1 ? ` (+${added.length - 1} more)` : ''}` : '';
   }
-  const f = fresh[0], dep = f.kind === 'behavior' ? `depends on behavior ${f.name}` : `uses message type ${f.name}`;
+  const f = fresh[0], dep = f.kind === 'behavior' ? `depends on behavior ${f.name}` : `uses shape ${f.name}`;
   const isDecl = moved && moved.form !== 'block' && moved.name === f.name && (moved.form === 'behavior') === (f.kind === 'behavior');
   const text = isDecl ? `${f.who} ${dep}, which would be out of its reach in ${f.owner}. Keep ${f.name} in a block that holds ${f.who}.`
     : `${f.who} ${dep} (declared in ${f.owner}). Move ${f.name} first.`;
@@ -522,8 +536,8 @@ function lintSpec(model) {
   return [
     { k:'beh', label:'Every implemented behavior is declared', f:unknownBeh },
     { k:'scope', label:'Behaviors are used only inside the block that declares them', f:scope },
-    { k:'msg', label:'Every port uses a declared message type', f:unknownMsg },
-    { k:'mscope', label:'Message types are used only inside the block that declares them', f:mscope },
+    { k:'msg', label:'Every port uses a declared shape', f:unknownMsg },
+    { k:'mscope', label:'Shapes are used only inside the block that declares them', f:mscope },
     { k:'rel', label:'refines and carries name declared types', f:badRel },
     { k:'cycle', label:'No behavior implements itself', f:cycles },
   ];
@@ -724,7 +738,7 @@ function layout(model, opts, M) {
         const rowIts = bd.items.map((it, i) => ({ it, b:its[i].box })).filter(q => q.it.row === lastIt.row);
         const cy = (Math.min(...rowIts.map(q => q.b.y + q.it.t)) + Math.max(...rowIts.map(q => q.b.y + q.it.t + q.it.sub.h))) / 2;
         out.plus.push({ x: Math.min(lb.x + lb.w + 22, x2 + (b.virtual ? -11 : K.PAD / 2)), y: cy,
-          act:{ t:'decl', block:b, form }, title: form === 'behavior' ? 'Add a behavior' : 'Add a message type' });
+          act:{ t:'decl', block:b, form }, title: form === 'behavior' ? 'Add a behavior' : 'Add a shape' });
       });
     } };
   }
@@ -910,11 +924,11 @@ function applyEdit(src, model, act) {
   }
   if (act.t === 'decl') {
     // New behavior or message type, placed after the block's last declaration of that kind.
-    const b = act.block, isB = act.form === 'behavior', base = isB ? 'NewBehavior' : 'NewMessage', pool = isB ? model.behaviors : model.messages;
+    const b = act.block, isB = act.form === 'behavior', base = isB ? 'NewBehavior' : 'NewShape', pool = isB ? model.behaviors : model.messages;
     let i = 1; while (pool.has(base + i)) i++; const nm = base + i;
     const same = b.children.filter(c => c.form === act.form), ref = same[same.length - 1] || b.children[0];
     const ind = (ref && indentAt(src, ref.s)) ?? childIndent(src, b);
-    const text = isB ? `(behavior ${nm}\n${ind}  (sketch "What a block promises when it implements this."))` : `(message ${nm} (sketch "What this data carries."))`;
+    const text = isB ? `(behavior ${nm}\n${ind}  (sketch "What a block promises when it implements this."))` : `(shape ${nm} (sketch "What this data carries."))`;
     if (same.length) return { src: splice(ref.e, ref.e, '\n' + ind + text), name:nm };
     if (ref) return { src: splice(ref.s, ref.s, text + '\n' + ind), name:nm };
     const at = endIn(src, b); return { src: splice(at, at, (at ? '\n' : '') + ind + text), name:nm };
@@ -997,7 +1011,7 @@ function applyEdit(src, model, act) {
       // default drops it). A 0.2 port the edit touches is rewritten in the 0.3 form.
       const portText = q => portForm(q.name, q.dir, q.kind).slice(0, -1) + portSk(q) + ')';
       const skChanged = q => q.sketch != null && sketchNorm(q.sketch, q.node.children.find(c => c.form === 'sketch')) !== (q.node.sketch || '');
-      act.ports.forEach(q => { if (q.node && (q.node.legacy || q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
+      act.ports.forEach(q => { if (q.node && (q.node.legacy || q.node.old || q.name !== q.node.name || q.dir !== q.node.dir || q.kind !== q.node.kind || skChanged(q))) reps.push({ s:q.node.s, e:q.node.e, t:portText(q) }); });
       insert(['port', 'implements'], act.ports.filter(q => !q.node).map(portText));
     }
     [...gone].filter(c => c.form !== 'sketch').forEach(c => cuts.push(cutRep(c)));
@@ -1007,7 +1021,7 @@ function applyEdit(src, model, act) {
       const visit = c => {
         if (c.form === 'implements' && n.form === 'behavior' && c.name === old) sym(itemsOf(src, c)[1]);
         else if (c.form === 'implements' && n.form === 'message' && (c.args || []).includes(old)) { const arg = itemsOf(src, c)[1]; arg.list.slice(1).forEach(sym); }
-        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[c.legacy ? 3 : 2]);
+        else if (c.form === 'port' && c.kind === old) sym(itemsOf(src, c)[c.typeAt]);
         else if ((c.form === 'refines' || c.form === 'carries') && (c.names || []).includes(old)) itemsOf(src, c).slice(1).forEach(sym);
         c.children.forEach(visit);
       };
@@ -1193,7 +1207,7 @@ function attachCandidates(model, id, visibleIds) {
   const out = [];
   for (const b of model.blocks.values()) {
     if (!visibleIds.has(b.id)) continue;
-    const why = d.owner && !isWithin(b, d.owner) ? `${b.name} can't ${d.form === 'behavior' ? 'implement ' + d.name : 'use message type ' + d.name}: ${d.name} is declared in ${d.owner.name}, and ${b.name} is outside it.` : '';
+    const why = d.owner && !isWithin(b, d.owner) ? `${b.name} can't ${d.form === 'behavior' ? 'implement ' + d.name : 'use shape ' + d.name}: ${d.name} is declared in ${d.owner.name}, and ${b.name} is outside it.` : '';
     if (d.form === 'behavior') { if (!b.impl.includes(d.name)) out.push({ t:'implements', block:b, name:d.name, why }); }
     else ['in', 'out'].forEach(dir => out.push({ t:'port', block:b, dir, kind:d.name, name:freePortName(b, d.name), why }));
   }
@@ -1229,7 +1243,7 @@ function portsProblem(model, node, ports, impl) {
     const p = ports[i], label = p.name ? `Port ${p.name}` : `Port ${i + 1}`;
     if (!NAME_RE.test(p.name || '')) return `${label}: a port name cannot be empty or contain spaces, parentheses, quotes or semicolons.`;
     if (p.dir !== 'in' && p.dir !== 'out') return `${label}: direction must be in or out.`;
-    if (!p.kind) return `${label}: choose a message type.`;
+    if (!p.kind) return `${label}: choose a shape.`;
     if (!types.has(p.kind)) return `${label}: ${p.kind} is not in scope here.`;
     if (own.has(p.name)) return `Two ports are named ${p.name}.`;
     if (from.has(p.name)) return `Port ${p.name} clashes with the ${p.name} port from ${from.get(p.name)}.`;
@@ -1243,7 +1257,7 @@ function nameClash(model, node, name) {
   if (name === node.name) return '';
   if ([...model.blocks.values()].some(b => b !== node && b.name === name)) return `${name} is already the name of a block.`;
   if (model.behaviors.has(name) && model.behaviors.get(name) !== node) return `${name} is already the name of a behavior.`;
-  if (model.messages.has(name) && model.messages.get(name) !== node) return `${name} is already the name of a message type.`;
+  if (model.messages.has(name) && model.messages.get(name) !== node) return `${name} is already the name of a shape.`;
   return '';
 }
 // @sbtel end Core.Scope
@@ -1282,7 +1296,7 @@ function randomSpec(seed) {
     return t + ')';
   }
   const head = '(block System\n  :type "Module"\n  (sketch "A randomly generated system for testing layout rules.")\n' +
-    kinds.map(m => '  (message ' + m + ' (sketch "A ' + m.toLowerCase() + '."))').join('\n') +
+    kinds.map(m => '  (shape ' + m + ' (sketch "A ' + m.toLowerCase() + '."))').join('\n') +
     '\n  (behavior Durable (port :in Event :as keep) (sketch "Retains events until acknowledged."))' +
     '\n  (behavior Observable (port :out Snapshot :as metric) (sketch "Reports its own health."))';
   total = 0; let body = '';

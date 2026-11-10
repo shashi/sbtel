@@ -2,10 +2,10 @@
 ; Nothing structural changed: the diff must be empty.
 (block Svc
     :type "Service"      ; same type
-    (message Ping
+    (shape Ping
         (sketch "Are   you
                  there?"))
-    (port :in Ping)
+    (takes Ping)
     (sketch "Answers pings.")
     (level
         (block Clock (sketch "Ticks once a second."))   ; a clock

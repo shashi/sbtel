@@ -1,20 +1,20 @@
 ; Placement notes: vocabulary at the lowest common ancestor of its users.
-(message Wide (sketch "Used in two top-level blocks: its home is the top level."))
-(message Deep (sketch "Carried by Note, declared at the top: Deep must stay where Note can see it."))
-(message Note (carries Deep))
-(message Base (sketch "Refined by Leaf, which only Shell.View uses."))
-(message Leaf (refines Base))
-(message Unused)
+(shape Wide (sketch "Used in two top-level blocks: its home is the top level."))
+(shape Deep (sketch "Carried by Note, declared at the top: Deep must stay where Note can see it."))
+(shape Note (carries Deep))
+(shape Base (sketch "Refined by Leaf, which only Shell.View uses."))
+(shape Leaf (refines Base))
+(shape Unused)
 (behavior Idle)
 (block Shell
-  (message Selection (sketch "Over-exposed: only Shell.View uses it."))
+  (shape Selection (sketch "Over-exposed: only Shell.View uses it."))
   (behavior Durable)
   (level
     (block Shell.View
-      (port :in Selection :as sel)
-      (port :in Leaf)
+      (takes Selection :as sel)
+      (takes Leaf)
       (block Shell.Store (implements Durable))))
-  (level (block Shell.Log (port :in Wide :as w))))
+  (level (block Shell.Log (takes Wide :as w))))
 (block Other
-  (port :out Wide :as w)
-  (port :out Note :as n))
+  (gives Wide :as w)
+  (gives Note :as n))

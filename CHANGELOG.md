@@ -3,7 +3,26 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
-## Unreleased
+## Unreleased (0.4.0)
+
+### Breaking
+
+- **`shape` replaces `message`.** `(shape NoteSaved)` declares what a port takes or gives. The word
+  "message" suggested a queue; a shape is only what two ports must share to fit.
+- **`takes` and `gives` replace `port`.** `(takes NoteSaved)` and `(gives Note :as text)`, where 0.3
+  wrote `(port :in NoteSaved)` and `(port :out Note :as text)`. The language now has eleven forms.
+- The 0.3 forms still read and still draw. Lint reports each one with the way to write it now, and
+  `sbtel fmt --migrate spec.sbtel` rewrites a file in place (`--migrate-ports` still works). The 0.2
+  port form is rewritten too.
+- Lint, check, query and diff say "shape" where they said "message type". JSON output keeps its keys
+  (`messages`, `"kind": "message"`) and the `μ:` and `msg:` id prefixes.
+- The code anchor is `@sbtel shape Name`; `@sbtel message Name` still works.
+
+### Changed
+
+- **The skills are rewritten** as short operational guidance: what a view shows and how deep to go by
+  task, and a counting step in design and recovery (a lower-level block is used by most of what is
+  above it; one used by a single block moves inside it).
 
 ### Changed
 

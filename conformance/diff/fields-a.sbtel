@@ -1,22 +1,22 @@
 ; Every Fields key (level names and sketches, port and group sketches too), plus renamed and moved behaviors and message types.
 (block Kit
-  (message Data (sketch "Bytes."))
-  (message Text (sketch "Characters."))
-  (message Num (sketch "A number."))
-  (message Any (sketch "Text or a number."))
-  (message Event (sketch "Something happened."))
-  (message Click (refines Event) (sketch "A pointer press."))
-  (behavior Loggable (port :out Text :as log) (sketch "Writes log lines."))
-  (behavior (Box T) (port :in T :as item) (sketch "Holds one value."))
+  (shape Data (sketch "Bytes."))
+  (shape Text (sketch "Characters."))
+  (shape Num (sketch "A number."))
+  (shape Any (sketch "Text or a number."))
+  (shape Event (sketch "Something happened."))
+  (shape Click (refines Event) (sketch "A pointer press."))
+  (behavior Loggable (gives Text :as log) (sketch "Writes log lines."))
+  (behavior (Box T) (takes T :as item) (sketch "Holds one value."))
   (level
     (block Panel
       :type "View"
       (implements Loggable)
-      (port :in Data)
-      (port :in Num :as size)
-      (port :in Text :as mode (~ Read once. ~))
+      (takes Data)
+      (takes Num :as size)
+      (takes Text :as mode (~ Read once. ~))
       (sketch "Shows one thing at a time.")
-      (behavior Focusable (port :in Event :as focus) (sketch "Takes keyboard focus."))
+      (behavior Focusable (takes Event :as focus) (sketch "Takes keyboard focus."))
       (level :name "Chrome"
         (adjacent (~ Share a grid. ~)
           (block Header (sketch "Title row."))
@@ -24,5 +24,5 @@
         (block Footer (sketch "Status row."))))
     (block Sidebar
       (implements Loggable)
-      (message Hint (sketch "A tip for the user."))
+      (shape Hint (sketch "A tip for the user."))
       (sketch "Lists things."))))

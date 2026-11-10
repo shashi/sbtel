@@ -86,12 +86,12 @@ window.__accept = async function () {
   await step('messageTypeBounce', async () => {
     await dragToZone(titlePt('Shell.CommandPalette'), rootZone(true));
     const t = toastText();
-    return src() === original && t === 'Shell.CommandPalette uses message type KeyChord (declared in Shell). Move KeyChord first. (+1 more)' ? 'pass' : 'fail: "' + t + '"';
+    return src() === original && t === 'Shell.CommandPalette uses shape KeyChord (declared in Shell). Move KeyChord first. (+1 more)' ? 'pass' : 'fail: "' + t + '"';
   });
   await step('descendantBounceCollapsed', async () => {
     // A collapsed block whose only dependency is in a descendant.
     const s2 = original.replace('(block Shell.Sidebar\n        (implements Surface)\n        (sketch "Recent sessions and the project switcher.")))',
-      '(block Shell.Sidebar\n        (sketch "Recent sessions and the project switcher.")\n        (level\n          (block Shell.Sidebar.Foo (implements Durable) (port :in SessionEvent :as events)))))');
+      '(block Shell.Sidebar\n        (sketch "Recent sessions and the project switcher.")\n        (level\n          (block Shell.Sidebar.Foo (implements Durable) (takes SessionEvent :as events)))))');
     if (s2 === original) return 'fail: fixture';
     setSource(s2); state.open.delete('Shell.Sidebar'); render(); await wait(200);
     if (blk('Shell.Sidebar').classList.contains('frame')) return 'fail: not collapsed';
@@ -103,7 +103,7 @@ window.__accept = async function () {
     // Surface can't go up before the types its ports use; Frame can, and that is one undoable edit.
     await dragToZone(titlePt('β:Surface'), rootZone(true));
     const t = toastText();
-    if (src() !== original || t !== 'Surface uses message type Frame (declared in Shell). Move Frame first. (+1 more)') return 'fail: surface "' + t + '"';
+    if (src() !== original || t !== 'Surface uses shape Frame (declared in Shell). Move Frame first. (+1 more)') return 'fail: surface "' + t + '"';
     const fr = await dragToZone(titlePt('μ:Frame'), zs => { window.__dbg = zs.map(z => [z.act.dest.block.id, z.act.dest.at, !!z.bad, z.noop, Math.round(z.x), Math.round(z.y)]); return zs.find(z => z.act.dest.block.virtual && !z.bad); }, {}, null, 0.85); window.__dbg.push(fr.chosen, toastText());
     const m = model(), f = m.messages.get('Frame');
     if (!f || f.owner !== null || !checksOk()) return 'fail: Frame owner ' + (f && f.owner && f.owner.name) + ' ' + JSON.stringify(window.__dbg);
@@ -153,7 +153,7 @@ window.__accept = async function () {
     const p = emptyPt(); if (!p) return 'fail: no empty canvas';
     ctx(...p); await wait(80);
     const L = menuLabels();
-    const want = ['Add a block to this level', 'Insert a level above', 'Insert a level below', 'Add a behavior', 'Add a message type', 'Show source', 'Comment on the file'];
+    const want = ['Add a block to this level', 'Insert a level above', 'Insert a level below', 'Add a behavior', 'Add a shape', 'Show source', 'Comment on the file'];
     const missing = want.filter(w => !L.includes(w)), extra = L.filter(l => /^(Edit|Delete|Open|Close)$/.test(l));
     if (missing.length || extra.length) return 'fail: missing ' + missing + ' extra ' + extra;
     [...document.querySelectorAll('.pop.menu .mi')].find(b => b.textContent === 'Add a behavior').click(); await wait(200);

@@ -85,7 +85,7 @@ These are rough, for a first cut; the code's real seams win over the numbers.
 - The block graph has big SCCs, or most of your violations run between two siblings: they are one
   strand.
 - Sketches turn into walk-throughs of the code (red-team.md: "container with code-level detail").
-- You need a message type with one fixed producer and one fixed consumer to dodge an edge.
+- You need a shape with one fixed producer and one fixed consumer to dodge an edge.
 
 ## Signs a block is too coarse
 

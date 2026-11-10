@@ -1,4 +1,4 @@
-# accept8 (v0.2.2): behaviors take a block's grammar. A behavior's :type and a message type's :type show
+# accept8 (v0.2.2): behaviors take a block's grammar. A behavior's :type and a shape's :type show
 # as pills on their cards; a behavior that implements another shows its badge; hovering a behavior
 # outlines its implementers, through behaviors that extend it too, labelled "implements" (standalone
 # has no bindings, so nothing is labelled "uses"); the Edit dialog edits a behavior's type and what it
@@ -10,15 +10,15 @@ PAGE = 'file://' + sys.argv[1]
 SPEC = '''(block Notes
   :type "App"
   (sketch "Write notes, see them rendered, keep them on disk.")
-  (message Edit :type "struct" (sketch "A change to one note's text."))
+  (shape Edit :type "struct" (sketch "A change to one note's text."))
   (behavior Durable :type "trait"
-    (port :in Edit)
+    (takes Edit)
     (sketch "Keeps every accepted edit until it is on disk."))
   (behavior Journaled
     (implements Durable)
     (sketch "Durable, and can replay what it kept."))
   (level :name "Editing"
-    (block Notes.Editor (port :out Edit) (sketch "The text area.")))
+    (block Notes.Editor (gives Edit) (sketch "The text area.")))
   (level :name "Storage"
     (block Notes.Store :type "Module" (implements Journaled) (sketch "Writes notes to disk."))
     (block Notes.Memory (implements Durable) (sketch "Keeps notes in memory, for tests."))))

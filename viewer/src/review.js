@@ -41,7 +41,7 @@ function changesStyle() {
 }
 // A word diff (§7: [{op: '=' | '+' | '-', text}]) as HTML: inserted runs in <ins>, deleted ones in <del>.
 function runsHTML(words) { return words.map(w => w.op === '=' ? esc(w.text) : `<${w.op === '+' ? 'ins' : 'del'} class="d-${w.op === '+' ? 'ins' : 'del'}">${esc(w.text)}</${w.op === '+' ? 'ins' : 'del'}>`).join(' '); }
-const changeKind = e => e === 'block' ? 'block' : e === 'behavior' ? 'behavior' : e === 'file' ? 'top level' : 'message type';
+const changeKind = e => e === 'block' ? 'block' : e === 'behavior' ? 'behavior' : e === 'file' ? 'top level' : 'shape';
 const changePlain = id => id.replace(/^[βμ]:/, '');
 function changePlace(p) { return (p.in ? changePlain(p.in) : 'the top level') + (p.level != null ? ` level ${p.level}` : ''); }
 // What changed in one change, as HTML lines.

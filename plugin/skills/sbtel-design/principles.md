@@ -6,7 +6,7 @@
 - 2. Simple made easy
 - 3. Adjacency is a declared braid
 - 4. Messages or bindings
-- 5. Behaviors and message types are vocabulary
+- 5. Behaviors and shapes are vocabulary
 - 6. Say no more than the spec needs
 - 7. Before and after
 
@@ -55,7 +55,7 @@ In sbtel:
   sends a message when the file changes.
 - **Watch for braiding words** in sketches: "and", "or", "also", "as well as", "manages", "handles",
   "utilities", "common", "helpers". Each one is a place where two strands may be twisted together.
-- **Data over objects.** Message types are values that cross boundaries. Prefer a block that takes a
+- **Data over objects.** Shapes are values that cross boundaries. Prefer a block that takes a
   message and emits another to one that reaches into another block's state.
 - **Simple is not small.** Splitting a braided block into three simple ones makes the spec longer and
   the system simpler. That is the right trade.
@@ -98,22 +98,22 @@ Choose a **message** when:
   so it emits a message and a higher level subscribes;
 - the data crosses a process, network or trust boundary.
 
-Message types make the coupling explicit and checkable: `accepts` tells you which ports can be wired,
+Shapes make the coupling explicit and checkable: `accepts` tells you which ports can be wired,
 and `sbtel diff` tells you which ports a type change affects.
 
 A message with exactly one fixed producer and one fixed consumer, both chosen at design time, is often a
 binding in disguise. Either make it a binding, or say in the sketch why the counterpart must stay
 open.
 
-## 5. Behaviors and message types are vocabulary
+## 5. Behaviors and shapes are vocabulary
 
-The viewer draws behaviors and message types in bands *below* a block's levels, because they are the
+The viewer draws behaviors and shapes in bands *below* a block's levels, because they are the
 vocabulary the levels are written in. Treat them as the bottom level's words:
 
 - A **behavior** is a promise many blocks make: `Durable` ("retains every accepted event until
   acknowledged"), `Pure`, `Surface`. If only one block implements a behavior, it is probably just that
   block's ports.
-- A **message type** names a kind of data. Use nouns (`Intent`, `SessionEvent`), not verbs. When a
+- A **shape** names a kind of data. Use nouns (`Intent`, `SessionEvent`), not verbs. When a
   value holds values of other types, say so with `(carries A B)`; the sketch says the rest. A type that
   carries many unrelated types is braided data.
 - Declare each in the **smallest block that holds every use**. Declaring everything at the top works,
@@ -153,10 +153,10 @@ let the flow upward from storage be a message:
 ; Non-goals: collaboration in real time.
 (block Notes
   (sketch "Write notes, see them rendered, keep them on disk, sync them across devices.")
-  (message Edit (sketch "A change to one note's text, with the note's id."))
-  (message Changed (sketch "A stored note changed, from whichever side."))
+  (shape Edit (sketch "A change to one note's text, with the note's id."))
+  (shape Changed (sketch "A stored note changed, from whichever side."))
   (behavior Durable
-    (port :in Edit)
+    (takes Edit)
     (sketch "Keeps every accepted edit until it is on disk."))
 
   (level :name "The app"
@@ -165,20 +165,20 @@ let the flow upward from storage be a message:
   (level :name "Notes as text"
     (adjacent (~ They scroll together. ~)
       (block Notes.Editor
-        (port :out Edit)
+        (gives Edit)
         (sketch "The text area where the user types."))
       (block Notes.Preview
-        (port :in Changed)
+        (takes Changed)
         (sketch "Renders the current note beside the editor.")))
     (block Notes.Sync
-      (port :in Changed)
-      (port :out Edit :as remote)
+      (takes Changed)
+      (gives Edit :as remote)
       (sketch "Exchanges edits with the cloud copy.")))
   (level :name "Stored notes"
     (block Notes.Store
       :type "Store"
       (implements Durable)
-      (port :out Changed)
+      (gives Changed)
       (sketch "Keeps the notes on disk, so they survive a restart."))
     (block Notes.Markdown
       (sketch "Turns markdown text into a document tree."))))
@@ -196,4 +196,4 @@ What changed, and why:
 - Sync and Editor are not adjacent. They never name each other: both emit `Edit`, and Shell routes
   both into Store.
 - Preview binds Markdown, which is in a lower level, so the binding is allowed.
-- Message types and the behavior sit in Notes, the smallest block that holds every use.
+- Shapes and the behavior sit in Notes, the smallest block that holds every use.

@@ -156,7 +156,7 @@ def run():
             for i in range(1, 11): touch('touchMove', [(a[0] + (z[0] - a[0]) * i / 10, a[1] + (z[1] - a[1]) * i / 10)]); pg.wait_for_timeout(16)
             pg.wait_for_timeout(100); touch('touchEnd', []); pg.wait_for_timeout(250)
             t = E("() => toastEl.textContent")
-            return 'pass' if src() == original and t.startswith('Durable uses message type SessionEvent') else 'fail: toast ' + t
+            return 'pass' if src() == original and t.startswith('Durable uses shape SessionEvent') else 'fail: toast ' + t
         step('cardsNeedSelectionAndBounce', cards)
 
         def handle_link():
