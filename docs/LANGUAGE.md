@@ -604,7 +604,7 @@ that each alternative refines. The viewer shows these too:
 
 ```text
 spec.sbtel:2:3: warning: unknown form (layer) in block A (did you mean level?)
-spec.sbtel:3:16: warning: either was removed in 0.2; declare each alternative with (refines Union) instead
+spec.sbtel:3:14: warning: either was removed in 0.2; declare each alternative with (refines Union) instead
 spec.sbtel:3:1: info: Input is never used.
 spec.sbtel: 2 problems (1 block, 0 behaviors, 1 shape)
 ```
@@ -631,7 +631,7 @@ A duplicate shape or behavior (the later declaration wins):
 ```
 
 ```text
-spec.sbtel:2:1: warning: Duplicate message M
+spec.sbtel:2:1: warning: Duplicate shape M
 spec.sbtel:4:1: warning: Duplicate behavior B
 spec.sbtel:2:1: info: M is never used.
 spec.sbtel:4:1: info: B is never used.
@@ -646,7 +646,7 @@ A port direction other than `:in` or `:out` (a bare `in` or `out` adds `(write :
 ```
 
 ```text
-spec.sbtel:2:10: warning: port direction must be :in or :out
+spec.sbtel:2:10: warning: (port …) is the 0.3 form and needs :in or :out; write (takes Shape) or (gives Shape)
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
 spec.sbtel: 1 problem (1 block, 0 behaviors, 1 shape)
 ```
@@ -721,7 +721,7 @@ What a behavior does not contain, and arguments that do not fill a behavior's pa
 ```text
 spec.sbtel:4:3: warning: behavior Durable: behaviors don't contain blocks, levels or declarations; declare block Inner beside the behavior instead
 spec.sbtel:5:3: warning: behavior Durable: behaviors don't contain blocks, levels or declarations; declare the level beside the behavior instead
-spec.sbtel:6:3: warning: behavior Durable: behaviors don't contain blocks, levels or declarations; declare message Mm beside the behavior instead
+spec.sbtel:6:3: warning: behavior Durable: behaviors don't contain blocks, levels or declarations; declare shape Mm beside the behavior instead
 spec.sbtel:7:3: warning: (implements (Box M M)) passes 2 arguments, but Box takes 1
 spec.sbtel:3:1: info: Durable is never used.
 spec.sbtel: 4 problems (0 blocks, 2 behaviors, 1 shape)
@@ -765,9 +765,9 @@ A form in a place where it has no meaning:
 
 ```text
 spec.sbtel:3:3: warning: level needs at least one block
-spec.sbtel:1:1: warning: (port) is not allowed in the file
+spec.sbtel:1:1: warning: (takes) is not allowed in the file
 spec.sbtel:3:10: warning: (implements) is not allowed in a level
-spec.sbtel:4:33: warning: (port) is not allowed in an adjacent group
+spec.sbtel:4:33: warning: (takes) is not allowed in an adjacent group
 spec.sbtel: 4 problems (3 blocks, 0 behaviors, 0 shapes)
 ```
 
@@ -826,10 +826,11 @@ A block, message or behavior without a name:
 ```
 
 ```text
+spec.sbtel:2:1: warning: (message ?) is the 0.3 form; write (shape Name)
 spec.sbtel:1:1: warning: block needs a name
-spec.sbtel:2:1: warning: message needs a name
+spec.sbtel:2:1: warning: shape needs a name
 spec.sbtel:3:1: warning: behavior needs a name, or (Name Param ...)
-spec.sbtel: 3 problems (1 block, 1 behavior, 1 shape)
+spec.sbtel: 4 problems (1 block, 1 behavior, 1 shape)
 ```
 
 A port without a type, an extra item after the type (a single word gets a hint), an unknown keyword,
@@ -846,14 +847,15 @@ A port without a type, an extra item after the type (a single word gets a hint),
 ```
 
 ```text
+spec.sbtel:3:3: warning: (port :in) is the 0.3 form; write (takes Shape)
 spec.sbtel:7:3: warning: block A has two ports named m; tell them apart with :as
-spec.sbtel:3:3: warning: port needs a shape after :in: (takes Type [:as name])
-spec.sbtel:4:22: warning: port y has extra items after its shape
-spec.sbtel:5:21: warning: unknown keyword :sort in a port; a port takes only :as name
-spec.sbtel:6:15: warning: keyword :as of a port needs a name
-spec.sbtel:7:16: warning: port m has extra items after its shape (to name it, write :as source)
+spec.sbtel:3:3: warning: takes needs a shape: (takes Shape [:as name])
+spec.sbtel:4:18: warning: port y has extra items after its shape
+spec.sbtel:5:18: warning: unknown keyword :sort in a port; a port takes only :as name
+spec.sbtel:6:12: warning: keyword :as of a port needs a name
+spec.sbtel:7:12: warning: port m has extra items after its shape (to name it, write :as source)
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
-spec.sbtel: 6 problems (1 block, 0 behaviors, 1 shape)
+spec.sbtel: 7 problems (1 block, 0 behaviors, 1 shape)
 ```
 
 A second `:as` counts once too (`port w has more than one :as; only the first counts`).
@@ -869,7 +871,7 @@ one name:
 ```
 
 ```text
-spec.sbtel:2:12: warning: refines names exactly one shape
+spec.sbtel:2:10: warning: refines names exactly one shape
 spec.sbtel:4:10: warning: implements names exactly one behavior, as Name or (Name Arg ...)
 spec.sbtel:2:1: info: N is never used.
 spec.sbtel:3:1: info: Store is declared at the top level but only used within A; it could live there.
@@ -888,7 +890,7 @@ A keyword a block, a behavior or a shape does not take (`:type` is the only one)
 spec.sbtel:1:10: warning: unknown keyword :fill in block A; a block takes only :type
 spec.sbtel:1:23: warning: unknown keyword :owner in block A; a block takes only :type
 spec.sbtel:2:13: warning: unknown keyword :kind in behavior B; a behavior takes only :type
-spec.sbtel:3:12: warning: unknown keyword :fill in message C; a message takes only :type
+spec.sbtel:3:10: warning: unknown keyword :fill in shape C; a shape takes only :type
 spec.sbtel:2:1: info: B is never used.
 spec.sbtel:3:1: info: C is never used.
 spec.sbtel: 4 problems (1 block, 1 behavior, 1 shape)
@@ -926,8 +928,8 @@ after a port's type, and a sketch on a nested adjacent group:
 
 ```text
 spec.sbtel:2:18: warning: a level has more than one (sketch); only the first counts
-spec.sbtel:3:38: warning: port p has more than one (sketch); only the first counts
-spec.sbtel:3:65: warning: port q has extra items after its shape
+spec.sbtel:3:35: warning: port p has more than one (sketch); only the first counts
+spec.sbtel:3:59: warning: port q has extra items after its shape
 spec.sbtel:4:33: warning: a nested adjacent group has no sketch of its own; put it in the outer (adjacent)
 spec.sbtel:1:1: info: M is declared at the top level but only used within A; it could live there.
 spec.sbtel: 4 problems (4 blocks, 0 behaviors, 1 shape)
@@ -942,9 +944,9 @@ A `carries` with no name, the same name twice, and a second `carries`:
 ```
 
 ```text
-spec.sbtel:2:12: warning: carries names one or more shapes
-spec.sbtel:3:23: warning: carries names A twice
-spec.sbtel:3:26: warning: message C has more than one (carries); only the first counts
+spec.sbtel:2:10: warning: carries names one or more shapes
+spec.sbtel:3:21: warning: carries names A twice
+spec.sbtel:3:24: warning: shape C has more than one (carries); only the first counts
 spec.sbtel:2:1: info: B is never used.
 spec.sbtel:3:1: info: C is never used.
 spec.sbtel: 3 problems (0 blocks, 0 behaviors, 3 shapes)

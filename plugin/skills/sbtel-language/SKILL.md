@@ -18,15 +18,16 @@ Run `sbtel version` first. If it is missing: `curl -fsSL https://raw.githubuserc
 ; comment
 (block Name :type "Module"                 ; :type: what the block means (optional)
   (~ One sentence: what it is for. ~)      ; a sketch; (sketch "…") is the same thing
-  (takes Shape)                            ; a port in; named after the shape (noteSaved)
-  (gives Shape :as cmd (~ … ~))            ; a port out; :as only to tell two ports apart
-  (implements Behavior)                    ; adds the behavior's ports
-  (ref src/store.ts:40-60 (~ … ~))         ; a file it stands for or rests on; the human opens it
   (shape Note (~ … ~))                     ; what a port takes or gives
   (shape Saved (refines Note))             ; is-a: fits wherever a Note fits
   (shape Page (carries Note Saved))        ; has-a
   (behavior Durable :type "trait" (gives Saved))   ; ports many blocks promise
   (behavior (Store T) (takes T :as put))   ; with a parameter
+  (takes Note)                             ; a port in; named after the shape (note)
+  (gives Page :as cmd (~ … ~))             ; a port out; :as only to tell two ports apart
+  (implements Durable)                     ; adds the behavior's ports
+  (implements (Store Page))
+  (ref src/store.ts:40-60 (~ … ~))         ; a file it stands for or rests on; the human opens it
   (level :name "Screens" (block A) (block B))      ; the first level written is the top
   (level (adjacent (~ Why. ~) (block C) (block D)))
   (block E))                               ; bare blocks make one implicit level
