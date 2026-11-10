@@ -264,7 +264,7 @@
         <div class="verdict" id="lv-say" aria-live="polite"><p class="fine">Every dependency points down. <code>sbtel check</code> finds nothing to fix.</p></div>
         <details id="lv-raw">
           <summary>See the real sbtel check output</summary>
-          <p class="hint"><code>edges.txt</code> is the list of real dependencies your agent maps from the code.</p>
+          <p class="hint"><code>edges.txt</code> is a file your agent creates. It maps the dependencies in the actual system: who names whom, with the file and line. <code>sbtel check</code> lets your agent verify the code against your design, and see where the implementation can be simplified or made to match it.</p>
 <pre class="code wrapline term-out" id="lv-out"><span class="hl-prompt">$ </span>sbtel check shop.sbtel --bindings edges.txt
 shop.sbtel: 7 bindings, <span class="hl-ok">0 not allowed</span></pre>
         </details>
@@ -279,101 +279,41 @@ shop.sbtel: 7 bindings, <span class="hl-ok">0 not allowed</span></pre>
   <div class="pair">
     <div class="txt">
       <p class="lead">When neither side should name the other, they exchange a message.</p>
-      <p>A message type is data. Inputs are ports on top of a card, outputs on the bottom. Keymap sends a <code>KeyChord</code>, Palette takes one, and something else connects them. Flow that goes upward, like an event or a callback, is always a message.</p>
-      <p><code>refines</code> declares a subtype: a port that takes <code>Event</code> also takes a <code>Click</code>. A <code>behavior</code> is shared vocabulary, like a trait: a set of ports that many blocks promise.</p>
+      <p>A message type is data. A block takes messages in through ports on top of its card and sends them out from the bottom. Store sends a <code>NoteSaved</code>, Editor takes one, and something else connects them. Anything that flows upward, like an event or a callback, is a message, so no block ever has to reach up.</p>
+      <p>Point at a type to see everywhere that data travels. A <code>NoteSaved</code> carries a <code>Note</code>, drawn as a dot on its lower ear, so a note&rsquo;s text goes wherever a <code>NoteSaved</code> goes. Where an assumption about some data lives, you can see all of it at once.</p>
 <details class="spec"><summary>The text your agent writes</summary>
-<pre class="code" data-lang="sbtel">(message KeyChord (~ A normalized key combination. ~))
-(level :name "Surfaces"
-  (block Palette (port :in KeyChord)))
-(level :name "Services"
-  (block Keymap (port :out KeyChord)))</pre>
-</details>
-    </div>
-    <figure class="fig">
-      <div class="frame dgm" id="msg">
-        <div class="lvl"><div class="lname"><span>Surfaces</span></div>
-          <div class="row"><div class="blk" data-id="Palette"><span class="ear top"><span class="pdot" style="background:var(--m4)" title="in keyChord: KeyChord"></span></span>Palette</div></div></div>
-        <div class="lvl"><div class="lname"><span>Services</span></div>
-          <div class="row"><div class="blk" data-id="Keymap">Keymap<span class="ear bot"><span class="pdot" style="background:var(--m4)" title="out keyChord: KeyChord"></span></span></div></div></div>
-        <span class="portlab" id="msg-in">in KeyChord</span>
-        <span class="portlab" id="msg-out">out KeyChord</span>
-        <svg class="edges" aria-hidden="true"></svg>
-      </div>
-      <div class="capline">
-        <span class="grow" id="msg-cap">Neither block names the other. A higher level wires them.</span>
-        <button class="btn" type="button" id="msg-btn">Send a KeyChord</button>
-      </div>
-    </figure>
-  </div>
-</section>
-
-<!-- Data flow -->
-<section class="sec" id="data-flow" aria-labelledby="t-flow">
-  <h2 class="term" id="t-flow">Data flow</h2>
-  <div class="pair flip">
-    <div class="txt">
-      <p class="lead">Point at a type to see everywhere that data travels.</p>
-      <p><code>carries</code> says one type holds others: a <code>Snapshot</code> carries a <code>Selection</code> and a <code>Camera</code>, drawn as their dots on its lower ear. So a <code>Camera</code> travels wherever a <code>Snapshot</code> goes, and every block that handles one sees it. Where an assumption about some data lives, you can see all of it at once.</p>
-<details class="spec"><summary>The text your agent writes</summary>
-<pre class="code" data-lang="sbtel">(message Selection (~ The selected ids. ~))
-(message Camera (~ Pan and zoom. ~))
-(message Snapshot (carries Selection Camera) (~ What undo restores. ~))
-(level :name "Snapshots"
-  (block History (port :in Snapshot :as undo))
-  (block Autosave (port :in Snapshot :as save)))
-(level :name "Drawing"
-  (block Canvas (port :out Camera :as view))
-  (block Picker (port :out Selection :as picked)))</pre>
+<pre class="code" data-lang="sbtel">(message Note (~ A note's title and text. ~))
+(message NoteSaved (carries Note) (~ A note reached the disk. ~))
+(level :name "App"
+  (block Editor (port :in NoteSaved) (port :out Note))
+  (block Preview (port :in Note)))
+(level :name "Stored and formatted notes"
+  (block Store (port :out NoteSaved))
+  (block Formatter))</pre>
 </details>
     </div>
     <figure class="fig">
       <div class="frame dgm" id="car">
-        <div class="lvl"><div class="lname"><span>Snapshots</span></div>
+        <div class="lvl"><div class="lname"><span>App</span></div>
           <div class="row">
-            <div class="blk" data-id="History" data-ports="Snapshot"><span class="ear top"><span class="pdot" style="background:var(--m3)" title="in undo: Snapshot"></span></span>History</div>
-            <div class="blk" data-id="Autosave" data-ports="Snapshot"><span class="ear top"><span class="pdot" style="background:var(--m3)" title="in save: Snapshot"></span></span>Autosave</div>
+            <div class="blk" data-id="Editor" data-ports="NoteSaved Note"><span class="ear top"><span class="pdot" data-p="in-NoteSaved" style="background:var(--m3)" title="in noteSaved: NoteSaved"></span></span>Editor<span class="ear bot"><span class="pdot" style="background:var(--m1)" title="out note: Note"></span></span></div>
+            <div class="blk" data-id="Preview" data-ports="Note"><span class="ear top"><span class="pdot" style="background:var(--m1)" title="in note: Note"></span></span>Preview</div>
           </div></div>
-        <div class="lvl"><div class="lname"><span>Drawing</span></div>
+        <div class="lvl"><div class="lname"><span>Stored and formatted notes</span></div>
           <div class="row">
-            <div class="blk" data-id="Canvas" data-ports="Camera">Canvas<span class="ear bot"><span class="pdot" style="background:var(--m4)" title="out view: Camera"></span></span></div>
-            <div class="blk" data-id="Picker" data-ports="Selection">Picker<span class="ear bot"><span class="pdot" style="background:var(--m1)" title="out picked: Selection"></span></span></div>
+            <div class="blk" data-id="Store" data-ports="NoteSaved">Store<span class="ear bot"><span class="pdot" data-p="out-NoteSaved" style="background:var(--m3)" title="out noteSaved: NoteSaved"></span></span></div>
+            <div class="blk" data-id="Formatter" data-ports="">Formatter</div>
           </div></div>
         <div class="band"><div class="lname"><span>Message types</span></div>
           <div class="types">
-            <button type="button" class="blk msg" data-type="Selection" data-c="var(--m1)"><span class="nm"><span class="pdot" style="background:var(--m1)"></span>Selection</span><span class="rel">The selected ids.</span></button>
-            <button type="button" class="blk msg" data-type="Camera" data-c="var(--m4)"><span class="nm"><span class="pdot" style="background:var(--m4)"></span>Camera</span><span class="rel">Pan and zoom.</span></button>
-            <button type="button" class="blk msg" data-type="Snapshot" data-c="var(--m3)" data-carries="Selection Camera"><span class="nm"><span class="pdot" style="background:var(--m3)"></span>Snapshot</span><span class="rel">What undo restores.</span><span class="ear bot cry" aria-label="Carries Selection and Camera"><span class="pdot" data-carry="Selection" style="background:var(--m1)"></span><span class="pdot" data-carry="Camera" style="background:var(--m4)"></span></span></button>
+            <button type="button" class="blk msg" data-type="NoteSaved" data-c="var(--m3)" data-carries="Note"><span class="nm"><span class="pdot" style="background:var(--m3)"></span>NoteSaved</span><span class="rel">A note reached the disk.</span><span class="ear bot cry" aria-label="Carries Note"><span class="pdot" data-carry="Note" style="background:var(--m1)"></span></span></button>
+            <button type="button" class="blk msg" data-type="Note" data-c="var(--m1)"><span class="nm"><span class="pdot" style="background:var(--m1)"></span>Note</span><span class="rel">A note&rsquo;s title and text.</span></button>
           </div>
         </div>
+        <svg class="edges" aria-hidden="true"></svg>
+        <span class="cur" id="car-cur" aria-hidden="true"><svg viewBox="0 0 22 24" width="22" height="24"><path d="M3 2l15.5 9.6-6.9 1.5 4 7.6-3 1.6-4-7.7L3 19.5z"/></svg></span>
       </div>
-      <div class="capline"><span class="grow" id="car-cap" aria-live="polite">Point at a type, or tab to it.</span><a class="btn quiet" href="play/#example=dataflow">Try it in the viewer</a></div>
-    </figure>
-  </div>
-</section>
-
-<!-- Check -->
-<section class="sec" id="check" aria-labelledby="t-check">
-  <h2 class="term" id="t-check">Check</h2>
-  <div class="pair">
-    <div class="txt">
-      <p class="lead">The picture can&rsquo;t silently lie.</p>
-      <p><code>edges.txt</code> is a file your agent creates. It maps the dependencies in the actual system: who names whom, one per line, with the file and line.</p>
-      <p><code>sbtel check</code> lets your agent verify the code against your design, and see where the implementation can be simplified or made to match it. It reports every upward, sideways or out-of-scope dependency, and points at the line.</p>
-      <p>When a break is deliberate, a <code># VIOLATION:</code> comment above the edge says why, and the report carries the reason.</p>
-<details class="spec"><summary>The text your agent writes</summary>
-<pre class="code" data-lang="sbtel">(block Notes
-  (level :name "Editing" (block Editor))
-  (level :name "Storage" (block Store)))</pre>
-</details>
-    </div>
-    <figure class="fig">
-<pre class="code wrapline term-out" aria-label="Terminal output of sbtel check"><span class="hl-prompt">$ </span>cat edges.txt
-Editor -&gt; Store   <span class="cmt"># src/editor.ts:12</span>
-Store -&gt; Editor   <span class="cmt"># src/store.ts:40</span>
-
-<span class="hl-prompt">$ </span>sbtel check notes.sbtel --bindings edges.txt
-edges.txt:2: Store -&gt; Editor: <span class="hl-warn">upward</span>: Store (level 1 "Storage" of Notes) binds upward to Editor (level 2 "Editing")  (<span class="hl-loc">src/store.ts:40</span>)
-notes.sbtel: 2 bindings, <span class="hl-warn">1 not allowed</span>, 0 explained</pre>
+      <div class="capline"><span class="grow" id="car-cap" aria-live="polite">Point at a type, or tab to it.</span><a class="btn quiet" href="play/#example=notes-flow">Try it in the viewer</a></div>
     </figure>
   </div>
 </section>

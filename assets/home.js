@@ -682,5 +682,53 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     t.addEventListener('blur', () => { pinned = null; show(null); });
     t.addEventListener('click', () => { pinned = t.dataset.type; show(pinned); });
   });
+
+  // It plays by itself until someone points at a type: the pointer picks NoteSaved and one travels from
+  // Store's port to Editor's; then it picks Note, which lights everything a note's text passes through.
+  const svg = $('svg.edges', fr), cur = $('#car-cur'), typeEl = n => types.find(x => x.dataset.type === n);
+  let auto = false, timers = [], raf = 0, manual = false;
+  const at = (ms, fn) => timers.push(setTimeout(() => { if (auto) fn(); }, ms));
+  function point(e, fx = .7, fy = .6) {
+    const f = fr.getBoundingClientRect(), r = e ? e.getBoundingClientRect() : null;
+    cur.style.transform = `translate(${(r ? r.left - f.left + r.width * fx : f.width - 46).toFixed(1)}px, ${(r ? r.top - f.top + r.height * fy : f.height - 150).toFixed(1)}px)`;
+  }
+  const click = () => { cur.classList.remove('click'); cur.offsetWidth; cur.classList.add('click'); };
+  // One NoteSaved on its way: out of Store's port, round the cards, into Editor's. Nothing in sbtel draws this
+  // line; it is here to show that the message moves and neither block names the other.
+  function travel() {
+    const o = box($('[data-p="out-NoteSaved"]', fr), svg), i = box($('[data-p="in-NoteSaved"]', fr), svg);
+    const X = Math.max(14, Math.min(box($('[data-id="Editor"]', fr), svg).x, box($('[data-id="Store"]', fr), svg).x) - 30), r = 10;
+    const sx = o.cx, sy = o.b + 5, yb = sy + 14, tx = i.cx, ty = i.y - 5, yt = ty - 16;
+    const d = `M${sx} ${sy}V${yb - r}Q${sx} ${yb} ${sx - r} ${yb}H${X + r}Q${X} ${yb} ${X} ${yb - r}V${yt + r}Q${X} ${yt} ${X + r} ${yt}H${tx - r}Q${tx} ${yt} ${tx} ${yt + r}V${ty}`;
+    svg.innerHTML = `<g class="route"><path d="${d}" style="stroke:var(--m3)"/></g><circle class="pkt" r="6" cx="${sx}" cy="${sy}" style="fill:var(--m3)"/>`;
+    const path = svg.querySelector('.route path'), pkt = svg.querySelector('.pkt'), L = path.getTotalLength(), t0 = performance.now(), D = 1700;
+    const step = t => {
+      if (!auto) return;
+      const k = clamp((t - t0) / D, 0, 1), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2, p = path.getPointAtLength(e * L);
+      pkt.setAttribute('cx', p.x); pkt.setAttribute('cy', p.y);
+      if (k < 1) raf = requestAnimationFrame(step); else { svg.classList.add('gone'); setTimeout(() => { svg.innerHTML = ''; svg.classList.remove('gone'); }, 500); }
+    };
+    raf = requestAnimationFrame(step);
+  }
+  const quiet = () => { timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); svg.innerHTML = ''; };
+  function play() {
+    quiet(); show(null); cur.style.opacity = 1; point(null);
+    at(900, () => point(typeEl('NoteSaved')));
+    at(1750, () => { click(); show('NoteSaved'); });
+    at(2300, travel);
+    at(5600, () => point(typeEl('Note')));
+    at(6450, () => { click(); show('Note'); });
+    at(10400, () => { show(null); point(null); });
+    at(12200, play);
+  }
+  const take = e => { if (!e.isTrusted || manual) return; manual = true; auto = false; quiet(); cur.style.opacity = 0; };
+  types.forEach(t => ['mouseenter', 'focus', 'pointerdown'].forEach(ev => t.addEventListener(ev, take, true)));
+  cur.style.opacity = 0;
+  if (reduce || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(es => {
+    const vis = es[es.length - 1].isIntersecting; if (manual) return;
+    if (vis && !auto) { auto = true; play(); }
+    if (!vis && auto) { auto = false; quiet(); show(null); cur.style.opacity = 0; }
+  }, { threshold: .4 }).observe(fr);
 })();
 })();

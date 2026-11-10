@@ -1,0 +1,10 @@
+; Notes: who sends and takes which message, and what a message carries.
+(block Notes
+  (message Note (~ A note's title and text. ~))
+  (message NoteSaved (carries Note) (~ A note reached the disk. ~))
+  (level :name "App"
+    (block Editor (port :in NoteSaved) (port :out Note))
+    (block Preview (port :in Note)))
+  (level :name "Stored and formatted notes"
+    (block Store (port :out NoteSaved))
+    (block Formatter)))

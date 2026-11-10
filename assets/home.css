@@ -371,3 +371,8 @@ details.spec > pre.code { margin-top:10px; }
 .txt p b { color:var(--ink); font-weight:600; }
 .check-out details .hint { margin:8px 0; }
 #lv .row .blk[data-id="Pricing"] + .blk[data-id="Tax"] { margin-left:34px; } /* room for the adjacency line */
+/* Messages: one message on its way, then gone. */
+#car .edges { transition:opacity .45s ease; }
+#car .edges.gone { opacity:0; }
+#car .edges .route path { stroke-dasharray:2 6; stroke-linecap:round; stroke-width:2; opacity:.7; }
+#car .row { gap:26px; }
