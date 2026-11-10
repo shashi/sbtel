@@ -262,7 +262,7 @@ details.spec > summary:hover { text-decoration:underline; }
 details.spec > pre.code { margin-top:10px; }
 
 /* ---------- Why: one design, the agent's view and yours, and the loop between them ---------- */
-.flow { margin:40px 0 48px; display:grid; grid-template-columns:minmax(0, 5fr) 70px minmax(0, 7fr); gap:0 18px; align-items:start; }
+.flow { margin:40px 0 48px; display:grid; grid-template-columns:minmax(0, 7fr) 70px minmax(0, 5fr); gap:0 18px; align-items:start; }
 .flow-h { display:flex; align-items:center; gap:10px; margin:0 0 12px; font-size:16px; font-weight:600; color:var(--ink); }
 .flow .who { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 11px; border-radius:13px; font:650 13px/1 var(--ff-ui); letter-spacing:.01em; }
 .flow .who::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
@@ -283,16 +283,22 @@ details.spec > pre.code { margin-top:10px; }
 .think .dots i { width:6px; height:6px; border-radius:50%; background:currentColor; animation:flow-dot 1s ease-in-out infinite; }
 .think .dots i:nth-child(2) { animation-delay:.16s; } .think .dots i:nth-child(3) { animation-delay:.32s; }
 @keyframes flow-dot { 0%, 70%, 100% { opacity:.25; transform:none; } 35% { opacity:1; transform:translateY(-3px); } }
-.flow-arrow { width:70px; height:40px; margin-top:120px; overflow:visible; }
+.flow-arrow { width:70px; height:40px; margin-top:120px; overflow:visible; transform:scaleX(-1); } /* from the text to the picture */
 .flow-arrow path { fill:none; stroke:var(--ink-2); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
-.flow-you .frame { padding-bottom:62px; }
+.flow-you .frame { padding-bottom:46px; }
+.flow-you .blk { transition:box-shadow .2s ease; }
+.flow-you .blk.sel { box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
 .flow-you .row { justify-content:flex-start; padding-left:5%; }
 .flow-you .cb { position:absolute; top:-9px; right:-9px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:var(--accent); color:#fff; font:700 11.5px/20px var(--ff-ui); text-align:center; box-shadow:0 0 0 2px var(--surface); }
 .flow-you .blk.ghost { border-style:dashed; border-color:var(--ok); box-shadow:0 0 0 3px var(--ok-soft); transition:opacity .35s ease, transform .35s ease, border-color .5s ease, box-shadow .5s ease; }
 .flow-you .blk.ghost.kept { border-style:solid; border-color:var(--frame-line); box-shadow:none; }
 .flow-you .newtag { position:absolute; top:-10px; right:-12px; padding:0 6px; border-radius:8px; background:var(--ok); color:#fff; font:700 10.5px/17px var(--ff-ui); letter-spacing:.03em; transition:opacity .4s ease; }
 .flow-you .ghost.kept .newtag { opacity:0; }
-.flow-you .chat { position:absolute; z-index:5; right:14px; top:40px; width:min(250px, 52%); padding:10px 12px 12px; border-radius:12px; background:var(--surface); border:1px solid var(--panel-line); box-shadow:0 10px 30px rgba(0,0,0,.14); font-size:14px; line-height:1.4; }
+/* The chat is a callout on the block it is about: beside it when there is room, under it otherwise. */
+.flow-you .chat { position:absolute; z-index:5; left:0; top:0; width:240px; padding:10px 12px 12px; border-radius:12px; background:var(--surface); border:1px solid var(--panel-line); box-shadow:0 10px 30px rgba(0,0,0,.16); font-size:14px; line-height:1.4; }
+.flow-you .chat::before { content:""; position:absolute; width:12px; height:12px; background:var(--surface); border:1px solid var(--panel-line); border-right:0; border-top:0; }
+.flow-you .chat.side::before { left:-7px; top:var(--tail, 24px); transform:rotate(45deg); }
+.flow-you .chat.below::before { top:-7px; left:var(--tail, 40px); transform:rotate(135deg); }
 .flow-you .chat p { margin:0; }
 .flow-you .chat .k { font-size:10.5px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
 .flow-you .chat .me { min-height:2.8em; padding:7px 9px; border:1px solid var(--panel-line); border-radius:9px; color:var(--ink); }
@@ -302,18 +308,30 @@ details.spec > pre.code { margin-top:10px; }
 .flow-you .chat .st { margin-top:5px; font-size:11.5px; font-weight:600; color:var(--ok); }
 .flow-you .chat .re { animation:flow-in .4s ease both; margin-top:7px; padding:7px 9px; border-radius:9px; background:var(--accent-soft); color:var(--ink); }
 .flow-you .chat .re b { display:block; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-ink); margin-bottom:2px; }
-.flow-you .vbar { position:absolute; z-index:4; left:50%; bottom:16px; transform:translate(-50%, 5px); display:flex; align-items:center; gap:10px; white-space:nowrap; padding:7px 8px 7px 14px; border-radius:11px; background:var(--ink); color:var(--surface); font-size:13.5px; box-shadow:0 8px 24px rgba(0,0,0,.2); }
-.flow-you .vbar.on { transform:translate(-50%, 0); }
-.flow-you .vbar .b { padding:5px 10px; border-radius:7px; background:color-mix(in srgb, var(--surface) 16%, transparent); font-weight:600; transition:transform .12s ease, box-shadow .2s ease; }
+/* The new version arrives as a notification: it floats over the frame's lower edge and springs in. */
+.flow-you .vbar { position:absolute; z-index:6; left:50%; bottom:-20px; display:flex; align-items:center; gap:10px; white-space:nowrap; padding:9px 9px 9px 14px; border-radius:13px;
+  background:var(--ink); color:var(--surface); font-size:13.5px; box-shadow:0 18px 44px rgba(0,0,0,.34), 0 3px 10px rgba(0,0,0,.2);
+  opacity:0; transform:translate(-50%, 26px) scale(.94); transition:opacity .25s ease, transform .5s cubic-bezier(.2, 1.5, .4, 1); pointer-events:none; }
+.flow-you .vbar.on { opacity:1; transform:translate(-50%, 0) scale(1); }
+.flow-you .vbar i { width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 0 var(--ok); animation:flow-ping 1.4s ease-out infinite; }
+@keyframes flow-ping { to { box-shadow:0 0 0 9px transparent; } }
+.flow-you .vbar .b { padding:5px 10px; border-radius:7px; background:color-mix(in srgb, var(--surface) 16%, transparent); font-weight:600; transition:transform .12s ease; }
 .flow-you .vbar .b.primary { background:var(--accent); color:#fff; }
-.flow-you .vbar .b.press { transform:scale(.93); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 40%, transparent); }
-.flow-cap { grid-column:1 / -1; margin:16px 0 0; font-size:15px; color:var(--muted); min-height:1.5em; text-align:center; }
+.flow-you .vbar .b.press { transform:scale(.92); }
+/* The reader's pointer: it glides to what is clicked, and a click rings. */
+.flow-you .cur { position:absolute; z-index:8; left:0; top:0; width:22px; height:24px; pointer-events:none; transition:transform .75s cubic-bezier(.5, .05, .2, 1), opacity .3s ease; filter:drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
+.flow-you .cur svg { display:block; fill:var(--ink); stroke:var(--surface); stroke-width:1.6; stroke-linejoin:round; }
+.flow-you .cur::after { content:""; position:absolute; left:-9px; top:-9px; width:24px; height:24px; border-radius:50%; border:2px solid var(--accent); opacity:0; }
+.flow-you .cur.click::after { animation:flow-click .45s ease-out; }
+@keyframes flow-click { from { opacity:.9; transform:scale(.3); } to { opacity:0; transform:scale(1.5); } }
+.flow { margin-bottom:64px; }
+.flow-cap { grid-column:1 / -1; margin:36px 0 0; font-size:15px; color:var(--muted); min-height:1.5em; text-align:center; }
 @media (max-width: 960px) {
   .flow { grid-template-columns:minmax(0, 1fr); gap:0; }
-  .flow-arrow { margin:10px auto 6px; transform:rotate(90deg); }
+  .flow-arrow { margin:34px auto 10px; transform:rotate(90deg) scaleX(-1); }
 }
 @media (max-width: 720px) {
-  .flow-you .chat { right:8px; width:min(230px, 62%); font-size:13px; }
+  .flow-you .chat { width:220px; font-size:13px; }
   .flow-you .vbar { font-size:12.5px; gap:6px; padding-left:10px; }
   .flow-you .vbar span:first-child { display:none; }
 }

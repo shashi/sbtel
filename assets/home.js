@@ -264,39 +264,59 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
 (() => {
   const fig = $('#flow'); if (!fig) return;
   const el = id => $('#flow-' + id), on = (id, v = true) => el(id).classList.toggle('on', v);
-  const TEXT = 'Keep older versions of a note too.';
-  const CAP = ['One design, two views of it.', 'You point at a block and say what you want.', 'Your agent reads the comment and thinks.',
+  const frame = el('frame'), target = el('target'), chat = el('chat'), cur = el('cur');
+  const TEXT = 'Editor parses Markdown too. Share it.';
+  const CAP = ['One design, two views of it.', 'You click a block and say what you want.', 'Your agent reads the comment and thinks.',
     'It edits the text, answers you, and proposes the change.', 'You look at what changed and accept it.'];
   let timers = [];
   const at = (ms, fn) => timers.push(setTimeout(fn, ms));
   const cap = i => { el('cap').textContent = CAP[i]; };
+  // The pointer's tip at a point of an element (fractions of its box), or resting in the frame's corner.
+  function point(e, fx = .5, fy = .5) {
+    const f = frame.getBoundingClientRect(), r = e ? e.getBoundingClientRect() : null;
+    const x = r ? r.left - f.left + r.width * fx : f.width - 60, y = r ? r.top - f.top + r.height * fy : f.height - 70;
+    cur.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+  }
+  const click = () => { cur.classList.remove('click'); cur.offsetWidth; cur.classList.add('click'); };
+  // The callout sits beside the block when the frame has room, and under it otherwise; its tail points at the block.
+  function placeChat() {
+    const f = frame.getBoundingClientRect(), r = target.getBoundingClientRect(), w = chat.offsetWidth;
+    const side = f.right - r.right > w + 30;
+    chat.classList.toggle('side', side); chat.classList.toggle('below', !side);
+    if (side) { chat.style.left = (r.right - f.left + 16) + 'px'; chat.style.top = (r.top - f.top - 14) + 'px'; chat.style.setProperty('--tail', (14 + r.height / 2 - 6) + 'px'); }
+    else { const left = clamp(r.left - f.left + r.width / 2 - 60, 8, f.width - w - 8); chat.style.left = left + 'px'; chat.style.top = (r.bottom - f.top + 14) + 'px'; chat.style.setProperty('--tail', (r.left - f.left + r.width / 2 - left - 6) + 'px'); }
+  }
   function reset() {
     timers.forEach(clearTimeout); timers = [];
     ['cb', 'hist', 'chat', 'sent', 'bar', 'think'].forEach(k => on(k, false)); el('reply').hidden = true;
-    el('typed').textContent = ''; el('chat').classList.remove('done');
+    el('typed').textContent = ''; chat.classList.remove('done'); target.classList.remove('sel');
     el('new').hidden = true; el('new').classList.remove('kept'); el('hist').classList.remove('kept');
     el('last').textContent = '    (block Store)))'; el('accept').classList.remove('press');
-    cap(0);
+    cur.style.opacity = reduce ? 0 : 1; point(null); placeChat(); cap(0);
   }
   // The proposal as it stands before Accept: also what is shown when motion is off.
   function proposed() {
-    on('chat'); el('chat').classList.add('done'); el('typed').textContent = TEXT; on('sent'); on('cb'); el('reply').hidden = false;
+    target.classList.add('sel'); on('chat'); chat.classList.add('done'); el('typed').textContent = TEXT; on('sent'); on('cb'); el('reply').hidden = false;
     el('last').textContent = '    (block Store)'; el('new').hidden = false; on('hist'); on('bar');
   }
   function play() {
     reset();
-    at(1300, () => { cap(1); on('chat'); });                                   // you comment on Store
-    [...TEXT].forEach((_, i) => at(1900 + i * 42, () => { el('typed').textContent = TEXT.slice(0, i + 1); }));
-    const sent = 1900 + TEXT.length * 42 + 450;
-    at(sent, () => { el('chat').classList.add('done'); on('sent'); on('cb'); });
+    at(500, () => { cap(1); point(target, .62, .6); });                        // the pointer goes to Preview
+    at(1350, () => { click(); target.classList.add('sel'); });
+    at(1600, () => { placeChat(); on('chat'); });                              // its chat opens, as a callout on it
+    [...TEXT].forEach((_, i) => at(2100 + i * 42, () => { el('typed').textContent = TEXT.slice(0, i + 1); }));
+    const sent = 2100 + TEXT.length * 42 + 450;
+    at(sent, () => { chat.classList.add('done'); on('sent'); on('cb'); });
     at(sent + 700, () => { cap(2); on('think'); });                            // the agent thinks
     at(sent + 3000, () => { cap(3); on('think', false); el('last').textContent = '    (block Store)'; el('new').hidden = false; });
-    at(sent + 3500, () => { el('reply').hidden = false; });
-    at(sent + 4100, () => { on('hist'); on('bar'); });                         // the proposal, as a diff on the picture
-    at(sent + 6900, () => { cap(4); el('accept').classList.add('press'); });   // you accept it
-    at(sent + 7250, () => { el('accept').classList.remove('press'); on('bar', false); el('hist').classList.add('kept'); el('new').classList.add('kept'); });
-    at(sent + 8200, () => on('chat', false));
-    at(sent + 11400, play);
+    at(sent + 3400, () => { el('reply').hidden = false; });
+    at(sent + 5600, () => { on('chat', false); target.classList.remove('sel'); });
+    at(sent + 5900, () => { on('hist'); on('bar'); });                         // the proposal: a new block, and a notification
+    at(sent + 7300, () => { cap(4); point(el('accept'), .55, .6); });          // the pointer goes to Accept
+    at(sent + 8300, () => { click(); el('accept').classList.add('press'); });
+    at(sent + 8650, () => { el('accept').classList.remove('press'); on('bar', false); el('hist').classList.add('kept'); el('new').classList.add('kept'); });
+    at(sent + 9300, () => point(null));
+    at(sent + 12600, play);
   }
   if (reduce) { reset(); proposed(); cap(3); return; }
   reset();
