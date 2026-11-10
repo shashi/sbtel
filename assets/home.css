@@ -80,7 +80,8 @@
 .seg button { border:0; background:none; padding:6px 12px; border-radius:7px; font-size:14px; color:var(--muted); cursor:pointer; white-space:nowrap; }
 .seg button:hover { color:var(--ink); }
 .seg button[aria-pressed="true"] { background:var(--surface); color:var(--ink); font-weight:600; box-shadow:0 0 0 1px var(--panel-line); }
-.herocap { margin:5px 0 0; font-size:14.5px; line-height:1.5; color:var(--ink-2); min-height:4.5em; }
+.herocap { margin:7px 0 0; font-size:15.5px; line-height:1.5; color:var(--ink-2); font-style:italic; opacity:0; transition:opacity .6s ease; }
+.herocap.on { opacity:1; transition-duration:.25s; }
 pre.diff { padding:12px 0; }
 pre.diff span { display:inline-block; min-width:100%; padding:0 16px; }
 pre.diff .add { background:var(--ok-soft); color:var(--ink); }
@@ -216,7 +217,6 @@ details[open] > summary { margin-bottom:10px; }
 @media (max-width: 960px) {
   .hero-top, .demo, .pair, .plug { grid-template-columns:minmax(0, 1fr); gap:28px; }
   .demo { margin-top:4px; }
-  .herocap { min-height:0; }
   /* Narrow: the words, then the picture, then the spec text. */
   .pair { display:flex; flex-direction:column; gap:0; }
   .pair > .fig { margin:12px 0 24px; }
