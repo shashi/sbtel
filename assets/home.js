@@ -233,11 +233,11 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     // turn red, then give way to the adjacency line and the message's ports; last, the calls the levels
     // already say fade out.
     during(2200, draw);
-    at(2200, () => gasp.classList.add('on')); at(3200, () => gasp.classList.remove('on')); // the blocks have landed: one second of relief
     at(1900, () => tween('red', 1, 250));
     at(2700, () => tween('fix', 1, 800));
     at(3300, () => partner(true)); at(4900, () => partner(false));
     at(4300, () => tween('thin', 1, 900));
+    at(5400, () => gasp.classList.add('on')); at(6400, () => gasp.classList.remove('on')); // everything has settled: one second of relief
   }
   // It goes back and forth by itself while it is on screen, waits while it is pointed at or has the focus,
   // and stops for good once a picture is chosen by hand.
