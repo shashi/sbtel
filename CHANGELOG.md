@@ -31,7 +31,11 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   toolbar's forward arrow (a reply to a whole review puts one on Review). The forward arrow walks the
   threads with new replies, by place by default (the diagram's reading order from where you are, so
   neighbours come together); the back arrow returns through the threads you have read, and forward goes
-  on from there. The count between them opens the order: by place, newest first, longest waiting.
+  on from there. The count between them opens the order. The default, "Nearest, then where I was", finishes
+  the place you are in (the block, then its neighbours, then outward) before taking you elsewhere, and
+  then prefers the region you were in before; "Nearest, then from the beginning" and "From the beginning"
+  follow the arrangement of blocks instead; newest first and longest waiting remain. The arrow's tooltip
+  names the thread the next press opens.
 - **A closed block is one concept.** Its bubble counts every thread inside it, and its chat shows them
   together in the order they were written, each run under the name of its part. Pressing a part's name
   opens the block and shows that thread alone. The walk treats a closed block as one stop.
