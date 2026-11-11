@@ -12,6 +12,9 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- **Comment on a file.** The file viewer has a comment box. The comment goes on the thread of the block
+  that names the file (or, for a file opened from a comment, on that comment's thread) and carries the
+  file as a ref. Select lines in the source to send `file:9-11`; select words on a rendered page to quote them.
 - **Reading replies in rounds.** The first press of the comments button fixes the set of threads to read;
   replies that arrive meanwhile wait (no toast, counted as "+n") until that set is read, and the last one
   ends with "Round done". The caret beside the button turns rounds off and picks the order: by place (the

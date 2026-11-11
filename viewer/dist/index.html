@@ -299,6 +299,13 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 .refp pre.reft span.l::before { content:counter(ln); display:inline-block; width:4.5ch; margin-right:14px; text-align:right; color:var(--muted); opacity:.7; user-select:none; }
 .refp pre.reft span.l.hl { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
 .refp header a.btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
+.refp .refsay { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; padding:10px 12px; border-top:1px solid var(--panel-line); }
+.refp .refsay textarea { flex:1; min-width:180px; min-height:36px; max-height:24vh; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:9px; background:var(--surface); padding:8px 11px; font:inherit; font-size:14px; color:var(--ink); resize:none; field-sizing:content; }
+.refp .refsay textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+.refp .refsay .keys { align-self:center; font-size:12px; color:var(--muted); white-space:nowrap; }
+.refp .refsay .pin { flex-basis:100%; display:inline-flex; align-items:center; gap:4px; width:max-content; max-width:100%; font-size:12.5px; color:var(--accent-ink); }
+.refp .refsay .pin button { border:0; background:none; padding:2px; color:var(--muted); cursor:pointer; display:inline-flex; } .refp .refsay .pin svg.i { width:12px; height:12px; }
+@media (max-width: 520px) { .refp .refsay .keys { display:none; } }
 .refp .refbody.page { overflow:hidden; display:flex; }
 .refp iframe.reff { flex:1; width:100%; height:100%; border:0; background:#fff; }
 .refp .md { max-width:70ch; padding:22px 28px 40px; font-size:15px; line-height:1.6; color:var(--ink); overflow-wrap:break-word; }
@@ -2438,6 +2445,11 @@ const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0))
 // A shape's dot and a behavior's badge take one of six colours by name, unless the reader chose a hue for
 // that one in its Edit dialog. Choices are kept in this browser for the spec (dotKey, set by the page's mode).
 let dotKey = () => 'sbtel-dots';
+// The name a comment's thread goes by, for a thing in the model.
+function targetKey(id) { return id.startsWith('β:') ? 'beh:' + id.slice(2) : id.startsWith('μ:') ? 'msg:' + id.slice(2) : 'block:' + id; }
+// The comments set these, for the file viewer (declared after them): say something on a thread, and which
+// thread is open now.
+let commentOn = null, threadOpen = () => null;
 let redraw = () => {}; // the canvas sets it: draw again, for a choice that changes how things look and nothing else
 const dotRead = () => { try { return JSON.parse(localStorage.getItem(dotKey()) || '{}') || {}; } catch (e) { return {}; } };
 const dotHue = id => { const h = dotRead()[id]; return h == null ? null : h; };
@@ -3168,7 +3180,6 @@ vp.addEventListener('pointerout', e => { if (e.target.closest('[data-msg], [data
 // @sbtel begin App.Canvas
 // ---------- Selection, handles, action strip ----------
 function connectorKey(c) { return c.a + '|' + c.b; }
-function targetKey(id) { return id.startsWith('β:') ? 'beh:' + id.slice(2) : id.startsWith('μ:') ? 'msg:' + id.slice(2) : 'block:' + id; }
 // ---------- Who can talk to whom over one shape ----------
 function talkTargets(t) {
   const m = state.model, hits = [];
@@ -4256,6 +4267,8 @@ function chatRow(c) {
   return `<li data-id="${esc(c.id)}"${c.status === 'sent' || c.status === 'sending' ? '' : ' class="mine"'}><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${whenText(c.at)}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
 const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || chat.key === key));
+commentOn = (key, text) => { chatAdd(key, text, 'send'); refreshChat(); return targetLabel(key); };
+threadOpen = () => chatOpen() ? chat.key : null;
 // Whether the open chat is showing the thread on this target (its own, or one inside its closed block).
 const chatShows = target => chatOpen() && inScope(chat.key, target);
 // Draw the open chat's thread again and show its end; the popover and what is typed in it stay.
@@ -4711,7 +4724,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('.refc[data-ref]'); if (!b) return; e.stopPropagation();
   const r = { path:b.dataset.ref, sketch:'', ...refParts(b.dataset.ref) };
   if (isSpec(r.path)) { openSpec(r); return; }
-  openRefs(null, 0, { name:'Files', refs:[r], addTo: refAddTo() });
+  openRefs(null, 0, { name:'Files', refs:[r], addTo: refAddTo(), thread: threadOpen() });
 }, true);
 document.addEventListener('dragstart', e => {
   const b = e.target.closest?.('.refc[data-ref]'); if (!b) return;
@@ -4873,10 +4886,34 @@ function openRefs(id, first, given) {
   const p = document.createElement('div'); p.className = 'codep refp'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); p.setAttribute('aria-label', 'Files of ' + n.name);
   p.innerHTML = `<header><b>${esc(n.name)}</b><span>${n.refs.length} file${n.refs.length === 1 ? '' : 's'}</span><span class="spacer"></span><button class="btn" data-k="spec" hidden>Open diagram</button>${n.addTo ? `<button class="btn" data-k="add">Add to ${esc(state.model.node(n.addTo)?.name || 'block')}</button>` : ''}<button class="btn" data-k="mode" hidden></button><a class="btn" data-k="out" target="_blank" rel="noopener noreferrer" hidden>${ICON.open}Open in a new tab</a><button class="btn primary" data-k="close">Close</button></header>` +
     (n.refs.length > 1 ? `<nav class="reflist" aria-label="Files">${n.refs.map((r, i) => `<button type="button" data-i="${i}">${esc(r.path)}</button>`).join('')}</nav>` : '') +
-    `<p class="refnote"></p><div class="refbody" tabindex="0"></div>`;
+    `<p class="refnote"></p><div class="refbody" tabindex="0"></div>` +
+    `<form class="refsay" hidden><span class="pin" hidden></span><textarea rows="1" placeholder="Comment on this file. Select lines or text first to point at a part." aria-label="Comment on this file"></textarea><span class="keys">${kb('⌘ ↵')}</span><button class="btn primary" type="submit">Send</button></form>`;
   document.body.append(scrim, p);
   const body = p.querySelector('.refbody'), note = p.querySelector('.refnote');
   let shown = -1, cur = null, made = null;
+  // A comment on the file goes on the thread of the thing that names it (or, for a file opened from a
+  // comment, on that comment's thread), with the file as its ref: the lines selected in its source, or the
+  // words selected on its page, say which part.
+  const say = p.querySelector('.refsay'), sayT = say.querySelector('textarea'), pinEl = say.querySelector('.pin'), sayKey = given ? given.thread : (state.model.node(id) ? targetKey(id) : null);
+  let pin = null;
+  const setPin = v => { pin = v; pinEl.hidden = !v; pinEl.innerHTML = v ? `${esc(v.lines ? (v.lines[0] === v.lines[1] ? 'Line ' + v.lines[0] : `Lines ${v.lines[0]} to ${v.lines[1]}`) : '“' + (v.quote.length > 42 ? v.quote.slice(0, 41) + '…' : v.quote) + '”')}<button type="button" aria-label="Comment on the whole file instead">${ICON.close}</button>` : ''; };
+  const pick = () => {
+    const sel = getSelection(); if (!sel || sel.isCollapsed || !sel.rangeCount || !body.contains(sel.anchorNode) || !body.contains(sel.focusNode)) return;
+    const pre = body.querySelector('pre.reft');
+    if (pre) {
+      const ls = [...pre.children], at = nd => ls.indexOf((nd.nodeType === 1 ? nd : nd.parentElement).closest('span.l')) + 1, a = at(sel.anchorNode), b = at(sel.focusNode);
+      if (a && b) setPin({ lines:[Math.min(a, b), Math.max(a, b)] });
+    } else { const q = sel.toString().replace(/\s+/g, ' ').trim(); if (q) setPin({ quote: q.slice(0, 240) }); }
+  };
+  body.addEventListener('mouseup', () => setTimeout(pick)); body.addEventListener('keyup', pick); body.addEventListener('touchend', () => setTimeout(pick, 50));
+  pinEl.addEventListener('click', e => { if (e.target.closest('button')) setPin(null); });
+  say.addEventListener('submit', e => {
+    e.preventDefault(); const text = sayT.value.trim(), r = cur && cur.r; if (!text || !r || !sayKey || !commentOn) { sayT.focus(); return; }
+    const path = r.file + (pin && pin.lines ? ':' + pin.lines[0] + (pin.lines[1] > pin.lines[0] ? '-' + pin.lines[1] : '') : '');
+    const on = commentOn(sayKey, `(ref ${/^[^\s()";~]+$/.test(path) ? path : JSON.stringify(path)})${pin && pin.quote ? ` on “${pin.quote}”:` : ''} ${text}`);
+    sayT.value = ''; setPin(null); toast(`Sent on ${on}.`);
+  });
+  sayT.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !e.isComposing) { e.preventDefault(); say.requestSubmit(); } });
   const modeB = p.querySelector('[data-k="mode"]'), outB = p.querySelector('[data-k="out"]');
   const drop = () => { if (made) URL.revokeObjectURL(made); made = null; };
   // What is loaded, drawn: as itself (a page, a picture, an invite) or, for text, as its source.
@@ -4911,7 +4948,7 @@ function openRefs(id, first, given) {
     body.scrollTop = 0;
   }
   async function show(i) {
-    const r = n.refs[i]; shown = i; cur = null; drop(); modeB.hidden = outB.hidden = true; body.classList.remove('page');
+    const r = n.refs[i]; shown = i; cur = null; drop(); modeB.hidden = outB.hidden = true; body.classList.remove('page'); setPin(null); say.hidden = true;
     p.querySelectorAll('.reflist button').forEach((b, k) => { if (k === i) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
     note.textContent = (n.refs.length > 1 ? '' : r.path + (r.sketch ? '. ' : '')) + (r.sketch || ''); note.hidden = !note.textContent;
     p.querySelector('[data-k="spec"]').hidden = !isSpec(r.path);
@@ -4923,7 +4960,7 @@ function openRefs(id, first, given) {
     else if (d.error) body.innerHTML = `<p><code>${esc(r.file)}</code> could not be read. It must be a file beside or below the spec, named in the version the agent last pushed.</p>`;
     else if (d.tooLarge) body.innerHTML = `<p><code>${esc(r.file)}</code> is too large to show here (${Math.round(d.size / 1024)} KB).</p>`;
     else if (d.binary) body.innerHTML = `<p><code>${esc(r.file)}</code> is not text, so it is not shown.</p>`;
-    else { const kind = d.pdf ? 'pdf' : d.image ? '' : refKind(r.file); cur = { r, d, kind, mode: r.from ? 'src' : 'view' }; draw(); }
+    else { const kind = d.pdf ? 'pdf' : d.image ? '' : refKind(r.file); cur = { r, d, kind, mode: r.from ? 'src' : 'view' }; draw(); say.hidden = !(sayKey && commentOn); }
   }
   const close = () => { document.removeEventListener('keydown', onKey, true); drop(); p.remove(); scrim.remove(); };
   const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
@@ -4931,7 +4968,7 @@ function openRefs(id, first, given) {
   p.addEventListener('click', e => {
     const k = e.target.closest('[data-k]')?.dataset.k;
     if (k === 'close') close();
-    if (k === 'mode' && cur) { cur.mode = cur.mode === 'view' ? 'src' : 'view'; draw(); }
+    if (k === 'mode' && cur) { cur.mode = cur.mode === 'view' ? 'src' : 'view'; setPin(null); draw(); }
     if (k === 'spec') openSpec(n.refs[shown]);
     if (k === 'add' && addRef(n.addTo, n.refs[shown].path)) close();
     const b = e.target.closest('.reflist button'); if (b) show(+b.dataset.i);
