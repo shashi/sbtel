@@ -1,0 +1,82 @@
+<!-- title: Steering with sbtel -->
+<!-- description: Steering with sbtel: how to direct several coding agents from one diagram without losing your attention to them, and why sbtel is built the way it is. -->
+<h1>Steering with sbtel</h1>
+<p class="intro">Your agents can write faster than you can read. What they cannot do is decide what should be built. That part is yours, and it runs on the one thing that does not scale: your attention. This guide shows how to steer several agents from one diagram, and why sbtel is built to spend your attention with care.</p>
+
+<figure class="steer lead" data-scene="cycle">
+  <div class="st-stage" role="img" aria-label="Animation: a comment is written on the Sync block. Later a dot appears on two blocks. One key opens each reply in turn, and the reply button goes dim when none are left."></div>
+  <figcaption>The whole loop. You say something on a block, go back to your work, and read the answers when you choose to.</figcaption>
+</figure>
+
+<h2 id="situation">The situation</h2>
+<p>In 1962 Douglas Engelbart set out to build tools for <a href="https://www.lri.fr/~mbl/FundHCI/papers/Englebart-Augmenting62.pdf">&ldquo;increasing the capability of a man to approach a complex problem situation&rdquo;</a>. He meant the person, not the machine. Sixty years later the machines write the code, and the complex situation is a new one: several agents working at once, each ready with a question, and you in the middle of them.</p>
+<p>Lisanne Bainbridge described where this goes wrong in 1983, in factories and control rooms. Automate the work, and the person who remains is left to watch it. <a href="https://doi.org/10.1016/0005-1098(83)90046-8">Watching is the job people are worst at</a>: attention cannot be held on something that mostly runs by itself, and the skills needed to step in fade from lack of use.</p>
+<p>Steering is the alternative to watching. You do not follow everything your agents do. You hold the direction, and you say so at the few places where it matters.</p>
+
+<h2 id="map">One map</h2>
+<p>sbtel gives you and your agents one diagram of the system: its parts, the levels they sit on, and what passes between them. Everything said about a part is said on that part, and stays there.</p>
+<p>The diagram is doing real work. Jill Larkin and Herbert Simon showed <a href="https://doi.org/10.1111/j.1551-6708.1987.tb00863.x">why a diagram can beat the same facts written as sentences</a>: it puts together in space what belongs together, so you find things by looking, not by holding them in your head. A chat scrolls away. A map stays where you left it.</p>
+
+<h2 id="how">How to steer</h2>
+<p>Six habits. Each takes a minute to learn, and together they are the whole skill.</p>
+
+<h3 id="say">Say it where it belongs</h3>
+<p>Select a block, press <kbd>C</kbd> and write. The comment lives on that block, so you never have to explain where you mean, and your agent reads it with the block it is about.</p>
+<figure class="steer" data-scene="say">
+  <div class="st-stage" role="img" aria-label="Animation: the Store block is selected, the C key opens a comment box beside it, a comment is typed and sent, and its status changes from sent to seen by the agent."></div>
+  <figcaption>Select, <kbd>C</kbd>, write, send. The ticks tell you when the agent has it.</figcaption>
+</figure>
+
+<h3 id="wait">Let replies wait</h3>
+<p>Nothing in sbtel announces itself. When an agent answers, a dot appears on the block and on the reply button, and that is all: no sound, no banner, nothing sliding in. You look when you reach a stopping point of your own.</p>
+<figure class="steer" data-scene="wait">
+  <div class="st-stage" role="img" aria-label="Animation: while the Editor block stays selected, a small dot appears on the Preview block and then on the Index block. Nothing else on the page moves."></div>
+  <figcaption>Two agents have answered. The only things that changed are two dots and a count.</figcaption>
+</figure>
+
+<h3 id="walk">Walk the replies</h3>
+<p>Press <kbd>]</kbd>. sbtel takes you to the nearest new reply and opens it. Press again for the next one. It finishes the neighbourhood you are in before it moves you anywhere else, and when nothing is left the button goes dim. <kbd>[</kbd> takes you back.</p>
+<figure class="steer" data-scene="walk">
+  <div class="st-stage" role="img" aria-label="Animation: the right bracket key is pressed three times. Each press glides to the next block with a new reply and opens it. After the third, the reply button is dimmed."></div>
+  <figcaption>Three replies, three presses. The count runs down to nothing, and then you are done.</figcaption>
+</figure>
+
+<h3 id="ack">Read a nod as a nod</h3>
+<p>An agent with nothing to ask answers with a nod: a 👍 on your comment. It shows in the thread and lights no dot, so &ldquo;got it&rdquo; never costs you a visit. A dot always means there are words to read.</p>
+<figure class="steer" data-scene="ack">
+  <div class="st-stage" role="img" aria-label="Animation: a comment on Store receives a thumbs-up and no dot appears. A question on Index receives a written reply, and a dot appears on Index and on the reply button."></div>
+  <figcaption>Store got a nod and stays quiet. Index got an answer and shows a dot.</figcaption>
+</figure>
+
+<h3 id="close">Close what you are not working on</h3>
+<p>Press <kbd>Space</kbd> on a block to close it. Everything said inside it becomes one thread on the closed block: one dot, one stop on the walk. Open it again when that part is your work.</p>
+<figure class="steer" data-scene="close">
+  <div class="st-stage" role="img" aria-label="Animation: the Sync block holds three blocks, two of them with a dot. Space closes Sync into one card with one dot, and its thread lists the two conversations under the names of the blocks they belong to."></div>
+  <figcaption>Two conversations fold into one. The thread says which part each belongs to.</figcaption>
+</figure>
+
+<h3 id="order">Let the layout set the order</h3>
+<p>The walk starts with what is nearest to you. If you would sooner have it start over each time, open the menu on the reply count and choose <em>from the beginning</em>. Then the diagram is your priority list: put a block earlier and its replies reach you first.</p>
+<figure class="steer" data-scene="order">
+  <div class="st-stage" role="img" aria-label="Animation: with the order set to from the beginning, the Index block is dragged in front of the Store block, and the next press of the right bracket key opens Index first."></div>
+  <figcaption>With <em>from the beginning</em> chosen: move Index ahead of Store, and Index is read first.</figcaption>
+</figure>
+
+<h2 id="why">Why it is built this way</h2>
+<p class="argue">Every habit above protects the same thing. Gloria Mark and her colleagues interrupted people in the middle of their work and found that they <a href="https://doi.org/10.1145/1357054.1357072">finished just as fast, and paid for it in stress, frustration and effort</a>. So sbtel never interrupts: a reply is a dot, and a dot can wait. Sophie Leroy found that when you leave one task for another, <a href="https://doi.org/10.1016/j.obhdp.2009.04.002">part of your attention stays behind</a>, and the new task gets what is left. So the walk finishes one neighbourhood before it moves you, and a file, a picture or a calendar invite that an agent points to opens on the map, not in another window. E. J. Masicampo and Roy Baumeister found that an unfinished goal <a href="https://doi.org/10.1037/a0024192">keeps intruding on your thoughts until it has a plan</a>. So every open question has a place, on its block, and the queue has an end you can reach. Mark Weiser and John Seely Brown asked for technology that <a href="https://calmtech.com/papers/coming-age-calm-technology">&ldquo;will move easily from the periphery of our attention, to the center, and back&rdquo;</a>. That is what a dot is. And what sbtel leaves out is everything that would steer for you: your pace, your priorities and your breaks stay your own.</p>
+
+<h2 id="try">Try it</h2>
+<p>Say this to your coding agent:</p>
+<div class="install-line"><pre class="code wrapline">Hey Claude, could you install sbtel (shashi.biz/sbtel/llm.txt) for me and show me the plan in it?</pre></div>
+<p>When the diagram opens, select a block, press <kbd>C</kbd> and say what you want. <a href="../using/">Using sbtel</a> covers installing by hand and everything on the canvas, and the <a href="../../play/">playground</a> lets you try the canvas with no agent at all.</p>
+
+<h2 id="sources">Sources</h2>
+<ul class="sources">
+  <li>Douglas C. Engelbart, <a href="https://www.lri.fr/~mbl/FundHCI/papers/Englebart-Augmenting62.pdf"><em>Augmenting Human Intellect: A Conceptual Framework</em></a>. Stanford Research Institute, 1962.</li>
+  <li>Lisanne Bainbridge, <a href="https://doi.org/10.1016/0005-1098(83)90046-8">&ldquo;Ironies of Automation&rdquo;</a>. <em>Automatica</em> 19(6), 1983.</li>
+  <li>Jill H. Larkin and Herbert A. Simon, <a href="https://doi.org/10.1111/j.1551-6708.1987.tb00863.x">&ldquo;Why a Diagram Is (Sometimes) Worth Ten Thousand Words&rdquo;</a>. <em>Cognitive Science</em> 11, 1987.</li>
+  <li>Gloria Mark, Daniela Gudith and Ulrich Klocke, <a href="https://doi.org/10.1145/1357054.1357072">&ldquo;The Cost of Interrupted Work: More Speed and Stress&rdquo;</a>. CHI 2008.</li>
+  <li>Sophie Leroy, <a href="https://doi.org/10.1016/j.obhdp.2009.04.002">&ldquo;Why Is It So Hard to Do My Work? The Challenge of Attention Residue When Switching Between Work Tasks&rdquo;</a>. <em>Organizational Behavior and Human Decision Processes</em> 109(2), 2009.</li>
+  <li>E. J. Masicampo and Roy F. Baumeister, <a href="https://doi.org/10.1037/a0024192">&ldquo;Consider It Done! Plan Making Can Eliminate the Cognitive Effects of Unfulfilled Goals&rdquo;</a>. <em>Journal of Personality and Social Psychology</em>, 2011.</li>
+  <li>Mark Weiser and John Seely Brown, <a href="https://calmtech.com/papers/coming-age-calm-technology">&ldquo;The Coming Age of Calm Technology&rdquo;</a>. Xerox PARC, 1996.</li>
+</ul>
