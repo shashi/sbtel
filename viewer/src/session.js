@@ -19,7 +19,7 @@ function sessionComments({ version, closed }) {
     cmtCount();
     const u = new Set(state.comments.filter(unread).map(c => c.target));
     (root || document).querySelectorAll('.cbub[data-thread]').forEach(b => {
-      const on = u.has(b.dataset.thread); if (on === b.classList.contains('unread')) return;
+      const on = [...u].some(t => inScope(b.dataset.thread, t)); if (on === b.classList.contains('unread')) return;
       b.classList.toggle('unread', on);
       const l = (b.getAttribute('aria-label') || '').replace(/, new reply$/, ''); if (l) b.setAttribute('aria-label', l + (on ? ', new reply' : ''));
     });
@@ -27,7 +27,7 @@ function sessionComments({ version, closed }) {
   function markRead(key) {
     if (!C.read) return; // the log has not loaded yet: its first load says what is read
     let ch = false;
-    state.comments.forEach(c => { if (c.target === key && unread(c)) { C.read[c.sid] = c.replies.length; ch = true; } });
+    state.comments.forEach(c => { if (inScope(key, c.target) && unread(c)) { C.read[c.sid] = c.replies.length; ch = true; } });
     if (ch) { if (RKEY) store.set(RKEY, C.read); markUnread(); }
   }
   const errText = async res => { try { return (await res.json()).error || 'HTTP ' + res.status; } catch (e) { return 'HTTP ' + res.status; } };
@@ -85,9 +85,9 @@ function sessionComments({ version, closed }) {
     if (!c) return;
     (c.replies = c.replies || []).push({ text: d.text, at: Date.parse(d.at) || Date.now() });
     render(); refreshChat(); // explicitly: diff mode draws with its own render
-    if (chatOpen(c.target)) markRead(c.target); // it is being read now: shown from its start, marked new this once
+    if (chatShows(c.target)) markRead(chat.key); // it is being read now: shown from its start, marked new this once
     markUnread(); changed();
-    if (!chatOpen(c.target)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
+    if (!chatShows(c.target) && !replyHeld(c)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
   }
   // The app hooks (§6.5). Call once, from the mode's boot().
   function hook() {

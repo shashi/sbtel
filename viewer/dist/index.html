@@ -608,6 +608,16 @@ body.diffmode .help .norm { display:none; }
 .pop.chat .acts .btn.quiet:hover { background:var(--chip); color:var(--ink); }
 @media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
 .tb.cmtbtn { position:relative; }
+.tb.cmtbtn #cmtN i { font-style:normal; font-weight:400; color:var(--muted); margin-left:5px; }
+.tb.cmtmore { min-width:20px; width:20px; padding:0; margin-left:-4px; color:var(--muted); } .tb.cmtmore svg.i { width:13px; height:13px; }
+.walkm { position:fixed; z-index:2100; width:268px; box-sizing:border-box; padding:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; box-shadow:0 12px 36px var(--shadow); font-size:13.5px; }
+.walkm label { display:flex; gap:10px; align-items:flex-start; padding:7px 8px; border-radius:8px; cursor:pointer; } .walkm label:hover { background:var(--surface); }
+.walkm input { margin:3px 0 0; accent-color:var(--accent); flex:none; } .walkm b { display:block; font-weight:600; } .walkm small { display:block; color:var(--muted); font-size:12.5px; line-height:1.35; }
+.walkm fieldset { border:0; border-top:1px solid var(--panel-line); margin:6px 0 0; padding:6px 0 0; } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
+.pop.chat .chh .in { flex:none; font-size:12.5px; color:var(--muted); }
+.pop.chat ul.thread li.where { position:sticky; top:-1px; z-index:1; padding:6px 0 4px; margin:0; background:var(--panel); border:0; }
+.pop.chat ul.thread li.where button { border:0; background:var(--surface); color:var(--ink-2); font:600 12px var(--ff-ui, inherit); padding:3px 9px; border-radius:999px; cursor:pointer; } .pop.chat ul.thread li.where button:disabled { cursor:default; color:var(--muted); }
+.pop.chat ul.thread li.where button:not(:disabled):hover { background:var(--accent-soft); color:var(--accent-ink); }
 .tb.cmtbtn.unread::after { content:""; position:absolute; top:3px; right:3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
 .allc { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
 .allc button { width:100%; display:grid; grid-template-columns:1fr auto; gap:2px 10px; text-align:left; border:1px solid var(--panel-line); background:var(--surface); border-radius:10px; padding:10px 12px; font:inherit; color:var(--ink); cursor:pointer; }
@@ -705,6 +715,7 @@ body.diffmode .help .norm { display:none; }
   <button class="tb chkpill" id="chkBtn" title="Layout and spec checks"></button>
   <button class="tb cmtbtn" id="chatBtn" title="Chat about the whole file" aria-label="Chat about the whole file"><svg class="i" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/></svg><span class="hide-sm">Chat</span></button>
   <button class="tb cmtbtn" id="cmtBtn" hidden disabled title="No new replies" aria-label="Next new reply"><svg class="i" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"/></svg><span id="cmtN"></span></button>
+  <button class="tb icon cmtmore" id="cmtMore" hidden aria-expanded="false" title="Rounds and order" aria-label="How new replies are read: rounds and order"><svg class="i" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></button>
   <button class="tb sendbtn" id="sendBtn" hidden title="Send saved comments to an agent"><svg class="i" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg><span id="sendN"></span></button>
   <button class="tb icon" id="setBtn" title="Settings" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></button>
 </div>
@@ -2778,7 +2789,7 @@ function fillBlock(el, B, counts) {
   if (B.node.type) el.style.setProperty('--h', typeHue(B.node.type)); else el.style.removeProperty('--h');
   el.classList.toggle('typed', !!B.node.type);
   el.innerHTML = (B.kind === 'card' ? cardHTML(B) : frameHTML(B)) +
-    (counts[key] ? `<button class="cbub" data-thread="${esc(key)}" aria-label="${counts[key]} comment${counts[key] === 1 ? '' : 's'}">${ICON.comment}${counts[key]}</button>` : '') +
+    ((cn => cn ? `<button class="cbub" data-thread="${esc(key)}" aria-label="${cn} comment${cn === 1 ? '' : 's'}">${ICON.comment}${cn}</button>` : '')(scopeCount(key, counts))) +
     (B.node && B.node.refs && B.node.refs.length ? `<button class="refb${B.node.refs.some(r => isSpec(r.path) && refUnread(r.file)) ? ' unread' : ''}" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.file + B.node.refs.length}</button>` : '');
 }
 // Opening a drawer never resizes the card: the row it sits in makes room instead.
@@ -4160,6 +4171,31 @@ document.addEventListener('pointerdown', e => {
 // @sbtel end App.Input
 // @sbtel begin App.Comments
 // ---------- Comments ----------
+// ---------- A closed block is one concept ----------
+// While a block is closed, what is said about anything inside it is said about it: its bubble counts those
+// threads and its chat shows them together, in the order they were written, each run under the name of the
+// part it is about. Open the block and they are separate threads again.
+const closedBlock = b => !!b && b.form === 'block' && b !== state.model.root && hasInside(b) && !state.open.has(b.id);
+// The blocks that must be open for a comment's target to be on screen, outermost first.
+function targetChain(key) {
+  const i = key.indexOf(':'), kind = key.slice(0, i), rest = key.slice(i + 1), m = state.model;
+  const from = kind === 'block' ? (rest && m.blocks.get(rest) || {}).parent : kind === 'msg' ? (m.messages.get(rest) || {}).owner
+    : kind === 'beh' ? ((m.behaviors.get(rest) || {}).owner || {}).parent : kind === 'line' ? (m.blocks.get(rest.split('|')[0]) || {}).parent : null;
+  const out = []; for (let p = from; p && p !== m.root && p.form === 'block'; p = p.parent) out.unshift(p);
+  return out;
+}
+// Where a thread is read: the thing itself, or the outermost closed block that hides it.
+const stopOf = key => { const c = targetChain(key).find(closedBlock); return c ? 'block:' + c.id : key; };
+function inScope(key, target) {
+  if (target === key) return true;
+  if (!key.startsWith('block:') || key.length <= 6) return false;
+  const b = state.model.blocks.get(key.slice(6)); return closedBlock(b) && targetChain(target).includes(b);
+}
+function scopeCount(key, counts) {
+  let n = counts[key] || 0; const b = state.model.blocks.get(key.slice(6));
+  if (closedBlock(b)) for (const k in counts) if (k !== key && targetChain(k).includes(b)) n += counts[k];
+  return n;
+}
 function commentCounts() { const c = {}; state.comments.forEach(x => { if (x.status !== 'sent') c[x.target] = (c[x.target] || 0) + 1; }); return c; }
 function targetLabel(key) {
   const [kind, rest] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
@@ -4220,14 +4256,20 @@ function chatRow(c) {
   return `<li data-id="${esc(c.id)}"${c.status === 'sent' || c.status === 'sending' ? '' : ' class="mine"'}><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${whenText(c.at)}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
 const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || chat.key === key));
+// Whether the open chat is showing the thread on this target (its own, or one inside its closed block).
+const chatShows = target => chatOpen() && inScope(chat.key, target);
 // Draw the open chat's thread again and show its end; the popover and what is typed in it stay.
 function refreshChat() {
   if (!chatOpen()) { chat = null; return; }
-  const el = chat.el, ul = el.querySelector('ul.thread'), list = state.comments.filter(c => c.target === chat.key);
+  const el = chat.el, ul = el.querySelector('ul.thread'), multi = state.comments.some(c => c.target !== chat.key && inScope(chat.key, c.target));
+  let list = state.comments.filter(c => inScope(chat.key, c.target));
+  if (multi) list = list.slice().sort((a, b) => (a.at || 0) - (b.at || 0));
+  el.querySelector('.chh .in').hidden = !multi;
   // Where the reader is stays put unless the thread itself changed. Then it shows the start of the first
   // reply not yet read, or failing one, the end.
-  const sig = list.map(c => c.id + ':' + c.status + ':' + (c.replies || []).length).join('|'), was = ul.scrollTop, same = chat.sig === sig;
-  ul.innerHTML = list.map(chatRow).join('') || '<li class="none">No comments here yet.</li>';
+  const sig = list.map(c => c.id + ':' + c.status + ':' + (c.replies || []).length).join('|') + (multi ? '|in' : ''), was = ul.scrollTop, same = chat.sig === sig;
+  let at = null;
+  ul.innerHTML = list.map(c => (multi && c.target !== at ? `<li class="where"><button type="button" data-goto="${esc(at = c.target)}" title="${c.target === chat.key ? '' : 'Open the block and show this thread on its own'}"${c.target === chat.key ? ' disabled' : ''}>${c.target === chat.key ? 'this block' : esc(targetLabel(c.target))}</button></li>` : '') + chatRow(c)).join('') || '<li class="none">No comments here yet.</li>';
   placeBeside(el, chat.anchor);
   chat.sig = sig;
   if (same) { ul.scrollTop = was; return; }
@@ -4242,7 +4284,7 @@ function openChat(key, anchor, focus) {
   const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 190, innerHeight / 3, 380, 0) };
   const keep = chatKeep(), mac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
   const lab = key === 'block:' ? 'The whole file' : targetLabel(key), sp = key === 'block:' ? -1 : lab.indexOf(' ');
-  const el = pop('thread', a, `<div class="chh" title="Comments on ${esc(key === 'block:' ? 'the whole file' : lab)}"><span class="on">${sp > 0 ? `<i>${esc(lab.slice(0, sp))}</i>${esc(lab.slice(sp + 1))}` : esc(lab)}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
+  const el = pop('thread', a, `<div class="chh" title="Comments on ${esc(key === 'block:' ? 'the whole file' : lab)}"><span class="on">${sp > 0 ? `<i>${esc(lab.slice(0, sp))}</i>${esc(lab.slice(sp + 1))}` : esc(lab)}</span><span class="in" hidden>and what is inside</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
     <ul class="thread" aria-live="polite"></ul>
     <div class="composer"><textarea id="cmtText" rows="2" placeholder="${key === 'block:' ? 'Say anything about the whole file.' : 'What should change, or what is unclear?'}" aria-label="Comment on ${esc(key === 'block:' ? 'the whole file' : lab)}"></textarea><input type="file" multiple hidden>
     <div class="acts"><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><span class="keys">${kb('⌘ ↵')} sends</span><button class="btn quiet" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div></div>`, 'chat');
@@ -4269,6 +4311,7 @@ function openChat(key, anchor, focus) {
   });
   el.addEventListener('click', e => {
     const c = e.target.closest('[data-c]')?.dataset.c; if (c) { submit(c === 'send' ? 'send' : 'keep'); return; }
+    const g = e.target.closest('[data-goto]'); if (g) { const k = g.dataset.goto; closePop('thread'); targetChain(k).forEach(b => state.open.add(b.id)); render(); setTimeout(() => showThread(k), 60); return; }
     const b = e.target.closest('[data-t]'); if (!b) return;
     if (b.dataset.t === 'close') { closePop('thread'); return; }
     if (b.dataset.t === 'file') { pick.click(); return; }
@@ -4286,25 +4329,82 @@ function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: 
 // The toolbar's Comments button (and the C key) lists each thing that has comments, the ones with an
 // unread reply first, then by the latest word. A mode says which comments are unread (chatUnread).
 let chatUnread = c => false;
-// The toolbar's button walks the new replies: each press opens the thread with the latest one, until none
-// is left and the button is off. (C still lists every thread.)
-const unreadThreads = () => {
+// The toolbar's button walks the new replies: each press opens the next thread with one, until none is left
+// and the button is off. (C still lists every thread.) Two choices, kept in the browser:
+//   order   place: the diagram's reading order, going on from where the reader is, so neighbours come
+//           together and a block comes before what is inside it; new: latest reply first; old: the reply
+//           that has waited longest first.
+//   rounds  the first press fixes the set of threads to read. Replies that arrive meanwhile wait (no toast,
+//           counted as "+n") until that set is read; then the round is done and the next press starts another.
+// A closed block is one stop: everything unread inside it is read there, together.
+const WALK = Object.assign({ order:'place', rounds:true }, store.get('sbtel-walk', null) || {});
+let round = null, walkAt = null;
+function keyPos(key) {
+  const i = key.indexOf(':'), kind = key.slice(0, i), rest = key.slice(i + 1), m = state.model;
+  const n = kind === 'block' ? (rest ? m.blocks.get(rest) : null) : kind === 'msg' ? m.messages.get(rest) : kind === 'beh' ? m.behaviors.get(rest) : kind === 'line' ? m.blocks.get(rest.split('|')[0]) : null;
+  return key === 'block:' ? -1 : n ? n.s + (kind === 'line' ? .5 : 0) : 1e12;
+}
+function unreadStops() {
   const by = new Map();
-  for (const c of state.comments) if (chatUnread(c)) by.set(c.target, Math.max(by.get(c.target) || 0, c.at || 0, ...(c.replies || []).map(r => +r.at || 0)));
-  return [...by].sort((x, y) => y[1] - x[1]).map(x => x[0]);
-};
+  for (const c of state.comments) if (chatUnread(c)) {
+    const k = stopOf(c.target); let t = by.get(k); if (!t) by.set(k, t = { key:k, sids:[], last:0 });
+    t.sids.push(c.sid); t.last = Math.max(t.last, c.at || 0, ...(c.replies || []).map(r => +r.at || 0));
+  }
+  return [...by.values()];
+}
+function walkNow() {
+  const all = unreadStops(), now = WALK.rounds && round ? all.filter(t => t.sids.some(x => round.has(x))) : all;
+  return { all, now, later: all.length - now.length };
+}
+// A reply that arrives during a round, on a thread the round does not hold, is not announced.
+const replyHeld = c => !!(WALK.rounds && round && !round.has(c.sid));
 function cmtCount() {
-  const b = $('cmtBtn'), n = unreadThreads().length;
-  b.hidden = !n && !state.comments.some(c => (c.replies || []).length); b.disabled = !n; $('cmtN').textContent = n || '';
-  b.classList.toggle('unread', n > 0); b.title = n ? `Read the next new reply (${n} thread${n === 1 ? '' : 's'})` : 'No new replies. Press C for every comment.';
+  if (round) {   // what is read leaves the round for good; when nothing is left, the round is done
+    const left = new Set(state.comments.filter(c => chatUnread(c) && round.has(c.sid)).map(c => c.sid));
+    if (left.size) round = left; else { round = null; walkAt = null; const n = unreadStops().length; toast(n ? `Round done. ${n} new ${n === 1 ? 'reply' : 'replies'} came in meanwhile.` : 'Round done. Nothing is waiting for you.'); }
+  }
+  const b = $('cmtBtn'), { all, now, later } = walkNow(), n = now.length;
+  b.hidden = !all.length && !state.comments.some(c => (c.replies || []).length); $('cmtMore').hidden = b.hidden; b.disabled = !all.length;
+  $('cmtN').innerHTML = (n || '') + (later ? `<i>+${later}</i>` : '');
+  b.classList.toggle('unread', n > 0);
+  b.title = !all.length ? 'No new replies. Press C for every comment.' : round ? `Next reply: ${n} left in this round${later ? `, ${later} waiting for the next` : ''}` : WALK.rounds ? `Start a round: ${n} thread${n === 1 ? '' : 's'} with new replies` : `Read the next new reply (${n} thread${n === 1 ? '' : 's'})`;
   $('chatBtn').classList.toggle('unread', state.comments.some(c => c.target === 'block:' && chatUnread(c)));
 }
 function showThread(key) {
   if (key.startsWith('block:') && key.length > 6 && state.model.node(key.slice(6))) { goTo(key.slice(6)); setTimeout(() => openThread(key), 380); }
   else openThread(key);
 }
-// The open thread is closed first: closing is what marks its replies read, so the next press moves on.
-function nextUnread() { closePop('thread'); const k = unreadThreads()[0]; if (k) showThread(k); }
+function nextUnread() {
+  closePop('thread');
+  if (WALK.rounds && !round) { const all = new Set(state.comments.filter(chatUnread).map(c => c.sid)); if (all.size) round = all; }
+  const { now } = walkNow(); if (!now.length) { cmtCount(); return; }
+  let pick;
+  if (WALK.order === 'new') pick = now.reduce((a, t) => t.last > a.last ? t : a);
+  else if (WALK.order === 'old') pick = now.reduce((a, t) => t.last < a.last ? t : a);
+  else {
+    const from = walkAt != null ? walkAt : state.sel && state.model.node(state.sel) ? keyPos(targetKey(state.sel)) - .01 : -Infinity;
+    const inOrder = now.map(t => ({ t, p:keyPos(t.key) })).sort((x, y) => x.p - y.p);
+    pick = (inOrder.find(x => x.p > from) || inOrder[0]).t;
+  }
+  walkAt = keyPos(pick.key); cmtCount(); showThread(pick.key);
+}
+{
+  let m = null;
+  const shut = () => { if (!m) return; m.remove(); m = null; $('cmtMore').setAttribute('aria-expanded', 'false'); removeEventListener('pointerdown', away, true); removeEventListener('keydown', esc2, true); };
+  const away = e => { if (!m.contains(e.target) && !e.target.closest('#cmtMore')) shut(); }, esc2 = e => { if (e.key === 'Escape') { e.stopPropagation(); shut(); $('cmtMore').focus(); } };
+  $('cmtMore').onclick = () => {
+    if (m) { shut(); return; }
+    m = document.createElement('div'); m.className = 'walkm'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-label', 'How new replies are read');
+    const opt = (v, name, hint) => `<label><input type="radio" name="wkOrder" value="${v}"${WALK.order === v ? ' checked' : ''}><span><b>${name}</b><small>${hint}</small></span></label>`;
+    m.innerHTML = `<label><input type="checkbox" id="wkRounds"${WALK.rounds ? ' checked' : ''}><span><b>Read in rounds</b><small>Finish the replies you have before new ones join.</small></span></label>
+      <fieldset><legend>Order</legend>${opt('place', 'By place', 'Neighbours together, from where you are.')}${opt('new', 'Newest first', 'The latest reply first.')}${opt('old', 'Longest waiting', 'The oldest reply first.')}</fieldset>`;
+    document.body.appendChild(m);
+    const r = $('cmtMore').getBoundingClientRect(); m.style.bottom = (innerHeight - r.top + 10) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
+    $('cmtMore').setAttribute('aria-expanded', 'true');
+    m.addEventListener('change', () => { WALK.rounds = m.querySelector('#wkRounds').checked; WALK.order = m.querySelector('[name=wkOrder]:checked')?.value || 'place'; if (!WALK.rounds) round = null; walkAt = null; store.set('sbtel-walk', WALK); cmtCount(); });
+    addEventListener('pointerdown', away, true); addEventListener('keydown', esc2, true);
+  };
+}
 function openAllComments() {
   const by = new Map();
   for (const c of state.comments) { let t = by.get(c.target); if (!t) by.set(c.target, t = { key:c.target, list:[], unread:false, at:0 }); t.list.push(c); t.unread = t.unread || chatUnread(c); t.at = Math.max(t.at, c.at || 0, ...(c.replies || []).map(r => +r.at || 0)); }
@@ -5018,7 +5118,7 @@ function sessionComments({ version, closed }) {
     cmtCount();
     const u = new Set(state.comments.filter(unread).map(c => c.target));
     (root || document).querySelectorAll('.cbub[data-thread]').forEach(b => {
-      const on = u.has(b.dataset.thread); if (on === b.classList.contains('unread')) return;
+      const on = [...u].some(t => inScope(b.dataset.thread, t)); if (on === b.classList.contains('unread')) return;
       b.classList.toggle('unread', on);
       const l = (b.getAttribute('aria-label') || '').replace(/, new reply$/, ''); if (l) b.setAttribute('aria-label', l + (on ? ', new reply' : ''));
     });
@@ -5026,7 +5126,7 @@ function sessionComments({ version, closed }) {
   function markRead(key) {
     if (!C.read) return; // the log has not loaded yet: its first load says what is read
     let ch = false;
-    state.comments.forEach(c => { if (c.target === key && unread(c)) { C.read[c.sid] = c.replies.length; ch = true; } });
+    state.comments.forEach(c => { if (inScope(key, c.target) && unread(c)) { C.read[c.sid] = c.replies.length; ch = true; } });
     if (ch) { if (RKEY) store.set(RKEY, C.read); markUnread(); }
   }
   const errText = async res => { try { return (await res.json()).error || 'HTTP ' + res.status; } catch (e) { return 'HTTP ' + res.status; } };
@@ -5084,9 +5184,9 @@ function sessionComments({ version, closed }) {
     if (!c) return;
     (c.replies = c.replies || []).push({ text: d.text, at: Date.parse(d.at) || Date.now() });
     render(); refreshChat(); // explicitly: diff mode draws with its own render
-    if (chatOpen(c.target)) markRead(c.target); // it is being read now: shown from its start, marked new this once
+    if (chatShows(c.target)) markRead(chat.key); // it is being read now: shown from its start, marked new this once
     markUnread(); changed();
-    if (!chatOpen(c.target)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
+    if (!chatShows(c.target) && !replyHeld(c)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
   }
   // The app hooks (§6.5). Call once, from the mode's boot().
   function hook() {

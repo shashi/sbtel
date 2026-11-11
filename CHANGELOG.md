@@ -12,6 +12,14 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- **Reading replies in rounds.** The first press of the comments button fixes the set of threads to read;
+  replies that arrive meanwhile wait (no toast, counted as "+n") until that set is read, and the last one
+  ends with "Round done". The caret beside the button turns rounds off and picks the order: by place (the
+  default: the diagram's reading order from where you are, so neighbours come together), newest first, or
+  longest waiting. Both choices are remembered.
+- **A closed block is one concept.** Its bubble counts every thread inside it, and its chat shows them
+  together in the order they were written, each run under the name of its part. Pressing a part's name
+  opens the block and shows that thread alone. The walk treats a closed block as one stop.
 - **Files open as what they are.** In the file viewer a Markdown file is a page, an HTML file is shown in a
   frame that can run no script, an SVG is a picture, a PDF opens in the browser's own reader, and a
   calendar invite (`.ics`) is a card with the time in your zone and an **Add to calendar** button. "Show

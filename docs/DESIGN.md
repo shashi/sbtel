@@ -916,6 +916,13 @@ is the session's `tabs`.
   `{path: ".sbtel/files/<name>", size}`. A stdin spec answers 409.
 - `GET /s/<id>/ref?path=…` serves `.sbtel/files/<name>` (one level, no dot-file) without the spec or a
   comment naming it; every other dot-directory stays refused.
+- Reading replies (v0.4.1) is the page's own business; the server only says which comments have replies.
+  "Unread" is a fact of the log (a reply the reader has not opened), never something an agent declares.
+  A comment whose target is hidden inside a closed block is read at the outermost closed block that hides
+  it (`stopOf`), whose chat shows every such thread together (`inScope`). The walk visits stops in source
+  order from the reader's position, by latest reply, or by oldest; with rounds on, the set of comments
+  unread at the first press is the round, and a reply outside it is neither announced nor visited until
+  the round is read.
 - What `/ref` answers, by kind (v0.4.1). The JSON answer carries the text of a text file (at most 2 MiB).
   With `raw=1` a picture (png, jpg, gif, webp), a PDF or a calendar invite (`.ics`) is sent as itself,
   with its own type and `nosniff`; pictures and PDFs may be up to 32 MiB. HTML and SVG are never sent as
