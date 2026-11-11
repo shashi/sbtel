@@ -610,7 +610,7 @@ function layout(model, opts, M) {
   }
   function cardMetrics(n, availW) {
     const isB = n.form === 'behavior', isM = n.form === 'message', d = det(n);
-    const pillW = n.type ? M.tw(n.type, FONT.pill) + 9 : 0, bs = behsOf(n);
+    const pillW = n.type ? M.tw(n.type, FONT.pill) + 21 : 0, bs = behsOf(n); // the type, its dot and the gap before them
     const tW = M.tw(n.name, FONT.title) + (isB ? 27 : isM ? 20 : 0) + pillW;
     // The collapsed footer (open arrow plus counts) also asks for room, within the card maximum.
     const footText = hasInside(n) ? countText(n) : isM && n.refines ? 'refines ' + n.refines : '';

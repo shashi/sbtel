@@ -30,6 +30,7 @@
   --ff-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ty-l:.8; --ty-c:.12; --ty-wash:14%;
   --canvas:#151617; --dot:#26282A; --surface:#1F2022; --frame-line:#6E6B65;
   --card:#38321F; --leaf:#2C2925; --tab:#2A2722; --ink:#ECEAE5; --muted:#A29E95;
   --line:#8A867E; --accent:#79A2FF; --accent-soft:#22324F; --warn:#FF6B57; --warn-soft:#3D221E; --ok:#55C383; --ok-soft:#1D3326;
@@ -41,6 +42,7 @@
   color-scheme: dark;
 } }
 :root[data-theme="dark"] {
+  --ty-l:.8; --ty-c:.12; --ty-wash:14%;
   --canvas:#151617; --dot:#26282A; --surface:#1F2022; --frame-line:#6E6B65;
   --card:#38321F; --leaf:#2C2925; --tab:#2A2722; --ink:#ECEAE5; --muted:#A29E95;
   --line:#8A867E; --accent:#79A2FF; --accent-soft:#22324F; --warn:#FF6B57; --warn-soft:#3D221E; --ok:#55C383; --ok-soft:#1D3326;
@@ -183,7 +185,14 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .toprow { display:flex; flex-wrap:wrap; align-items:center; gap:5px 8px; margin-bottom:6px; overflow:hidden; }
 .behs { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:5px 6px; margin-left:auto; max-width:100%; }
 /* A block's :type follows its name on the same line, in the sketch's quiet colour: the name leads. */
-.pill { flex:none; font-size:12.5px; font-weight:400; color:var(--muted); white-space:nowrap; align-self:baseline; margin-left:2px; }
+.pill { flex:none; font-size:12.5px; font-weight:500; color:oklch(var(--ty-l) var(--ty-c) var(--h, 250)); white-space:nowrap; align-self:baseline; margin-left:2px; cursor:default; }
+.pill::before { content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:currentColor; margin-right:5px; vertical-align:.5px; }
+:root { --ty-l:.5; --ty-c:.15; --ty-wash:11%; }
+/* With "Tint cards by type" on, a typed card takes a wash of its type's hue and an edge in it. */
+.world.tint .blk.card.typed { background:color-mix(in oklch, var(--leaf), oklch(var(--ty-l) var(--ty-c) var(--h)) var(--ty-wash)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 55%); }
+.world.typing .blk.card:not(.ty-on) { opacity:.3; }
+.world.typing .blk.ty-on { box-shadow:0 0 0 2px oklch(var(--ty-l) var(--ty-c) var(--h)); }
+.blk.card { transition:opacity .15s ease; }
 .ttl { font-size:17px; font-weight:600; height:24px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:7px; }
 .ttl > span:not(.pill) { overflow:hidden; text-overflow:ellipsis; }
 .ttl { align-items:baseline; }
@@ -452,6 +461,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .cedit .merr { color:var(--warn); font-size:12px; margin:0; }
 .cedit .cfoot { display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--muted); }
 .cedit .cfoot .spacer { flex:1; }
+.cedit .csave { padding:4px 12px; font-size:12.5px; border-radius:7px; }
 .cedit .cdel { border:0; background:none; color:var(--warn); cursor:pointer; font-size:12.5px; padding:3px 6px; margin-left:-6px; border-radius:6px; }
 .cedit .cdel:hover { background:var(--warn-soft); }
 @media (hover: none) { .cedit input, .cedit textarea { font-size:16px; } }
@@ -633,6 +643,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
     <div class="range"><input type="range" id="cw" min="560" max="2000" step="20"><output id="cwv"></output></div></div>
   <div class="rule"><div class="lbl">Theme</div>
     <div class="opts"><label><input type="radio" name="theme" value="system"><span>Follow system</span></label><label><input type="radio" name="theme" value="light"><span>Light</span></label><label><input type="radio" name="theme" value="dark"><span>Dark</span></label></div></div>
+  <label class="chk"><input type="checkbox" id="tint"> Tint cards by type</label>
   <label class="chk"><input type="checkbox" id="anim"> Animate changes</label>
   <div class="ver">sbtel <span id="verNo"></span></div>
 </template>
@@ -1251,7 +1262,7 @@ function layout(model, opts, M) {
   }
   function cardMetrics(n, availW) {
     const isB = n.form === 'behavior', isM = n.form === 'message', d = det(n);
-    const pillW = n.type ? M.tw(n.type, FONT.pill) + 9 : 0, bs = behsOf(n);
+    const pillW = n.type ? M.tw(n.type, FONT.pill) + 21 : 0, bs = behsOf(n); // the type, its dot and the gap before them
     const tW = M.tw(n.name, FONT.title) + (isB ? 27 : isM ? 20 : 0) + pillW;
     // The collapsed footer (open arrow plus counts) also asks for room, within the card maximum.
     const footText = hasInside(n) ? countText(n) : isM && n.refines ? 'refines ' + n.refines : '';
@@ -2474,6 +2485,7 @@ function render(anchorId, pv) {
   if (world.classList.contains('anim')) setTimeout(() => { world.classList.remove('anim'); placeStrip(); placeCallout(); }, 340);
   document.body.classList.toggle('ro', readOnly());
   applySelection(); applyTalk(); applyCarry(); applyBeh(); refreshCallout();
+  world.classList.toggle('tint', !!state.opts.tint); if (state.typePin) showType();
 }
 // Draw a layout: one element per block (reused by id so moves animate), lines, + buttons and bubbles.
 function paint(lay, keep) {
@@ -2545,6 +2557,15 @@ function paint(lay, keep) {
   const mo = new MutationObserver(soon); const watch = () => document.querySelectorAll('.sheet').forEach(s => { if (!s._fd) { s._fd = 1; mo.observe(s, { attributes:true, attributeFilter:['class'] }); } });
   watch(); new MutationObserver(watch).observe(document.body, { childList:true });
 }
+// Types: point to find, click to keep (showType).
+document.addEventListener('pointerover', e => { if (e.pointerType === 'mouse' && e.target.closest?.('.blk .ttl > .pill')) showType(e.target.closest('.pill').dataset.k); });
+document.addEventListener('pointerout', e => { if (e.pointerType === 'mouse' && e.target.closest?.('.blk .ttl > .pill')) showType(null); });
+document.addEventListener('click', e => {
+  const p = e.target.closest?.('.blk .ttl > .pill');
+  if (p) { e.stopPropagation(); showType(p.dataset.k, state.typePin !== p.dataset.k); return; }
+  if (state.typePin && !e.target.closest('.modal, .pop, .dock')) showType(null, false);
+}, true);
+addEventListener('keydown', e => { if (e.key === 'Escape' && state.typePin) showType(null, false); });
 // The + buttons within reach of the pointer (about 110px on screen) are the ones shown in full.
 {
   let raf = 0, at = null;
@@ -2630,6 +2651,8 @@ function levelLabelHTML(b, at) {
 function fillBlock(el, B, counts) {
   const key = targetKey(B.id), dr = state.drawers.get(B.id);
   el.style.zIndex = B.kind === 'frame' ? 10 + B.depth * 2 : (dr && (dr.top || dr.bot) ? 800 : 500) + B.depth;
+  if (B.node.type) el.style.setProperty('--h', typeHue(B.node.type)); else el.style.removeProperty('--h');
+  el.classList.toggle('typed', !!B.node.type);
   el.innerHTML = (B.kind === 'card' ? cardHTML(B) : frameHTML(B)) +
     (counts[key] ? `<button class="cbub" data-thread="${esc(key)}" aria-label="${counts[key]} comment${counts[key] === 1 ? '' : 's'}">${ICON.comment}${counts[key]}</button>` : '') +
     (B.node && B.node.refs && B.node.refs.length ? `<button class="refb${B.node.refs.some(r => isSpec(r.path) && refUnread(r.file)) ? ' unread' : ''}" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.code + B.node.refs.length}</button>` : '');
@@ -2699,7 +2722,30 @@ function topHTML(n, top, detailed) {
   return `<div class="toprow" style="height:${top.h - 6}px">${bs.length ? `<span class="behs">${bs.map(detailed ? behChip : badge).join('')}</span>` : ''}</div>`;
 }
 // A block's :type, in quiet type after its name.
-const typeHTML = n => n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}">${esc(n.type)}</span>` : '';
+const typeHTML = n => n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}" style="--h:${typeHue(n.type)}" title="${esc(n.type)}: point here to find every ${esc(n.type)}">${esc(n.type)}</span>` : '';
+// A type's colour comes from its text alone (the language says nothing of colour): a hash picks one of
+// twelve hues, and the theme sets how light and how strong it is drawn (--ty-l, --ty-c). The first type
+// drawn keeps its hashed hue; each later one takes the free hue farthest from those in use (its own hashed
+// hue when that is as far as any), so the types of one diagram are easy to tell apart.
+const typeHues = new Map();
+function typeHue(type) {
+  const k = String(type).toLowerCase(); if (typeHues.has(k)) return typeHues.get(k);
+  const used = [...new Set(typeHues.values())].map(h => (h - 20) / 30), own = hash(k) % 12, gap = (a, b) => Math.min((a - b + 12) % 12, (b - a + 12) % 12);
+  let i = own;
+  if (used.length && used.length < 12) {
+    let best = -1;
+    for (let c = 0; c < 12; c++) { if (used.includes(c)) continue; const far = Math.min(...used.map(u => gap(c, u))), score = far * 100 - gap(c, own); if (score > best) { best = score; i = c; } }
+  }
+  typeHues.set(k, i * 30 + 20); return i * 30 + 20;
+}
+// Pointing at a type lights every block of that type and dims the rest; a click keeps it until the next
+// click or Escape.
+function showType(k, pin) {
+  if (pin !== undefined) state.typePin = pin ? k : null;
+  const on = state.typePin || k || null;
+  $('world').classList.toggle('typing', !!on);
+  state.elems.forEach(el => el.classList.toggle('ty-on', !!on && el.querySelector(':scope > .bd > .ttl > .pill, :scope > .fh > .ttl > .pill')?.dataset.k === on));
+}
 function cardHTML(B) {
   const n = B.node, m = B.m, isB = n.form === 'behavior';
   const P = m.d ? dotsOf(n, state.opts.childDots) : null;
@@ -3720,12 +3766,12 @@ function portEditor(at, find) {
   const types = typesInScope(state.model, n), lid = 'cotypes' + Date.now();
   const el = showCallout(at.key, find, `<form class="cedit" autocomplete="off">
     <div class="r"><input class="mono" name="name" aria-label="Port name" value="${esc(node.name)}" spellcheck="false">
-      <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${node.dir === 'in'}">in</button><button type="button" data-dir="out" aria-pressed="${node.dir === 'out'}">out</button></span></div>
+      <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${node.dir === 'in'}">takes</button><button type="button" data-dir="out" aria-pressed="${node.dir === 'out'}">gives</button></span></div>
     <input class="mono" name="kind" aria-label="Shape" value="${esc(node.kind || '')}" list="${lid}" spellcheck="false" placeholder="Shape">
     <datalist id="${lid}">${types.map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist>
     <div class="lab">Sketch</div><textarea name="sketch" rows="3" aria-label="Sketch" placeholder="What this port promises, beyond its type.">${esc(node.sketch || '')}</textarea>
     <p class="merr" role="alert" hidden></p>
-    <div class="cfoot"><button type="button" class="cdel" data-x="del">Delete port</button><span class="spacer"></span><span>Enter saves · Esc cancels</span></div></form>`, 'edit');
+    <div class="cfoot"><button type="button" class="cdel" data-x="del">Delete port</button><span class="spacer"></span><span class="hint">${kb('⌘ ↵')} saves, Esc cancels</span><button type="submit" class="btn primary csave">Save</button></div></form>`, 'edit');
   const f = el.querySelector('form'), err = f.querySelector('.merr');
   followKind(f.elements.name, f.elements.kind, 'input');
   let dir = node.dir;
@@ -3747,12 +3793,15 @@ function portEditor(at, find) {
   const r = state.elems.get(n.id)?.querySelector(`:scope > .tab.${at.side} .drow[data-pi="${at.i}"]`); if (r) r.classList.add('editing');
   setTimeout(() => { if (co.el.contains(f)) (touchy() ? f.elements.name : f.elements.sketch).focus({ preventScroll:true }); }, 0);
 }
-// Enter in a field (or ⌘/Ctrl-Enter in a textarea) saves; Esc cancels. Both stay inside the editor.
+// The Save button or ⌘/Ctrl-Enter saves, from any field; Esc cancels. Enter alone is a new line in the
+// sketch and nothing in a one-line field, so a save is always meant. Both keys stay inside the editor.
 function editorKeys(f) {
   f.addEventListener('submit', e => { e.preventDefault(); co.commit && co.commit(false); });
   f.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); hideCallout(); return; }
-    if (e.key === 'Enter' && (e.target.tagName !== 'TEXTAREA' || e.metaKey || e.ctrlKey)) { e.preventDefault(); e.stopPropagation(); co.commit && co.commit(false); }
+    if (e.key !== 'Enter' || e.isComposing) return;
+    if (e.metaKey || e.ctrlKey) { e.preventDefault(); e.stopPropagation(); co.commit && co.commit(false); }
+    else if (e.target.tagName === 'INPUT') e.preventDefault(); // not an accidental save
   });
 }
 
@@ -3789,7 +3838,7 @@ function levelEditor(lv) {
     <div class="lab">Level ${lv.b.levels.length - lv.at} of ${esc(lv.b.virtual ? 'the file' : lv.b.name)}</div>
     <input name="name" aria-label="Level name" value="${esc(lv.L.name || '')}" placeholder="Name this level: the vocabulary it offers upward">
     <div class="lab">Sketch</div><textarea name="sketch" rows="3" aria-label="Level sketch" placeholder="What the level above may know of this one, and what it may not.">${esc(lv.L.sketch || '')}</textarea>
-    <div class="cfoot"><span class="spacer"></span><span>Enter saves · Esc cancels</span></div></form>`, 'edit');
+    <div class="cfoot"><span class="spacer"></span><span class="hint">${kb('⌘ ↵')} saves, Esc cancels</span><button type="submit" class="btn primary csave">Save</button></div></form>`, 'edit');
   const f = el.querySelector('form');
   co.commit = () => { const name = f.elements.name.value.trim(), sketch = f.elements.sketch.value; hideCallout();
     const before = state.src; edit({ t:'levelProps', block:lv.b, at:lv.at, name, sketch }); if (state.src !== before) toast(name ? `Saved level ${name}.` : 'Saved the level.'); return true; };
@@ -3825,7 +3874,7 @@ function groupEditor(g, focus) {
   const el = showCallout(g.key, groupFinder(g.key), `<form class="cedit" autocomplete="off">
     <div class="lab">Adjacent: ${esc(groupNames(g).join(', '))}</div>
     <textarea name="sketch" rows="3" aria-label="Why these blocks are adjacent" placeholder="Why these blocks know each other concretely.">${esc(g.U.sketch || '')}</textarea>
-    <div class="cfoot"><span class="spacer"></span><span>${kb('⌘ ↵')} saves, Esc cancels</span></div></form>`, 'edit');
+    <div class="cfoot"><span class="spacer"></span><span class="hint">${kb('⌘ ↵')} saves, Esc cancels</span><button type="submit" class="btn primary csave">Save</button></div></form>`, 'edit');
   const f = el.querySelector('form');
   co.commit = () => { const sketch = f.elements.sketch.value; hideCallout(); const before = state.src; edit({ t:'groupSketch', node:g.U.node, sketch }); if (state.src !== before) toast('Saved the sketch of the adjacent group.'); return true; };
   editorKeys(f);
@@ -4165,6 +4214,7 @@ $('setBtn').onclick = () => {
   const cw = m.querySelector('#cw'), cwv = m.querySelector('#cwv'); cw.value = state.opts.width; cwv.textContent = state.opts.width;
   cw.addEventListener('input', () => { state.opts.width = +cw.value; cwv.textContent = cw.value; persist(); const a = state.opts.animate; state.opts.animate = false; render(); state.opts.animate = a; });
   m.querySelector('#verNo').textContent = SBTEL.version;
+  const ti = m.querySelector('#tint'); ti.checked = !!state.opts.tint; ti.onchange = () => { state.opts.tint = ti.checked; persist(); render(); };
   const an = m.querySelector('#anim'); an.checked = state.opts.animate; an.onchange = () => { state.opts.animate = an.checked; persist(); };
 };
 

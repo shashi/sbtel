@@ -86,7 +86,7 @@ def desktop(p, b):
     # default name drops :as, and a name that is the default follows a change of type.
     def editor_default_name():
         x, y = palette(); pg.mouse.click(x, y); pg.wait_for_timeout(80)
-        pg.fill('.callout [name=name]', 'keyChord'); pg.keyboard.press('Enter'); pg.wait_for_timeout(150)
+        pg.fill('.callout [name=name]', 'keyChord'); pg.keyboard.press('Control+Enter'); pg.wait_for_timeout(150)
         a = E("() => __t.src()")
         if '(takes KeyChord (~ Opens the palette. ~))' not in a or ':as keyChord' in a: return 'fail: rename to default: ' + a[a.find('(block Shell.CommandPalette'):][:160]
         E("() => undo()"); pg.wait_for_timeout(100)
@@ -94,7 +94,7 @@ def desktop(p, b):
         x2, y2 = E("() => __t.mid(__t.row('Shell.Router', 'top', 'Intent'))"); pg.mouse.click(x2, y2); pg.wait_for_timeout(80)
         pg.fill('.callout [name=kind]', 'TurnAdded'); pg.wait_for_timeout(30)
         follows = E("() => co.el.querySelector('[name=name]').value")
-        pg.fill('.callout [name=kind]', 'KeyChord'); pg.keyboard.press('Enter'); pg.wait_for_timeout(150)
+        pg.fill('.callout [name=kind]', 'KeyChord'); pg.keyboard.press('Control+Enter'); pg.wait_for_timeout(150)
         b2 = E("() => __t.src()")
         if follows != 'turnAdded' or '(takes KeyChord)' not in b2 or ':as' in b2[b2.find('(block Shell.Router'):][:120]: return f'fail: follow {follows}: ' + b2[b2.find('(block Shell.Router'):][:160]
         E("() => undo()"); pg.wait_for_timeout(100)
@@ -126,7 +126,7 @@ def desktop(p, b):
         a = E("() => co.el.querySelector('.merr').textContent")
         pg.fill('.callout [name=name]', 'chord'); pg.fill('.callout [name=kind]', 'TurnAdded'); pg.wait_for_timeout(30)
         b2 = E("() => co.el.querySelector('.merr').textContent")
-        pg.keyboard.press('Enter'); pg.wait_for_timeout(80)
+        pg.keyboard.press('Control+Enter'); pg.wait_for_timeout(80)
         still = E("() => __t.co() && __t.co().mode")
         return 'pass' if 'named run' in a and 'not in scope' in b2 and still == 'edit' and E("() => __t.src()") == original else f'fail: {a} | {b2} | {still}'
     step('liveValidation', live_validation)
@@ -158,7 +158,7 @@ def desktop(p, b):
         E("() => __t.center('Shell.Router', 1)"); pg.wait_for_timeout(100)
         pg.click('.lsep[data-key="Shell|1"] .llab'); pg.wait_for_timeout(80)
         pg.fill('.callout [name=name]', 'Routing'); pg.fill('.callout [name=sketch]', 'Surfaces send intents here.')
-        pg.focus('.callout [name=name]'); pg.keyboard.press('Enter'); pg.wait_for_timeout(150)
+        pg.focus('.callout [name=name]'); pg.keyboard.press('Control+Enter'); pg.wait_for_timeout(150)
         s = E("() => __t.src()")
         ok = '(level :name "Routing"\n    (~ Surfaces send intents here. ~)' in s and E("() => document.querySelector('.lsep[data-key=\"Shell|1\"] .llab').textContent") == 'Routing'
         # An unnamed level: its placeholder edits it, wrapping the implicit level in (level :name …).

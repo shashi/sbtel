@@ -59,6 +59,14 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   the selected block steps aside while the block is selected.
 - **The new-version notice** is a dark bar with a live dot, in the manner of the one on the home page:
   "Version 2 from your agent", See changes, Reload, and a close button where "Later" was.
+- **Types you can tell apart.** A block's type is drawn in a colour of its own with a dot, chosen from
+  the type's text (the language says nothing of colour) and spread so that the types of one diagram
+  differ clearly; each theme sets how light the colours are. Point at a type and every block of that
+  type stays lit while the rest dim; a click keeps it so until the next click or Escape. Settings has
+  "Tint cards by type", which washes each typed card in its colour: a status board at a glance.
+- **Inline editors have a Save button**, and the save key is the same in every field: Ctrl/⌘-Enter. The
+  port editor said "Enter saves", which was false in its sketch. Its direction buttons read "takes" and
+  "gives".
 - **Comments are notes beside the block.** The callout stands beside what it is about, with a tail
   pointing at it, and no longer covers it; it keeps clear of the toolbar. A thread reads as text: your
   comment, what became of it in small type, the agent's answer set in from a rule. One field holds the
