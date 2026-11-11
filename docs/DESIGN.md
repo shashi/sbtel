@@ -932,7 +932,8 @@ is the session's `tabs`.
 - A level's layout (v0.4.1) is three steps, each resting on the one before. A flow gives every item a
   cell (row, column) and an x: `flowRows` goes across and wraps down; `flowCols` (opts.flow `cols`) goes
   down and wraps across, using as many rows as `flowRows` needs at that width and one more while the
-  columns do not fit. `gridTracks` turns the rows into tops and heights, the same for both flows, so rows
+  columns do not fit; it cuts the level into stretches at any item too wide to have a neighbour, which
+  gets a line to itself (`seg`), and starts the columns again after it. `gridTracks` turns the rows into tops and heights, the same for both flows, so rows
   stay aligned across columns. `layoutLevel` then emits boxes and the line between two linked items by
   where their cells are (sideways, or downward under the ears). The viewer's drop targets come from laying
   out each candidate edit, so they follow either flow; its two gap helpers share `gapBetween`. The order

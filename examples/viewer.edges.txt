@@ -23,16 +23,16 @@ Core.Model -> Core.Reader  # core/core.js:132 (+4 more)
 Core.Model -> Core.Constants  # core/core.js:139 (+2 more)
 Core.Lint -> Core.Model  # core/core.js:495 (+4 more)
 Core.Layout -> MeasuresText  # core/core.js:607 (+9 more)
-Core.Layout -> Core.Constants  # core/core.js:609 (+42 more)
+Core.Layout -> Core.Constants  # core/core.js:609 (+44 more)
 Core.Layout -> Core.Model  # core/core.js:612 (+12 more)
 Core.Layout -> Core.Reader  # core/core.js:660 (+1 more)
-Core.Layout -> Core.LayoutChecks  # core/core.js:868
-Core.Edits -> Core.Model  # core/core.js:1027 (+6 more)
-Core.Edits -> Core.Reader  # core/core.js:1143 (+2 more)
-Core.Edits -> Core.Scope  # core/core.js:1282
-Core.Scope -> Core.Model  # core/core.js:1303 (+3 more)
-Core.Random -> Core.Model  # core/core.js:1359
-Core.Diff -> Core.Model  # core/core.js:1437 (+7 more)
+Core.Layout -> Core.LayoutChecks  # core/core.js:887
+Core.Edits -> Core.Model  # core/core.js:1046 (+6 more)
+Core.Edits -> Core.Reader  # core/core.js:1162 (+2 more)
+Core.Edits -> Core.Scope  # core/core.js:1301
+Core.Scope -> Core.Model  # core/core.js:1322 (+3 more)
+Core.Random -> Core.Model  # core/core.js:1378
+Core.Diff -> Core.Model  # core/core.js:1456 (+7 more)
 App.Document -> App.Kit  # viewer/src/index.html:996 (+14 more)
 App.Document -> Viewer.Sample  # viewer/src/index.html:1001
 App.History -> App.Kit  # viewer/src/index.html:1055 (+3 more)

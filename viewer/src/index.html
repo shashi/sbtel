@@ -1912,7 +1912,7 @@ function moveZones(id) {
     if (LL) {
       // Its neighbours in its line: the row it is on, or (when the level is filled by columns) its column.
       const down = LL.flow === 'cols', me = LL.items.find(it => it.id === nb.id);
-      const line = LL.items.filter(it => (down ? it.col === me.col : it.row === me.row)).sort((a, b) => (down ? a.box.y - b.box.y : a.box.x - b.box.x)), i = line.indexOf(me);
+      const line = LL.items.filter(it => (down ? it.col === me.col && it.seg === me.seg : it.row === me.row)).sort((a, b) => (down ? a.box.y - b.box.y : a.box.x - b.box.x)), i = line.indexOf(me);
       const cur = id => { for (const L of state.lay.levels) { const it = L.items.find(x => x.id === id); if (it) return it.box; } return null; };
       const a = line[i - 1] && cur(line[i - 1].id), b = line[i + 1] && cur(line[i + 1].id), g = a && b && gapBetween(a, b, down);
       if (g) z.gap = g;
@@ -1962,7 +1962,7 @@ function groupSpans() {
     const byId = new Map(LL.items.map(it => [it.id, it]));
     const units = new Map(); LL.items.forEach(it => { if (it.gid) { if (!units.has(it.gid)) units.set(it.gid, []); units.get(it.gid).push(it); } });
     units.forEach(items => items.forEach((b, k) => {
-      const a = items[k - 1], down = LL.flow === 'cols'; if (!a || (down ? a.col !== b.col : a.row !== b.row)) return;
+      const a = items[k - 1], down = LL.flow === 'cols'; if (!a || (down ? a.col !== b.col || a.seg !== b.seg : a.row !== b.row)) return;
       const la = state.lay.loc.get(a.id), lb = state.lay.loc.get(b.id); if (!la || !lb || la.ui !== lb.ui) return;
       const g = gapBetween(a.box, b.box, down, true); if (!g) return;
       out.push({ ...g, block:lb.L.parent, level:lb.L.parent.levels.indexOf(lb.L), unit:lb.ui, pos:lb.bi, ids:[a.id, b.id] });

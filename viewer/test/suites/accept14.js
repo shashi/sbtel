@@ -54,5 +54,16 @@ window.__accept = async function () {
   const lp = state.lay.loc.get('p'), ll = state.lay.loc.get('lone');
   is('dropInTheGapJoins', !!lp && !!ll && lp.L === ll.L && lp.ui === ll.ui && ll.bi === 1, true);
   is('stillNoOverlap', overlaps(), 0);
+
+  // An open block that fills the line (Settings, Open block width: Fill the row) takes a line to itself, and
+  // the columns start again under it: what follows sits side by side, not stacked below it one by one.
+  state.opts.flow = 'cols'; state.opts.expandWidth = 'fill'; state.opts.width = 900;
+  setSource(`(block app (~ x ~)
+  (level :name "L" (block one (~ 1 ~)) (block wide (~ open ~) (level (block in1 (~ a ~)) (block in2 (~ b ~)))) (block two (~ 2 ~)) (block three (~ 3 ~))))`);
+  state.open = new Set(['app', 'wide']); render(); fit(false); await wait(150);
+  const li = id => state.lay.levels.find(l => !l.band && l.items.some(x => x.id === id)).items.find(x => x.id === id);
+  is('wideBlockHasItsOwnLine', [li('one'), li('wide'), li('two'), li('three')].map(x => `${x.seg}:${x.row},${x.col}`).join(' '), '0:0,0 1:1,0 2:2,0 2:2,1');
+  is('checksHoldWithFill', state.lay.checks.filter(c => c.f.length).map(c => c.k).join(), '');
+  state.opts.expandWidth = 'fit'; state.opts.flow = 'rows';
   return r;
 };
