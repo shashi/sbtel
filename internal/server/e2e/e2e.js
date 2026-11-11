@@ -128,7 +128,7 @@ async function until(fn, ms = 8000, step = 100) {
   const r2 = JSON.parse(o2.out || '{}');
   check('open --session exits 0 with version 2, created false', o2.code === 0 && r2.version === 2 && r2.created === false, o2.out + o2.err);
   const vt = await page.waitForSelector('.sb-vt', { timeout: 5000 }).catch(() => null);
-  check('new-version toast appears', !!vt && (await vt.textContent()).includes('A new version (v2) is available'));
+  check('new-version toast appears', !!vt && (await vt.textContent()).includes('Version 2 from your agent'));
   check('page did not reload by itself', await page.evaluate(src => state.src === src, v1));
   // See changes: the diff of what the tab has and the new version, over the page; Back changes nothing.
   await page.click('.sb-vt [data-v="diff"]');
@@ -150,7 +150,7 @@ async function until(fn, ms = 8000, step = 100) {
   fs.writeFileSync(SPEC, v3); // no open --session: the server sees the file change on disk
   const vt3 = await page.waitForSelector('.sb-vt', { timeout: 8000 }).catch(() => null);
   const vt3t = vt3 ? await vt3.textContent() : '';
-  check('disk change shows the toast and warns about unsaved edits', vt3t.includes('(v3)') && vt3t.includes('changed on disk') && vt3t.includes('not saved or sent') && vt3t.includes('Discard my edits and reload'), vt3t);
+  check('disk change shows the toast and warns about unsaved edits', vt3t.includes('Version 3') && vt3t.includes('changed on disk') && vt3t.includes('not saved or sent') && vt3t.includes('Discard my edits and reload'), vt3t);
   await page.click('.sb-vt [data-v="later"]');
   // Save on the stale base asks before overwriting (never silently): View their changes opens the diff of
   // the base and the newer version in a new tab; Cancel writes nothing and offers the new version again.

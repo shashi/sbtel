@@ -184,17 +184,17 @@ Viewer.Review -> App.Canvas  # viewer/src/review.js:292 (+4 more)
 Viewer.Review -> App.Page  # viewer/src/review.js:316 (+2 more)
 Viewer.Review -> App.Popovers  # viewer/src/review.js:335
 Viewer.Server -> Viewer.Mode  # viewer/src/server.js:5 (+5 more)
-Viewer.Server -> App.Kit  # viewer/src/server.js:57 (+31 more)
-Viewer.Server -> App.Files  # viewer/src/server.js:61 (+8 more)
-Viewer.Server -> App.Canvas  # viewer/src/server.js:77 (+2 more)
-Viewer.Server -> App.Document  # viewer/src/server.js:114 (+20 more)
-Viewer.Server -> Viewer.Review  # viewer/src/server.js:134 (+10 more)
-Viewer.Server -> Core.Model  # viewer/src/server.js:173
-Viewer.Server -> App.Page  # viewer/src/server.js:175 (+4 more)
-Viewer.Server -> Core.Bindings  # viewer/src/server.js:196
-Viewer.Server -> Viewer.Session  # viewer/src/server.js:218 (+3 more)
-Viewer.Server -> App.Modals  # viewer/src/server.js:268 (+2 more)
-Viewer.Server -> Viewer.Bindings  # viewer/src/server.js:356
+Viewer.Server -> App.Kit  # viewer/src/server.js:71 (+33 more)
+Viewer.Server -> App.Files  # viewer/src/server.js:75 (+8 more)
+Viewer.Server -> App.Canvas  # viewer/src/server.js:91 (+2 more)
+Viewer.Server -> App.Document  # viewer/src/server.js:128 (+20 more)
+Viewer.Server -> Viewer.Review  # viewer/src/server.js:148 (+10 more)
+Viewer.Server -> Core.Model  # viewer/src/server.js:188
+Viewer.Server -> App.Page  # viewer/src/server.js:190 (+4 more)
+Viewer.Server -> Core.Bindings  # viewer/src/server.js:211
+Viewer.Server -> Viewer.Session  # viewer/src/server.js:233 (+3 more)
+Viewer.Server -> App.Modals  # viewer/src/server.js:283 (+2 more)
+Viewer.Server -> Viewer.Bindings  # viewer/src/server.js:371
 Viewer.Diff -> Viewer.Mode  # viewer/src/diff.js:11 (+10 more)
 Viewer.Diff -> Viewer.Sample  # viewer/src/diff.js:34 (+3 more)
 Viewer.Diff -> Viewer.Session  # viewer/src/diff.js:122 (+3 more)

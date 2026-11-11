@@ -1025,7 +1025,7 @@ The UI behaviour is as follows (v0.2.1: reviews, §6.7).
     **Overwrite** saves again with `force`; **View their changes** opens a comparison of the tab's base
     and the current version in a new tab and leaves the question open; **Cancel** writes nothing and
     shows the version toast again. It never overwrites silently.
-- **SSE `version`** shows a toast: "A new version is available" with a **Reload** action (and
+- **SSE `version`** shows a notice: "Version N from your agent" (or "the file changed on disk", "saved from another tab") with a **Reload** action (and
   "Discard my edits and reload" when there are unsent edits; with only a sent proposal, it says the
   version may hold it). Reload refetches `spec` and calls `setSource`,
   keeping the open blocks and the camera. The page never reloads by itself. **See changes** (v0.3.1), beside

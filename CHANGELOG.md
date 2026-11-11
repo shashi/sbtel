@@ -57,6 +57,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 - **An open block travels whole.** Dragging an open block carries its level lines and the links between
   its blocks with it; they stayed behind, or vanished, before. A `+` that would sit on a link handle of
   the selected block steps aside while the block is selected.
+- **The new-version notice** is a dark bar with a live dot, in the manner of the one on the home page:
+  "Version 2 from your agent", See changes, Reload, and a close button where "Later" was.
 - **Comments are notes beside the block.** The callout stands beside what it is about, with a tail
   pointing at it, and no longer covers it; it keeps clear of the toolbar. A thread reads as text: your
   comment, what became of it in small type, the agent's answer set in from a rule. One field holds the
