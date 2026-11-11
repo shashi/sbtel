@@ -772,7 +772,10 @@ body.diffmode .help .norm { display:none; }
 </aside>
 
 <template id="settingsTpl">
-  <div class="rule"><div class="lbl">When a row is full</div>
+  <div class="rule"><div class="lbl">Blocks in a level go</div>
+    <div class="opts"><label><input type="radio" name="flow" value="rows"><span>Across, then down</span></label><label><input type="radio" name="flow" value="cols"><span>Down, then across</span></label></div>
+    <div class="hint2">Down, then across reads in columns: a c e over b d. It shows once a level needs more than one line.</div></div>
+  <div class="rule"><div class="lbl">When a line is full</div>
     <div class="opts"><label><input type="radio" name="wrap" value="keep"><span>Move the whole group down</span></label><label><input type="radio" name="wrap" value="free"><span>Break anywhere</span></label></div></div>
   <div class="rule"><div class="lbl">Line for a wrapped group</div>
     <div class="opts"><label><input type="radio" name="vlink" value="same"><span>Nearest in same group</span></label><label><input type="radio" name="vlink" value="pred"><span>Previous in chain</span></label><label><input type="radio" name="vlink" value="any"><span>Nearest block above</span></label></div>
@@ -1500,31 +1503,66 @@ function layout(model, opts, M) {
     return { w:m.w, h:m.h, emit(ox, oy) { out.blocks.push({ id:n.id, node:n, kind:'card', depth, x:ox, y:oy, w:m.w, h:m.h, m }); } };
   }
   // Rows of items placed left to right, wrapping at `inner`. Shared by levels and the behaviors band.
-  function rowsLayout(units, inner, wrapRule) {
-    const rows = [[]]; let rw = 0;
-    const put = it => {
-      if (rows[rows.length - 1].length && rw + K.GAPX + it.ow > inner) { rows.push([]); rw = 0; }
-      const r = rows[rows.length - 1]; it.x = r.length ? rw + K.GAPX : 0; rw = it.x + it.ow; it.row = rows.length - 1; r.push(it);
-    };
+  // ---------- A level's grid ----------
+  // A level is laid out in three steps, each resting on the one before:
+  //   a flow gives every item a cell (it.row, it.col) and its x, and says how many rows there are;
+  //   gridTracks turns the rows into tops and heights;
+  //   the level (layoutLevel) emits the boxes and the lines between linked items (its link()).
+  // The two flows keep one contract, so everything after them is shared. flowRows goes across and wraps
+  // down, as text does; flowCols goes down and wraps across, like a newspaper's columns.
+  const unitWidth = U => U.items.reduce((s, it) => s + it.ow, 0) + K.GAPX * (U.items.length - 1);
+  function flowRows(units, inner, wrapRule) {
+    let row = 0, col = 0, rw = 0;
+    const wrap = () => { row++; col = 0; rw = 0; };
     units.forEach(U => {
-      if (wrapRule === 'keep' && U.items.length > 1) {
-        const uw = U.items.reduce((s, it) => s + it.ow, 0) + K.GAPX * (U.items.length - 1);
-        if (rows[rows.length - 1].length && rw + K.GAPX + uw > inner && uw <= inner) { rows.push([]); rw = 0; }
-      }
-      U.items.forEach(put);
+      // keep: a linked group that fits on a row is not broken across two.
+      if (wrapRule === 'keep' && U.items.length > 1) { const uw = unitWidth(U); if (col && rw + K.GAPX + uw > inner && uw <= inner) wrap(); }
+      U.items.forEach(it => {
+        if (col && rw + K.GAPX + it.ow > inner) wrap();
+        it.x = col ? rw + K.GAPX : 0; rw = it.x + it.ow; it.row = row; it.col = col++;
+      });
     });
+    return row + 1;
+  }
+  // As many rows as flowRows needs at this width, filled a column at a time; one more row, and again,
+  // while the columns are wider than the room. A column is as wide as its widest item.
+  function flowCols(units, inner, wrapRule) {
+    const items = units.flatMap(U => U.items), n = items.length; if (!n) return 1;
+    const fill = R => {
+      let col = 0, row = 0; const next = () => { col++; row = 0; };
+      units.forEach(U => {
+        // keep: a linked group that fits in a column is not broken across two.
+        if (wrapRule === 'keep' && U.items.length > 1 && row && row + U.items.length > R && U.items.length <= R) next();
+        U.items.forEach(it => { if (row >= R) next(); it.col = col; it.row = row++; });
+      });
+      const colW = []; items.forEach(it => { colW[it.col] = Math.max(colW[it.col] || 0, it.ow); });
+      let x = 0; const colX = colW.map(w => { const at = x; x += w + K.GAPX; return at; });
+      items.forEach(it => { it.x = colX[it.col]; });
+      return x - K.GAPX;
+    };
+    let R = Math.min(n, flowRows(units, inner, wrapRule));
+    while (fill(R) > inner && R < n) R++;
+    return Math.max(...items.map(it => it.row)) + 1;
+  }
+  // Each row's top and height, from its tallest item and the ears that stick out of it; rows are aligned
+  // across the level, whichever flow filled them.
+  function gridTracks(items, nRows) {
+    const rows = Array.from({ length:nRows }, () => []); items.forEach(it => rows[it.row].push(it));
     const borrow = K.ROWGAP - 12;
     const rowTop = rows.map((r, i) => Math.max(...r.map(it => it.t), 0) - (i ? borrow : 0)).map((v, i) => Math.max(v, Math.max(...rows[i].map(it => Math.min(it.t, K.TAB)))));
     const rowH = rows.map((r, i) => rowTop[i] + Math.max(...r.map(it => it.ch + it.be)));
     const rowY = []; let y = 0; rowH.forEach((h, i) => { rowY.push(y); y += h + (i < rowH.length - 1 ? K.ROWGAP : 0); });
     return { rowH, rowY, rowTop, h:y };
   }
+  function placeItems(units, inner, wrapRule, flow) {
+    return gridTracks(units.flatMap(U => U.items), (flow === 'cols' ? flowCols : flowRows)(units, inner, wrapRule));
+  }
 
   // Behaviors and message types sit in bands below the levels: they are the vocabulary the levels are written in.
   function bandOf(list, inner, depth, label) {
     if (!list.length) return null;
     const items = list.map(n => { const sub = card(n, inner, depth), e = ext(n); return { n, sub, t:e.t, be:e.b, ch:sub.h, ow:sub.w }; });
-    const r = rowsLayout(items.map(it => ({ items:[it] })), inner, 'free');
+    const r = placeItems(items.map(it => ({ items:[it] })), inner, 'free', 'rows');
     return { items, r, label, h:K.BANDLAB + r.h };
   }
   function layoutBlock(b, availW, depth) {
@@ -1579,7 +1617,7 @@ function layout(model, opts, M) {
       const sub = layoutBlock(b, inner, depth), e = ext(b); return { b, bi, ui, sub, ow: sub.w, ch: sub.h, t:e.t, be:e.b };
     }) }));
     units.forEach(U => U.items.forEach(it => it.gid = U.gid));
-    const { rowH, rowY, rowTop, h } = rowsLayout(units, inner, opts.wrap);
+    const cols = opts.flow === 'cols', { rowH, rowY, rowTop, h } = placeItems(units, inner, opts.wrap, cols ? 'cols' : 'rows');
     const all = units.flatMap(U => U.items);
     return { h, emit(ox, oy, container) {
       all.forEach(it => {
@@ -1589,28 +1627,41 @@ function layout(model, opts, M) {
         const d = dotsOf(it.b, opts.childDots); it.hasIn = d.in.length > 0; it.hasOut = d.out.length > 0;
         out.loc.set(it.b.id, { L, ui:it.ui, bi:it.bi });
       });
-      out.levels.push({ key:L.key, container, x1:ox, x2:ox + inner, top:oy, bottom:oy + h,
-        items: all.map((it, i) => ({ id:it.b.id, order:i, row:it.row, gid:it.gid, box:{ x:it.cx0, y:it.cy0 - it.t, w:it.w, h:it.h + it.t + it.be } })) });
+      out.levels.push({ key:L.key, container, x1:ox, x2:ox + inner, top:oy, bottom:oy + h, flow: cols ? 'cols' : 'rows',
+        items: all.map((it, i) => ({ id:it.b.id, order:i, row:it.row, col:it.col, gid:it.gid, box:{ x:it.cx0, y:it.cy0 - it.t, w:it.w, h:it.h + it.t + it.be } })) });
+      // The line between two linked items, by where their cells are. Side by side: straight across (or, when
+      // the two are on different rows, out to the gap between their columns and across there). One above
+      // the other: from under the upper one's ear to over the lower one's, by the gap between their rows.
+      const sideways = (s, b) => {
+        const sx = s.cx0 + s.w, mx = b.cx0 - K.GAPX / 2;
+        if (s.row === b.row) { const yy = s.cy0 + Math.min(Math.min(s.h, b.h) / 2, 64); return [[sx, yy], [b.cx0, yy]]; }
+        const sy = s.cy0 + Math.min(s.h / 2, 64), ey = b.cy0 + Math.min(b.h / 2, 64);
+        return [[sx, sy], [mx, sy], [mx, ey], [b.cx0, ey]];
+      };
+      const downward = (s, b) => {
+        const sx = s.cx, sy = s.cy0 + s.h + (s.hasOut ? s.be : 0), ex = b.cx, ey = b.cy0 - (b.hasIn ? b.t : 0);
+        const mid = oy + rowY[s.row] + rowH[s.row] + 6;
+        return Math.abs(sx - ex) < 1 ? [[sx, sy], [ex, ey]] : [[sx, sy], [sx, mid], [ex, mid], [ex, ey]];
+      };
+      // A group broken by a wrap is tied back to the line before (opts.vlink): its own previous member, its
+      // nearest member there, or the nearest block there of any group.
+      const from = (U, a, b, line, near) => {
+        const cands = opts.vlink === 'pred' ? [a] : (opts.vlink === 'any' ? all : U.items).filter(i => line(i) === line(b) - 1);
+        return cands.reduce((m, c) => (near(c) < near(m) ? c : m), cands[0]) || a;
+      };
+      const link = (U, a, b) => {
+        if (!cols) { if (a.row === b.row) return [a, sideways(a, b)]; const s = from(U, a, b, i => i.row, c => Math.abs(c.cx - b.cx)); return [s, downward(s, b)]; }
+        if (a.col === b.col) return [a, downward(a, b)];
+        const s = from(U, a, b, i => i.col, c => Math.abs(c.row - b.row)); return [s, sideways(s, b)];
+      };
       units.forEach(U => {
         if (!U.gid) return;
         for (let k = 1; k < U.items.length; k++) {
-          const a = U.items[k - 1], b = U.items[k];
-          const cut = { t:'split', L, ui:b.ui, at:b.bi };
-          if (a.row === b.row) {
-            const yy = a.cy0 + Math.min(Math.min(a.h, b.h) / 2, 64);
-            out.connectors.push({ pts:[[a.cx0 + a.w, yy], [b.cx0, yy]], a:a.b.id, b:b.b.id, ga:a.gid, gb:b.gid, cut });
-          } else {
-            const cands = opts.vlink === 'pred' ? [a] : opts.vlink === 'any' ? all.filter(i => i.row === b.row - 1) : U.items.filter(i => i.row === b.row - 1);
-            let src = cands[0]; cands.forEach(c => { if (Math.abs(c.cx - b.cx) < Math.abs(src.cx - b.cx)) src = c; });
-            const sx = src.cx, sy = src.cy0 + src.h + (src.hasOut ? src.be : 0);
-            const ex = b.cx, ey = b.cy0 - (b.hasIn ? b.t : 0);
-            const mid = oy + rowY[src.row] + rowH[src.row] + 6;
-            const pts = Math.abs(sx - ex) < 1 ? [[sx, sy], [ex, ey]] : [[sx, sy], [sx, mid], [ex, mid], [ex, ey]];
-            out.connectors.push({ pts, a:src.b.id, b:b.b.id, ga:src.gid, gb:b.gid, cut });
-          }
+          const a = U.items[k - 1], b = U.items[k], [src, pts] = link(U, a, b);
+          out.connectors.push({ pts, a:src.b.id, b:b.b.id, ga:src.gid, gb:b.gid, cut:{ t:'split', L, ui:b.ui, at:b.bi } });
         }
       });
-      const lastIt = all[all.length - 1], rowIts = all.filter(it => it.row === lastIt.row);
+      const lastIt = all[all.length - 1], rowIts = cols ? [lastIt] : all.filter(it => it.row === lastIt.row);
       // Centred on the cards of the level's last row, beside its last card.
       const cy = (Math.min(...rowIts.map(it => it.cy0)) + Math.max(...rowIts.map(it => it.cy0 + it.h))) / 2;
       out.plus.push({ x: Math.min(lastIt.cx0 + lastIt.w + 22, ox + inner + (container && container.virtual ? -11 : K.PAD / 2)), y: cy, act:{ t:'append', L }, title:'Add a block to this level' });
@@ -1662,7 +1713,8 @@ function runChecks(out) {
   const byContainer = new Map();
   out.levels.forEach(L => { if (!byContainer.has(L.container)) byContainer.set(L.container, []); byContainer.get(L.container).push(L); });
   out.levels.forEach(L => {
-    const seq = [...L.items].sort((p, q) => p.row - q.row || p.box.x - q.box.x).map(i => i.order);
+    // Source order is reading order: along each row, or (a level filled by columns) down each column.
+    const seq = [...L.items].sort((p, q) => (L.flow === 'cols' ? p.col - q.col || p.row - q.row : p.row - q.row || p.box.x - q.box.x)).map(i => i.order);
     if (seq.some((v, i) => v !== i)) fails.order.push(L.key);
     L.items.forEach(it => { if (it.box.x < L.x1 - .5 || it.box.x + it.box.w > L.x2 + .5) fails.contain.push(it.id); });
   });
@@ -2571,7 +2623,7 @@ function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.beh
 const state = {
   src: SAMPLE, model: null, lay: null,
   open: new Set(['Shell.SessionView']), details: new Set(), seenTop: new Set(),
-  opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system', space:'balanced', labelSide:'left' },
+  opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system', space:'balanced', labelSide:'left', flow:'rows' },
   cam: { x:40, y:80, k:1 }, elems: new Map(), openLabels: new Set(), carry: null, bhl: null, flash: null, sel: null, multi: new Set(), selLine: null, expanded: new Set(), drawers: new Map(), talk: null,
   comments: [], msgSort:'name', msgQ:'', msgOwner:null, msgOpen:null
 };
@@ -3481,11 +3533,12 @@ function moveZones(id) {
     // also leads there; and a join previews the links it would draw.
     const LL = sp.lay.levels.find(L => L.items.some(it => it.id === nb.id));
     if (LL) {
-      const me = LL.items.find(it => it.id === nb.id), row = LL.items.filter(it => it.row === me.row).sort((a, b) => a.box.x - b.box.x), i = row.indexOf(me);
+      // Its neighbours in its line: the row it is on, or (when the level is filled by columns) its column.
+      const down = LL.flow === 'cols', me = LL.items.find(it => it.id === nb.id);
+      const line = LL.items.filter(it => (down ? it.col === me.col : it.row === me.row)).sort((a, b) => (down ? a.box.y - b.box.y : a.box.x - b.box.x)), i = line.indexOf(me);
       const cur = id => { for (const L of state.lay.levels) { const it = L.items.find(x => x.id === id); if (it) return it.box; } return null; };
-      const a = row[i - 1] && cur(row[i - 1].id), b = row[i + 1] && cur(row[i + 1].id);
-      if (a && b && Math.abs(a.y - b.y) < 1 && b.x - (a.x + a.w) > 0 && b.x - (a.x + a.w) <= K.GAPX + 1)
-        z.gap = { x:a.x + a.w, y:Math.min(a.y, b.y), w:b.x - (a.x + a.w), h:Math.max(a.h, b.h) };
+      const a = line[i - 1] && cur(line[i - 1].id), b = line[i + 1] && cur(line[i + 1].id), g = a && b && gapBetween(a, b, down);
+      if (g) z.gap = g;
     }
     if (z.join) { z.links = sp.lay.connectors.filter(c => c.a === nb.id || c.b === nb.id).map(c => c.pts); if (!noop) joins.push(z); }
     const key = [z.x, z.y, z.w, z.h].map(Math.round).join(',');
@@ -3514,7 +3567,16 @@ function moveZones(id) {
   try { const n = state.model.node(id); zones.liftLay = specLayout(applyEdit(state.src, state.model, { t:'delete', node:n, loc: n.form === 'block' ? locIn(n) : null }).src).lay; } catch (_) { zones.liftLay = null; }
   return zones;
 }
-// The gaps between consecutive members of each adjacent group on the same row, as drawn now (world
+// The room between two boxes that are neighbours in a line of a level: side by side on a row, or (down)
+// one above the other in a column. Null when they do not face each other that way. far: any distance
+// (two members of one group); otherwise only neighbours a gap's width apart count on a row.
+function gapBetween(a, b, down, far) {
+  if (down) { const h = b.y - (a.y + a.h); return h > 0 && Math.abs(a.x - b.x) < 1 ? { x:Math.min(a.x, b.x), y:a.y + a.h, w:Math.max(a.w, b.w), h } : null; }
+  const w = b.x - (a.x + a.w), top = Math.min(a.y, b.y);
+  if (w <= 0 || (!far && (Math.abs(a.y - b.y) >= 1 || w > K.GAPX + 1))) return null;
+  return { x:a.x + a.w, y:top, w, h: far ? Math.max(a.y + a.h, b.y + b.h) - top : Math.max(a.h, b.h) };
+}
+// The gaps between consecutive members of each adjacent group on the same row (or, filled by columns, in the same column), as drawn now (world
 // coordinates). A pointer in one always means "into this group, here": join, reorder, or no change.
 function groupSpans() {
   const out = [];
@@ -3523,13 +3585,13 @@ function groupSpans() {
     const byId = new Map(LL.items.map(it => [it.id, it]));
     const units = new Map(); LL.items.forEach(it => { if (it.gid) { if (!units.has(it.gid)) units.set(it.gid, []); units.get(it.gid).push(it); } });
     units.forEach(items => items.forEach((b, k) => {
-      const a = items[k - 1]; if (!a || a.row !== b.row) return;
+      const a = items[k - 1], down = LL.flow === 'cols'; if (!a || (down ? a.col !== b.col : a.row !== b.row)) return;
       const la = state.lay.loc.get(a.id), lb = state.lay.loc.get(b.id); if (!la || !lb || la.ui !== lb.ui) return;
-      const top = Math.min(a.box.y, b.box.y), bot = Math.max(a.box.y + a.box.h, b.box.y + b.box.h);
-      out.push({ x:a.box.x + a.box.w, y:top, w:b.box.x - (a.box.x + a.box.w), h:bot - top, block:lb.L.parent, level:lb.L.parent.levels.indexOf(lb.L), unit:lb.ui, pos:lb.bi, ids:[a.id, b.id] });
+      const g = gapBetween(a.box, b.box, down, true); if (!g) return;
+      out.push({ ...g, block:lb.L.parent, level:lb.L.parent.levels.indexOf(lb.L), unit:lb.ui, pos:lb.bi, ids:[a.id, b.id] });
     }));
   });
-  return out.filter(g => g.w > 0);
+  return out;
 }
 // Attach zones are kept in world coordinates (from the layout, plus each ear's offset inside its card),
 // so they stay right if the camera pans or zooms mid-drag.
@@ -5249,14 +5311,9 @@ const kbBoxes = () => (state.lay ? state.lay.blocks.filter(B => state.elems.has(
 // Where a box is, for judging direction: a card's middle; an open block's title, since its middle is its children's.
 const kbAt = B => B.kind === 'frame' ? { x: B.x + Math.min(B.w / 2, 110), y: B.y + Math.min(B.h / 2, 30) } : { x: B.x + B.w / 2, y: B.y + B.h / 2 };
 const kbHolder = B => (B.node.form === 'block' ? B.node.parent : B.node.owner) || null;
-// Reading order, as the picture is read: a box, then what it holds row by row and left to right, each held
-// box followed by its own contents before the next.
-function kbOrder() {
-  const boxes = kbBoxes(), ids = new Set(boxes.map(B => B.node)), kids = new Map();
-  for (const B of boxes) { let h = kbHolder(B); if (!ids.has(h)) h = null; if (!kids.has(h)) kids.set(h, []); kids.get(h).push(B); }
-  const out = [], walk = h => (kids.get(h) || []).sort((a, b) => (Math.abs(a.y - b.y) > 24 ? a.y - b.y : a.x - b.x)).forEach(B => { out.push(B); walk(B.node); });
-  walk(null); return out;
-}
+// Reading order, as the picture is read: the layout emits a box, then what it holds in the order its
+// levels are filled (across or down, as the flow goes), each held box followed by its own contents.
+const kbOrder = () => kbBoxes();
 // The box to start from when nothing is selected: the one nearest the middle of the window.
 function kbHome() {
   const cx = (innerWidth / 2 - state.cam.x) / state.cam.k, cy = (innerHeight / 2 - state.cam.y) / state.cam.k;
