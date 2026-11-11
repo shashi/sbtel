@@ -4489,7 +4489,7 @@ $('fit').onclick = () => fit(true);
 $('expAll').onclick = () => { state.model.blocks.forEach(b => { if (hasInside(b)) state.open.add(b.id); }); render(); fit(true); };
 $('colAll').onclick = () => { state.open = new Set(); render(); fit(true); };
 $('helpX').onclick = () => $('helpBtn').click();
-$('tourBtn').onclick = () => { $('helpBtn').click(); startTour(); };
+$('tourBtn').onclick = () => { $('helpBtn').click(); startTour(0); };
 $('helpBtn').onclick = () => { const h = $('help'); h.hidden = !h.hidden; $('helpBtn').setAttribute('aria-expanded', !h.hidden); store.set('sbtel-help-seen', true); };
 
 // @sbtel end App.Input
@@ -4677,22 +4677,24 @@ function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTi
 // Source panel: the text an agent reads. Next and Back, the arrow keys, and Escape to leave.
 const TOUR = [
   { find:() => document.querySelector('.blk.card.leaf:not(.msg):not(.beh)') || document.querySelector('.blk.card') || document.querySelector('.blk'),
-    title:'A system, drawn as blocks', text:'Each box is a block: one part of the system. Its name comes first, and the line under it says what it is for.' },
+    title:'Blocks', text:'Each box is one part of the system. Its name is on top, with a line about what it does.' },
   { find:() => document.querySelector('.lsep .llab:not(.ph)'),
-    title:'Levels', text:'Blocks sit in levels. A block may depend only on blocks in the levels below it, so the top says what the system does and the bottom what it rests on.' },
+    title:'Levels', text:'Blocks sit in rows called levels. A block can only use blocks in the levels below it.' },
   { find:() => { const B = tourInner(); return B ? state.elems.get(B.id) : document.querySelector('.blk.card .foot .tw')?.closest('.blk'); },
-    title:'Blocks inside blocks', text:() => tourInner() ? 'This block is open, so you can see what it is made of. Its triangle closes it again.' : 'A triangle on a block means there is more inside. Click it to open the block.' },
+    title:'Blocks have blocks inside', text:() => { const B = tourInner(); return B ? `${B.node.name} is open, so you can see what is in it. Click its triangle to close it.` : 'The triangle means there is more inside. Click it to open the block.'; } },
   { find:() => document.querySelector('.blk.card:not(.msg) > .tab'),
-    title:'What a block takes and gives', text:'The dots on a block’s ears are shapes: what it takes is on top, what it gives is underneath. Point at a dot to see everywhere that shape goes.' },
+    title:'Takes and gives', text:() => `The dots are shapes: the data, calls or events a block deals in. What it takes is on the top ear, what it gives is on the bottom. ${matchMedia('(pointer: coarse)').matches ? 'Tap' : 'Hover'} a dot to see where that shape goes.` },
   { find:() => [...document.querySelectorAll('.blk.card:not(.msg):not(.beh)')][1] || document.querySelector('.blk.card'),
-    title:'Say what you think', text:() => (matchMedia('(pointer: coarse)').matches ? 'Tap a block, then Comment.' : 'Select a block and press C to comment on it.') + ' Your agent reads the comment and answers under it.' },
+    title:'Comment on anything', text:() => (matchMedia('(pointer: coarse)').matches ? 'Tap a block, then Comment.' : 'Select a block and press C.') + ' Your agent replies right there.' },
   { enter:() => toggleSource(true), leave:() => toggleSource(false), find:() => $('srcSheet'), settle:260,
-    title:'What your agent sees', text:'This text is the same design. Your agent writes it and changes it; you read the picture and say what should change.' },
+    title:'The agent’s view', text:'This is the same design as text. Your agent writes and edits it, so you mostly don’t have to.' },
 ];
 // An open block that sits inside another open block: the deepest one drawn.
 const tourInner = () => { const fs = state.lay.blocks.filter(B => B.kind === 'frame' && B.node.form === 'block').sort((a, b) => b.depth - a.depth); return fs.length > 1 && fs[0].depth > fs[fs.length - 1].depth ? fs[0] : null; };
+// Where the reader is in the tour is kept in the browser ('sbtel-tour': the stop reached, or done), so a
+// tour left halfway picks up there on the next visit, and a finished or skipped one does not come back.
 let tour = null;
-function startTour() {
+function startTour(from) {
   if (tour || !state.lay) return;
   closePop(); hideCallout(); select(null, null);
   const ring = document.createElement('div'); ring.className = 'tourring';
@@ -4721,7 +4723,7 @@ function startTour() {
     if (TOUR[from] && TOUR[from].leave) TOUR[from].leave();
     while (TOUR[i]) { if (TOUR[i].enter) TOUR[i].enter(); if (TOUR[i].find()) break; if (TOUR[i].leave) TOUR[i].leave(); i += dir; }
     if (!TOUR[i]) { if (dir > 0) { endTour(); return; } i = from; if (TOUR[i] && TOUR[i].enter) TOUR[i].enter(); }
-    tour.i = i; const s = TOUR[i], a = tour.anchor = s.find();
+    tour.i = i; store.set('sbtel-tour', { i }); const s = TOUR[i], a = tour.anchor = s.find();
     // Bring a thing of the canvas into view, clear of the toolbar and with room for the card.
     if (a.closest('#world')) { const r = a.getBoundingClientRect(), dx = r.left < 60 ? 60 - r.left : r.right > innerWidth - 360 ? Math.max(60 - r.left, innerWidth - 360 - r.right) : 0, dy = r.top < 90 ? 90 - r.top : r.bottom > innerHeight - 110 ? innerHeight - 110 - r.bottom : 0; if (dx || dy) { state.cam.x += dx; state.cam.y += dy; animCam(); applyCam(); } }
     const shown = TOUR.filter(x => x.find() || x.enter), n = shown.indexOf(s), last = !TOUR.slice(i + 1).some(x => x.enter || x.find());
@@ -4737,13 +4739,13 @@ function startTour() {
     else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); if (tour.i > 0) go(-1); }
   };
   addEventListener('keydown', tour.keys, true);
-  go(1); tour.raf = requestAnimationFrame(place);
+  tour.i = Math.max(-1, Math.min(TOUR.length - 2, (from | 0) - 1)); go(1); tour.raf = requestAnimationFrame(place);
 }
 function endTour() {
   if (!tour) return;
   const s = TOUR[tour.i]; if (s && s.leave) s.leave();
   cancelAnimationFrame(tour.raf); removeEventListener('keydown', tour.keys, true); tour.ring.remove(); tour.card.remove(); tour = null;
-  store.set('sbtel-help-seen', true);
+  store.set('sbtel-tour', { done:true }); store.set('sbtel-help-seen', true);
 }
 addEventListener('keydown', e => {
   const typing = e.target.closest && e.target.closest('textarea, input');
@@ -6871,12 +6873,14 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
   if (mode && mode.boot) await mode.boot(); else { setSource(SAMPLE); histUse('sbtel-hist'); }
   fit(false);
   renderSendBtn(); syncUndo();
-  // A first visit starts the tour (a page inside another, an embedded demo and a diff do not; nor does a
-  // browser driven by a program, which gets the gestures panel as before, so scripts see a still page).
-  if (!store.get('sbtel-help-seen', store.get('marquee-help-seen', false))) {
+  // The tour starts until it has been finished or skipped, from the stop last reached (a page inside
+  // another, an embedded demo and a diff have none). A browser driven by a program gets no tour: on a
+  // first visit it shows the gestures panel as before, so scripts see a still page.
+  {
     const plain = SBTEL.mode !== 'diff' && !document.body.classList.contains('embed') && !sentFrom && $('helpBtn').offsetParent;
-    if (plain && !navigator.webdriver) setTimeout(startTour, 500);
-    else { $('help').hidden = false; $('helpBtn').setAttribute('aria-expanded', 'true'); }
+    const at = store.get('sbtel-tour', null) || {};
+    if (plain && !navigator.webdriver) { if (!at.done) setTimeout(() => startTour(at.i || 0), 500); }
+    else if (!store.get('sbtel-help-seen', store.get('marquee-help-seen', false))) { $('help').hidden = false; $('helpBtn').setAttribute('aria-expanded', 'true'); }
   }
 })();
 // @sbtel end Viewer.Boot
