@@ -592,7 +592,7 @@ A duplicate block name (the second block's id becomes `A#2`):
 ```
 
 ```text
-spec.sbtel:2:1: warning: Duplicate block name A
+spec.sbtel:2:1: warning: Duplicate block name A: a name identifies a block wherever it moves, so each needs its own (a more specific name, or parent/A)
 spec.sbtel: 1 problem (2 blocks, 0 behaviors, 0 shapes)
 ```
 

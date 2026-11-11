@@ -69,6 +69,13 @@ Worked reasoning for each: [principles.md](principles.md).
   - people and schedules: roles or teams, weeks or milestones
   - a product: features
 - Keep a card short: a name and a sentence or two.
+- Name blocks in lowercase words joined by hyphens (`atomic-write`). When a block stands for something
+  in code, use the code's own name (`AtomicWrite`, `store.ts`).
+- A name is a block's identity and must be unique in the spec. Where a name would repeat, put what it
+  belongs to in front with a slash: a card that details another is `<thing>/<detail>`
+  (`slow-login/evidence` beside `slow-login`), and two that clash take their parents (`store/index`,
+  `ui/index`), unless a more specific name is better. A card inside or linked beside the block its
+  prefix names shows only the rest, so write the prefix freely.
 
 ## When the subject is not code
 

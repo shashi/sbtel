@@ -131,7 +131,7 @@ function parse(src) {
       case 'block': {
         node.name = symOf(items[0]) || '?'; node.parent = owner || null;
         const i = declHead(node, items);
-        let id = node.name, n = 2; if (ctx.blocks.has(id)) { ctx.warnings.push('Duplicate block name ' + node.name + at); while (ctx.blocks.has(node.name + '#' + n)) n++; id = node.name + '#' + n; }
+        let id = node.name, n = 2; if (ctx.blocks.has(id)) { ctx.warnings.push('Duplicate block name ' + node.name + ': a name identifies a block wherever it moves, so each needs its own (a more specific name, or parent/' + node.name + ')' + at); while (ctx.blocks.has(node.name + '#' + n)) n++; id = node.name + '#' + n; }
         node.id = id; ctx.blocks.set(id, node);
         node.children = items.slice(i).map(x => conv(x, node, 'block ' + node.name)).filter(Boolean);
         break;
@@ -149,6 +149,7 @@ function parse(src) {
         if (h === 'level') node.name = node.name ?? null;
         node.children = items.slice(i).map(x => conv(x, owner, h === 'level' ? 'a level' : 'an adjacent group')).filter(Boolean);
         node.sketch = sketchOf(node);
+        if (h === 'adjacent') node.children.forEach(c => { if (c.form === 'block') c.adj = node; }); // shownName reads a block's group
         if (h === 'adjacent' && node.children.filter(c => c.form === 'block' || c.form === 'adjacent').length < 2) ctx.warnings.push('adjacent needs two or more members' + at);
         if (h === 'level' && !node.children.some(c => c.form === 'block' || c.form === 'adjacent')) ctx.warnings.push('level needs at least one block' + at);
         break;
@@ -366,6 +367,18 @@ function countText(b) {
   if (b.behaviorDecls.length) parts.push(`${b.behaviorDecls.length} behavior${b.behaviorDecls.length === 1 ? '' : 's'}`);
   if (b.messageDecls.length) parts.push(`${b.messageDecls.length} shape${b.messageDecls.length === 1 ? '' : 's'}`);
   return parts.join(' · ');
+}
+// The name a card shows. A block's name is its identity and is unique in a spec, so a name is often
+// written with what it belongs to in front: store/index inside store, slow-login/evidence beside
+// slow-login. Where the picture already says that (the block is inside, or adjacent to, the block the
+// prefix names), the card shows the rest. Moved elsewhere, it shows the whole name again.
+function shownName(b) {
+  if (!b || b.form !== 'block' || !b.name) return b ? b.name : '';
+  let best = '';
+  const near = c => { if (c && c !== b && c.name && c.name.length > best.length && b.name.length > c.name.length + 1 && b.name.startsWith(c.name + '/')) best = c.name; };
+  for (let p = b.parent; p; p = p.parent) near(p);
+  if (b.adj) b.adj.children.forEach(c => { if (c.form === 'block') near(c); });
+  return best ? b.name.slice(best.length + 1) : b.name;
 }
 function hasInside(b) { return b.form === 'block' && (b.levels.length > 0 || b.behaviorDecls.length > 0 || b.messageDecls.length > 0); }
 function ancestorsOrSelf(b) { const a = []; for (let x = b; x; x = x.parent) a.push(x); return a; }
@@ -611,7 +624,7 @@ function layout(model, opts, M) {
   function cardMetrics(n, availW) {
     const isB = n.form === 'behavior', isM = n.form === 'message', d = det(n);
     const pillW = n.type ? M.tw(n.type, FONT.pill) + 21 : 0, bs = behsOf(n); // the type, its dot and the gap before them
-    const tW = M.tw(n.name, FONT.title) + (isB ? 27 : isM ? 20 : 0) + pillW;
+    const tW = M.tw(shownName(n) || n.name, FONT.title) + (isB ? 27 : isM ? 20 : 0) + pillW;
     // The collapsed footer (open arrow plus counts) also asks for room, within the card maximum.
     const footText = hasInside(n) ? countText(n) : isM && n.refines ? 'refines ' + n.refines : '';
     const footW = footText ? M.tw(footText, isM ? FONT.chip : FONT.foot) + (isM ? 0 : 24) : 0;
@@ -654,7 +667,7 @@ function layout(model, opts, M) {
     let v;
     if (!isOpen(b)) v = cardMetrics(b, 1e9).w;
     else {
-      let best = Math.max(M.tw(b.name, FONT.htitle) + 90, K.MIN_EXP);
+      let best = Math.max(M.tw(shownName(b), FONT.htitle) + 90, K.MIN_EXP);
       [...b.behaviorDecls, ...b.messageDecls].forEach(x => best = Math.max(best, cardMetrics(x, 1e9).w));
       b.levels.forEach(L => { const items = L.units.flatMap(u => u.blocks); best = Math.max(best, items.reduce((s, c) => s + maxContent(c), 0) + K.GAPX * (items.length - 1)); });
       v = 2 * K.PAD + best;

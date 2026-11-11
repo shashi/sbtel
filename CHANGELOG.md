@@ -12,6 +12,10 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- **Names show without what the picture already says.** A block named `store/index` inside `store`, or
+  `slow-login/evidence` linked beside `slow-login`, shows as `index` or `evidence`; moved elsewhere it shows
+  its whole name again. The name itself is unchanged, so threads and checks still follow it. The design
+  skill now asks for kebab-case names (the code's own name when a block stands for code) and this prefix.
 - **`sbtel note <session> <target> <text>`**: an agent can start a thread on a block, a shape, a behavior
   or the whole file, for when you ask it to comment on things you have not commented on. It shows as a
   thread with an unread dot; you answer in it as usual. The skill tells agents to use it only when asked.
@@ -85,6 +89,7 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   was; the Sample button then loads it too. The project's playground uses it.
 
 ### Changed
+- The duplicate block name warning says why names must differ and what to do.
 - The design skill asks for small yet beautiful specs and for one thing per card, typed in the human's
   own words (code kinds, findings and evidence, statuses, roles, features), so the type colours carry
   meaning. When the subject is not code, a linked group may read left to right: a thing, then what details it.

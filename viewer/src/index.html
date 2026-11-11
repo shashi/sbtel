@@ -1403,7 +1403,7 @@ function cardHTML(B) {
   const P = m.d ? dotsOf(n, state.opts.childDots) : null;
   const isM = n.form === 'message';
   const title = isB ? (() => { const g = glyphFor(n.name); return `<span class="badge" data-beh="${esc(n.name)}" style="background:${g.c}">${g.g}</span><span>${esc(n.name)}</span>`; })()
-    : isM ? `<i class="md" style="background:${msgColor(n.name)}"></i><span>${esc(n.name)}</span>` : `<span>${esc(n.name)}</span>`;
+    : isM ? `<i class="md" style="background:${msgColor(n.name)}"></i><span>${esc(n.name)}</span>` : `<span>${esc(shownName(n))}</span>`;
   const foot = isM ? `<div class="foot"><span class="rel2">${esc('refines ' + n.refines)}</span></div>`
     : hasInside(n) ? `<div class="foot"><button class="tw" data-tog="${esc(n.id)}" aria-label="Open ${esc(n.name)}">▶</button><span class="cnt" data-tog="${esc(n.id)}">${countText(n)}</span></div>` : '';
   const foot2 = m.foot > 26 ? foot.replace('<div class="foot">', `<div class="foot wrap" style="height:${m.foot}px">`) : foot;
@@ -1417,7 +1417,7 @@ function cardHTML(B) {
 function frameHTML(B) {
   const b = B.node, h = B.hdr, P = dotsOf(b, state.opts.childDots);
   const nm = b.messageDecls.length;
-  return tabsHTML(b) + (B.appendixY != null ? `<div class="appx" style="top:${B.appendixY}px"></div>` : '') + `<div class="fh">${topHTML(b, h.top, true)}<div class="ttl"><span>${esc(b.name)}</span>${typeHTML(b)}</div>` +
+  return tabsHTML(b) + (B.appendixY != null ? `<div class="appx" style="top:${B.appendixY}px"></div>` : '') + `<div class="fh">${topHTML(b, h.top, true)}<div class="ttl" title="${esc(b.name)}"><span>${esc(shownName(b))}</span>${typeHTML(b)}</div>` +
     (h.lines ? `<div class="sk" style="-webkit-line-clamp:${h.lines};height:${h.lines * 20 + h.gaps * 10}px">${skHTML(b.sketch, h.gaps)}</div>` : '') +
     `<div class="foot"><button class="tw open" data-tog="${esc(b.id)}" aria-label="Close ${esc(b.name)}">▶</button><span class="cnt" data-tog="${esc(b.id)}">${countText(b)}</span>` +
     `</div></div>` + B.bandLabs.map(l => `<div class="bandlab" style="top:${l.y}px">${esc(l.text)}</div>`).join('');

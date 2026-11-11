@@ -21,18 +21,18 @@
 # the checker sees an assignment as a reference, so those show as downward bindings.
 Core.Model -> Core.Reader  # core/core.js:120 (+4 more)
 Core.Model -> Core.Constants  # core/core.js:127 (+2 more)
-Core.Lint -> Core.Model  # core/core.js:470 (+4 more)
-Core.Layout -> MeasuresText  # core/core.js:582 (+9 more)
-Core.Layout -> Core.Model  # core/core.js:585 (+10 more)
-Core.Layout -> Core.Constants  # core/core.js:588 (+37 more)
-Core.Layout -> Core.Reader  # core/core.js:633 (+1 more)
-Core.Layout -> Core.LayoutChecks  # core/core.js:793
-Core.Edits -> Core.Model  # core/core.js:951 (+6 more)
-Core.Edits -> Core.Reader  # core/core.js:1067 (+2 more)
-Core.Edits -> Core.Scope  # core/core.js:1206
-Core.Scope -> Core.Model  # core/core.js:1227 (+3 more)
-Core.Random -> Core.Model  # core/core.js:1283
-Core.Diff -> Core.Model  # core/core.js:1361 (+7 more)
+Core.Lint -> Core.Model  # core/core.js:483 (+4 more)
+Core.Layout -> MeasuresText  # core/core.js:595 (+9 more)
+Core.Layout -> Core.Model  # core/core.js:598 (+12 more)
+Core.Layout -> Core.Constants  # core/core.js:601 (+37 more)
+Core.Layout -> Core.Reader  # core/core.js:646 (+1 more)
+Core.Layout -> Core.LayoutChecks  # core/core.js:806
+Core.Edits -> Core.Model  # core/core.js:964 (+6 more)
+Core.Edits -> Core.Reader  # core/core.js:1080 (+2 more)
+Core.Edits -> Core.Scope  # core/core.js:1219
+Core.Scope -> Core.Model  # core/core.js:1240 (+3 more)
+Core.Random -> Core.Model  # core/core.js:1296
+Core.Diff -> Core.Model  # core/core.js:1374 (+7 more)
 App.Document -> App.Kit  # viewer/src/index.html:942 (+14 more)
 App.Document -> Viewer.Sample  # viewer/src/index.html:947
 App.History -> App.Kit  # viewer/src/index.html:1001 (+3 more)
@@ -54,7 +54,7 @@ App.Canvas -> App.Camera  # viewer/src/index.html:1081 (+2 more)
 App.Canvas -> App.Checks  # viewer/src/index.html:1083
 App.Canvas -> App.Callouts  # viewer/src/index.html:1084 (+1 more)
 App.Canvas -> App.Comments  # viewer/src/index.html:1093 (+3 more)
-App.Canvas -> Core.Model  # viewer/src/index.html:1101 (+19 more)
+App.Canvas -> Core.Model  # viewer/src/index.html:1101 (+21 more)
 App.Canvas -> App.Files  # viewer/src/index.html:1264
 App.Document -> App.History  # viewer/src/index.html:1437 (+1 more)
 App.Document -> Core.Edits  # viewer/src/index.html:1456
