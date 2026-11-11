@@ -29,7 +29,7 @@ type Options struct {
 	Port       int           // with PortSet: bind exactly this port (0 = random)
 	PortSet    bool          // --port was given: it overrides PreferPort and server.json's port
 	PreferPort int           // try this port first (the CLI passes the previous server's port)
-	Idle       time.Duration // exit after this long with no SSE client and no request
+	Idle       time.Duration // exit after this long with no SSE client and no request; 0: never
 	Version    string        // reported in status and meta; tests override it
 	ViewerHTML string        // the page served at /s/<id>/
 	Log        io.Writer     // diagnostics (server.log for a detached server)
@@ -69,9 +69,6 @@ type Server struct {
 func New(o Options) *Server {
 	if o.Tick <= 0 {
 		o.Tick = 2 * time.Second
-	}
-	if o.Idle <= 0 {
-		o.Idle = 30 * time.Minute
 	}
 	if o.Log == nil {
 		o.Log = io.Discard
@@ -156,20 +153,29 @@ func (s *Server) Run(ctx context.Context) error {
 	hs := &http.Server{Handler: s, ReadHeaderTimeout: 10 * time.Second, ErrorLog: nil}
 	errc := make(chan error, 1)
 	go func() { errc <- hs.Serve(ln) }()
-	s.logf("listening on 127.0.0.1:%d (pid %d, version %s, idle %s)", s.port, os.Getpid(), s.opts.Version, s.opts.Idle)
+	idleSays := "never"
+	if s.opts.Idle > 0 {
+		idleSays = s.opts.Idle.String()
+	}
+	s.logf("listening on 127.0.0.1:%d (pid %d, version %s, idle exit %s)", s.port, os.Getpid(), s.opts.Version, idleSays)
 	close(s.ready)
 
 	tick := time.NewTicker(s.opts.Tick)
 	defer tick.Stop()
-	idleEvery := s.opts.Idle / 4
-	if idleEvery > 5*time.Second {
-		idleEvery = 5 * time.Second
+	// The server stays up until it is stopped; with Options.Idle set it also exits after that long unused.
+	var idleC <-chan time.Time
+	if s.opts.Idle > 0 {
+		idleEvery := s.opts.Idle / 4
+		if idleEvery > 5*time.Second {
+			idleEvery = 5 * time.Second
+		}
+		if idleEvery < 20*time.Millisecond {
+			idleEvery = 20 * time.Millisecond
+		}
+		idle := time.NewTicker(idleEvery)
+		defer idle.Stop()
+		idleC = idle.C
 	}
-	if idleEvery < 20*time.Millisecond {
-		idleEvery = 20 * time.Millisecond
-	}
-	idle := time.NewTicker(idleEvery)
-	defer idle.Stop()
 
 	reason := ""
 loop:
@@ -184,7 +190,7 @@ loop:
 		case err := <-errc:
 			reason = "serve error: " + err.Error()
 			break loop
-		case <-idle.C:
+		case <-idleC:
 			if s.clients.Load() == 0 && time.Since(time.Unix(0, s.lastActive.Load())) > s.opts.Idle {
 				reason = "idle"
 				break loop

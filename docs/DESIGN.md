@@ -859,8 +859,9 @@ repository's top `.gitignore` has no line that ignores `.sbtel`, it appends `.sb
   `127.0.0.1:0` (a random port): keeping the port is a best effort, and on Windows the tests only log a
   fallback. `--port`
   overrides both.
-- **Idle shutdown**: the server exits when it has had no SSE client and no request for N minutes. N is
-  `--idle`, else `$SBTEL_IDLE_MINUTES`, else 30.
+- **Idle shutdown** is off unless asked for (v0.4.1; before, 30 minutes): the server stays up until
+  `sbtel serve --stop`, a signal, or a newer sbtel replacing it. With `--idle N` or `$SBTEL_IDLE_MINUTES`
+  it exits when it has had no SSE client and no request for N minutes.
 - It removes server.json on exit (SIGINT, SIGTERM, idle, or stop).
 
 ### 5.2 Browser API (every route under `/s/<id>/`)

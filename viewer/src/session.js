@@ -110,9 +110,9 @@ function sessionComments({ version, closed }) {
     // The chat's rows: a sent comment says how it went, cannot be deleted, and carries the agent's replies.
     const status0 = chatStatus, btns0 = chatRowBtns;
     // Sent: the server has it. Seen: `sbtel inbox` has handed it to the agent (the server says which, setSeen).
-    chatStatus = c => c.status === 'sent' ? (C.seen.has(c.sid) ? ['st-seen', 'Seen by the agent', (c.review ? 'Sent in review ' + c.review + '. ' : '') + 'The agent has been given this comment'] : ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent', 'The agent has not read its inbox since']) : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
+    chatStatus = c => c.status === 'sent' ? (C.seen.has(c.sid) ? ['st-seen', agentName() !== 'Agent' ? 'Seen by ' + agentName() : 'Seen by the agent', (c.review ? 'Sent in review ' + c.review + '. ' : '') + 'The agent has been given this comment'] : ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent', 'The agent has not read its inbox since']) : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
     chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
-    chatReplies = c => (c.replies || []).map((r, i) => `<div class="sb-reply${C.read && i >= (C.read[c.sid] || 0) ? ' unread' : ''}"><span class="who">Agent${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
+    chatReplies = c => (c.replies || []).map((r, i) => `<div class="sb-reply${C.read && i >= (C.read[c.sid] || 0) ? ' unread' : ''}"><span class="who">${ICON.agent}${esc(agentName())}${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
     // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
     const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
     const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };

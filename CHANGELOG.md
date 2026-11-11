@@ -12,6 +12,7 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- Settings has Agent's name: what the agent is called in threads ("Agent" by default).
 - Settings has Font: the name of a font installed on your computer, used for names and text (code keeps
   its own). Nothing is downloaded; if the font is not installed the built-in one is used and the setting says so.
 - **A chat can be read large.** The button beside a chat's close button opens it as a tall window with
@@ -99,6 +100,10 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   was; the Sample button then loads it too. The project's playground uses it.
 
 ### Changed
+- The local server no longer exits after 30 idle minutes: it stays up until `sbtel serve --stop`. Set
+  `SBTEL_IDLE_MINUTES` (or `--idle` on the server) to have it exit when unused.
+- The agent's name in a thread has an icon and its own colour (it had none: the colour it asked for was not
+  defined, which also left links and a few labels in the text colour).
 - The built-in font for names and text is Commissioner (SIL OFL 1.1), in place of Hanken Grotesk. Card widths
   shift slightly.
 - Card outlines are fainter and open blocks a little firmer than cards; shapes keep the full line. The ears
