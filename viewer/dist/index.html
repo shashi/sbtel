@@ -6595,7 +6595,9 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
   async function boot() {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     let got = await fromURL(); const text = got ? got.text : SAMPLE, exported = !!(got && got.exported);
-    if (got && got.start) { got = null; $('sample').onclick = () => { state.open = new Set(); state.seenTop = new Set(); setSource(text); fit(true); }; } // the page's own sample: handled as the built-in one is
+    // The page may also name the blocks its example starts with open (<meta name="sbtel-example-open">, ids separated by spaces).
+    const startOpen = () => new Set((document.querySelector('meta[name="sbtel-example-open"]')?.getAttribute('content') || '').split(/\s+/).filter(Boolean));
+    if (got && got.start) { got = null; state.open = startOpen(); $('sample').onclick = () => { state.open = startOpen(); state.seenTop = new Set(); setSource(text); fit(true); }; } // the page's own sample: handled as the built-in one is
     const key = got || P.embed ? ':' + (P.embed ? 'embed-' : 'spec-') + digest(got && got.error ? got.raw : text) : '';
     if (key) loadPrefs(key);
     if (P.theme) state.opts.theme = P.theme; else if (P.embed) state.opts.theme = 'system';

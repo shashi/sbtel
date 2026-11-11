@@ -233,6 +233,6 @@ Viewer.Play -> App.EditDialog  # viewer/src/play.js:217
 Viewer.Play -> Core.Layout  # viewer/src/play.js:244
 Viewer.Play -> Core.Model  # viewer/src/play.js:268 (+1 more)
 Viewer.Play -> Viewer.Sample  # viewer/src/play.js:277
-Viewer.Play -> App.Modals  # viewer/src/play.js:282
-Viewer.Play -> Core.Bindings  # viewer/src/play.js:305
-Viewer.Play -> Viewer.Bindings  # viewer/src/play.js:305
+Viewer.Play -> App.Modals  # viewer/src/play.js:284
+Viewer.Play -> Core.Bindings  # viewer/src/play.js:307
+Viewer.Play -> Viewer.Bindings  # viewer/src/play.js:307
