@@ -45,9 +45,10 @@
 .st-ord.flip { opacity:0; }
 
 /* A comment bubble on a block, and the dot that says a reply is new. */
-.st-bub { position:absolute; top:-11px; right:-11px; display:inline-flex; align-items:center; gap:4px; height:22px; min-width:22px; padding:0 7px; border-radius:11px; background:var(--accent); color:#fff;
-  font:700 11.5px/1 var(--ff-ui); box-shadow:0 0 0 2px var(--surface); animation:st-pop .4s cubic-bezier(.2,1.5,.4,1) both; }
-@media (prefers-color-scheme: dark) { .st-bub { color:#0E1830; } }
+.st-bub { position:absolute; top:-11px; right:-11px; display:inline-flex; align-items:center; gap:4px; height:22px; min-width:22px; padding:0 7px; border-radius:11px; background:var(--surface); color:var(--muted);
+  font:600 11.5px/1 var(--ff-ui); box-shadow:inset 0 0 0 1px var(--frame-line); transition:background-color .3s ease, color .3s ease; animation:st-pop .4s cubic-bezier(.2,1.5,.4,1) both; }
+.st-bub.unread { background:var(--accent); color:#fff; box-shadow:none; }
+@media (prefers-color-scheme: dark) { .st-bub.unread { color:#0E1830; } }
 .st-bub svg { width:11px; height:11px; fill:none; stroke:currentColor; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round; }
 .st-bub::after, .st-dock .nx::after { content:""; position:absolute; top:-4px; right:-4px; width:10px; height:10px; border-radius:50%; background:var(--unread); box-shadow:0 0 0 2px var(--surface); transform:scale(0); transition:transform .45s cubic-bezier(.2,1.6,.4,1); }
 .st-bub.unread::after, .st-dock .nx.unread::after { transform:scale(1); }
