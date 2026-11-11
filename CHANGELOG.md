@@ -54,6 +54,9 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 - **A dragged block keeps its links.** Each line to a neighbour follows the block as a slack cable. Over
   a spot that would part the pair it snaps, the halves springing back; over a spot that keeps the pair
   it joins again. The line used to vanish the moment the block was picked up.
+- **An open block travels whole.** Dragging an open block carries its level lines and the links between
+  its blocks with it; they stayed behind, or vanished, before. A `+` that would sit on a link handle of
+  the selected block steps aside while the block is selected.
 - **Comments are notes beside the block.** The callout stands beside what it is about, with a tail
   pointing at it, and no longer covers it; it keeps clear of the toolbar. A thread reads as text: your
   comment, what became of it in small type, the agent's answer set in from a rule. One field holds the

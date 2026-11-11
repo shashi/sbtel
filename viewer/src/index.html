@@ -84,6 +84,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .ties { z-index:1400; }
 .ties path { stroke:var(--line); stroke-width:1.5; stroke-dasharray:none; stroke-linecap:round; }
 .ties .cable { transition:opacity .08s linear; }
+.lsep.lift { transition:none !important; z-index:1501; opacity:.85; }
+.lsep.lift .plus { visibility:hidden; }
 .ties .half { stroke:var(--warn); stroke-dasharray:1; stroke-dashoffset:0; opacity:0; }
 .ties .spark { opacity:0; }
 .ties .spark path { stroke:var(--warn); stroke-width:2; }
@@ -257,7 +259,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 
 .aff { position:absolute; left:0; top:0; z-index:600; }
 .world.anim .aff.keep { transition: transform .32s cubic-bezier(.3,.7,.2,1); }
-.world.noaff .aff { visibility:hidden; }
+.world.noaff .aff, .aff.covered { visibility:hidden; }
 /* A + is faint until the pointer comes near it (nearAff), so a diagram at rest shows the design, not its handles. */
 @media (hover: hover) { .aff.keep:not(.gutter) > .plus, .lsep > .plus { opacity:.25; transition:opacity .15s ease; } .aff.keep.near > .plus, .lsep.near > .plus, .aff.keep > .plus:focus-visible, .lsep > .plus:focus-visible { opacity:1; } }
 .plus { position:relative; box-sizing:border-box; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; border:1px solid transparent; background:transparent; color:var(--muted); cursor:pointer; font-size:0; line-height:0; padding:0; }
@@ -977,7 +979,7 @@ function paint(lay, keep) {
     else if (moving) requestAnimationFrame(() => { el.style.transform = at; }); else el.style.transform = at;
     if (key) el.dataset.key = key; else delete el.dataset.key;
     el.style.width = w != null ? w + 'px' : '';
-    el._act = act; if (el._html !== html) { el._html = html; el.innerHTML = html; }
+    el._act = act; el._x = x; el._y = y; if (el._html !== html) { el._html = html; el.innerHTML = html; }
   };
   lay.plus.forEach(p => add(`<button class="plus" title="${p.title}" aria-label="${p.title}">+</button>`, p.x, p.y, null, p.act, ''));
   // The first level's gutter offers to name it (an unnamed first level has no line of its own).
@@ -1048,6 +1050,7 @@ function paintSeps(lay, pv) {
   lay.dividers.forEach(v => {
     seen.add(v.key);
     let el = seps.get(v.key);
+    if (el && el._lift) return; // it is travelling with a dragged block
     const at = `translate(${v.x1}px,${v.y}px)`, w = (v.x2 - v.x1) + 'px';
     if (!el) {
       el = document.createElement('div'); el.className = 'lsep'; el.dataset.key = v.key;
@@ -1067,7 +1070,7 @@ function paintSeps(lay, pv) {
     const hit = el.querySelector('.lhit'); hit.dataset.lvl = v.act.block.id + '|' + v.act.at;
   });
   for (const [key, el] of seps) {
-    if (seen.has(key)) continue;
+    if (seen.has(key) || el._lift) continue;
     if (pv || anim) { el.classList.add('gone'); if (!pv) { clearTimeout(el._rm); el._rm = setTimeout(() => { if (el.classList.contains('gone')) { el.remove(); seps.delete(key); } }, 340); } }
     else { el.remove(); seps.delete(key); }
   }
@@ -1440,6 +1443,12 @@ function applySelection() {
     }
   });
   document.querySelectorAll('#lines path.vis').forEach(p => p.classList.toggle('selected', p.dataset.key === state.selLine));
+  // A + that would sit on a link handle of the selected block (a full row leaves it no room further out)
+  // steps aside while the block is selected.
+  const S = state.sel && state.multi.size === 1 && lay.loc.has(state.sel) ? lay.blocks.find(b => b.id === state.sel) : null;
+  document.querySelectorAll('.aff.keep:not(.gutter)').forEach(el => {
+    el.classList.toggle('covered', !!S && [[S.x, S.y + S.h / 2], [S.x + S.w, S.y + S.h / 2]].some(h => Math.hypot(el._x - h[0], el._y - h[1]) < 30));
+  });
   renderStrip();
 }
 function select(id, lineKey) { state.sel = id || null; state.multi = new Set(id ? [id] : []); state.selLine = lineKey || null; applySelection(); }
@@ -1676,9 +1685,13 @@ function attachZones(id) {
 // from the middle. Moving back joins them again.
 function startTies() {
   const id = drag.id, cs = state.lay.connectors.filter(c => c.a === id || c.b === id);
-  if (!cs.length) return;
+  // What is inside an open block travels with it: the lines between its blocks, and its level lines.
+  const inner = state.lay.connectors.filter(c => drag.keep.has(c.a) && drag.keep.has(c.b));
+  drag.seps = state.lay.dividers.filter(v => drag.keep.has(v.act.block.id) && seps.has(v.key)).map(v => { const el = seps.get(v.key); el._lift = true; el.classList.add('lift'); return { el, x:v.x1, y:v.y }; });
+  if (!cs.length && !inner.length) return;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'ovl ties'); svg.setAttribute('width', 1); svg.setAttribute('height', 1);
-  svg.innerHTML = cs.map(() => '<g class="tie"><path class="cable"/><path class="half a" pathLength="1"/><path class="half b" pathLength="1"/><g class="spark"><path d="M-7 -6 L-3 -2 M7 -6 L3 -2 M-7 6 L-3 2 M7 6 L3 2"/></g></g>').join('');
+  svg.innerHTML = cs.map(() => '<g class="tie"><path class="cable"/><path class="half a" pathLength="1"/><path class="half b" pathLength="1"/><g class="spark"><path d="M-7 -6 L-3 -2 M7 -6 L3 -2 M-7 6 L-3 2 M7 6 L3 2"/></g></g>').join('') +
+    `<g class="carried">${inner.map(c => `<path d="M${c.pts.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L')}"/>`).join('')}</g>`;
   $('world').appendChild(svg);
   drag.ties = cs.map((c, i) => ({ other: c.a === id ? c.b : c.a, g: svg.children[i] })); drag.tieSvg = svg;
   const tick = () => { if (!drag || !drag.ties) return; drawTies(); drag.tieRaf = requestAnimationFrame(tick); };
@@ -1687,6 +1700,7 @@ function startTies() {
 function drawTies() {
   const k = state.cam.k, D = { x:drag.B.x + (drag.dx || 0), y:drag.B.y + (drag.dy || 0), w:drag.B.w, h:drag.B.h }, z = drag.best;
   const f = n => n.toFixed(1);
+  drag.tieSvg.lastElementChild.setAttribute('transform', `translate(${f(drag.dx || 0)} ${f(drag.dy || 0)})`);
   drag.ties.forEach(t => {
     const el = state.elems.get(t.other); if (!el || el.style.display === 'none') { t.g.style.display = 'none'; return; }
     t.g.style.display = '';
@@ -1705,7 +1719,10 @@ function drawTies() {
     if (t.kept !== kept) { t.g.classList.toggle('broken', !kept); t.g.classList.toggle('joined', kept && t.kept === false); t.kept = kept; }
   });
 }
-function endTies(d) { if (!d.ties) return; cancelAnimationFrame(d.tieRaf); d.tieSvg.remove(); d.ties = null; }
+function endTies(d) {
+  (d.seps || []).forEach(s => { s.el._lift = false; s.el.classList.remove('lift'); s.el.style.transform = `translate(${s.x}px,${s.y}px)`; });
+  if (!d.ties) return; cancelAnimationFrame(d.tieRaf); d.tieSvg.remove(); d.ties = null;
+}
 function startDrag(e) {
   const p = press; press = null;
   const B = state.lay.blocks.find(b => b.id === p.id), el = state.elems.get(p.id); if (!B || !el) return;
@@ -1730,6 +1747,7 @@ function moveDrag(e) {
   const k = state.cam.k, dx = (e.clientX - drag.x) / k, dy = (e.clientY - drag.y) / k;
   drag.lifted.forEach(m => { m.el.style.transform = `translate(${m.x + dx}px,${m.y + dy}px)`; });
   drag.dx = dx; drag.dy = dy;
+  (drag.seps || []).forEach(s => { s.el.style.transform = `translate(${s.x + dx}px,${s.y + dy}px)`; });
   let best = null;
   const rect = (z, cls, rx) => `<rect class="${cls}" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="${rx}"/>`;
   if (drag.mode === 'move') {
