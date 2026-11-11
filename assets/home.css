@@ -377,12 +377,13 @@ details.spec > pre.code { margin-top:10px; }
 #car .edges .route path { stroke-dasharray:2 6; stroke-linecap:round; stroke-width:2; opacity:.7; }
 #car .row { gap:26px; }
 /* Learn more: four short entries. */
-.more { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
-.more li { background:var(--surface); border:1.5px solid var(--frame-line); border-radius:12px; padding:18px 20px 20px; }
-.more h3 { margin:0 0 6px; font-size:17px; font-weight:600; }
-.more p { margin:0; font-size:16.5px; line-height:1.55; color:var(--ink-2); max-width:52ch; }
+/* Learn more: four plain rows, the name of each thing in a column of its own and a rule between them. */
+.more { list-style:none; margin:0; padding:0; max-width:820px; border-top:1px solid var(--frame-line); }
+.more li { display:grid; grid-template-columns:170px minmax(0, 1fr); gap:6px 28px; align-items:baseline; padding:16px 0 17px; border-bottom:1px solid color-mix(in srgb, var(--frame-line) 45%, transparent); }
+.more h3 { margin:0; font-size:17px; font-weight:600; }
+.more p { margin:0; font-size:16.5px; line-height:1.55; color:var(--ink-2); max-width:58ch; }
 .more q { font-family:var(--ff-mono); font-size:.9em; color:var(--ink); quotes:"\201C" "\201D"; }
-@media (max-width: 720px) { .more { grid-template-columns:minmax(0, 1fr); } }
+@media (max-width: 720px) { .more li { grid-template-columns:minmax(0, 1fr); } }
 
 /* A sentence to say to an agent, where a command would be: it wraps. */
 .install code.say { white-space:normal; font-family:var(--ff-ui); font-size:14.5px; line-height:1.45; color:var(--ink); }

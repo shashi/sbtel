@@ -5105,9 +5105,23 @@ SBTEL.modes.server = (() => {
 .sb-bar.closed { color:var(--ink); }
 .sb-bar.closed .dot { background:var(--warn); animation:none; }
 @keyframes sbPulse { 50% { opacity:.3; } }
-.sb-vt { position:fixed; left:50%; transform:translateX(-50%); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 46px); z-index:2950; background:var(--panel); color:var(--ink); border:1px solid var(--panel-line); border-left:3px solid var(--accent); border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.45; box-shadow:0 14px 40px var(--shadow); width:max-content; max-width:min(460px, calc(100vw - 32px)); box-sizing:border-box; }
-.sb-vt.warn { border-left-color:var(--warn); }
-.sb-vt .acts { display:flex; gap:6px; justify-content:flex-end; margin-top:8px; flex-wrap:wrap; }
+.sb-vt { position:fixed; left:50%; transform:translateX(-50%); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 50px); z-index:2950; display:flex; align-items:center; gap:6px 12px; flex-wrap:wrap; background:var(--ink); color:var(--surface); border-radius:13px; padding:8px 8px 8px 14px; font-size:13.5px; line-height:1.4; box-shadow:0 18px 44px rgba(0,0,0,.34), 0 3px 10px rgba(0,0,0,.2); width:max-content; max-width:min(560px, calc(100vw - 24px)); box-sizing:border-box; animation:sbvt-in .45s cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes sbvt-in { from { opacity:0; transform:translate(-50%, -18px) scale(.95); } to { opacity:1; transform:translate(-50%, 0) scale(1); } }
+.sb-vt .dot { width:8px; height:8px; border-radius:50%; background:var(--ok); flex:none; animation:sbvt-ping 1.4s ease-out infinite; }
+.sb-vt.warn .dot { background:var(--warn); }
+@keyframes sbvt-ping { 0% { box-shadow:0 0 0 0 color-mix(in srgb, currentColor 0%, var(--ok) 70%); } 100% { box-shadow:0 0 0 9px transparent; } }
+.sb-vt .txt { flex:1 1 180px; min-width:0; }
+.sb-vt .txt:has(small) { flex-basis:calc(100% - 30px); padding:3px 0 2px; }
+.sb-vt .txt b { font-weight:600; }
+.sb-vt .txt small { display:block; margin-top:1px; font-size:12px; opacity:.72; }
+.sb-vt .acts { display:flex; gap:4px; align-items:center; margin-left:auto; }
+.sb-vt .b { border:0; cursor:pointer; padding:6px 11px; border-radius:8px; font:600 13px var(--ff-ui); color:inherit; background:color-mix(in srgb, var(--surface) 16%, transparent); white-space:nowrap; }
+.sb-vt .b:hover { background:color-mix(in srgb, var(--surface) 26%, transparent); }
+.sb-vt .b.primary { background:var(--accent); color:#fff; }
+.sb-vt .b.x { background:none; padding:6px 7px; opacity:.7; display:inline-flex; }
+.sb-vt .b.x:hover { opacity:1; background:color-mix(in srgb, var(--surface) 16%, transparent); }
+.sb-vt .b:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce) { .sb-vt, .sb-vt .dot { animation:none; } }
 .sb-cmp { position:fixed; inset:0; z-index:2940; background:var(--canvas); display:flex; flex-direction:column; }
 .sb-cmp header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--panel-line); font-size:14px; }
 .sb-cmp header b { font-weight:600; }
@@ -5225,14 +5239,15 @@ SBTEL.modes.server = (() => {
     if (S.closed) return;
     hideVersionToast();
     if (cmpEl) closeChanges(); // a still newer version arrived while the changes were open
-    const from = by === 'disk' ? ' (the file changed on disk)' : by === 'user' ? ' (saved from another tab)' : '';
-    const msg = conflict ? 'Not saved: the spec changed since this page loaded it.' : `A new version${version ? ' (v' + version + ')' : ''} is available${from}.`;
+    const ver = 'Version' + (version ? ' ' + version : '');
+    const msg = conflict ? 'Not saved: the spec changed since this page loaded it.' : by === 'disk' ? `${ver}: the file changed on disk` : by === 'user' ? `${ver}, saved from another tab` : `${ver} from your agent`;
     // Unsent edits: neither saved nor in a sent review. A sent proposal alone is not at risk: it is in the
     // session (proposals/), and reloading keeps it in the undo history.
     const dirty = unsent(), prop = S.proposal && !dirty;
     vtEl = document.createElement('div'); vtEl.className = 'sb-vt' + (conflict || dirty ? ' warn' : ''); vtEl.setAttribute('role', 'alertdialog');
-    vtEl.innerHTML = `<div>${esc(msg)}${dirty ? ' You have edits that are not saved or sent; reloading replaces them (' + kb('⌘Z') + ' brings them back).' : prop ? ` It may hold the edits you proposed in ${esc(S.proposal.id)}; reloading shows it (⌘Z brings your proposal back).` : ''}</div>
-      <div class="acts"><button class="btn" data-v="later">${dirty ? 'Keep editing' : 'Later'}</button><button class="btn" data-v="diff" title="Look at what changed before you reload">See changes</button><button class="btn primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button></div>`;
+    const more = dirty ? 'You have edits that are not saved or sent; reloading replaces them (' + kb('⌘Z') + ' brings them back).' : prop ? `It may hold the edits you proposed in ${esc(S.proposal.id)}; reloading shows it (${kb('⌘Z')} brings your proposal back).` : '';
+    vtEl.innerHTML = `<i class="dot"></i><div class="txt"><b>${esc(msg)}</b>${more ? `<small>${more}</small>` : ''}</div>
+      <div class="acts"><button class="b" data-v="diff" title="Look at what changed before you reload">See changes</button><button class="b primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button><button class="b x" data-v="later" title="${dirty ? 'Keep editing' : 'Later'}" aria-label="${dirty ? 'Keep editing' : 'Later'}">${ICON.close}</button></div>`;
     vtEl.addEventListener('click', e => {
       const v = e.target.closest('[data-v]')?.dataset.v; if (!v) return;
       hideVersionToast(); if (v === 'reload') reload(); if (v === 'diff') seeChanges(info);
