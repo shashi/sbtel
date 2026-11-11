@@ -625,10 +625,10 @@ body.diffmode .help .norm { display:none; }
 @media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
 .tb.cmtbtn { position:relative; }
 .cmtnav { display:inline-flex; align-items:center; } .cmtnav .tb.icon { min-width:26px; width:26px; padding:0; } .cmtnav .tb.cmtmore { padding:0 5px; gap:5px; color:var(--ink-2); }
-.walkm { position:fixed; z-index:2100; width:268px; box-sizing:border-box; padding:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; box-shadow:0 12px 36px var(--shadow); font-size:13.5px; }
+.walkm { position:fixed; z-index:2100; width:304px; box-sizing:border-box; padding:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; box-shadow:0 12px 36px var(--shadow); font-size:13.5px; }
 .walkm label { display:flex; gap:10px; align-items:flex-start; padding:7px 8px; border-radius:8px; cursor:pointer; } .walkm label:hover { background:var(--surface); }
 .walkm input { margin:3px 0 0; accent-color:var(--accent); flex:none; } .walkm b { display:block; font-weight:600; } .walkm small { display:block; color:var(--muted); font-size:12.5px; line-height:1.35; }
-.walkm fieldset { border:0; margin:0; padding:0; } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
+.walkm fieldset { border:0; margin:0; padding:0; } .walkm .tip { margin:6px 8px 4px; padding-top:8px; border-top:1px solid var(--panel-line); font-size:12.5px; line-height:1.4; color:var(--muted); } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
 .pop.chat ul.thread li.agent > .sb-reply:first-child { margin-top:0; }
 .pop.chat .chh .in { flex:none; font-size:12.5px; color:var(--muted); }
 .pop.chat .chh .xbtn.big { margin-left:auto; } .pop.chat .chh .xbtn.big + .xbtn { margin-left:0; } .pop.chat .chh .xbtn.big svg.i { width:14px; height:14px; }
@@ -4411,16 +4411,26 @@ function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: 
 // The toolbar's Comments button (and the C key) lists each thing that has comments, the ones with an
 // unread reply first, then by the latest word. A mode says which comments are unread (chatUnread).
 let chatUnread = c => false;
-// The toolbar's button walks the new replies: each press opens the next thread with one, until none is left
-// and the button is off. (C still lists every thread.) A reply is never announced: it puts a dot on its
-// thread's bubble and on this button, and the reader comes to it when they choose. The order is kept in
-// the browser:
-//   place  the diagram's reading order, going on from where the reader is, so neighbours come together and
-//          a block comes before what is inside it;
-//   new    latest reply first;   old  the reply that has waited longest first.
+// The toolbar's arrows walk the new replies: forward opens the next thread with one, until none is left and
+// the arrow is off. (C still lists every thread.) A reply is never announced: it puts a dot on its thread's
+// bubble and on the forward arrow, and the reader comes to it when they choose. Which thread is next is a
+// chain of three questions, asked in an order the reader picks (kept in the browser):
+//   nearest   the thread closest to where the reader is: in the same block, else under the same parent,
+//             and so on outward, so a neighbourhood is finished before the reader is taken out of it;
+//   back      among equally near ones, the region the reader was in most recently;
+//   top       the first one from the beginning, in the diagram's reading order, which the arrangement of
+//             blocks decides (called "from the beginning" on the page: "top" there means the top level).
+// near-back: nearest, back, top.  near-top: nearest, top.  top: top alone.  new / old: by the latest reply.
 // A closed block is one stop: everything unread inside it is read there, together.
-const WALK = Object.assign({ order:'place' }, store.get('sbtel-walk', null) || {});
-let walkAt = null;
+const WALK = Object.assign({ order:'near-back' }, store.get('sbtel-walk', null) || {});
+if (!['near-back', 'near-top', 'top', 'new', 'old'].includes(WALK.order)) WALK.order = 'near-back';
+// The blocks a thread sits in, outermost first (its own block last, for a thread on a block).
+function pathOf(key) {
+  const i = key.indexOf(':'), kind = key.slice(0, i), rest = key.slice(i + 1), m = state.model;
+  const at = kind === 'block' ? (rest && m.blocks.get(rest)) : kind === 'msg' ? (m.messages.get(rest) || {}).owner : kind === 'beh' ? (m.behaviors.get(rest) || {}).owner : kind === 'line' ? (m.blocks.get(rest.split('|')[0]) || {}).parent : null;
+  const out = []; for (let q = at; q && q !== m.root && q.form === 'block'; q = q.parent) out.unshift(q.id);
+  return out;
+}
 function keyPos(key) {
   const i = key.indexOf(':'), kind = key.slice(0, i), rest = key.slice(i + 1), m = state.model;
   const n = kind === 'block' ? (rest ? m.blocks.get(rest) : null) : kind === 'msg' ? m.messages.get(rest) : kind === 'beh' ? m.behaviors.get(rest) : kind === 'line' ? m.blocks.get(rest.split('|')[0]) : null;
@@ -4441,12 +4451,29 @@ function walkNote(key) {   // every chat that opens joins the trail, unless an a
   if (walkGo || walked[walkPos] === key) return;
   walked.length = walkPos + 1; walked.push(key); if (walked.length > 60) walked.shift(); walkPos = walked.length - 1;
 }
+// The thread the forward arrow opens next, among those with new replies.
+function nextStop(now) {
+  if (!now.length) return null;
+  if (WALK.order === 'new') return now.reduce((a, t) => t.last > a.last ? t : a);
+  if (WALK.order === 'old') return now.reduce((a, t) => t.last < a.last ? t : a);
+  const hereKey = walked[walkPos] || (state.sel && state.model.node(state.sel) ? targetKey(state.sel) : null), here = hereKey ? pathOf(hereKey) : [];
+  const rank = now.map(t => {
+    const path = pathOf(t.key); let near = 0; while (near < here.length && near < path.length && here[near] === path[near]) near++;
+    if (t.key === hereKey) near = 1e6;
+    // The region a thread is in, seen from here: the branch it takes where its path leaves the reader's.
+    const region = k => { const q = pathOf(k); return q[near] ?? k; }, mine = path[near] ?? t.key;
+    let back = -1; for (let i = walkPos; i >= 0 && back < 0; i--) if (region(walked[i]) === mine && walked[i] !== hereKey) back = i;
+    return { t, near: hereKey ? near : 0, back, pos: keyPos(t.key) };
+  });
+  const by = WALK.order === 'top' ? (x, y) => x.pos - y.pos : WALK.order === 'near-top' ? (x, y) => y.near - x.near || x.pos - y.pos : (x, y) => y.near - x.near || y.back - x.back || x.pos - y.pos;
+  return rank.sort(by)[0].t;
+}
 function cmtCount() {
-  const next = $('cmtBtn'), prev = $('cmtPrev'), n = unreadStops().length, ahead = walkPos < walked.length - 1;
+  const next = $('cmtBtn'), prev = $('cmtPrev'), now = unreadStops(), n = now.length, ahead = walkPos < walked.length - 1, to = !ahead && nextStop(now);
   $('cmtNav').hidden = !n && !state.comments.some(c => (c.replies || []).length);
   next.disabled = !n && !ahead; prev.disabled = walkPos < 0 || (walkPos === 0 && chatOpen());
-  $('cmtN').textContent = n || ''; next.classList.toggle('unread', n > 0); if (!n) walkAt = null;
-  next.title = ahead ? 'Forward to the thread after' : n ? `Read the next new reply (${n} thread${n === 1 ? '' : 's'})` : 'No new replies. Press C for every comment.';
+  $('cmtN').textContent = n || ''; next.classList.toggle('unread', n > 0);
+  next.title = ahead ? 'Forward to the thread after' : to ? `Next new reply: ${targetLabel(to.key)}${n > 1 ? ` (${n} threads have one)` : ''}` : 'No new replies. Press C for every comment.';
   $('chatBtn').classList.toggle('unread', state.comments.some(c => c.target === 'block:' && chatUnread(c)));
 }
 function showThread(key) {
@@ -4461,16 +4488,8 @@ function prevThread() {
 function nextUnread() {
   if (walkPos < walked.length - 1) { walkTo(walkPos + 1); return; }
   closePop('thread');
-  const now = unreadStops(); if (!now.length) { cmtCount(); return; }
-  let pick;
-  if (WALK.order === 'new') pick = now.reduce((a, t) => t.last > a.last ? t : a);
-  else if (WALK.order === 'old') pick = now.reduce((a, t) => t.last < a.last ? t : a);
-  else {
-    const from = walkAt != null ? walkAt : state.sel && state.model.node(state.sel) ? keyPos(targetKey(state.sel)) - .01 : -Infinity;
-    const inOrder = now.map(t => ({ t, p:keyPos(t.key) })).sort((x, y) => x.p - y.p);
-    pick = (inOrder.find(x => x.p > from) || inOrder[0]).t;
-  }
-  walkAt = keyPos(pick.key); cmtCount(); showThread(pick.key);
+  const pick = nextStop(unreadStops()); if (!pick) { cmtCount(); return; }
+  showThread(pick.key);
 }
 {
   let m = null;
@@ -4480,11 +4499,12 @@ function nextUnread() {
     if (m) { shut(); return; }
     m = document.createElement('div'); m.className = 'walkm'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-label', 'How new replies are read');
     const opt = (v, name, hint) => `<label><input type="radio" name="wkOrder" value="${v}"${WALK.order === v ? ' checked' : ''}><span><b>${name}</b><small>${hint}</small></span></label>`;
-    m.innerHTML = `<fieldset><legend>Read new replies</legend>${opt('place', 'By place', 'Neighbours together, from where you are.')}${opt('new', 'Newest first', 'The latest reply first.')}${opt('old', 'Longest waiting', 'The oldest reply first.')}</fieldset>`;
+    m.innerHTML = `<fieldset><legend>Read new replies</legend>${opt('near-back', 'Nearest, then where I was', 'Finish the place you are in; then go back to the one before.')}${opt('near-top', 'Nearest, then from the beginning', 'Finish the place you are in; then take the first one in reading order.')}${opt('top', 'From the beginning', 'Always the first one in reading order.')}${opt('new', 'Newest first', 'The latest reply first.')}${opt('old', 'Longest waiting', 'The oldest reply first.')}</fieldset><p class="tip" hidden>Tip: arrange blocks in the order you want to reach them. Earlier comes first.</p>`;
+    const tip = () => { m.querySelector('.tip').hidden = !['near-top', 'top'].includes(WALK.order); }; tip();
     document.body.appendChild(m);
     const r = $('cmtMore').getBoundingClientRect(); m.style.bottom = (innerHeight - r.top + 10) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.left + r.width / 2 - m.offsetWidth / 2)) + 'px';
     $('cmtMore').setAttribute('aria-expanded', 'true');
-    m.addEventListener('change', () => { WALK.order = m.querySelector('[name=wkOrder]:checked')?.value || 'place'; walkAt = null; store.set('sbtel-walk', { order:WALK.order }); });
+    m.addEventListener('change', () => { WALK.order = m.querySelector('[name=wkOrder]:checked')?.value || 'near-back'; store.set('sbtel-walk', { order:WALK.order }); tip(); cmtCount(); });
     addEventListener('pointerdown', away, true); addEventListener('keydown', esc2, true);
   };
 }
