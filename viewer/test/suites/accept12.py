@@ -112,7 +112,7 @@ with sync_playwright() as p:
     box = pg.locator('.blk[data-id="Notes.Store"] .ttl').bounding_box()
     pg.mouse.click(box['x'] + 20, box['y'] + 8, button='right'); pg.wait_for_timeout(300)
     labels = E(pg, "[...document.querySelectorAll('.pop .mi')].map(b => b.textContent)")
-    check('readonlyMenu', 'Code' in labels and not any(x in labels for x in ['Edit', 'Delete', 'Add a behavior', 'Insert a level above']))
+    check('readonlyMenu', 'Source' in labels and not any(x in labels for x in ['Edit', 'Delete', 'Add a behavior', 'Insert a level above']))
     pg.keyboard.press('Escape'); pg.keyboard.press('Escape'); pg.wait_for_timeout(200)
     box = pg.locator('.blk[data-id="Notes.Editor"] .ttl').bounding_box()
     pg.mouse.move(box['x'] + 20, box['y'] + 8); pg.mouse.down(); pg.mouse.move(box['x'] + 20, box['y'] + 160, steps=12); pg.mouse.up(); pg.wait_for_timeout(500)

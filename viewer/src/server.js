@@ -80,7 +80,7 @@ SBTEL.modes.server = (() => {
     refN.set(e.file, (refN.get(e.file) || 0) + 1);
     if (!live) return;
     if (trail.length && trail[trail.length - 1].file === e.file) { refRead[e.file] = refN.get(e.file); store.set(RR, refRead); return; }
-    render(); toast(`Agent replied in ${e.file}`);
+    render(); toast(`Agent replied in ${e.file}.`);
   }
   function drawTrail() {
     const h = refEl.querySelector('.trail'), last = trail.length - 1;
@@ -108,7 +108,14 @@ SBTEL.modes.server = (() => {
     const t = { name: r.file.split('/').pop(), url: specURL(r) + '&via=' + (sentFrom || SBTEL.session), file: framed ? null : r.file };
     if (framed) window.parent.postMessage({ sbtel: 'open-spec', name: t.name, url: t.url }, location.origin); else showHere(t);
   };
+  // Escape in the diagram shown over this page closes that page's own popovers first; with none open
+  // (and nothing selected) it comes up here and closes the overlay.
+  if (framed) addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || state.sel || state.selLine || document.querySelector('.pop, .modal, .codep, .sb-cmp, .callout:not([hidden]), .sheet:not(.closed)')) return;
+    window.parent.postMessage({ sbtel: 'close-spec' }, location.origin);
+  }, true);
   addEventListener('message', e => {
+    if (e.origin === location.origin && refEl && e.source === refEl.querySelector('iframe').contentWindow && e.data?.sbtel === 'close-spec') { closeSpec(); return; }
     if (e.origin !== location.origin || !refEl || e.source !== refEl.querySelector('iframe').contentWindow || e.data?.sbtel !== 'open-spec') return;
     const u = String(e.data.url || ''); if (!u.startsWith(location.origin + '/s/')) return;
     showHere({ name: String(e.data.name || 'spec').slice(0, 80), url: u, file: null });
@@ -149,7 +156,7 @@ SBTEL.modes.server = (() => {
     // session (proposals/), and reloading keeps it in the undo history.
     const dirty = unsent(), prop = S.proposal && !dirty;
     vtEl = document.createElement('div'); vtEl.className = 'sb-vt' + (conflict || dirty ? ' warn' : ''); vtEl.setAttribute('role', 'alertdialog');
-    vtEl.innerHTML = `<div>${esc(msg)}${dirty ? ' You have edits that are not saved or sent; reloading replaces them (⌘Z brings them back).' : prop ? ` It may hold the edits you proposed in ${esc(S.proposal.id)}; reloading shows it (⌘Z brings your proposal back).` : ''}</div>
+    vtEl.innerHTML = `<div>${esc(msg)}${dirty ? ' You have edits that are not saved or sent; reloading replaces them (' + kb('⌘Z') + ' brings them back).' : prop ? ` It may hold the edits you proposed in ${esc(S.proposal.id)}; reloading shows it (⌘Z brings your proposal back).` : ''}</div>
       <div class="acts"><button class="btn" data-v="later">${dirty ? 'Keep editing' : 'Later'}</button><button class="btn" data-v="diff" title="Look at what changed before you reload">See changes</button><button class="btn primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button></div>`;
     vtEl.addEventListener('click', e => {
       const v = e.target.closest('[data-v]')?.dataset.v; if (!v) return;
@@ -204,7 +211,7 @@ SBTEL.modes.server = (() => {
     if (mine !== spec.src) { hist.undo.push(mine); if (hist.undo.length > 200) hist.undo.shift(); hist.redo = []; }
     setSource(spec.src);
     syncUndo();
-    toast(`Loaded version ${spec.version}.` + (wasDirty ? ' ⌘Z brings back your edits.' : ''));
+    toast(`Loaded version ${spec.version}.` + (wasDirty ? ' ' + kb('⌘Z') + ' brings back your edits.' : ''));
   }
 
   // ---------- comments: shared with diff mode (session.js); the draft review (review.js) ----------
@@ -353,9 +360,9 @@ SBTEL.modes.server = (() => {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     // A Save control in the dock, before the checks pill; ⌘/Ctrl-S saves too.
     saveBtn = document.createElement('button');
-    saveBtn.className = 'tb sb-save'; saveBtn.id = 'sbSave'; saveBtn.title = 'Save to the spec file (⌘S)'; saveBtn.disabled = true;
+    saveBtn.className = 'tb sb-save'; saveBtn.id = 'sbSave'; saveBtn.title = kb('Save to the spec file (⌘S)'); saveBtn.disabled = true;
     saveBtn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h8l2.5 2.5v8.5h-11z"/><path d="M5 2.5v3.5h5V2.5M5 13.5V9.5h6v4"/></svg><span class="lbl">Saved</span>';
-    saveBtn.title = 'Save: write this text to the spec file now, without a review (⌘S)';
+    saveBtn.title = kb('Save: write this text to the spec file now, without a review (⌘S)');
     saveBtn.onclick = () => save();
     $('chkBtn').before(saveBtn);
     addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } }, true);

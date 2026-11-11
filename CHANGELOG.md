@@ -48,6 +48,27 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 
 ### Changed
 
+- **Lines move with their blocks.** The lines between adjacent blocks, the band rules and the `+`
+  buttons slide to their new places in step with the blocks. They were redrawn in place and faded out
+  and in on every change.
+- **A dragged block keeps its links.** Each line to a neighbour follows the block as a slack cable. Over
+  a spot that would part the pair it snaps, the halves springing back; over a spot that keeps the pair
+  it joins again. The line used to vanish the moment the block was picked up.
+- **Comments are notes beside the block.** The callout stands beside what it is about, with a tail
+  pointing at it, and no longer covers it; it keeps clear of the toolbar. A thread reads as text: your
+  comment, what became of it in small type, the agent's answer set in from a rule. One field holds the
+  text, the paperclip, Add to review and Send. A comment kept in your review says "In your review".
+- **A block's type follows its name.** `Editor module` on one line, the type in quiet type, where a
+  coloured pill sat above every name. Cards are shorter for it. Names are set a weight heavier.
+- **Quieter at rest.** A `+` is faint until the pointer is near it. Section labels in panels, menus and
+  cards are in sentence case at one size, where small capitals were.
+- **The toolbar makes room.** When a side panel is open or the window is small, it drops its words and
+  then the zoom and open/close-all controls, before it would scroll.
+- **One word per thing.** A block's own text is "Source" in the selection bar and the menu, as in the
+  toolbar (it said "Code" and "Show source"). Key hints name this computer's keys (Ctrl on Windows and
+  Linux). "Store now takes Note" where it said "Added port Note in Note to Store". Escape closes a spec
+  opened over the page from inside it.
+
 - **Paragraphs in a sketch sit half a line apart** on a card, where a whole blank line stood between
   them. A sketch too long for its card is clipped to whole lines without the breaks.
 

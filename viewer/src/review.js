@@ -20,7 +20,7 @@ const CHANGES_CSS = `
 .d-chip { display:inline-flex; align-items:center; gap:5px; font-size:12px; padding:3px 8px; border-radius:10px; background:var(--chip); color:var(--ink); }
 .d-chip i { width:8px; height:8px; border-radius:50%; flex:none; }
 .d-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
-.d-list h4 { margin:14px 0 4px; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.d-list h4 { margin:14px 0 4px; font-size:12px; color:var(--muted); }
 .d-item { display:grid; grid-template-columns:22px 1fr; gap:2px 8px; align-items:start; width:100%; box-sizing:border-box; text-align:left; border:0; background:none; border-radius:9px; padding:7px 8px; cursor:pointer; font-size:13px; color:var(--ink); }
 .d-item:hover, .d-item:focus-visible { background:var(--chip); outline:none; }
 .d-item.on { background:var(--accent-soft); }
@@ -136,12 +136,12 @@ function sessionReview(o) {
 .tb.rv-btn .rv-n { min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#fff; color:var(--accent); font-size:11.5px; line-height:18px; text-align:center; font-variant-numeric:tabular-nums; }
 .tb.rv-btn[aria-expanded="true"] { box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
 .cbub.pend { background:var(--surface); color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); }
-.cbub .pb { margin-left:3px; padding:0 5px; border-radius:7px; background:var(--accent); color:#fff; font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; line-height:14px; }
+.cbub .pb { margin-left:3px; padding:0 5px; border-radius:7px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:600; line-height:14px; }
 .st-pending { color:var(--accent-ink); font-weight:600; }
 .thread .cm .tiny { white-space:nowrap; }
 .rv-sheet { z-index:1260; }
 .rv-sheet .body { display:flex; flex-direction:column; gap:4px; }
-.rv-sec h4 { display:flex; align-items:center; gap:8px; margin:12px 0 6px; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.rv-sec h4 { display:flex; align-items:center; gap:8px; margin:12px 0 6px; font-size:12px; color:var(--muted); }
 .rv-sec h4 .spacer { flex:1; }
 .rv-sec h4 .btn { text-transform:none; letter-spacing:0; font-size:12px; padding:4px 10px; color:var(--ink); font-weight:500; }
 .rv-note { font-size:12.5px; line-height:1.5; color:var(--muted); margin:2px 0 6px; }
@@ -301,7 +301,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
       const key = b.dataset.thread, k = n[key] || 0; b.classList.toggle('pend', !!k);
       let pb = b.querySelector('.pb'); if (!k) { pb?.remove(); return; }
       if (!pb) { pb = document.createElement('span'); pb.className = 'pb'; b.appendChild(pb); }
-      pb.textContent = k === all[key] ? 'pending' : k + ' pending';
+      pb.textContent = k === all[key] ? 'in review' : k + ' in review';
       b.title = `${all[key]} comment${all[key] === 1 ? '' : 's'}, ${k} pending in your review`;
     });
   }

@@ -153,7 +153,7 @@ window.__accept = async function () {
     const p = emptyPt(); if (!p) return 'fail: no empty canvas';
     ctx(...p); await wait(80);
     const L = menuLabels();
-    const want = ['Add a block to this level', 'Insert a level above', 'Insert a level below', 'Add a behavior', 'Add a shape', 'Show source', 'Chat about the whole file'];
+    const want = ['Add a block to this level', 'Insert a level above', 'Insert a level below', 'Add a behavior', 'Add a shape', 'Source', 'Chat about the whole file'];
     const missing = want.filter(w => !L.includes(w)), extra = L.filter(l => /^(Edit|Delete|Open|Close)$/.test(l));
     if (missing.length || extra.length) return 'fail: missing ' + missing + ' extra ' + extra;
     [...document.querySelectorAll('.pop.menu .mi')].find(b => b.textContent === 'Add a behavior').click(); await wait(200);
@@ -169,7 +169,7 @@ window.__accept = async function () {
     ctx(...titlePt('Shell.Theme')); await wait(80);
     const L = menuLabels();
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape', bubbles:true })); await wait(50);
-    return ['Edit', 'Code', 'Comment', 'Delete', 'Add a behavior'].every(x => L.includes(x)) && !document.querySelector('.pop.menu') ? 'pass' : 'fail: ' + L.join('|');
+    return ['Edit', 'Source', 'Comment', 'Delete', 'Add a behavior'].every(x => L.includes(x)) && !document.querySelector('.pop.menu') ? 'pass' : 'fail: ' + L.join('|');
   });
 
   // Separators keep their element through relayouts, drag previews and the bounce.

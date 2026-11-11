@@ -195,7 +195,7 @@ async function until(fn, ms = 8000, step = 100) {
   await sleep(300);
   await commentVia(page, 'Shell.Keymap', 'Should the keymap own chords?', 'review');
   await until(() => page.$('[data-thread="block:Shell.Keymap"].pend .pb'));
-  check('Add to review: the comment is pending, with a badge on the canvas', await page.evaluate(() => { const b = document.querySelector('[data-thread="block:Shell.Keymap"]'); return b && b.classList.contains('pend') && b.querySelector('.pb').textContent === 'pending' && state.comments.filter(c => c.status === 'pending').length === 1; }));
+  check('Add to review: the comment is pending, with a badge on the canvas', await page.evaluate(() => { const b = document.querySelector('[data-thread="block:Shell.Keymap"]'); return b && b.classList.contains('pend') && b.querySelector('.pb').textContent === 'in review' && state.comments.filter(c => c.status === 'pending').length === 1; }));
   check('the comment is not in the inbox', sb(['inbox', id, '--peek']).out === '');
   const gone = await delLeaf(page, 'Shell.Clipboard');
   await until(() => page.evaluate(() => +document.querySelector('#rvBtn .rv-n').textContent >= 2), 3000);

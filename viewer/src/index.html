@@ -196,7 +196,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .declink:hover { text-decoration:underline; }
 .badge { width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:11px; line-height:1; cursor:pointer; flex:none; }
 .prow { display:flex; gap:0; margin-top:6px; overflow:hidden; }
-.plab { width:52px; flex:none; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); line-height:24px; }
+.plab { width:52px; flex:none; font-size:12px; font-weight:600; color:var(--muted); line-height:24px; }
 .pch { display:flex; flex-wrap:wrap; gap:5px 6px; min-width:0; flex:1; }
 .none { font-size:12.5px; color:var(--muted); line-height:24px; font-style:italic; }
 .chip { height:24px; box-sizing:border-box; display:inline-flex; align-items:center; gap:5px; padding:0 9px; border:1px solid var(--panel-line); border-radius:12px; background:var(--chip);
@@ -290,7 +290,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .blk.bounce { z-index:1500 !important; }
 .ovl rect.dropz.bad { fill:var(--warn-soft); stroke:var(--warn); }
 .pop.menu { padding:5px; min-width:200px; outline:none; }
-.pop.menu .mh { font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; padding:5px 9px 4px; }
+.pop.menu .mh { font-size:12px; color:var(--muted); font-weight:600; padding:5px 9px 4px; }
 .pop.menu .mi { display:flex; align-items:center; gap:8px; width:100%; box-sizing:border-box; border:0; background:none; border-radius:7px; padding:7px 9px; font-size:13px; text-align:left; cursor:pointer; color:var(--ink); }
 .pop.menu .mi:hover, .pop.menu .mi:focus-visible { background:var(--accent-soft); outline:none; }
 .pop.menu .mi.danger { color:var(--warn); }
@@ -315,6 +315,10 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .dock { left:50%; transform:translateX(-50%); bottom:max(14px, env(safe-area-inset-bottom, 0px)); border-radius:14px; padding:6px; display:flex; align-items:center; gap:2px;
   max-width:calc(100vw - 24px); overflow-x:auto; scrollbar-width:none; }
 .dock::-webkit-scrollbar { display:none; }
+/* When the toolbar has less room than it wants (a side panel is open, a small window), it drops its
+   words first and then the view controls, before it would scroll (fitDock). */
+.dock.tight .tb:has(svg) > span:not(#cmtN):not(.n) { display:none; }
+.dock.tighter #expAll, .dock.tighter #colAll, .dock.tighter #zOut, .dock.tighter #zIn, .dock.tighter #zv { display:none; }
 .tb { height:34px; min-width:34px; padding:0 10px; display:inline-flex; align-items:center; justify-content:center; gap:6px; border:0; border-radius:9px; background:transparent; cursor:pointer; font-size:13px; white-space:nowrap; flex:none; }
 .tb:hover { background:var(--chip); }
 .tb:disabled { opacity:.38; cursor:default; background:transparent; }
@@ -355,7 +359,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .fchip { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--accent); color:var(--accent); border-radius:12px; padding:2px 4px 2px 10px; font-size:12px; }
 .fchip button { border:0; background:none; color:inherit; cursor:pointer; width:20px; height:20px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
 .mt { width:100%; border-collapse:collapse; font-size:13px; }
-.mt th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--panel-line); }
+.mt th { text-align:left; font-size:12px; color:var(--muted); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--panel-line); }
 .mt th.n, .mt td.n { text-align:right; font-variant-numeric:tabular-nums; }
 .mt tr.row { cursor:pointer; }
 .mt tr.row td { padding:8px; border-bottom:1px solid var(--panel-line); vertical-align:top; }
@@ -367,7 +371,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .mt .own { color:var(--muted); font-size:12px; word-break:break-word; }
 .mt tr.det td { padding:4px 12px 14px; background:var(--accent-soft); border-bottom:1px solid var(--panel-line); }
 .det p { margin:4px 0 10px; line-height:1.5; max-width:60ch; }
-.det h4 { margin:10px 0 6px; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.det h4 { margin:10px 0 6px; font-size:12px; color:var(--muted); }
 .uses { display:flex; flex-wrap:wrap; gap:6px; }
 .ulink { border:1px solid var(--panel-line); background:var(--surface); border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; text-align:left; }
 .ulink:hover { border-color:var(--accent); }
@@ -409,7 +413,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 /* popovers */
 .pop { position:fixed; z-index:1800; background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; box-shadow:0 14px 40px var(--shadow); padding:12px 14px; font-size:13px; line-height:1.45; width:max-content; max-width:min(340px, calc(100vw - 24px)); }
 .pop h3 { margin:0 0 4px; font-size:14px; font-family:var(--ff-mono); font-weight:600; display:flex; align-items:center; gap:7px; }
-.pop .kind { font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-family:var(--ff-ui); font-weight:600; }
+.pop .kind { font-size:12px; color:var(--muted); font-family:var(--ff-ui); font-weight:600; }
 .pop p { margin:4px 0 8px; color:var(--ink); }
 .pop .meta { color:var(--muted); font-size:12px; font-family:var(--ff-mono); }
 .pop .acts { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
@@ -438,7 +442,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .cedit input, .cedit textarea { font:inherit; font-size:13px; padding:6px 8px; border:1px solid var(--panel-line); border-radius:7px; background:var(--surface); color:var(--ink); min-width:0; box-sizing:border-box; width:100%; }
 .cedit .mono { font-family:var(--ff-mono); font-size:12.5px; }
 .cedit textarea { resize:vertical; min-height:58px; line-height:1.45; }
-.cedit .lab { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:-3px; }
+.cedit .lab { font-size:12px; font-weight:600; color:var(--muted); margin-bottom:-3px; }
 .cedit .pdir { display:inline-flex; border:1px solid var(--panel-line); border-radius:7px; overflow:hidden; flex:none; }
 .cedit .pdir button { border:0; background:var(--surface); color:var(--muted); padding:5px 9px; font-size:12px; cursor:pointer; }
 .cedit .pdir button[aria-pressed="true"] { background:var(--accent); color:#fff; }
@@ -463,7 +467,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .chklist.info .st { font-style:italic; font-family:Georgia, serif; color:var(--muted); }
 .chklist.info .detail { color:inherit; font-family:inherit; margin-top:3px; }
 .chklist .detail { grid-column:2 / -1; color:var(--warn); font-family:var(--ff-mono); font-size:11px; word-break:break-word; }
-.pop h5 { margin:2px 0 6px; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.pop h5 { margin:2px 0 6px; font-size:12px; color:var(--muted); }
 
 .strip { position:fixed; z-index:1100; display:flex; gap:2px; padding:4px; border-radius:11px; background:var(--panel); border:1px solid var(--panel-line); box-shadow:0 8px 24px var(--shadow); }
 .strip .tb { height:30px; min-width:30px; font-size:12.5px; padding:0 8px; }
@@ -755,6 +759,10 @@ const M = {
     return lines;
   }
 };
+// Key names as this computer shows them: text is written with the Mac's signs and turned here for others.
+const MAC = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+function kb(s) { return MAC ? s.replace(/⌘\/Ctrl/g, '⌘') : s.replace(/⌘\/Ctrl/g, 'Ctrl').replace(/⌘⇧/g, 'Ctrl+Shift+').replace(/⌘-/g, 'Ctrl-').replace(/⌘ ↵/g, 'Ctrl+Enter').replace(/⌘/g, 'Ctrl+').replace(/\(⌫\)/g, '(Delete)'); }
+addEventListener('DOMContentLoaded', () => { document.querySelectorAll('.dock [title], .brand [title]').forEach(el => { el.title = kb(el.title); }); document.querySelectorAll('#help li').forEach(li => { li.innerHTML = kb(li.innerHTML); }); });
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 // A sketch on a card: its paragraphs half a line apart when the card shows all of it, else run together.
 const skHTML = (t, gaps) => t.split('\n\n').filter(p => p.trim()).map(esc).join(gaps ? '<i class="pg"></i>' : '\n');
@@ -981,6 +989,15 @@ function paint(lay, keep) {
     const el = document.createElement('div'); el.className = 'aff tmp'; el.style.transform = `translate(${x - 11}px,${y - 30}px)`;
     el.innerHTML = `<button class="cbub" style="position:static" data-thread="${esc(k)}">${ICON.comment}${counts[k]}</button>`; world.appendChild(el);
   });
+}
+{
+  const d = document.querySelector('.dock');
+  const fitDock = () => { d.classList.remove('tight', 'tighter'); if (d.scrollWidth > d.clientWidth + 1) { d.classList.add('tight'); if (d.scrollWidth > d.clientWidth + 1) d.classList.add('tighter'); } };
+  let q = 0; const soon = () => { if (!q) q = requestAnimationFrame(() => { q = 0; fitDock(); }); };
+  new ResizeObserver(soon).observe(d); new MutationObserver(soon).observe(d, { childList:true, subtree:true, attributes:true, attributeFilter:['hidden', 'style'] }); addEventListener('resize', soon);
+  // Room also comes and goes with the side panels, which changes nothing about the toolbar itself.
+  const mo = new MutationObserver(soon); const watch = () => document.querySelectorAll('.sheet').forEach(s => { if (!s._fd) { s._fd = 1; mo.observe(s, { attributes:true, attributeFilter:['class'] }); } });
+  watch(); new MutationObserver(watch).observe(document.body, { childList:true });
 }
 // The + buttons within reach of the pointer (about 110px on screen) are the ones shown in full.
 {
@@ -1444,8 +1461,8 @@ function renderStrip() {
     const isM = n && n.form === 'message';
     strip.innerHTML = (isM ? `<button class="tb" data-a="table" title="Open in the shape table">${ICON.details}<span class="lbl">Table</span></button>` : '') + 
       `<button class="tb" data-a="edit" title="Edit name and sketch">${ICON.edit}<span class="lbl">Edit</span></button>` +
-      `<button class="tb" data-a="code" title="Show source">${ICON.code}<span class="lbl">Code</span></button>` +
-      `<button class="tb" data-a="comment" title="Comment (⌘-click)">${ICON.comment}<span class="lbl">Comment</span></button>` +
+      `<button class="tb" data-a="code" title="Show its text in the spec">${ICON.code}<span class="lbl">Source</span></button>` +
+      `<button class="tb" data-a="comment" title="${kb('Comment (⌘-click, or C)')}">${ICON.comment}<span class="lbl">Comment</span></button>` +
       `<button class="tb danger" data-a="delete" title="Delete (⌫)">${ICON.trash}<span class="lbl">Delete</span></button>`;
     strip.setAttribute('aria-label', 'Actions for ' + (n ? n.name : ''));
   } else if (state.selLine) {
@@ -1785,7 +1802,7 @@ function endDrag(commit) {
   if (!z || z.noop) { if (d.mode === 'move') render(); else renderStrip(); return; }
   edit(z.act);
   const a = z.act;
-  toast(a.t === 'move' ? (z.join ? `Moved ${a.node.name} into the group beside ${a.dest.block.levels[a.dest.level].units[a.dest.unit].blocks.filter(b => b !== a.node).map(b => b.name).slice(0, 2).join(' and ')}.` : `Moved ${a.node.name}.`) : a.t === 'implements' ? `${a.block.name} now implements ${a.name}.` : `Added port ${a.name} ${a.dir} ${a.kind} to ${a.block.name}.`);
+  toast(a.t === 'move' ? (z.join ? `Moved ${a.node.name} into the group beside ${a.dest.block.levels[a.dest.level].units[a.dest.unit].blocks.filter(b => b !== a.node).map(b => b.name).slice(0, 2).join(' and ')}.` : `Moved ${a.node.name}.`) : a.t === 'implements' ? `${a.block.name} now implements ${a.name}.` : `${a.block.name} now ${a.dir === 'in' ? 'takes' : 'gives'} ${a.kind}.`);
 }
 addEventListener('pointermove', e => {
   if (drag) { if (e.pointerId === drag.pid) moveDrag(e); return; }
@@ -1818,7 +1835,7 @@ function menuItems(target, wy) {
   const m = state.model, el = target && target.closest && target.closest('.blk'), n = el ? m.node(el.dataset.id) : m.root;
   if (!n) return null;
   if (n === m.root) return { title:'Top level', items:[...containerItems(n, wy, true), '-',
-    { label:'Show source', run:() => toggleSource(true) }, { label:'Chat about the whole file', run:() => openComposer('block:') }] };
+    { label:'Source', run:() => toggleSource(true) }, { label:'Chat about the whole file', run:() => openComposer('block:') }] };
   const items = [];
   if (n.form === 'block') {
     const isFrame = state.lay.blocks.find(B => B.id === n.id)?.kind === 'frame';
@@ -1826,7 +1843,7 @@ function menuItems(target, wy) {
     items.push(...containerItems(n, wy, isFrame), '-');
   }
   if (n.form === 'message') items.push({ label:'Open in the shape table', run:() => openMessages({ open:n.name }) });
-  items.push({ label:'Edit', run:() => openEdit(n.id) }, { label:'Code', run:() => openCode(n.id) },
+  items.push({ label:'Edit', run:() => openEdit(n.id) }, { label:'Source', run:() => openCode(n.id) },
     { label:'Comment', run:() => openComposer(targetKey(n.id)) }, { label:'Delete', danger:true, run:() => askDelete(n.id) });
   return { title:n.name, items };
 }
@@ -1911,7 +1928,7 @@ function openEdit(id) {
     row.innerHTML = `<input class="pname" aria-label="Port name" value="${esc(p.name || '')}" spellcheck="false">
       <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${p.dir === 'in'}">in</button><button type="button" data-dir="out" aria-pressed="${p.dir === 'out'}">out</button></span>
       <select class="pkind" aria-label="Shape"><option value="">Type…</option>${opts.map(t => `<option${t === p.kind ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
-      <button type="button" class="pdel" aria-label="Remove port" title="Remove port">${ICON.close}</button>
+      <button type="button" class="pdel" aria-label="Delete this port" title="Delete this port">${ICON.close}</button>
       <textarea class="psk" rows="1" aria-label="Port sketch" placeholder="Sketch: what this port promises (optional)">${esc(p.sketch || '')}</textarea>`;
     row.dataset.dir = p.dir;
     row.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => { row.dataset.dir = b.dataset.dir; row.querySelectorAll('[data-dir]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
@@ -2246,7 +2263,7 @@ function groupEditor(g, focus) {
   const el = showCallout(g.key, groupFinder(g.key), `<form class="cedit" autocomplete="off">
     <div class="lab">Adjacent: ${esc(groupNames(g).join(', '))}</div>
     <textarea name="sketch" rows="3" aria-label="Why these blocks are adjacent" placeholder="Why these blocks know each other concretely.">${esc(g.U.sketch || '')}</textarea>
-    <div class="cfoot"><span class="spacer"></span><span>⌘/Ctrl-Enter saves · Esc cancels</span></div></form>`, 'edit');
+    <div class="cfoot"><span class="spacer"></span><span>${kb('⌘ ↵')} saves, Esc cancels</span></div></form>`, 'edit');
   const f = el.querySelector('form');
   co.commit = () => { const sketch = f.elements.sketch.value; hideCallout(); const before = state.src; edit({ t:'groupSketch', node:g.U.node, sketch }); if (state.src !== before) toast('Saved the sketch of the adjacent group.'); return true; };
   editorKeys(f);
@@ -2424,7 +2441,7 @@ function openChat(key, anchor, focus) {
   const el = pop('thread', a, `<div class="chh" title="Comments on ${esc(key === 'block:' ? 'the whole file' : lab)}"><span class="on">${sp > 0 ? `<i>${esc(lab.slice(0, sp))}</i>${esc(lab.slice(sp + 1))}` : esc(lab)}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
     <ul class="thread" aria-live="polite"></ul>
     <div class="composer"><textarea id="cmtText" rows="2" placeholder="${key === 'block:' ? 'Say anything about the whole file.' : 'What should change, or what is unclear?'}" aria-label="Comment on ${esc(key === 'block:' ? 'the whole file' : lab)}"></textarea><input type="file" multiple hidden>
-    <div class="acts"><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><span class="keys">${mac ? '⌘' : 'Ctrl'} ↵ sends</span><button class="btn quiet" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div></div>`, 'chat');
+    <div class="acts"><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><span class="keys">${kb('⌘ ↵')} sends</span><button class="btn quiet" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div></div>`, 'chat');
   el.classList.toggle('filechat', key === 'block:');
   chat = { key, el, anchor:a };
   const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
@@ -2510,7 +2527,7 @@ function openSend(list) {
     const a = e.target.closest('[data-m]')?.dataset.m; if (!a) return;
     if (a === 'close') { closeModal(); return; }
     const ta = m.querySelector('textarea'), done = () => { list.forEach(c => c.status = 'sent'); saveComments(); closeModal(); render(); renderMsgTableIfOpen(); toast(`Copied ${list.length} comment${list.length === 1 ? '' : 's'}.`); };
-    navigator.clipboard.writeText(text).then(done, () => { ta.focus(); ta.select(); e.target.textContent = 'Selected, press ⌘C'; list.forEach(c => c.status = 'sent'); saveComments(); render(); });
+    navigator.clipboard.writeText(text).then(done, () => { ta.focus(); ta.select(); e.target.textContent = kb('Selected: press ⌘C'); list.forEach(c => c.status = 'sent'); saveComments(); render(); });
   });
 }
 $('sendBtn').onclick = () => openSend(state.comments.filter(c => c.status === 'saved'));
@@ -2528,7 +2545,7 @@ function askDelete(id) {
   else if (n.form === 'behavior') { const users = [...m.blocks.values()].filter(b => b.impl.includes(n.name)).map(b => b.name); detail = users.length ? `${users.length} block${users.length === 1 ? ' implements' : 's implement'} it (${users.slice(0, 3).join(', ')}${users.length > 3 ? ', …' : ''}). Those lines stay and will fail the spec checks until you change them.` : 'No block implements it.'; }
   else { const u = messageIndex(m).find(r => r.name === n.name).uses; detail = u.length ? `${u.length} port${u.length === 1 ? ' uses' : 's use'} it. Those ports stay and will fail the spec checks until you change them.` : 'No port uses it.'; }
   const md = modal(`Delete ${n.name}?`, `<p style="margin:0 0 8px;line-height:1.5">This removes the ${kind} from the source. ${esc(detail)}</p>
-    <p style="margin:0;color:var(--muted);font-size:13px">You can undo it with ⌘Z.</p>
+    <p style="margin:0;color:var(--muted);font-size:13px">${kb('⌘Z')} brings it back.</p>
     <div class="mfoot"><button class="btn" data-m="no">Cancel</button><button class="btn danger-solid" data-m="yes">Delete ${esc(kind)}</button></div>`);
   md.querySelector('[data-m="yes"]').focus();
   md.addEventListener('click', e => {
@@ -2550,7 +2567,7 @@ function askDeleteMany(ids) {
   const md = modal(`Delete ${ns.length} items?`, `<p style="margin:0 0 8px;line-height:1.5">This removes from the source:</p>
     <ul style="margin:0 0 8px;padding-left:20px;line-height:1.5">${ns.map(n => `<li><b>${esc(n.name)}</b> <span style="color:var(--muted)">${kindOf(n)}</span></li>`).join('')}</ul>
     ${inner ? `<p style="margin:0 0 8px;line-height:1.5">${inner} block${inner === 1 ? '' : 's'} inside them go with them.</p>` : ''}
-    <p style="margin:0;color:var(--muted);font-size:13px">You can undo it with ⌘Z.</p>
+    <p style="margin:0;color:var(--muted);font-size:13px">${kb('⌘Z')} brings it back.</p>
     <div class="mfoot"><button class="btn" data-m="no">Cancel</button><button class="btn danger-solid" data-m="yes">Delete ${ns.length}</button></div>`);
   md.querySelector('[data-m="yes"]').focus();
   md.addEventListener('click', e => {

@@ -618,14 +618,14 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
       if (!el || !n || D.view !== 'after') return null;
       const it = D.info.get(id), items = [];
       if (n.form === 'block' && hasInside(n)) items.push({ label: state.open.has(id) ? 'Close' : 'Open', run:() => toggle(id) });
-      if (!(it && it.ghost)) { items.push({ label:'Code', run:() => openCode(id) }); if (SBTEL.session) items.push({ label:'Comment', run:() => openComposer(targetKey(id)) }); }
+      if (!(it && it.ghost)) { items.push({ label:'Source', run:() => openCode(id) }); if (SBTEL.session) items.push({ label:'Comment', run:() => openComposer(targetKey(id)) }); }
       return items.length ? { title:it ? it.name : n.name, items } : null;
     };
     renderStrip = () => {
       const id = state.sel, it = id && D.info.get(id);
       if (!id || state.multi.size !== 1 || D.view !== 'after' || (it && it.ghost) || !D.mB || !D.mB.node(id)) { strip.hidden = true; return; }
-      strip.innerHTML = `<button class="tb" data-a="code" title="Show source (side b)">${ICON.code}<span class="lbl">Code</span></button>` +
-        (SBTEL.session ? `<button class="tb" data-a="comment" title="Comment (⌘-click)">${ICON.comment}<span class="lbl">Comment</span></button>` : '');
+      strip.innerHTML = `<button class="tb" data-a="code" title="Show its text in the spec (side b)">${ICON.code}<span class="lbl">Source</span></button>` +
+        (SBTEL.session ? `<button class="tb" data-a="comment" title="${kb('Comment (⌘-click, or C)')}">${ICON.comment}<span class="lbl">Comment</span></button>` : '');
       strip.setAttribute('aria-label', 'Actions for ' + D.mB.node(id).name);
       strip.hidden = false; placeStrip();
     };

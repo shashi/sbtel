@@ -175,7 +175,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     openMessages = () => elsewhere('The message table');
     const origSource = toggleSource;
     toggleSource = o => { if (o === false) origSource(false); else elsewhere('The source'); };
-    const drop = new Set(['Show source', 'Chat about the whole file', 'Comment', 'Open in the message table']);
+    const drop = new Set(['Source', 'Chat about the whole file', 'Comment', 'Open in the shape table']);
     const origMenu = menuItems, origStrip = renderStrip;
     menuItems = (t, wy) => { const m = origMenu(t, wy); if (!m) return m; const items = m.items.filter(x => x === '-' || !drop.has(x.label)); while (items[items.length - 1] === '-') items.pop(); return { ...m, items }; };
     renderStrip = () => { origStrip(); strip.querySelectorAll('[data-a="comment"], [data-a="table"]').forEach(b => b.remove()); if (!strip.hidden && !strip.children.length) strip.hidden = true; };
