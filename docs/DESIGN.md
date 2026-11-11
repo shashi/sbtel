@@ -929,6 +929,14 @@ is the session's `tabs`.
   `{path: ".sbtel/files/<name>", size}`. A stdin spec answers 409.
 - `GET /s/<id>/ref?path=…` serves `.sbtel/files/<name>` (one level, no dot-file) without the spec or a
   comment naming it; every other dot-directory stays refused.
+- A level's layout (v0.4.1) is three steps, each resting on the one before. A flow gives every item a
+  cell (row, column) and an x: `flowRows` goes across and wraps down; `flowCols` (opts.flow `cols`) goes
+  down and wraps across, using as many rows as `flowRows` needs at that width and one more while the
+  columns do not fit. `gridTracks` turns the rows into tops and heights, the same for both flows, so rows
+  stay aligned across columns. `layoutLevel` then emits boxes and the line between two linked items by
+  where their cells are (sideways, or downward under the ears). The viewer's drop targets come from laying
+  out each candidate edit, so they follow either flow; its two gap helpers share `gapBetween`. The order
+  check reads source order along rows or down columns.
 - The keyboard (v0.4.1). The selection is the cursor, and one table (`KEYS`) names every key, what it
   does and its line in the help panel; the global key handler looks keys up in it. Moving is by sight:
   the arrows use `stepTo`, which picks the nearest box ahead within a cone, preferring boxes in the same holder; `kbOrder` is

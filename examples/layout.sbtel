@@ -1,0 +1,25 @@
+; The layout engine after "fill a level by columns": what each part is for, and what it rests on.
+; Every part uses only parts in levels below it. The flows are the one new choice; the grid and the
+; links are shared by both.
+(block layout :type "engine"
+  (~ Turns a spec into boxes and lines. ~)
+  (shape cell :type "data" (~ An item's row and column in its level. ~))
+  (shape tracks :type "data" (~ Where each row starts and how tall it is; where each column starts. ~))
+  (level :name "What a block looks like"
+    (block layout-block :type "existing" (~ An open block: header, levels, bands. ~))
+    (block card :type "existing" (~ A closed block or a leaf. ~)))
+  (level :name "Placing a level"
+    (block layout-level :type "changed" (takes cell) (takes tracks)
+      (~ Asks a flow for cells, the grid for tracks, then emits boxes, links and the + button. ~)))
+  (level :name "Flows: which cell each block gets"
+    (adjacent (~ The same contract: units in, a cell and an x for every item out. ~)
+      (block flow/rows :type "existing" (gives cell) (~ Across, then down: fill a row to the width, wrap. ~))
+      (block flow/columns :type "new" (gives cell) (~ Down, then across: as many rows as needed for the columns to fit the width. ~))))
+  (level :name "Grid: shared by both flows"
+    (block grid/tracks :type "extracted" (takes cell) (gives tracks) (~ Row tops and heights from the tallest item and ear in each row. ~))
+    (block grid/links :type "extracted" (takes cell) (~ The line between two linked items: side by side, one above the other, or wrapped. ~))
+    (block grid/gap :type "new" (takes cell) (~ The space between two neighbours in a line, for drop targets. ~)))
+  (level :name "Measures"
+    (block spacing :type "existing" (~ K and the Spacing presets. ~))
+    (block ears :type "existing" (~ How far a block's ears stick out above and below. ~))
+    (block text :type "existing" (~ Width of a string in a font. ~))))

@@ -12,6 +12,9 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- **A level can be filled by columns.** Settings, "Blocks in a level go: Down, then across": five blocks
+  that fit three to a line read a c e over b d. A linked group stays in one column, its line going down;
+  drop targets, the keyboard and the layout checks follow. Rows are still aligned across the columns.
 - Settings has Level names: left or right of their line.
 - Settings has Spacing: compact, balanced (as before) or relaxed room between blocks, rows and levels.
   Relaxed also widens a row, so the same blocks still fit on it.
