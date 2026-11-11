@@ -257,6 +257,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 .fh .sk .pg { height:10px; }
 .sk.more { cursor:pointer; border-radius:5px; margin-left:-4px; margin-right:-4px; padding:0 4px; }
 .sk.more:hover { background:var(--sk-hover); }
+.sk a { color:inherit; text-decoration:underline; text-decoration-color:var(--frame-line); text-underline-offset:2px; cursor:pointer; } .sk a:hover { color:var(--accent-ink); text-decoration-color:currentColor; }
 .fh .sk { font-size:14.5px; line-height:20px; max-width:640px; margin-top:0; margin-bottom:6px; }
 .fh .prow { margin-top:0; margin-bottom:8px; }
 .fh .foot { margin-top:0; height:24px; }
@@ -2440,7 +2441,9 @@ function kb(s) { return MAC ? s.replace(/⌘\/Ctrl/g, '⌘') : s.replace(/⌘\/C
 addEventListener('DOMContentLoaded', () => { document.querySelectorAll('.dock [title], .brand [title]').forEach(el => { el.title = kb(el.title); }); document.querySelectorAll('#help li').forEach(li => { li.innerHTML = kb(li.innerHTML); }); });
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 // A sketch on a card: its paragraphs half a line apart when the card shows all of it, else run together.
-const skHTML = (t, gaps) => t.split('\n\n').filter(p => p.trim()).map(esc).join(gaps ? '<i class="pg"></i>' : '\n');
+// A sketch's text for a card: paragraphs, and a web address as a link (the same characters, so it measures the same).
+const linked = h => h.replace(/\bhttps?:\/\/[^\s<]+/g, all => { const tail = /(?:&quot;|&gt;|[.,;:!?)\]'])+$/.exec(all)?.[0] || '', u = all.slice(0, all.length - tail.length); return `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>${tail}`; });
+const skHTML = (t, gaps) => t.split('\n\n').filter(p => p.trim()).map(p => linked(esc(p))).join(gaps ? '<i class="pg"></i>' : '\n');
 const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 // A shape's dot and a behavior's badge take one of six colours by name, unless the reader chose a hue for
 // that one in its Edit dialog. Choices are kept in this browser for the spec (dotKey, set by the page's mode).

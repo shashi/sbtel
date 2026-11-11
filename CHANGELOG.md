@@ -28,7 +28,7 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   calendar invite (`.ics`) is a card with the time in your zone and an **Add to calendar** button. "Show
   source" gives the text; a ref to lines (`file.md:10-20`) opens as text with the lines marked.
 - The playground shows files that sit beside an example; the Notes example names four.
-- A web address in a comment or a reply is a link.
+- A web address in a comment, a reply or a sketch is a link.
 - Icons are now Lucide's (ISC licence, listed in `THIRD_PARTY_NOTICES`), put in by the build (`@@icon name@@`).
 
 - **A tour.** A first visit starts a six-stop tour in place of the panel of gestures: a ring goes round
