@@ -258,7 +258,7 @@
 <p>A duplicate block name (the second block's id becomes <code>A#2</code>):</p>
 <div class="cb fails"><div class="cbl">lint reports problems</div><pre class="code" data-lang="sbtel">(<span class="hl-kw">block</span> A)
 (<span class="hl-kw">block</span> A)</pre></div>
-<div class="cb"><div class="cbl">output</div><pre class="code" data-lang="text">spec.sbtel:2:1: <span class="hl-warn">warning</span>: Duplicate block name A
+<div class="cb"><div class="cbl">output</div><pre class="code" data-lang="text">spec.sbtel:2:1: <span class="hl-warn">warning</span>: Duplicate block name A: a name identifies a block wherever it moves, so each needs its own (a more specific name, or parent/A)
 spec.sbtel: 1 problem (2 blocks, 0 behaviors, 0 shapes)</pre></div>
 <p>A duplicate shape or behavior (the later declaration wins):</p>
 <div class="cb fails"><div class="cbl">lint reports problems</div><pre class="code" data-lang="sbtel">(<span class="hl-kw">shape</span> M)
