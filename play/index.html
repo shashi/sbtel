@@ -130,14 +130,16 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 .editf .prow2 .psk { flex:1 1 100%; min-height:34px; height:34px; font-size:12.5px; }
 
 /* --r: how round the boxes are (Settings, Corners). A frame is a little rounder than a card; an ear follows. */
-.blk { position:absolute; left:0; top:0; box-sizing:border-box; border:1.5px solid var(--frame-line); border-radius:var(--r, 12px); cursor:default; }
-.blk.card { background:var(--card); z-index:500; }
+/* --edge: the outline of a box and of its ears. A card's fill already sets it apart, so its outline is faint; an
+   open block, which holds things, is a little firmer; a shape, whose fill is the ground's, keeps the full line. */
+.blk { position:absolute; left:0; top:0; box-sizing:border-box; --edge:var(--frame-line); border:1.5px solid var(--edge); border-radius:var(--r, 12px); cursor:default; }
+.blk.card { background:var(--card); z-index:500; --edge:color-mix(in srgb, var(--frame-line) 45%, var(--leaf)); }
 .blk.card.leaf { background:var(--leaf); }
 .blk.card.beh { background:var(--beh); }
-.blk.card.msg { background:var(--surface); border-style:dashed; }
+.blk.card.msg { background:var(--surface); border-style:dashed; --edge:var(--frame-line); }
 .ttl .md { width:11px; height:11px; border-radius:50%; flex:none; }
 .rel2 { font-family:var(--ff-mono); font-size:12px; }
-.blk.frame { background:var(--surface); border-radius:calc(var(--r, 12px) * 1.17); }
+.blk.frame { background:var(--surface); border-radius:calc(var(--r, 12px) * 1.17); --edge:color-mix(in srgb, var(--frame-line) 60%, var(--surface)); }
 .blk.flash { animation: flash 1.4s ease-out; }
 @keyframes flash { 0% { box-shadow:0 0 0 7px var(--accent); } 100% { box-shadow:0 0 0 0 transparent; } }
 .blk.sel { outline:2.5px solid var(--accent); outline-offset:4px; }
@@ -149,7 +151,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 /* Port ear: it has no edge where it meets the card and its fill covers the card's border there,
    so the outline runs from the card around the ear in one line, like a jigsaw piece. */
 .tab { position:absolute; left:50%; transform:translateX(-50%); height:20px; box-sizing:border-box; background:inherit;
-  border:1.5px solid var(--frame-line); display:flex; align-items:center; justify-content:center; gap:7px; padding:0 12px; }
+  border:1.5px solid var(--edge, var(--frame-line)); display:flex; align-items:center; justify-content:center; gap:7px; padding:0 12px; }
 /* An ear overlaps its card's edge by a pixel, so the card's own border does not draw a line across the join. */
 .tab.top { bottom:calc(100% - 1px); border-radius:min(10px, var(--r, 12px)) min(10px, var(--r, 12px)) 0 0; border-bottom:0; }
 .tab.bot { top:calc(100% - 1px); border-radius:0 0 min(10px, var(--r, 12px)) min(10px, var(--r, 12px)); border-top:0; }
@@ -195,9 +197,9 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 .pill::before { content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:currentColor; margin-right:5px; vertical-align:.5px; }
 :root { --ty-l:.5; --ty-c:.15; --ty-wash:11%; }
 /* With "Tint cards by type" on, a typed card takes a wash of its type's hue and an edge in it. */
-.world.tint .blk.card.typed { background:color-mix(in oklch, var(--leaf), oklch(var(--ty-l) var(--ty-c) var(--h)) var(--ty-wash)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 55%); }
+.world.tint .blk.card.typed { background:color-mix(in oklch, var(--leaf), oklch(var(--ty-l) var(--ty-c) var(--h)) var(--ty-wash)); --edge:color-mix(in oklch, color-mix(in srgb, var(--frame-line) 45%, var(--leaf)), oklch(var(--ty-l) var(--ty-c) var(--h)) 45%); }
 /* An open block of a type takes the same hue, fainter: it is a container, and its own blocks keep theirs. */
-.world.tint .blk.frame.typed { background:color-mix(in oklch, var(--surface), oklch(var(--ty-l) var(--ty-c) var(--h)) calc(var(--ty-wash) * .4)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 40%); }
+.world.tint .blk.frame.typed { background:color-mix(in oklch, var(--surface), oklch(var(--ty-l) var(--ty-c) var(--h)) calc(var(--ty-wash) * .4)); --edge:color-mix(in oklch, color-mix(in srgb, var(--frame-line) 60%, var(--surface)), oklch(var(--ty-l) var(--ty-c) var(--h)) 35%); }
 .world.typing .blk.card:not(.ty-on) { opacity:.3; }
 .blk .ttl > .pill { cursor:pointer; border-radius:5px; }
 /* A live type's dot sends out a soft ring, about every two seconds. */
