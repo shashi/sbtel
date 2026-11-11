@@ -624,6 +624,7 @@ body.diffmode .help .norm { display:none; }
 .walkm label { display:flex; gap:10px; align-items:flex-start; padding:7px 8px; border-radius:8px; cursor:pointer; } .walkm label:hover { background:var(--surface); }
 .walkm input { margin:3px 0 0; accent-color:var(--accent); flex:none; } .walkm b { display:block; font-weight:600; } .walkm small { display:block; color:var(--muted); font-size:12.5px; line-height:1.35; }
 .walkm fieldset { border:0; margin:0; padding:0; } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
+.pop.chat ul.thread li.agent > .sb-reply:first-child { margin-top:0; }
 .pop.chat .chh .in { flex:none; font-size:12.5px; color:var(--muted); }
 .pop.chat ul.thread li.where { position:sticky; top:-1px; z-index:1; padding:6px 0 4px; margin:0; background:var(--panel); border:0; }
 .pop.chat ul.thread li.where button { border:0; background:var(--surface); color:var(--ink-2); font:600 12px var(--ff-ui, inherit); padding:3px 9px; border-radius:999px; cursor:pointer; } .pop.chat ul.thread li.where button:disabled { cursor:default; color:var(--muted); }
@@ -4268,6 +4269,7 @@ function placeBeside(el, anchor) {
   el.style.setProperty('--tail', Math.max(14, Math.min(h - 26, r.top + Math.min(r.height / 2, 30) - y - 6)) + 'px');
 }
 function chatRow(c) {
+  if (c.agent) return `<li class="agent" data-id="${esc(c.id)}">${chatReplies(c)}</li>`; // a thread the agent started: its words only
   const [cls, text, title] = chatStatus(c);
   return `<li data-id="${esc(c.id)}"${c.status === 'sent' || c.status === 'sending' ? '' : ' class="mine"'}><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${whenText(c.at)}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
@@ -5171,6 +5173,8 @@ function sessionComments({ version, closed }) {
     const sent = (id, target, text, version, at, review) => { const c = { id, sid: id, target, text, status: 'sent', version, at, replies: [], review }; list.push(c); byId.set(id, c); };
     events.forEach(e => {
       if (e.kind === 'comment') sent(e.id, e.target, e.text, e.version, Date.parse(e.at));
+      // A thread the agent started (sbtel note): an entry with no words of the human's, whose first reply is the note.
+      if (e.kind === 'note') { sent(e.id, e.target, '', e.version, Date.parse(e.at)); const c = byId.get(e.id); c.agent = true; c.replies.push({ text: e.text, at: Date.parse(e.at) }); }
       if (e.kind === 'review') {
         (e.comments || []).forEach(c => sent(c.id, c.target, c.text, e.version, Date.parse(e.at), e.id));
         revs.set(e.id, { id: e.id, message: e.message || '', n: (e.comments || []).length, proposal: !!e.proposal, at: Date.parse(e.at), replies: [] });
@@ -5201,6 +5205,16 @@ function sessionComments({ version, closed }) {
     saveComments(); render(); refreshChat(); renderMsgTableIfOpen();
     if (failed) toast(`Could not send ${list.length - sent} comment${list.length - sent === 1 ? '' : 's'}: ${failed}. ${sent ? sent + ' sent.' : 'They are kept in your review.'}`);
     else if (!(list.length === 1 && chatOpen(list[0].target))) toast(`Sent ${sent} comment${sent === 1 ? '' : 's'} to the agent.`); // an open chat already says so
+  }
+  // SSE `note`: {seq, id, target, text, at}: the agent started a thread. It is unread until its thread is opened.
+  function onNote(d) {
+    if (C.seenReplies.has(d.seq) || state.comments.some(c => c.sid === d.id)) return;
+    C.seenReplies.add(d.seq);
+    const at = Date.parse(d.at) || Date.now();
+    state.comments.push({ id: d.id, sid: d.id, target: d.target, text: '', status: 'sent', at, agent: true, replies: [{ text: d.text, at }] });
+    render(); refreshChat();
+    if (chatShows(d.target)) markRead(chat.key);
+    markUnread(); changed();
   }
   // SSE `reply`: {seq, to, text, at}.
   function onReply(d) {
@@ -5244,7 +5258,7 @@ function sessionComments({ version, closed }) {
   const onChange = f => { C.listeners.push(f); };
   // What the agent has been given (ids of comments), from the log and from the server's `seen` news.
   function setSeen(ids) { let ch = false; (ids || []).forEach(i => { if (!C.seen.has(i)) { C.seen.add(i); ch = true; } }); if (ch) refreshChat(); }
-  return { rebuild, send, onReply, hook, reviews, addReview, onChange, setSeen, _state: C };
+  return { rebuild, send, onReply, onNote, hook, reviews, addReview, onChange, setSeen, _state: C };
 }
 // @sbtel file Viewer.Bindings
 // Code bindings in the page (docs/DESIGN.md §6.3, §6.9): an edges file's violations as one more check in
@@ -6019,6 +6033,7 @@ SBTEL.modes.server = (() => {
       versionToast(d);
     });
     es.addEventListener('reply', e => { seq(e); SC.onReply(JSON.parse(e.data)); });
+    es.addEventListener('note', e => { seq(e); SC.onNote(JSON.parse(e.data)); });
     es.addEventListener('seen', e => { SC.setSeen(JSON.parse(e.data).ids); });
     es.addEventListener('ref', e => { seq(e); refEvent(JSON.parse(e.data), true); });
     es.addEventListener('closed', () => closedState());
@@ -6876,6 +6891,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
       const seq = e => { const n = parseInt(e.lastEventId, 10); if (n > lastSeq) lastSeq = n; };
       es.addEventListener('version', seq);
       es.addEventListener('reply', e => { seq(e); SC.onReply(JSON.parse(e.data || '{}')); });
+      es.addEventListener('note', e => { seq(e); SC.onNote(JSON.parse(e.data || '{}')); });
       es.addEventListener('closed', () => { closed = true; R.forget(); es.close(); versionToast('This session was closed.'); });
       es.onerror = () => { es.close(); if (!closed) setTimeout(connect, 5000); };
     };
