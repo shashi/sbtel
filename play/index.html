@@ -77,10 +77,25 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .lines path.bad { stroke:var(--warn); stroke-width:2; stroke-dasharray:5 4; }
 .lines path.hit { stroke:transparent; stroke-width:18; pointer-events:stroke; cursor:pointer; }
 .lines path.vis.selected { stroke:var(--accent); stroke-width:3.5; stroke-dasharray:none; }
-.lines.fading { opacity:0; }
+.lines g.fresh { animation:linein .26s ease .12s both; }
+@keyframes linein { from { opacity:0; } to { opacity:1; } }
 .ovl { position:absolute; left:0; top:0; overflow:visible; z-index:900; pointer-events:none; }
 .ovl path { fill:none; stroke:var(--accent); stroke-width:2.5; stroke-dasharray:6 5; }
 .ovl circle { fill:var(--accent); }
+/* A dragged block's ties (drawTies): the cable, and the two halves and spark of a break. */
+.ties { z-index:1400; }
+.ties path { stroke:var(--line); stroke-width:1.5; stroke-dasharray:none; stroke-linecap:round; }
+.ties .cable { transition:opacity .08s linear; }
+.ties .half { stroke:var(--warn); stroke-dasharray:1; stroke-dashoffset:0; opacity:0; }
+.ties .spark { opacity:0; }
+.ties .spark path { stroke:var(--warn); stroke-width:2; }
+.ties .broken .cable { opacity:0; }
+.ties .broken .half { opacity:.7; stroke-dashoffset:.86; transition:stroke-dashoffset .42s cubic-bezier(.2,1.5,.4,1), opacity .5s ease .3s; }
+.ties .broken .spark { animation:tiesnap .36s ease-out both; }
+.ties .joined .half { animation:tiejoin .16s ease-in both; }
+.ties .joined .cable { transition:opacity .01s linear .15s; }
+@keyframes tiesnap { 0% { opacity:1; } 100% { opacity:0; } }
+@keyframes tiejoin { 0% { stroke-dashoffset:.86; opacity:1; } 99% { stroke-dashoffset:0; opacity:1; } 100% { stroke-dashoffset:0; opacity:0; } }
 .ovl rect.dropz { fill:var(--accent-soft); stroke:var(--accent); stroke-width:2; stroke-dasharray:6 5; }
 .blk.dragsrc { z-index:1500 !important; pointer-events:none; opacity:.85; box-shadow:0 14px 40px var(--shadow); transition:none !important; }
 .editf .fld { display:block; margin-bottom:12px; }
@@ -167,11 +182,12 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .bd { position:absolute; inset:0; padding:14px 18px 12px; overflow:hidden; border-radius:inherit; }
 .toprow { display:flex; flex-wrap:wrap; align-items:center; gap:5px 8px; margin-bottom:6px; overflow:hidden; }
 .behs { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:5px 6px; margin-left:auto; max-width:100%; }
-.pill { display:inline-flex; align-items:center; height:20px; border-radius:10px; padding:0 9px; font-size:11.5px; font-weight:600; letter-spacing:.02em; background:var(--pill-other-bg); color:var(--pill-other-fg); white-space:nowrap; }
-.pill[data-k="module"] { background:var(--pill-module-bg); color:var(--pill-module-fg); }
-.pill[data-k="process"] { background:var(--pill-process-bg); color:var(--pill-process-fg); }
-.ttl { font-size:17px; font-weight:500; height:24px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:7px; }
-.ttl > span { overflow:hidden; text-overflow:ellipsis; }
+/* A block's :type follows its name on the same line, in the sketch's quiet colour: the name leads. */
+.pill { flex:none; font-size:12.5px; font-weight:400; color:var(--muted); white-space:nowrap; align-self:baseline; margin-left:2px; }
+.ttl { font-size:17px; font-weight:600; height:24px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:7px; }
+.ttl > span:not(.pill) { overflow:hidden; text-overflow:ellipsis; }
+.ttl { align-items:baseline; }
+.ttl .md, .ttl .badge { align-self:center; }
 .sk { font-size:13.5px; line-height:18px; color:var(--muted); overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; margin-top:4px; white-space:pre-line; }
 .foot { display:flex; align-items:center; gap:6px; height:26px; margin-top:4px; font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; }
 .tw { border:0; background:none; padding:0 2px; cursor:pointer; color:var(--muted); font-size:11px; line-height:1; width:18px; height:22px; border-radius:4px; flex:none; }
@@ -182,7 +198,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .declink:hover { text-decoration:underline; }
 .badge { width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:11px; line-height:1; cursor:pointer; flex:none; }
 .prow { display:flex; gap:0; margin-top:6px; overflow:hidden; }
-.plab { width:52px; flex:none; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); line-height:24px; }
+.plab { width:52px; flex:none; font-size:12px; font-weight:600; color:var(--muted); line-height:24px; }
 .pch { display:flex; flex-wrap:wrap; gap:5px 6px; min-width:0; flex:1; }
 .none { font-size:12.5px; color:var(--muted); line-height:24px; font-style:italic; }
 .chip { height:24px; box-sizing:border-box; display:inline-flex; align-items:center; gap:5px; padding:0 9px; border:1px solid var(--panel-line); border-radius:12px; background:var(--chip);
@@ -208,7 +224,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .cvx .bandlab { left:0; white-space:nowrap; }
 .foot.wrap { white-space:normal; align-items:flex-start; overflow:visible; }
 .foot.wrap .cnt, .foot.wrap .rel2 { line-height:17px; padding-top:4px; }
-.bandlab { position:absolute; left:22px; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.bandlab { position:absolute; left:22px; margin-top:-3px; font-size:13px; color:var(--muted); }
 .cbub { position:absolute; top:-11px; right:-11px; z-index:6; min-width:22px; height:22px; padding:0 6px; box-sizing:border-box; border-radius:11px; border:0;
   background:var(--accent); color:#fff; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; gap:3px; cursor:pointer; }
 .cbub svg.i { width:12px; height:12px; }
@@ -241,8 +257,11 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .hdl::after { content:""; position:absolute; inset:-12px; border-radius:50%; }
 .hdl:hover { background:var(--accent); }
 
-.aff { position:absolute; left:0; top:0; z-index:600; animation: affin .3s ease .2s both; }
-@keyframes affin { from { opacity:0; } to { opacity:1; } }
+.aff { position:absolute; left:0; top:0; z-index:600; }
+.world.anim .aff.keep { transition: transform .32s cubic-bezier(.3,.7,.2,1); }
+.world.noaff .aff { visibility:hidden; }
+/* A + is faint until the pointer comes near it (nearAff), so a diagram at rest shows the design, not its handles. */
+@media (hover: hover) { .aff.keep:not(.gutter) > .plus, .lsep > .plus { opacity:.25; transition:opacity .15s ease; } .aff.keep.near > .plus, .lsep.near > .plus, .aff.keep > .plus:focus-visible, .lsep > .plus:focus-visible { opacity:1; } }
 .plus { position:relative; box-sizing:border-box; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; border:1px solid transparent; background:transparent; color:var(--muted); cursor:pointer; font-size:0; line-height:0; padding:0; }
 /* The + is drawn with two bars centred in the button, so it sits exactly on its line whatever the font. */
 .plus::before, .plus::after { content:""; position:absolute; left:50%; top:50%; width:10px; height:1.6px; margin:-0.8px 0 0 -5px; background:currentColor; border-radius:1px; }
@@ -273,7 +292,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .blk.bounce { z-index:1500 !important; }
 .ovl rect.dropz.bad { fill:var(--warn-soft); stroke:var(--warn); }
 .pop.menu { padding:5px; min-width:200px; outline:none; }
-.pop.menu .mh { font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; padding:5px 9px 4px; }
+.pop.menu .mh { font-size:12px; color:var(--muted); font-weight:600; padding:5px 9px 4px; }
 .pop.menu .mi { display:flex; align-items:center; gap:8px; width:100%; box-sizing:border-box; border:0; background:none; border-radius:7px; padding:7px 9px; font-size:13px; text-align:left; cursor:pointer; color:var(--ink); }
 .pop.menu .mi:hover, .pop.menu .mi:focus-visible { background:var(--accent-soft); outline:none; }
 .pop.menu .mi.danger { color:var(--warn); }
@@ -298,6 +317,10 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .dock { left:50%; transform:translateX(-50%); bottom:max(14px, env(safe-area-inset-bottom, 0px)); border-radius:14px; padding:6px; display:flex; align-items:center; gap:2px;
   max-width:calc(100vw - 24px); overflow-x:auto; scrollbar-width:none; }
 .dock::-webkit-scrollbar { display:none; }
+/* When the toolbar has less room than it wants (a side panel is open, a small window), it drops its
+   words first and then the view controls, before it would scroll (fitDock). */
+.dock.tight .tb:has(svg) > span:not(#cmtN):not(.n) { display:none; }
+.dock.tighter #expAll, .dock.tighter #colAll, .dock.tighter #zOut, .dock.tighter #zIn, .dock.tighter #zv { display:none; }
 .tb { height:34px; min-width:34px; padding:0 10px; display:inline-flex; align-items:center; justify-content:center; gap:6px; border:0; border-radius:9px; background:transparent; cursor:pointer; font-size:13px; white-space:nowrap; flex:none; }
 .tb:hover { background:var(--chip); }
 .tb:disabled { opacity:.38; cursor:default; background:transparent; }
@@ -338,7 +361,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .fchip { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--accent); color:var(--accent); border-radius:12px; padding:2px 4px 2px 10px; font-size:12px; }
 .fchip button { border:0; background:none; color:inherit; cursor:pointer; width:20px; height:20px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
 .mt { width:100%; border-collapse:collapse; font-size:13px; }
-.mt th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--panel-line); }
+.mt th { text-align:left; font-size:12px; color:var(--muted); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--panel-line); }
 .mt th.n, .mt td.n { text-align:right; font-variant-numeric:tabular-nums; }
 .mt tr.row { cursor:pointer; }
 .mt tr.row td { padding:8px; border-bottom:1px solid var(--panel-line); vertical-align:top; }
@@ -350,7 +373,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .mt .own { color:var(--muted); font-size:12px; word-break:break-word; }
 .mt tr.det td { padding:4px 12px 14px; background:var(--accent-soft); border-bottom:1px solid var(--panel-line); }
 .det p { margin:4px 0 10px; line-height:1.5; max-width:60ch; }
-.det h4 { margin:10px 0 6px; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.det h4 { margin:10px 0 6px; font-size:12px; color:var(--muted); }
 .uses { display:flex; flex-wrap:wrap; gap:6px; }
 .ulink { border:1px solid var(--panel-line); background:var(--surface); border-radius:8px; padding:4px 8px; font-size:12px; cursor:pointer; text-align:left; }
 .ulink:hover { border-color:var(--accent); }
@@ -392,7 +415,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 /* popovers */
 .pop { position:fixed; z-index:1800; background:var(--panel); border:1px solid var(--panel-line); border-radius:12px; box-shadow:0 14px 40px var(--shadow); padding:12px 14px; font-size:13px; line-height:1.45; width:max-content; max-width:min(340px, calc(100vw - 24px)); }
 .pop h3 { margin:0 0 4px; font-size:14px; font-family:var(--ff-mono); font-weight:600; display:flex; align-items:center; gap:7px; }
-.pop .kind { font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-family:var(--ff-ui); font-weight:600; }
+.pop .kind { font-size:12px; color:var(--muted); font-family:var(--ff-ui); font-weight:600; }
 .pop p { margin:4px 0 8px; color:var(--ink); }
 .pop .meta { color:var(--muted); font-size:12px; font-family:var(--ff-mono); }
 .pop .acts { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
@@ -421,7 +444,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .cedit input, .cedit textarea { font:inherit; font-size:13px; padding:6px 8px; border:1px solid var(--panel-line); border-radius:7px; background:var(--surface); color:var(--ink); min-width:0; box-sizing:border-box; width:100%; }
 .cedit .mono { font-family:var(--ff-mono); font-size:12.5px; }
 .cedit textarea { resize:vertical; min-height:58px; line-height:1.45; }
-.cedit .lab { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:-3px; }
+.cedit .lab { font-size:12px; font-weight:600; color:var(--muted); margin-bottom:-3px; }
 .cedit .pdir { display:inline-flex; border:1px solid var(--panel-line); border-radius:7px; overflow:hidden; flex:none; }
 .cedit .pdir button { border:0; background:var(--surface); color:var(--muted); padding:5px 9px; font-size:12px; cursor:pointer; }
 .cedit .pdir button[aria-pressed="true"] { background:var(--accent); color:#fff; }
@@ -446,23 +469,49 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .chklist.info .st { font-style:italic; font-family:Georgia, serif; color:var(--muted); }
 .chklist.info .detail { color:inherit; font-family:inherit; margin-top:3px; }
 .chklist .detail { grid-column:2 / -1; color:var(--warn); font-family:var(--ff-mono); font-size:11px; word-break:break-word; }
-.pop h5 { margin:2px 0 6px; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.pop h5 { margin:2px 0 6px; font-size:12px; color:var(--muted); }
 
 .strip { position:fixed; z-index:1100; display:flex; gap:2px; padding:4px; border-radius:11px; background:var(--panel); border:1px solid var(--panel-line); box-shadow:0 8px 24px var(--shadow); }
 .strip .tb { height:30px; min-width:30px; font-size:12.5px; padding:0 8px; }
 /* Comments on one target: a chat. The thread scrolls, newest at the bottom, over the input. Its copy is a size
    up from the cards' sketches, since the popover does not zoom with the canvas. */
-.pop.chat { width:min(380px, calc(100vw - 24px)); max-width:none; box-sizing:border-box; padding:10px 12px 12px; font-size:15px; }
-.pop.chat .chh { display:flex; align-items:center; gap:8px; }
-.pop.chat .chh .xbtn { width:28px; height:28px; margin:-4px -6px -4px auto; }
-.composer textarea { width:100%; min-height:64px; max-height:30vh; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:8px; padding:8px 10px; font:inherit; font-size:15px; line-height:1.45; background:var(--surface); color:var(--ink); resize:vertical; display:block; margin-top:8px; }
-.composer textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
-@media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
-.pop.chat .acts { align-items:center; justify-content:flex-end; }
-.pop.chat .composer { position:relative; }
-.pop.chat .composer textarea { padding-right:38px; }
-.pop.chat .attach { position:absolute; right:3px; bottom:20px; width:32px; height:32px; color:var(--muted); }
+/* ---------- Comments on a thing: a note in the margin, tied to it ----------
+   The callout stands beside what it is about (placeBeside) with a tail pointing at it. Inside, a thread is
+   text on a page, not cards: your comment in full ink, what became of it in small type under it, and the
+   agent's answer set in from a rule. The field at the foot holds the text, the paperclip and both ways to
+   send it. */
+.pop.chat { width:min(372px, calc(100vw - 24px)); max-width:none; box-sizing:border-box; padding:0; font-size:14.5px; line-height:1.5; display:flex; flex-direction:column; max-height:min(620px, calc(100vh - 100px)); }
+.pop.chat::before { content:""; position:absolute; width:11px; height:11px; background:var(--panel); border:1px solid var(--panel-line); border-top:0; border-right:0; top:var(--tail, 24px); display:none; }
+.pop.chat.right::before { display:block; left:-6.5px; transform:rotate(45deg); }
+.pop.chat.left::before { display:block; right:-6.5px; transform:rotate(225deg); }
+.pop.chat .chh { display:flex; align-items:baseline; gap:8px; padding:11px 8px 9px 16px; border-bottom:1px solid var(--panel-line); }
+.pop.chat .chh .on { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14.5px; font-weight:600; }
+.pop.chat .chh .on i { font-style:normal; font-weight:400; color:var(--muted); margin-right:5px; }
+.pop.chat .chh .xbtn { width:28px; height:28px; margin:-4px 0 -4px auto; align-self:center; flex:none; color:var(--muted); }
+.thread { list-style:none; margin:0; padding:2px 16px 4px; flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; }
+.thread li { padding:11px 0 12px; border-top:1px solid var(--panel-line); }
+.thread li:first-child { border-top:0; }
+.thread li.none { color:var(--muted); font-size:13.5px; padding:12px 0 8px; }
+.thread .ct { white-space:pre-wrap; overflow-wrap:anywhere; }
+.thread .cm { display:flex; align-items:center; gap:7px; margin-top:3px; font-size:12px; color:var(--muted); min-height:20px; }
+.thread .cm .tiny { opacity:0; }
+.thread li:hover .cm .tiny, .thread li:focus-within .cm .tiny { opacity:1; }
+@media (hover: none) { .thread .cm .tiny { opacity:1; } }
+/* A comment still in your hands (saved, or in your review) is marked by a dashed rule; a sent one has none. */
+.thread li.mine { padding-left:9px; margin-left:-11px; border-left:2px dashed var(--panel-line); border-top-color:transparent; }
+.thread li.mine + li, .thread li + li.mine { margin-top:2px; }
+.pop.chat .composer { position:relative; margin:4px 10px 10px; border:1px solid var(--panel-line); border-radius:10px; background:var(--surface); }
+.pop.chat .composer:focus-within { border-color:var(--accent); }
+.pop.chat .composer textarea { width:100%; min-height:46px; max-height:28vh; box-sizing:border-box; border:0; outline:0; background:none; padding:9px 12px 4px; margin:0; font:inherit; color:var(--ink); resize:none; display:block; field-sizing:content; }
+.pop.chat .acts { display:flex; align-items:center; gap:4px; margin:0; padding:2px 5px 5px 4px; flex-wrap:nowrap; }
+.pop.chat .attach { width:30px; height:30px; flex:none; color:var(--muted); }
 .pop.chat .attach:hover { color:var(--ink); }
+.pop.chat .keys { flex:1 1 0; min-width:0; font-size:11px; line-height:1.3; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0; transition:opacity .15s ease; }
+.pop.chat .composer:focus-within .keys { opacity:1; }
+.pop.chat .acts .btn { flex:none; padding:5px 11px; font-size:13px; border-radius:7px; }
+.pop.chat .acts .btn.quiet { border-color:transparent; background:none; color:var(--ink-2); }
+.pop.chat .acts .btn.quiet:hover { background:var(--chip); color:var(--ink); }
+@media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
 .tb.cmtbtn { position:relative; }
 .tb.cmtbtn.unread::after { content:""; position:absolute; top:3px; right:3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
 .allc { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
@@ -475,15 +524,6 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .allc button.unread .on::before { content:""; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--warn); margin-right:7px; vertical-align:1px; }
 .dropon { outline:2px dashed var(--accent); outline-offset:3px; }
 .modal .ver { margin-top:14px; font-size:12px; color:var(--muted); }
-.pop.chat .keys { margin-right:auto; font-size:11.5px; line-height:1.35; color:var(--muted); min-width:0; flex:1 1 0; }
-.pop.chat .acts .btn { flex:none; }
-.pop.chat .acts { flex-wrap:nowrap; }
-.thread { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; max-height:min(44vh, 420px); overflow:auto; overscroll-behavior:contain; }
-.thread li { border:1px solid var(--panel-line); border-radius:9px; padding:8px 10px; background:var(--surface); }
-.thread li.none { border:0; background:none; padding:2px 0; color:var(--muted); font-size:13.5px; }
-.thread .ct { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.45; }
-.thread .cm { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12px; color:var(--muted); }
-/* A reply nobody has read yet: a dot on the count. */
 .cbub.unread::after { content:""; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--canvas); }
 /* The whole-file chat sits above the toolbar, at its right end, not over it. */
 @media (min-width: 760px) { .pop.chat.filechat { left:auto !important; top:auto !important; right:16px; bottom:76px; max-height:calc(100vh - 150px); } }
@@ -603,9 +643,9 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 /*CORE-START*/
 const K = { PAD:22, GAPX:56, ROWGAP:30, TAB:20, LEVELGAP:44, NAMEGAP:10, BANDGAP:34, BANDLAB:22, MIN_EXP:320, CARD_MIN:220, CARD_MAX:340, DETAIL_MAX:440, LABEL:52 };
 const FONT = {
-  title:'500 17px "Hanken Grotesk"', sketch:'400 13.5px "Hanken Grotesk"',
+  title:'600 17px "Hanken Grotesk"', sketch:'400 13.5px "Hanken Grotesk"',
   htitle:'600 20px "Hanken Grotesk"', hsketch:'400 14.5px "Hanken Grotesk"',
-  chip:'500 12px "JetBrains Mono"', pill:'600 11.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
+  chip:'500 12px "JetBrains Mono"', pill:'400 12.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
 };
 // The twelve forms. A model node of (takes …) or (gives …) has form 'port', and one of (shape …) has form
 // 'message': the names the model has always used for them.
@@ -1201,27 +1241,28 @@ function layout(model, opts, M) {
   };
 
   function topRow(n, inner, detailed) {
-    const pillW = n.type ? M.tw(n.type, FONT.pill) + 20 : 0, bs = behsOf(n);
-    if (!pillW && !bs.length) return { h:0 };
-    if (!detailed || !bs.length) return { h:26 };
+    // The row above the title holds the behaviors a block implements. Its :type stands beside its name.
+    const bs = behsOf(n);
+    if (!bs.length) return { h:0 };
+    if (!detailed) return { h:26 };
     const bw = bs.map(bchipW);
-    if ((pillW ? pillW + 8 : 0) + line(bw) <= inner) return { h:30 };
-    return { h:(pillW ? 25 : 0) + rowsH(rowsOf(bw, inner)) + 6 };
+    if (line(bw) <= inner) return { h:30 };
+    return { h:rowsH(rowsOf(bw, inner)) + 6 };
   }
   function cardMetrics(n, availW) {
     const isB = n.form === 'behavior', isM = n.form === 'message', d = det(n);
-    const tW = M.tw(n.name, FONT.title) + (isB ? 27 : isM ? 20 : 0);
-    const pillW = n.type ? M.tw(n.type, FONT.pill) + 20 : 0, bs = behsOf(n);
+    const pillW = n.type ? M.tw(n.type, FONT.pill) + 9 : 0, bs = behsOf(n);
+    const tW = M.tw(n.name, FONT.title) + (isB ? 27 : isM ? 20 : 0) + pillW;
     // The collapsed footer (open arrow plus counts) also asks for room, within the card maximum.
     const footText = hasInside(n) ? countText(n) : isM && n.refines ? 'refines ' + n.refines : '';
     const footW = footText ? M.tw(footText, isM ? FONT.chip : FONT.foot) + (isM ? 0 : 24) : 0;
-    let w = Math.min(K.CARD_MAX, Math.max(K.CARD_MIN, Math.ceil(Math.max(tW, pillW + bs.length * 26 + 10, footW) + 54)));
+    let w = Math.min(K.CARD_MAX, Math.max(K.CARD_MIN, Math.ceil(Math.max(tW, bs.length * 26 + 10, footW) + 54)));
     const P = d ? portsFor(n) : null;
     let iw = [], ow = [];
     if (d) {
       iw = P.in.map(p => chipW(portLabel(p))); ow = P.out.map(p => chipW(portLabel(p)));
       const want = 36 + K.LABEL + Math.max(line(iw), line(ow));
-      const wantTop = 36 + (pillW ? pillW + 8 : 0) + line(bs.map(bchipW));
+      const wantTop = 36 + line(bs.map(bchipW));
       w = Math.min(K.DETAIL_MAX, Math.max(w, 300, want, wantTop));
     }
     w = Math.min(w, availW);
@@ -2264,6 +2305,10 @@ const M = {
     return lines;
   }
 };
+// Key names as this computer shows them: text is written with the Mac's signs and turned here for others.
+const MAC = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+function kb(s) { return MAC ? s.replace(/⌘\/Ctrl/g, '⌘') : s.replace(/⌘\/Ctrl/g, 'Ctrl').replace(/⌘⇧/g, 'Ctrl+Shift+').replace(/⌘-/g, 'Ctrl-').replace(/⌘ ↵/g, 'Ctrl+Enter').replace(/⌘/g, 'Ctrl+').replace(/\(⌫\)/g, '(Delete)'); }
+addEventListener('DOMContentLoaded', () => { document.querySelectorAll('.dock [title], .brand [title]').forEach(el => { el.title = kb(el.title); }); document.querySelectorAll('#help li').forEach(li => { li.innerHTML = kb(li.innerHTML); }); });
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 // A sketch on a card: its paragraphs half a line apart when the card shows all of it, else run together.
 const skHTML = (t, gaps) => t.split('\n\n').filter(p => p.trim()).map(esc).join(gaps ? '<i class="pg"></i>' : '\n');
@@ -2456,9 +2501,7 @@ function paint(lay, keep) {
   const svg = $('lines');
   const d = p => 'M' + p.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L');
   paintSeps(lay, pv);
-  svg.innerHTML = lay.bands.map(v => `<path class="band" d="M${v.x1} ${v.y} L${v.x2} ${v.y}"/>`).join('') +
-    lay.connectors.map((c, i) => `<path class="hit" data-ci="${i}" d="${d(c.pts)}"><title>${esc(c.a)} — ${esc(c.b)}${c.bad ? ' (not adjacent!)' : ''}</title></path><path class="vis ${c.bad ? 'bad' : ''}" data-key="${esc(c.a + '|' + c.b)}" d="${d(c.pts)}"/>`).join('');
-  if (world.classList.contains('anim')) { svg.classList.add('fading'); clearTimeout(render._t); render._t = setTimeout(() => svg.classList.remove('fading'), 330); }
+  drawLines(lay, world.classList.contains('anim') ? 320 : world.classList.contains('pv') ? 220 : 0, pv ? keep : null);
 
   // The file's own appendix (top-level behaviors and shapes): tint and band labels on the canvas.
   world.querySelectorAll('.cvx').forEach(n => n.remove());
@@ -2467,22 +2510,80 @@ function paint(lay, keep) {
     cx.innerHTML = `<div class="appx" style="top:${lay.canvas.appendixY}px;height:${lay.canvas.h - lay.canvas.appendixY}px;width:${lay.size.w}px"></div>` + lay.canvas.bandLabs.map(l => `<div class="bandlab" style="top:${l.y}px">${esc(l.text)}</div>`).join('');
     world.prepend(cx);
   }
-  world.querySelectorAll('.aff').forEach(n => n.remove());
+  // The + buttons and gutters are kept from paint to paint (by kind and order), so they slide with the
+  // blocks. In a drag preview they wait, hidden, for the next real render.
+  world.querySelectorAll('.aff.tmp').forEach(n => n.remove());
+  world.classList.toggle('noaff', pv);
   if (pv) return;
+  const pool = { '': [...world.querySelectorAll('.aff.keep:not(.gutter)')], gutter: [...world.querySelectorAll('.aff.keep.gutter')] };
+  const moving = world.classList.contains('anim');
   const add = (html, x, y, w, act, cls, key) => {
-    const el = document.createElement('div'); el.className = 'aff ' + cls; if (key) el.dataset.key = key; el.style.transform = `translate(${x}px,${y}px)`;
-    if (w != null) el.style.width = w + 'px';
-    el.innerHTML = html; el.querySelector('button').addEventListener('click', e => { e.stopPropagation(); edit(act); }); world.appendChild(el);
+    let el = pool[cls].shift(); const at = `translate(${x}px,${y}px)`;
+    if (!el) { el = document.createElement('div'); el.className = 'aff keep ' + cls; el.style.transform = at; world.appendChild(el); el.addEventListener('click', e => { if (e.target.closest('.plus')) { e.stopPropagation(); edit(el._act); } }); }
+    else if (moving) requestAnimationFrame(() => { el.style.transform = at; }); else el.style.transform = at;
+    if (key) el.dataset.key = key; else delete el.dataset.key;
+    el.style.width = w != null ? w + 'px' : '';
+    el._act = act; if (el._html !== html) { el._html = html; el.innerHTML = html; }
   };
   lay.plus.forEach(p => add(`<button class="plus" title="${p.title}" aria-label="${p.title}">+</button>`, p.x, p.y, null, p.act, ''));
   // The first level's gutter offers to name it (an unnamed first level has no line of its own).
   lay.gutters.forEach(g => add('<button class="plus" title="Insert a level here" aria-label="Insert a level here">+</button>' + (g.act.at === 0 && g.act.block.levels.length ? levelLabelHTML(g.act.block, 0) : ''), g.x1, g.y, g.x2 - g.x1, g.act, 'gutter', g.key));
+  [...pool[''], ...pool.gutter].forEach(el => el.remove());
   lay.connectors.forEach(c => {
     const k = 'line:' + c.a + '|' + c.b; if (!counts[k]) return;
     const [x, y] = midOf(c.pts);
-    const el = document.createElement('div'); el.className = 'aff'; el.style.transform = `translate(${x - 11}px,${y - 30}px)`;
+    const el = document.createElement('div'); el.className = 'aff tmp'; el.style.transform = `translate(${x - 11}px,${y - 30}px)`;
     el.innerHTML = `<button class="cbub" style="position:static" data-thread="${esc(k)}">${ICON.comment}${counts[k]}</button>`; world.appendChild(el);
   });
+}
+{
+  const d = document.querySelector('.dock');
+  const fitDock = () => { d.classList.remove('tight', 'tighter'); if (d.scrollWidth > d.clientWidth + 1) { d.classList.add('tight'); if (d.scrollWidth > d.clientWidth + 1) d.classList.add('tighter'); } };
+  let q = 0; const soon = () => { if (!q) q = requestAnimationFrame(() => { q = 0; fitDock(); }); };
+  new ResizeObserver(soon).observe(d); new MutationObserver(soon).observe(d, { childList:true, subtree:true, attributes:true, attributeFilter:['hidden', 'style'] }); addEventListener('resize', soon);
+  // Room also comes and goes with the side panels, which changes nothing about the toolbar itself.
+  const mo = new MutationObserver(soon); const watch = () => document.querySelectorAll('.sheet').forEach(s => { if (!s._fd) { s._fd = 1; mo.observe(s, { attributes:true, attributeFilter:['class'] }); } });
+  watch(); new MutationObserver(watch).observe(document.body, { childList:true });
+}
+// The + buttons within reach of the pointer (about 110px on screen) are the ones shown in full.
+{
+  let raf = 0, at = null;
+  const mark = () => { raf = 0; document.querySelectorAll('.aff.keep:not(.gutter), .lsep').forEach(el => {
+    const b = el.querySelector(':scope > .plus'); if (!b) return; const r = b.getBoundingClientRect();
+    el.classList.toggle('near', !!at && Math.hypot(at.x - (r.left + r.width / 2), at.y - (r.top + r.height / 2)) < 110); }); };
+  addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; at = { x:e.clientX, y:e.clientY }; if (!raf) raf = requestAnimationFrame(mark); }, { passive:true });
+  document.addEventListener('pointerleave', () => { at = null; if (!raf) raf = requestAnimationFrame(mark); });
+}
+// Lines keep their place in step with the blocks. A line that was there before slides from where it is
+// drawn now to its new points, over the same time and curve as the blocks' own transition (ms); a new one
+// fades in. In a drag preview the lifted block's own lines are left out: the drag draws them (ties).
+const lineNow = new Map(); let lineRaf = 0;
+const bez = (x1, y1, x2, y2) => { const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx, cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  return x => { let u = x; for (let i = 0; i < 6; i++) { const f = ((ax * u + bx) * u + cx) * u - x, df = (3 * ax * u + 2 * bx) * u + cx; if (Math.abs(df) < 1e-6) break; u -= f / df; } return ((ay * u + by) * u + cy) * u; }; };
+const moveEase = bez(.3, .7, .2, 1);
+function drawLines(lay, ms, lifted) {
+  const svg = $('lines'), d = p => 'M' + p.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L');
+  const items = lay.bands.map((v, i) => ({ key:'band:' + i, pts:[[v.x1, v.y], [v.x2, v.y]], html:p => `<path class="band" d="${d(p)}"/>` }))
+    .concat(lay.connectors.map((c, i) => lifted && (lifted.has(c.a) || lifted.has(c.b)) ? null : ({ key:'c:' + c.a + '|' + c.b, pts:c.pts,
+      html:p => `<path class="hit" data-ci="${i}" d="${d(p)}"><title>${esc(c.a)} — ${esc(c.b)}${c.bad ? ' (not adjacent!)' : ''}</title></path><path class="vis ${c.bad ? 'bad' : ''}" data-key="${esc(c.a + '|' + c.b)}" d="${d(p)}"/>` })).filter(Boolean));
+  cancelAnimationFrame(lineRaf);
+  const moves = [];
+  svg.innerHTML = items.map(it => {
+    const a = lineNow.get(it.key), slide = ms && a && a.length === it.pts.length && a.some((q, i) => Math.abs(q[0] - it.pts[i][0]) > .5 || Math.abs(q[1] - it.pts[i][1]) > .5);
+    if (slide) moves.push({ it, a });
+    return `<g data-lk="${esc(it.key)}"${ms && !a ? ' class="fresh"' : ''}>${it.html(slide ? a : it.pts)}</g>`;
+  }).join('');
+  for (const k of [...lineNow.keys()]) if (!items.some(it => it.key === k)) lineNow.delete(k);
+  items.forEach(it => { if (!moves.some(m => m.it === it)) lineNow.set(it.key, it.pts); });
+  if (!moves.length) return;
+  moves.forEach(m => { m.els = [...svg.querySelectorAll(`g[data-lk="${CSS.escape(m.it.key)}"] path`)]; });
+  const t0 = performance.now();
+  const step = now => {
+    const u = Math.min(1, (now - t0) / ms), e = moveEase(u);
+    moves.forEach(m => { const p = m.it.pts.map((q, i) => [m.a[i][0] + (q[0] - m.a[i][0]) * e, m.a[i][1] + (q[1] - m.a[i][1]) * e]); lineNow.set(m.it.key, p); const s = d(p); m.els.forEach(el => el.setAttribute('d', s)); });
+    if (u < 1) lineRaf = requestAnimationFrame(step);
+  };
+  lineRaf = requestAnimationFrame(step);
 }
 // Level separators are elements kept by key across paints (like blocks), each with its own + at its end,
 // so they slide to their new place with the blocks instead of vanishing and coming back. A separator that
@@ -2594,8 +2695,10 @@ function prowHTML(label, list, h) { return `<div class="prow" style="height:${h}
 function topHTML(n, top, detailed) {
   if (!top.h) return '';
   const bs = behsOf(n);
-  return `<div class="toprow" style="height:${top.h - 6}px">${n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}">${esc(n.type)}</span>` : ''}${bs.length ? `<span class="behs">${bs.map(detailed ? behChip : badge).join('')}</span>` : ''}</div>`;
+  return `<div class="toprow" style="height:${top.h - 6}px">${bs.length ? `<span class="behs">${bs.map(detailed ? behChip : badge).join('')}</span>` : ''}</div>`;
 }
+// A block's :type, in quiet type after its name.
+const typeHTML = n => n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}">${esc(n.type)}</span>` : '';
 function cardHTML(B) {
   const n = B.node, m = B.m, isB = n.form === 'behavior';
   const P = m.d ? dotsOf(n, state.opts.childDots) : null;
@@ -2605,7 +2708,7 @@ function cardHTML(B) {
   const foot = isM ? `<div class="foot"><span class="rel2">${esc('refines ' + n.refines)}</span></div>`
     : hasInside(n) ? `<div class="foot"><button class="tw" data-tog="${esc(n.id)}" aria-label="Open ${esc(n.name)}">▶</button><span class="cnt" data-tog="${esc(n.id)}">${countText(n)}</span></div>` : '';
   const foot2 = m.foot > 26 ? foot.replace('<div class="foot">', `<div class="foot wrap" style="height:${m.foot}px">`) : foot;
-  return (isM ? carryEarHTML(n) : m.d ? '' : tabsHTML(n)) + `<div class="bd">${topHTML(n, m.top, m.d)}<div class="ttl" title="${esc(n.name)}">${title}</div>` +
+  return (isM ? carryEarHTML(n) : m.d ? '' : tabsHTML(n)) + `<div class="bd">${topHTML(n, m.top, m.d)}<div class="ttl" title="${esc(n.name)}">${title}${typeHTML(n)}</div>` +
     (m.d ? prowHTML('Input', P.in, m.inH) : '') +
     (m.lines ? `<div class="sk${m.more ? ' more' : ''}"${m.more ? ` data-expand="${esc(n.id)}" role="button" tabindex="0" aria-expanded="${state.expanded.has(n.id)}" title="${state.expanded.has(n.id) ? 'Show less' : 'Show the whole sketch'}"` : ''} style="-webkit-line-clamp:${m.lines};height:${m.lines * 18 + m.gaps * 9}px">${skHTML(n.sketch, m.gaps)}</div>` : '') +
     (m.d ? prowHTML('Output', P.out, m.outH) : '') +
@@ -2615,7 +2718,7 @@ function cardHTML(B) {
 function frameHTML(B) {
   const b = B.node, h = B.hdr, P = dotsOf(b, state.opts.childDots);
   const nm = b.messageDecls.length;
-  return tabsHTML(b) + (B.appendixY != null ? `<div class="appx" style="top:${B.appendixY}px"></div>` : '') + `<div class="fh">${topHTML(b, h.top, true)}<div class="ttl"><span>${esc(b.name)}</span></div>` +
+  return tabsHTML(b) + (B.appendixY != null ? `<div class="appx" style="top:${B.appendixY}px"></div>` : '') + `<div class="fh">${topHTML(b, h.top, true)}<div class="ttl"><span>${esc(b.name)}</span>${typeHTML(b)}</div>` +
     (h.lines ? `<div class="sk" style="-webkit-line-clamp:${h.lines};height:${h.lines * 20 + h.gaps * 10}px">${skHTML(b.sketch, h.gaps)}</div>` : '') +
     `<div class="foot"><button class="tw open" data-tog="${esc(b.id)}" aria-label="Close ${esc(b.name)}">▶</button><span class="cnt" data-tog="${esc(b.id)}">${countText(b)}</span>` +
     `</div></div>` + B.bandLabs.map(l => `<div class="bandlab" style="top:${l.y}px">${esc(l.text)}</div>`).join('');
@@ -2904,8 +3007,8 @@ function renderStrip() {
     const isM = n && n.form === 'message';
     strip.innerHTML = (isM ? `<button class="tb" data-a="table" title="Open in the shape table">${ICON.details}<span class="lbl">Table</span></button>` : '') + 
       `<button class="tb" data-a="edit" title="Edit name and sketch">${ICON.edit}<span class="lbl">Edit</span></button>` +
-      `<button class="tb" data-a="code" title="Show source">${ICON.code}<span class="lbl">Code</span></button>` +
-      `<button class="tb" data-a="comment" title="Comment (⌘-click)">${ICON.comment}<span class="lbl">Comment</span></button>` +
+      `<button class="tb" data-a="code" title="Show its text in the spec">${ICON.code}<span class="lbl">Source</span></button>` +
+      `<button class="tb" data-a="comment" title="${kb('Comment (⌘-click, or C)')}">${ICON.comment}<span class="lbl">Comment</span></button>` +
       `<button class="tb danger" data-a="delete" title="Delete (⌫)">${ICON.trash}<span class="lbl">Delete</span></button>`;
     strip.setAttribute('aria-label', 'Actions for ' + (n ? n.name : ''));
   } else if (state.selLine) {
@@ -3034,7 +3137,7 @@ function moveZones(id) {
     // A declaration keeps its id; a moved block is found by where its copy starts.
     const nb = isDecl ? sp.m.node(id) : [...sp.m.blocks.values()].find(b => b.s === r.at); if (!nb) continue;
     const B = sp.lay.blocks.find(b => b.id === nb.id); if (!B) continue;
-    const z = { act, src:r.src, noop, bad, join: act.dest.unit != null, x:B.x, y:B.y, w:B.w, h:B.h, lay:sp.lay };
+    const z = { act, src:r.src, noop, bad, join: act.dest.unit != null, x:B.x, y:B.y, w:B.w, h:B.h, lay:sp.lay, nid:nb.id };
     if (z.join && !noop) {
       // The group member the block lands beside (none when it lands strictly between two members).
       const d = act.dest, bs = d.block.levels[d.level].units[d.unit].blocks.filter(b => b !== act.node);
@@ -3111,6 +3214,44 @@ function attachZones(id) {
   }
   return zones;
 }
+// ---------- Ties: a dragged block's links stay with it ----------
+// Each line the block has to a neighbour (an adjacent pair) is drawn from the neighbour, where it stands
+// in the preview, to the block under the pointer, as a slack cable. It holds while the spot the pointer is
+// over would keep the pair (the block's own place, a place in the same group, or no spot at all, where a
+// release puts everything back). Over a spot that would part them it snaps: the two halves spring back
+// from the middle. Moving back joins them again.
+function startTies() {
+  const id = drag.id, cs = state.lay.connectors.filter(c => c.a === id || c.b === id);
+  if (!cs.length) return;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'ovl ties'); svg.setAttribute('width', 1); svg.setAttribute('height', 1);
+  svg.innerHTML = cs.map(() => '<g class="tie"><path class="cable"/><path class="half a" pathLength="1"/><path class="half b" pathLength="1"/><g class="spark"><path d="M-7 -6 L-3 -2 M7 -6 L3 -2 M-7 6 L-3 2 M7 6 L3 2"/></g></g>').join('');
+  $('world').appendChild(svg);
+  drag.ties = cs.map((c, i) => ({ other: c.a === id ? c.b : c.a, g: svg.children[i] })); drag.tieSvg = svg;
+  const tick = () => { if (!drag || !drag.ties) return; drawTies(); drag.tieRaf = requestAnimationFrame(tick); };
+  drag.tieRaf = requestAnimationFrame(tick);
+}
+function drawTies() {
+  const k = state.cam.k, D = { x:drag.B.x + (drag.dx || 0), y:drag.B.y + (drag.dy || 0), w:drag.B.w, h:drag.B.h }, z = drag.best;
+  const f = n => n.toFixed(1);
+  drag.ties.forEach(t => {
+    const el = state.elems.get(t.other); if (!el || el.style.display === 'none') { t.g.style.display = 'none'; return; }
+    t.g.style.display = '';
+    // The neighbour as it is drawn this frame (it may be sliding to its place in the preview).
+    const r = el.getBoundingClientRect(), P = { x:(r.left - state.cam.x) / k, y:(r.top - state.cam.y) / k, w:r.width / k, h:r.height / k };
+    const right = D.x + D.w / 2 >= P.x + P.w / 2;
+    const a = [right ? P.x + P.w : P.x, P.y + Math.min(P.h / 2, 60)], b = [right ? D.x : D.x + D.w, D.y + Math.min(D.h / 2, 60)];
+    const reach = Math.max(24, Math.min(140, Math.hypot(b[0] - a[0], b[1] - a[1]) * .4)) * (right ? 1 : -1);
+    const c1 = [a[0] + reach, a[1]], c2 = [b[0] - reach, b[1]];
+    const at = u => { const v = 1 - u; return [v * v * v * a[0] + 3 * v * v * u * c1[0] + 3 * v * u * u * c2[0] + u * u * u * b[0], v * v * v * a[1] + 3 * v * v * u * c1[1] + 3 * v * u * u * c2[1] + u * u * u * b[1]]; };
+    const poly = (u0, u1) => { const out = []; for (let i = 0; i <= 10; i++) { const q = at(u0 + (u1 - u0) * i / 10); out.push(f(q[0]) + ' ' + f(q[1])); } return 'M' + out.join(' L'); };
+    const [cable, ha, hb, spark] = t.g.children, mid = at(.5);
+    cable.setAttribute('d', `M${f(a[0])} ${f(a[1])} C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${f(b[0])} ${f(b[1])}`);
+    ha.setAttribute('d', poly(0, .5)); hb.setAttribute('d', poly(1, .5)); spark.setAttribute('transform', `translate(${f(mid[0])} ${f(mid[1])})`);
+    const kept = !z || z.noop || z.lay.connectors.some(c => (c.a === z.nid && c.b === t.other) || (c.b === z.nid && c.a === t.other));
+    if (t.kept !== kept) { t.g.classList.toggle('broken', !kept); t.g.classList.toggle('joined', kept && t.kept === false); t.kept = kept; }
+  });
+}
+function endTies(d) { if (!d.ties) return; cancelAnimationFrame(d.tieRaf); d.tieSvg.remove(); d.ties = null; }
 function startDrag(e) {
   const p = press; press = null;
   const B = state.lay.blocks.find(b => b.id === p.id), el = state.elems.get(p.id); if (!B || !el) return;
@@ -3127,12 +3268,14 @@ function startDrag(e) {
   if (drag.mode === 'attach') vp.classList.add('dragging');
   strip.hidden = true; $('world').classList.remove('anim');
   lifted.forEach(m => m.el.classList.add('dragsrc'));
+  if (drag.mode === 'move') startTies();
   if (drag.mode === 'attach') drag.zones.forEach(z => { if (!z.why) z.el.classList.add('tgt'); });
   moveDrag(e);
 }
 function moveDrag(e) {
   const k = state.cam.k, dx = (e.clientX - drag.x) / k, dy = (e.clientY - drag.y) / k;
   drag.lifted.forEach(m => { m.el.style.transform = `translate(${m.x + dx}px,${m.y + dy}px)`; });
+  drag.dx = dx; drag.dy = dy;
   let best = null;
   const rect = (z, cls, rx) => `<rect class="${cls}" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="${rx}"/>`;
   if (drag.mode === 'move') {
@@ -3176,7 +3319,7 @@ function moveDrag(e) {
     // Over no zone (the lifted-out layout) there is none.
     // A drop that would bounce is drawn in the warning colour; its preview is the same as any other.
     $('ovl').innerHTML = (best && !best.noop ? rect(best, best.bad ? 'dropz bad' : 'dropz', 12) : '') +
-      (best && best.links ? best.links.map(q => `<path d="M${q.map(v => v[0] + ' ' + v[1]).join(' L')}"/>`).join('') : '');
+      (best && best.links && !best.noop ? best.links.map(q => `<path d="M${q.map(v => v[0] + ' ' + v[1]).join(' L')}"/>`).join('') : '');
   } else {
     // The smallest zone under the pointer, tested in world coordinates.
     const p = worldPt(e); let ba = Infinity;
@@ -3189,6 +3332,7 @@ function moveDrag(e) {
 }
 function endDrag(commit) {
   const d = drag; drag = null;
+  endTies(d);
   vp.classList.remove('dragging'); $('ovl').innerHTML = '';
   const z = commit && d.best, why = z && (z.bad || z.why);
   // A refused drop (bad) leaves the lifted elements where they were dropped, and the normal render puts
@@ -3204,7 +3348,7 @@ function endDrag(commit) {
   if (!z || z.noop) { if (d.mode === 'move') render(); else renderStrip(); return; }
   edit(z.act);
   const a = z.act;
-  toast(a.t === 'move' ? (z.join ? `Moved ${a.node.name} into the group beside ${a.dest.block.levels[a.dest.level].units[a.dest.unit].blocks.filter(b => b !== a.node).map(b => b.name).slice(0, 2).join(' and ')}.` : `Moved ${a.node.name}.`) : a.t === 'implements' ? `${a.block.name} now implements ${a.name}.` : `Added port ${a.name} ${a.dir} ${a.kind} to ${a.block.name}.`);
+  toast(a.t === 'move' ? (z.join ? `Moved ${a.node.name} into the group beside ${a.dest.block.levels[a.dest.level].units[a.dest.unit].blocks.filter(b => b !== a.node).map(b => b.name).slice(0, 2).join(' and ')}.` : `Moved ${a.node.name}.`) : a.t === 'implements' ? `${a.block.name} now implements ${a.name}.` : `${a.block.name} now ${a.dir === 'in' ? 'takes' : 'gives'} ${a.kind}.`);
 }
 addEventListener('pointermove', e => {
   if (drag) { if (e.pointerId === drag.pid) moveDrag(e); return; }
@@ -3237,7 +3381,7 @@ function menuItems(target, wy) {
   const m = state.model, el = target && target.closest && target.closest('.blk'), n = el ? m.node(el.dataset.id) : m.root;
   if (!n) return null;
   if (n === m.root) return { title:'Top level', items:[...containerItems(n, wy, true), '-',
-    { label:'Show source', run:() => toggleSource(true) }, { label:'Chat about the whole file', run:() => openComposer('block:') }] };
+    { label:'Source', run:() => toggleSource(true) }, { label:'Chat about the whole file', run:() => openComposer('block:') }] };
   const items = [];
   if (n.form === 'block') {
     const isFrame = state.lay.blocks.find(B => B.id === n.id)?.kind === 'frame';
@@ -3245,7 +3389,7 @@ function menuItems(target, wy) {
     items.push(...containerItems(n, wy, isFrame), '-');
   }
   if (n.form === 'message') items.push({ label:'Open in the shape table', run:() => openMessages({ open:n.name }) });
-  items.push({ label:'Edit', run:() => openEdit(n.id) }, { label:'Code', run:() => openCode(n.id) },
+  items.push({ label:'Edit', run:() => openEdit(n.id) }, { label:'Source', run:() => openCode(n.id) },
     { label:'Comment', run:() => openComposer(targetKey(n.id)) }, { label:'Delete', danger:true, run:() => askDelete(n.id) });
   return { title:n.name, items };
 }
@@ -3330,7 +3474,7 @@ function openEdit(id) {
     row.innerHTML = `<input class="pname" aria-label="Port name" value="${esc(p.name || '')}" spellcheck="false">
       <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${p.dir === 'in'}">in</button><button type="button" data-dir="out" aria-pressed="${p.dir === 'out'}">out</button></span>
       <select class="pkind" aria-label="Shape"><option value="">Type…</option>${opts.map(t => `<option${t === p.kind ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
-      <button type="button" class="pdel" aria-label="Remove port" title="Remove port">${ICON.close}</button>
+      <button type="button" class="pdel" aria-label="Delete this port" title="Delete this port">${ICON.close}</button>
       <textarea class="psk" rows="1" aria-label="Port sketch" placeholder="Sketch: what this port promises (optional)">${esc(p.sketch || '')}</textarea>`;
     row.dataset.dir = p.dir;
     row.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => { row.dataset.dir = b.dataset.dir; row.querySelectorAll('[data-dir]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
@@ -3665,7 +3809,7 @@ function groupEditor(g, focus) {
   const el = showCallout(g.key, groupFinder(g.key), `<form class="cedit" autocomplete="off">
     <div class="lab">Adjacent: ${esc(groupNames(g).join(', '))}</div>
     <textarea name="sketch" rows="3" aria-label="Why these blocks are adjacent" placeholder="Why these blocks know each other concretely.">${esc(g.U.sketch || '')}</textarea>
-    <div class="cfoot"><span class="spacer"></span><span>⌘/Ctrl-Enter saves · Esc cancels</span></div></form>`, 'edit');
+    <div class="cfoot"><span class="spacer"></span><span>${kb('⌘ ↵')} saves, Esc cancels</span></div></form>`, 'edit');
   const f = el.querySelector('form');
   co.commit = () => { const sketch = f.elements.sketch.value; hideCallout(); const before = state.src; edit({ t:'groupSketch', node:g.U.node, sketch }); if (state.src !== before) toast('Saved the sketch of the adjacent group.'); return true; };
   editorKeys(f);
@@ -3801,9 +3945,27 @@ let chatAdd = (key, text, how) => {
 let chatStatus = c => c.status === 'sent' ? ['st-sent', 'Sent'] : ['st-saved', 'Saved'];
 let chatRowBtns = c => (c.status === 'saved' ? `<button class="tiny" data-t="send" data-id="${esc(c.id)}">Send</button>` : '') + `<button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>`;
 let chatReplies = c => '';
+// A time as a reader wants it: the clock for today, the day too for anything older.
+function whenText(at) { const d = new Date(at), today = d.toDateString() === new Date().toDateString(); return d.toLocaleString([], today ? { hour:'numeric', minute:'2-digit' } : { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); }
+// The callout stands beside its thing, top to top, with its tail at the thing's upper part: to the right
+// when there is room, else to the left, else under or over it (placeNear). A thing too wide to stand beside
+// (an open block) is stood beside at its heading. It keeps clear of the toolbar at the foot.
+function placeBeside(el, anchor) {
+  if (innerWidth < 760 || el.classList.contains('filechat')) return;
+  let r = anchor.getBoundingClientRect();
+  const head = r.width > innerWidth * .45 && anchor.querySelector ? anchor.querySelector('.fh, .ft, .hd') : null;
+  if (head) { const h = head.getBoundingClientRect(); r = new DOMRect(h.left, h.top, Math.min(h.width, 260), h.height); }
+  const w = el.offsetWidth, h = el.offsetHeight, gap = 14, floor = innerHeight - 76;
+  const side = r.right + gap + w <= innerWidth - 8 ? 'right' : r.left - gap - w >= 8 ? 'left' : '';
+  el.classList.toggle('right', side === 'right'); el.classList.toggle('left', side === 'left');
+  if (!side) { placeNear(el, r); return; }
+  const y = Math.max(8, Math.min(r.top - 8, floor - h));
+  el.style.left = (side === 'right' ? r.right + gap : r.left - gap - w) + 'px'; el.style.top = y + 'px';
+  el.style.setProperty('--tail', Math.max(14, Math.min(h - 26, r.top + Math.min(r.height / 2, 30) - y - 6)) + 'px');
+}
 function chatRow(c) {
   const [cls, text, title] = chatStatus(c);
-  return `<li data-id="${esc(c.id)}"><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
+  return `<li data-id="${esc(c.id)}"${c.status === 'sent' || c.status === 'sending' ? '' : ' class="mine"'}><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${whenText(c.at)}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
 const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || chat.key === key));
 // Draw the open chat's thread again and show its end; the popover and what is typed in it stay.
@@ -3811,9 +3973,8 @@ function refreshChat() {
   if (!chatOpen()) { chat = null; return; }
   const el = chat.el, ul = el.querySelector('ul.thread'), list = state.comments.filter(c => c.target === chat.key);
   ul.innerHTML = list.map(chatRow).join('') || '<li class="none">No comments here yet.</li>';
+  placeBeside(el, chat.anchor);
   ul.scrollTop = ul.scrollHeight;
-  const r = el.getBoundingClientRect();
-  if (r.bottom > innerHeight - 8 && innerWidth >= 760) el.style.top = Math.max(8, innerHeight - r.height - 8) + 'px';
 }
 function openChat(key, anchor, focus) {
   closePop('info');
@@ -3822,14 +3983,15 @@ function openChat(key, anchor, focus) {
   if (chatOpen(key)) { if (focus) chat.el.querySelector('textarea').focus(); return; }
   const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 190, innerHeight / 3, 380, 0) };
   const keep = chatKeep(), mac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
-  const el = pop('thread', a, `<div class="chh"><span class="kind">${key === 'block:' ? 'Chat about the whole file' : 'Comments on ' + esc(targetLabel(key))}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
+  const lab = key === 'block:' ? 'The whole file' : targetLabel(key), sp = key === 'block:' ? -1 : lab.indexOf(' ');
+  const el = pop('thread', a, `<div class="chh" title="Comments on ${esc(key === 'block:' ? 'the whole file' : lab)}"><span class="on">${sp > 0 ? `<i>${esc(lab.slice(0, sp))}</i>${esc(lab.slice(sp + 1))}` : esc(lab)}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
     <ul class="thread" aria-live="polite"></ul>
-    <div class="composer"><textarea id="cmtText" rows="2" placeholder="${key === 'block:' ? 'Say anything about the whole file.' : 'What should change, or what is unclear?'}" aria-label="Comment on ${esc(targetLabel(key))}"></textarea><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><input type="file" multiple hidden></div>
-    <div class="acts"><span class="keys">${mac ? '⌘' : 'Ctrl+'}Enter sends · Shift+Enter: ${esc(keep.label.toLowerCase())}</span><button class="btn" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div>`, 'chat');
+    <div class="composer"><textarea id="cmtText" rows="2" placeholder="${key === 'block:' ? 'Say anything about the whole file.' : 'What should change, or what is unclear?'}" aria-label="Comment on ${esc(key === 'block:' ? 'the whole file' : lab)}"></textarea><input type="file" multiple hidden>
+    <div class="acts"><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><span class="keys">${kb('⌘ ↵')} sends</span><button class="btn quiet" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div></div>`, 'chat');
   el.classList.toggle('filechat', key === 'block:');
-  chat = { key, el };
+  chat = { key, el, anchor:a };
   const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
-  refreshChat(); placeNear(el, a.getBoundingClientRect());
+  refreshChat();
   if (focus) setTimeout(() => { if (chatOpen(key)) ta.focus(); }, 30);
   const submit = how => {
     const text = ta.value.trim(); if (!text) { ta.focus(); return; }
@@ -3911,7 +4073,7 @@ function openSend(list) {
     const a = e.target.closest('[data-m]')?.dataset.m; if (!a) return;
     if (a === 'close') { closeModal(); return; }
     const ta = m.querySelector('textarea'), done = () => { list.forEach(c => c.status = 'sent'); saveComments(); closeModal(); render(); renderMsgTableIfOpen(); toast(`Copied ${list.length} comment${list.length === 1 ? '' : 's'}.`); };
-    navigator.clipboard.writeText(text).then(done, () => { ta.focus(); ta.select(); e.target.textContent = 'Selected, press ⌘C'; list.forEach(c => c.status = 'sent'); saveComments(); render(); });
+    navigator.clipboard.writeText(text).then(done, () => { ta.focus(); ta.select(); e.target.textContent = kb('Selected: press ⌘C'); list.forEach(c => c.status = 'sent'); saveComments(); render(); });
   });
 }
 $('sendBtn').onclick = () => openSend(state.comments.filter(c => c.status === 'saved'));
@@ -3929,7 +4091,7 @@ function askDelete(id) {
   else if (n.form === 'behavior') { const users = [...m.blocks.values()].filter(b => b.impl.includes(n.name)).map(b => b.name); detail = users.length ? `${users.length} block${users.length === 1 ? ' implements' : 's implement'} it (${users.slice(0, 3).join(', ')}${users.length > 3 ? ', …' : ''}). Those lines stay and will fail the spec checks until you change them.` : 'No block implements it.'; }
   else { const u = messageIndex(m).find(r => r.name === n.name).uses; detail = u.length ? `${u.length} port${u.length === 1 ? ' uses' : 's use'} it. Those ports stay and will fail the spec checks until you change them.` : 'No port uses it.'; }
   const md = modal(`Delete ${n.name}?`, `<p style="margin:0 0 8px;line-height:1.5">This removes the ${kind} from the source. ${esc(detail)}</p>
-    <p style="margin:0;color:var(--muted);font-size:13px">You can undo it with ⌘Z.</p>
+    <p style="margin:0;color:var(--muted);font-size:13px">${kb('⌘Z')} brings it back.</p>
     <div class="mfoot"><button class="btn" data-m="no">Cancel</button><button class="btn danger-solid" data-m="yes">Delete ${esc(kind)}</button></div>`);
   md.querySelector('[data-m="yes"]').focus();
   md.addEventListener('click', e => {
@@ -3951,7 +4113,7 @@ function askDeleteMany(ids) {
   const md = modal(`Delete ${ns.length} items?`, `<p style="margin:0 0 8px;line-height:1.5">This removes from the source:</p>
     <ul style="margin:0 0 8px;padding-left:20px;line-height:1.5">${ns.map(n => `<li><b>${esc(n.name)}</b> <span style="color:var(--muted)">${kindOf(n)}</span></li>`).join('')}</ul>
     ${inner ? `<p style="margin:0 0 8px;line-height:1.5">${inner} block${inner === 1 ? '' : 's'} inside them go with them.</p>` : ''}
-    <p style="margin:0;color:var(--muted);font-size:13px">You can undo it with ⌘Z.</p>
+    <p style="margin:0;color:var(--muted);font-size:13px">${kb('⌘Z')} brings it back.</p>
     <div class="mfoot"><button class="btn" data-m="no">Cancel</button><button class="btn danger-solid" data-m="yes">Delete ${ns.length}</button></div>`);
   md.querySelector('[data-m="yes"]').focus();
   md.addEventListener('click', e => {
@@ -4351,8 +4513,9 @@ function sessionComments({ version, closed }) {
   const C = { read: null, seenReplies: new Set(), reviews: [], listeners: [] };
   const changed = () => C.listeners.forEach(f => f());
   const CSS = `
-.sb-reply { margin-top:7px; overflow-wrap:anywhere; line-height:1.45; padding:6px 8px; border-radius:7px; background:var(--accent-soft); white-space:pre-wrap; }
-.sb-reply .who { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:2px; }`;
+.sb-reply { margin:9px 0 0 2px; padding:1px 0 1px 12px; border-left:2px solid var(--accent); overflow-wrap:anywhere; white-space:pre-wrap; }
+.sb-reply .who { display:block; font-size:12px; font-weight:600; color:var(--accent-ink); margin-bottom:1px; }
+.sb-reply .who time { font-weight:400; color:var(--muted); margin-left:6px; }`;
   // Replies read so far: { comment id: how many of its replies the reader has seen }, kept per session, so a
   // reply that arrived while its chat was closed puts a dot on the count until the chat is opened.
   const RKEY = SBTEL.session ? 'sbtel-read:' + SBTEL.session : null;
@@ -4442,7 +4605,7 @@ function sessionComments({ version, closed }) {
     const status0 = chatStatus, btns0 = chatRowBtns;
     chatStatus = c => c.status === 'sent' ? ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent to the agent'] : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
     chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
-    chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent</span>${richText(r.text)}</div>`).join('');
+    chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
     // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
     const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
     const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };
@@ -4536,7 +4699,7 @@ const CHANGES_CSS = `
 .d-chip { display:inline-flex; align-items:center; gap:5px; font-size:12px; padding:3px 8px; border-radius:10px; background:var(--chip); color:var(--ink); }
 .d-chip i { width:8px; height:8px; border-radius:50%; flex:none; }
 .d-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
-.d-list h4 { margin:14px 0 4px; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.d-list h4 { margin:14px 0 4px; font-size:12px; color:var(--muted); }
 .d-item { display:grid; grid-template-columns:22px 1fr; gap:2px 8px; align-items:start; width:100%; box-sizing:border-box; text-align:left; border:0; background:none; border-radius:9px; padding:7px 8px; cursor:pointer; font-size:13px; color:var(--ink); }
 .d-item:hover, .d-item:focus-visible { background:var(--chip); outline:none; }
 .d-item.on { background:var(--accent-soft); }
@@ -4652,12 +4815,12 @@ function sessionReview(o) {
 .tb.rv-btn .rv-n { min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#fff; color:var(--accent); font-size:11.5px; line-height:18px; text-align:center; font-variant-numeric:tabular-nums; }
 .tb.rv-btn[aria-expanded="true"] { box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
 .cbub.pend { background:var(--surface); color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); }
-.cbub .pb { margin-left:3px; padding:0 5px; border-radius:7px; background:var(--accent); color:#fff; font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; line-height:14px; }
-.st-pending { color:var(--accent); font-weight:600; }
+.cbub .pb { margin-left:3px; padding:0 5px; border-radius:7px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:600; line-height:14px; }
+.st-pending { color:var(--accent-ink); font-weight:600; }
 .thread .cm .tiny { white-space:nowrap; }
 .rv-sheet { z-index:1260; }
 .rv-sheet .body { display:flex; flex-direction:column; gap:4px; }
-.rv-sec h4 { display:flex; align-items:center; gap:8px; margin:12px 0 6px; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.rv-sec h4 { display:flex; align-items:center; gap:8px; margin:12px 0 6px; font-size:12px; color:var(--muted); }
 .rv-sec h4 .spacer { flex:1; }
 .rv-sec h4 .btn { text-transform:none; letter-spacing:0; font-size:12px; padding:4px 10px; color:var(--ink); font-weight:500; }
 .rv-note { font-size:12.5px; line-height:1.5; color:var(--muted); margin:2px 0 6px; }
@@ -4817,7 +4980,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
       const key = b.dataset.thread, k = n[key] || 0; b.classList.toggle('pend', !!k);
       let pb = b.querySelector('.pb'); if (!k) { pb?.remove(); return; }
       if (!pb) { pb = document.createElement('span'); pb.className = 'pb'; b.appendChild(pb); }
-      pb.textContent = k === all[key] ? 'pending' : k + ' pending';
+      pb.textContent = k === all[key] ? 'in review' : k + ' in review';
       b.title = `${all[key]} comment${all[key] === 1 ? '' : 's'}, ${k} pending in your review`;
     });
   }
@@ -4841,9 +5004,9 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
       if (o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; }
       const cm = addPending(key, text);
       if (how === 'send') openSend([cm]);
-      else toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
+      else if (!chatOpen(key)) toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
     };
-    chatStatus = c => c.status === 'pending' ? ['st-pending', 'Pending', 'In your review: it goes to the agent when you send the review'] : status0(c);
+    chatStatus = c => c.status === 'pending' ? ['st-pending', 'In your review', 'It goes to the agent when you send the review'] : status0(c);
     chatRowBtns = c => c.status === 'pending' ? `<button class="tiny" data-t="rvedit" data-id="${esc(c.id)}">Edit</button><button class="tiny" data-t="send" data-id="${esc(c.id)}">Send now</button><button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>` : btns0(c);
     openComposer = (key, anchor) => { if (SBTEL.session && o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; } composer0(key, anchor); };
     document.addEventListener('click', e => {
@@ -4974,7 +5137,7 @@ SBTEL.modes.server = (() => {
     refN.set(e.file, (refN.get(e.file) || 0) + 1);
     if (!live) return;
     if (trail.length && trail[trail.length - 1].file === e.file) { refRead[e.file] = refN.get(e.file); store.set(RR, refRead); return; }
-    render(); toast(`Agent replied in ${e.file}`);
+    render(); toast(`Agent replied in ${e.file}.`);
   }
   function drawTrail() {
     const h = refEl.querySelector('.trail'), last = trail.length - 1;
@@ -5002,7 +5165,14 @@ SBTEL.modes.server = (() => {
     const t = { name: r.file.split('/').pop(), url: specURL(r) + '&via=' + (sentFrom || SBTEL.session), file: framed ? null : r.file };
     if (framed) window.parent.postMessage({ sbtel: 'open-spec', name: t.name, url: t.url }, location.origin); else showHere(t);
   };
+  // Escape in the diagram shown over this page closes that page's own popovers first; with none open
+  // (and nothing selected) it comes up here and closes the overlay.
+  if (framed) addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || state.sel || state.selLine || document.querySelector('.pop, .modal, .codep, .sb-cmp, .callout:not([hidden]), .sheet:not(.closed)')) return;
+    window.parent.postMessage({ sbtel: 'close-spec' }, location.origin);
+  }, true);
   addEventListener('message', e => {
+    if (e.origin === location.origin && refEl && e.source === refEl.querySelector('iframe').contentWindow && e.data?.sbtel === 'close-spec') { closeSpec(); return; }
     if (e.origin !== location.origin || !refEl || e.source !== refEl.querySelector('iframe').contentWindow || e.data?.sbtel !== 'open-spec') return;
     const u = String(e.data.url || ''); if (!u.startsWith(location.origin + '/s/')) return;
     showHere({ name: String(e.data.name || 'spec').slice(0, 80), url: u, file: null });
@@ -5043,7 +5213,7 @@ SBTEL.modes.server = (() => {
     // session (proposals/), and reloading keeps it in the undo history.
     const dirty = unsent(), prop = S.proposal && !dirty;
     vtEl = document.createElement('div'); vtEl.className = 'sb-vt' + (conflict || dirty ? ' warn' : ''); vtEl.setAttribute('role', 'alertdialog');
-    vtEl.innerHTML = `<div>${esc(msg)}${dirty ? ' You have edits that are not saved or sent; reloading replaces them (⌘Z brings them back).' : prop ? ` It may hold the edits you proposed in ${esc(S.proposal.id)}; reloading shows it (⌘Z brings your proposal back).` : ''}</div>
+    vtEl.innerHTML = `<div>${esc(msg)}${dirty ? ' You have edits that are not saved or sent; reloading replaces them (' + kb('⌘Z') + ' brings them back).' : prop ? ` It may hold the edits you proposed in ${esc(S.proposal.id)}; reloading shows it (⌘Z brings your proposal back).` : ''}</div>
       <div class="acts"><button class="btn" data-v="later">${dirty ? 'Keep editing' : 'Later'}</button><button class="btn" data-v="diff" title="Look at what changed before you reload">See changes</button><button class="btn primary" data-v="reload">${dirty ? 'Discard my edits and reload' : 'Reload'}</button></div>`;
     vtEl.addEventListener('click', e => {
       const v = e.target.closest('[data-v]')?.dataset.v; if (!v) return;
@@ -5098,7 +5268,7 @@ SBTEL.modes.server = (() => {
     if (mine !== spec.src) { hist.undo.push(mine); if (hist.undo.length > 200) hist.undo.shift(); hist.redo = []; }
     setSource(spec.src);
     syncUndo();
-    toast(`Loaded version ${spec.version}.` + (wasDirty ? ' ⌘Z brings back your edits.' : ''));
+    toast(`Loaded version ${spec.version}.` + (wasDirty ? ' ' + kb('⌘Z') + ' brings back your edits.' : ''));
   }
 
   // ---------- comments: shared with diff mode (session.js); the draft review (review.js) ----------
@@ -5247,9 +5417,9 @@ SBTEL.modes.server = (() => {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     // A Save control in the dock, before the checks pill; ⌘/Ctrl-S saves too.
     saveBtn = document.createElement('button');
-    saveBtn.className = 'tb sb-save'; saveBtn.id = 'sbSave'; saveBtn.title = 'Save to the spec file (⌘S)'; saveBtn.disabled = true;
+    saveBtn.className = 'tb sb-save'; saveBtn.id = 'sbSave'; saveBtn.title = kb('Save to the spec file (⌘S)'); saveBtn.disabled = true;
     saveBtn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h8l2.5 2.5v8.5h-11z"/><path d="M5 2.5v3.5h5V2.5M5 13.5V9.5h6v4"/></svg><span class="lbl">Saved</span>';
-    saveBtn.title = 'Save: write this text to the spec file now, without a review (⌘S)';
+    saveBtn.title = kb('Save: write this text to the spec file now, without a review (⌘S)');
     saveBtn.onclick = () => save();
     $('chkBtn').before(saveBtn);
     addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } }, true);
@@ -5359,8 +5529,8 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
 .d-inner { position:absolute; top:-8px; left:-8px; z-index:7; min-width:16px; height:16px; box-sizing:border-box; padding:0 4px; border-radius:8px; border:1.5px solid var(--d-amb); background:var(--canvas); color:var(--d-amb); font-size:10px; font-weight:700; line-height:13px; text-align:center; }
 .blk.d-hasdot .d-inner { left:10px; }
 .ttl .d-was { color:var(--muted); font-size:.8em; text-decoration:line-through; text-decoration-color:var(--warn); flex:none; }
-.pill.d-was { text-decoration:line-through; opacity:.55; box-shadow:inset 0 0 0 1.5px var(--warn); }
-.pill.d-now { box-shadow:0 0 0 1.5px var(--ok); }
+.pill.d-was { text-decoration:line-through; color:var(--warn); opacity:.8; }
+.pill.d-now { color:var(--ok); font-weight:600; }
 .sk .d-ins { background:var(--ok-soft); color:var(--ok); text-decoration:none; border-radius:3px; padding:0 1px; }
 .sk .d-del { background:var(--warn-soft); color:var(--warn); text-decoration:line-through; border-radius:3px; padding:0 1px; }
 .badge.d-badd { box-shadow:inset 0 0 0 2px var(--ok), inset 0 0 0 3.5px var(--surface); }
@@ -5714,12 +5884,12 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     const F = c.fields || {}, n = B.node, frame = B.kind === 'frame';
     const head = frame ? el.querySelector(':scope > .fh') : el.querySelector(':scope > .bd');
     if (!head) return;
-    if (c.renamed) { const s = head.querySelector('.ttl > span:last-child'); if (s) s.insertAdjacentHTML('afterend', `<s class="d-was" title="Old name">${esc(c.renamed.from)}</s>`); }
+    if (c.renamed) { const s = [...head.querySelectorAll('.ttl > span:not(.pill)')].pop(); if (s) s.insertAdjacentHTML('afterend', `<s class="d-was" title="Old name">${esc(c.renamed.from)}</s>`); }
     if (F.type) {
-      const pill = head.querySelector('.toprow > .pill');
+      const pill = head.querySelector('.ttl > .pill:not(.d-was)');
       const old = F.type.from ? `<span class="pill d-was" data-k="${esc(F.type.from.toLowerCase())}" title="Old type">${esc(F.type.from)}</span>` : '';
       if (pill) { if (F.type.from) pill.insertAdjacentHTML('beforebegin', old); pill.classList.add('d-now'); }
-      else if (old) { const row = head.querySelector('.toprow'); if (row) row.insertAdjacentHTML('afterbegin', old); else head.querySelector('.ttl')?.insertAdjacentHTML('beforeend', old); }
+      else if (old) head.querySelector('.ttl')?.insertAdjacentHTML('beforeend', old);
     }
     if (F.sketch) {
       const sk = head.querySelector('.sk');
@@ -5916,14 +6086,14 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
       if (!el || !n || D.view !== 'after') return null;
       const it = D.info.get(id), items = [];
       if (n.form === 'block' && hasInside(n)) items.push({ label: state.open.has(id) ? 'Close' : 'Open', run:() => toggle(id) });
-      if (!(it && it.ghost)) { items.push({ label:'Code', run:() => openCode(id) }); if (SBTEL.session) items.push({ label:'Comment', run:() => openComposer(targetKey(id)) }); }
+      if (!(it && it.ghost)) { items.push({ label:'Source', run:() => openCode(id) }); if (SBTEL.session) items.push({ label:'Comment', run:() => openComposer(targetKey(id)) }); }
       return items.length ? { title:it ? it.name : n.name, items } : null;
     };
     renderStrip = () => {
       const id = state.sel, it = id && D.info.get(id);
       if (!id || state.multi.size !== 1 || D.view !== 'after' || (it && it.ghost) || !D.mB || !D.mB.node(id)) { strip.hidden = true; return; }
-      strip.innerHTML = `<button class="tb" data-a="code" title="Show source (side b)">${ICON.code}<span class="lbl">Code</span></button>` +
-        (SBTEL.session ? `<button class="tb" data-a="comment" title="Comment (⌘-click)">${ICON.comment}<span class="lbl">Comment</span></button>` : '');
+      strip.innerHTML = `<button class="tb" data-a="code" title="Show its text in the spec (side b)">${ICON.code}<span class="lbl">Source</span></button>` +
+        (SBTEL.session ? `<button class="tb" data-a="comment" title="${kb('Comment (⌘-click, or C)')}">${ICON.comment}<span class="lbl">Comment</span></button>` : '');
       strip.setAttribute('aria-label', 'Actions for ' + D.mB.node(id).name);
       strip.hidden = false; placeStrip();
     };
@@ -6244,7 +6414,7 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
     openMessages = () => elsewhere('The message table');
     const origSource = toggleSource;
     toggleSource = o => { if (o === false) origSource(false); else elsewhere('The source'); };
-    const drop = new Set(['Show source', 'Chat about the whole file', 'Comment', 'Open in the message table']);
+    const drop = new Set(['Source', 'Chat about the whole file', 'Comment', 'Open in the shape table']);
     const origMenu = menuItems, origStrip = renderStrip;
     menuItems = (t, wy) => { const m = origMenu(t, wy); if (!m) return m; const items = m.items.filter(x => x === '-' || !drop.has(x.label)); while (items[items.length - 1] === '-') items.pop(); return { ...m, items }; };
     renderStrip = () => { origStrip(); strip.querySelectorAll('[data-a="comment"], [data-a="table"]').forEach(b => b.remove()); if (!strip.hidden && !strip.children.length) strip.hidden = true; };

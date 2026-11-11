@@ -54,7 +54,7 @@
 <h3 id="levels"><a class="anchor" href="#levels" aria-hidden="true" tabindex="-1">#</a>Levels</h3>
 <p>The fix is to write the levels down. In sbtel a block holds levels, written top to bottom. Each level is named for the vocabulary it offers to the levels above it. Code in one level may use anything in a lower level, and nothing in a higher one. Blocks in the same level are independent of each other.</p>
 <figure class="demo" id="demo-notes-levels">
-    <div class="embed ar" style="--h:360px;--ar:1004/880;--nh:880px;--hmax:720px;--arp:584/1034;--nhp:1034px">
+    <div class="embed ar" style="--h:360px;--ar:1004/854;--nh:854px;--hmax:720px;--arp:584/1008;--nhp:1008px">
       <iframe data-src="../play/?embed#example=notes-levels" title="Live diagram of notes-levels.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-levels">Open notes-levels.sbtel in the playground</a></noscript>
@@ -100,7 +100,7 @@ notes.sbtel: 10 bindings, 2 not allowed, 0 explained</pre></div>
 <p><code>:type</code> grounds a block in code. It says what the block is there (<code>"module"</code>, <code>"service"</code>, <code>"file"</code>), and the viewer shows it as a pill. Keep the kinds consistent within a spec, so a pill means the same thing everywhere.</p>
 <p>Blocks contain levels. That lets you expand a design progressively, for example with an AI agent: start with a subsystem, ask for one block to be opened into its parts, and go on down to a function. Here Store is a module, the module is two files, and one file is three functions. The same level rule applies inside each block.</p>
 <figure class="demo" id="demo-notes-expand">
-    <div class="embed ar" style="--h:360px;--ar:597/610;--nh:610px;--hmax:720px;--arp:584/610;--nhp:610px">
+    <div class="embed ar" style="--h:360px;--ar:597/532;--nh:532px;--hmax:720px;--arp:584/532;--nhp:532px">
       <iframe data-src="../play/?embed#example=notes-expand" title="Live diagram of notes-expand.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-expand">Open notes-expand.sbtel in the playground</a></noscript>
@@ -184,7 +184,7 @@ store.save(note, saved =&gt; editor.markSaved(saved));</pre></div>
 </ul>
 <p>Here Editor saves through <code>Repo</code>, DiskStore and MemoryStore implement it, and Shell builds a store and hands it to the editor:</p>
 <figure class="demo" id="demo-notes-repo">
-    <div class="embed ar" style="--h:360px;--ar:597/1168;--nh:1168px;--hmax:726px;--arp:584/1168;--nhp:1168px">
+    <div class="embed ar" style="--h:360px;--ar:597/1050;--nh:1050px;--hmax:720px;--arp:584/1050;--nhp:1050px">
       <iframe data-src="../play/?embed#example=notes-repo" title="Live diagram of notes-repo.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-repo">Open notes-repo.sbtel in the playground</a></noscript>
@@ -211,7 +211,7 @@ Editor -&gt; Repo      <span class="hl-com"> # src/editor.ts:7  this.repo.save(n
 <p>This covers both directions an interface can point. A higher level can define an interface that a lower one implements, as with this <code>Repo</code>, which the domain needs and storage provides. And a lower level can define one that a higher level implements: a plugin host that calls the plugins it is given, or a framework that calls your code.</p>
 <p>An abstract class that holds shared code as well as abstract methods is two things braided together. Split it into a behavior, for the abstract methods, and a block in a lower level that holds the shared code:</p>
 <figure class="demo" id="demo-notes-split">
-    <div class="embed ar" style="--h:360px;--ar:597/950;--nh:950px;--hmax:720px;--arp:584/950;--nhp:950px">
+    <div class="embed ar" style="--h:360px;--ar:597/858;--nh:858px;--hmax:720px;--arp:584/858;--nhp:858px">
       <iframe data-src="../play/?embed#example=notes-split" title="Live diagram of notes-split.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-split">Open notes-split.sbtel in the playground</a></noscript>
@@ -239,7 +239,7 @@ Editor -&gt; Repo      <span class="hl-com"> # src/editor.ts:7  this.repo.save(n
   def handle_info(:tick, n), do: {:noreply, n + 1} <span class="hl-com"># (takes Tick)</span>
 end</pre></div>
 <figure class="demo" id="demo-elixir-clock">
-    <div class="embed ar" style="--h:360px;--ar:597/1212;--nh:1212px;--hmax:753px;--arp:584/1212;--nhp:1212px">
+    <div class="embed ar" style="--h:360px;--ar:597/1082;--nh:1082px;--hmax:720px;--arp:584/1082;--nhp:1082px">
       <iframe data-src="../play/?embed#example=elixir-clock" title="Live diagram of elixir-clock.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=elixir-clock">Open elixir-clock.sbtel in the playground</a></noscript>
