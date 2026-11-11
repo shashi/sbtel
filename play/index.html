@@ -357,6 +357,22 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .brand .nm { color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .help { left:max(14px, env(safe-area-inset-left, 0px)); top:calc(max(14px, env(safe-area-inset-top, 0px)) + 48px); border-radius:12px; padding:12px 14px; font-size:13px; line-height:1.5; max-width:min(360px, calc(100vw - 28px)); }
 .help ul { margin:0; padding-left:16px; padding-right:22px; }
+.help ul.only-diff:empty { display:none; }
+body.diffmode .help .norm { display:none; }
+.help .hlead { margin:0 26px 10px 0; font-size:13.5px; color:var(--ink); }
+.help #tourBtn { margin:0 0 4px; }
+.help h4 { margin:12px 0 3px; font-size:12px; font-weight:600; color:var(--muted); }
+/* The tour: a ring round the thing being shown, the rest dimmed, and a card beside it. */
+.tourring { position:fixed; z-index:2700; border-radius:14px; pointer-events:none; box-shadow:0 0 0 2px var(--accent), 0 0 0 9999px color-mix(in srgb, var(--canvas) 38%, transparent); transition:left .28s cubic-bezier(.3,.7,.2,1), top .28s cubic-bezier(.3,.7,.2,1), width .28s cubic-bezier(.3,.7,.2,1), height .28s cubic-bezier(.3,.7,.2,1); }
+.tour { position:fixed; z-index:2701; width:min(320px, calc(100vw - 24px)); box-sizing:border-box; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; box-shadow:0 18px 44px var(--shadow); padding:15px 16px 12px; transition:left .28s cubic-bezier(.3,.7,.2,1), top .28s cubic-bezier(.3,.7,.2,1); }
+.tour h3 { margin:0 0 5px; font-size:16px; font-weight:600; }
+.tour p { margin:0; font-size:14px; line-height:1.5; color:var(--ink-2, var(--ink)); }
+.tour .tf { display:flex; align-items:center; gap:6px; margin-top:13px; }
+.tour .dots { display:flex; gap:5px; margin-right:auto; }
+.tour .dots i { width:6px; height:6px; border-radius:50%; background:var(--panel-line); }
+.tour .dots i.on { background:var(--accent); }
+.tour .btn { padding:5px 12px; font-size:13px; }
+@media (prefers-reduced-motion: reduce) { .tourring, .tour { transition:none; } }
 .help #helpX { position:absolute; top:6px; right:6px; width:28px; height:28px; font-size:18px; line-height:1; color:var(--muted); }
 .help #helpX:hover { color:var(--ink); }
 .help li { margin:2px 0; }
@@ -614,20 +630,31 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
   <button class="xbtn" id="helpBtn" aria-expanded="false" aria-controls="help" title="How to use">?</button></div>
 <div class="float help" id="help" hidden>
   <button class="xbtn" id="helpX" aria-label="Close" title="Close">×</button>
-  <ul>
-    <li><b>sbtel</b> is a language to design, understand, and collaborate on a system's architecture with AI. This page draws a system as blocks in levels, from text you can edit.</li>
-    <li>Drag the canvas to pan. Pinch, or ⌘/Ctrl + scroll, to zoom.</li>
-    <li>Click a block to select it. Drag one of its handles onto another block in the same level to link them.</li>
-    <li>Click a line and press Delete to cut it.</li>
-    <li>Click the ear above or below a block to open its inputs or outputs. Double-click a block to open both.</li>
-    <li>Point at a port in a drawer to see its sketch and outline every block it can talk to; click it to edit the port. The arrow goes to the type's card.</li>
-    <li>Point at a level's name, or a line between adjacent blocks, to read its sketch; click to edit it.</li>
-    <li>Drag a block to move it (on a touch screen, tap it first, then drag it). Drop it between two linked blocks to join their group.</li>
-    <li>Shift-drag a behavior onto a block, or a shape onto an ear, to attach it.</li>
-    <li>Select something and choose Edit to rename it or change its type and sketch.</li>
-    <li>⌘/Ctrl-click a block or line to comment on it, or select it and press C. With nothing selected, C lists every comment.</li>
-    <li>Drop a file on a block or into a comment to attach it. Drag a file named in a reply onto a block to keep it there.</li>
-  </ul>
+  <ul class="only-diff"></ul>
+  <div class="norm">
+    <p class="hlead">A system drawn as blocks in levels, from text your agent writes.</p>
+    <button class="btn" id="tourBtn" type="button">Take the tour</button>
+    <h4>Move around</h4>
+    <ul>
+      <li>Drag the canvas to pan. Pinch, or ⌘/Ctrl + scroll, to zoom.</li>
+      <li>Click a block's triangle to open or close it.</li>
+      <li>Click an ear to list what the block takes or gives; double-click the block for both.</li>
+      <li>Point at a port, a level's name or a line to read its sketch.</li>
+    </ul>
+    <h4>Edit</h4>
+    <ul>
+      <li>Select something and choose Edit, or click a sketch you pointed at.</li>
+      <li>Drag a block to move it; drop it between two linked blocks to join them.</li>
+      <li>Drag a selected block's handle onto a neighbour to link them. Select a line and press Delete to cut it.</li>
+      <li>Shift-drag a behavior onto a block, or a shape onto an ear, to attach it.</li>
+    </ul>
+    <h4>Comment</h4>
+    <ul>
+      <li>Select a block or a line and press C, or ⌘/Ctrl-click it.</li>
+      <li>C with nothing selected lists every comment.</li>
+      <li>Drop a file on a block or into a comment to attach it.</li>
+    </ul>
+  </div>
 </div>
 
 <div class="float dock" id="dock" role="toolbar" aria-label="Canvas tools">
@@ -4462,6 +4489,7 @@ $('fit').onclick = () => fit(true);
 $('expAll').onclick = () => { state.model.blocks.forEach(b => { if (hasInside(b)) state.open.add(b.id); }); render(); fit(true); };
 $('colAll').onclick = () => { state.open = new Set(); render(); fit(true); };
 $('helpX').onclick = () => $('helpBtn').click();
+$('tourBtn').onclick = () => { $('helpBtn').click(); startTour(); };
 $('helpBtn').onclick = () => { const h = $('help'); h.hidden = !h.hidden; $('helpBtn').setAttribute('aria-expanded', !h.hidden); store.set('sbtel-help-seen', true); };
 
 // @sbtel end App.Input
@@ -4643,6 +4671,80 @@ let toastT; const toastEl = document.createElement('div'); toastEl.className = '
 function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => toastEl.hidden = true, 4200); }
 // @sbtel end App.Kit
 // @sbtel begin App.Input
+// ---------- The tour ----------
+// Six stops, each at a real thing of the diagram on screen: a ring goes round it and a card beside it
+// says one thing. A stop whose thing this diagram does not have is passed over. The last stop opens the
+// Source panel: the text an agent reads. Next and Back, the arrow keys, and Escape to leave.
+const TOUR = [
+  { find:() => document.querySelector('.blk.card.leaf:not(.msg):not(.beh)') || document.querySelector('.blk.card') || document.querySelector('.blk'),
+    title:'A system, drawn as blocks', text:'Each box is a block: one part of the system. Its name comes first, and the line under it says what it is for.' },
+  { find:() => document.querySelector('.lsep .llab:not(.ph)'),
+    title:'Levels', text:'Blocks sit in levels. A block may depend only on blocks in the levels below it, so the top says what the system does and the bottom what it rests on.' },
+  { find:() => { const B = tourInner(); return B ? state.elems.get(B.id) : document.querySelector('.blk.card .foot .tw')?.closest('.blk'); },
+    title:'Blocks inside blocks', text:() => tourInner() ? 'This block is open, so you can see what it is made of. Its triangle closes it again.' : 'A triangle on a block means there is more inside. Click it to open the block.' },
+  { find:() => document.querySelector('.blk.card:not(.msg) > .tab'),
+    title:'What a block takes and gives', text:'The dots on a block’s ears are shapes: what it takes is on top, what it gives is underneath. Point at a dot to see everywhere that shape goes.' },
+  { find:() => [...document.querySelectorAll('.blk.card:not(.msg):not(.beh)')][1] || document.querySelector('.blk.card'),
+    title:'Say what you think', text:() => (matchMedia('(pointer: coarse)').matches ? 'Tap a block, then Comment.' : 'Select a block and press C to comment on it.') + ' Your agent reads the comment and answers under it.' },
+  { enter:() => toggleSource(true), leave:() => toggleSource(false), find:() => $('srcSheet'), settle:260,
+    title:'What your agent sees', text:'This text is the same design. Your agent writes it and changes it; you read the picture and say what should change.' },
+];
+// An open block that sits inside another open block: the deepest one drawn.
+const tourInner = () => { const fs = state.lay.blocks.filter(B => B.kind === 'frame' && B.node.form === 'block').sort((a, b) => b.depth - a.depth); return fs.length > 1 && fs[0].depth > fs[fs.length - 1].depth ? fs[0] : null; };
+let tour = null;
+function startTour() {
+  if (tour || !state.lay) return;
+  closePop(); hideCallout(); select(null, null);
+  const ring = document.createElement('div'); ring.className = 'tourring';
+  const card = document.createElement('div'); card.className = 'tour'; card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Tour');
+  document.body.append(ring, card);
+  tour = { i:-1, ring, card, anchor:null, raf:0 };
+  const place = () => {
+    if (!tour) return;
+    const a = tour.anchor; if (a && a.isConnected) {
+      const r = a.getBoundingClientRect(), pad = 7, w = card.offsetWidth, h = card.offsetHeight, gap = 16;
+      const x0 = Math.max(4, r.left - pad), y0 = Math.max(4, r.top - pad), x1 = Math.min(innerWidth - 4, r.right + pad), y1 = Math.min(innerHeight - 4, r.bottom + pad);
+      Object.assign(ring.style, { left:x0 + 'px', top:y0 + 'px', width:Math.max(0, x1 - x0) + 'px', height:Math.max(0, y1 - y0) + 'px' });
+      // Beside the thing where there is room: right, left, under, over; else over its lower part.
+      let x, y;
+      if (x1 + gap + w <= innerWidth - 8) { x = x1 + gap; y = y0; }
+      else if (x0 - gap - w >= 8) { x = x0 - gap - w; y = y0; }
+      else if (y1 + gap + h <= innerHeight - 76) { x = x0; y = y1 + gap; }
+      else if (y0 - gap - h >= 8) { x = x0; y = y0 - gap - h; }
+      else { x = x1 - w - 12; y = y1 - h - 12; }
+      card.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + 'px'; card.style.top = Math.max(8, Math.min(y, innerHeight - h - 76)) + 'px';
+    }
+    tour.raf = requestAnimationFrame(place);
+  };
+  const go = dir => {
+    const from = tour.i; let i = from + dir;
+    if (TOUR[from] && TOUR[from].leave) TOUR[from].leave();
+    while (TOUR[i]) { if (TOUR[i].enter) TOUR[i].enter(); if (TOUR[i].find()) break; if (TOUR[i].leave) TOUR[i].leave(); i += dir; }
+    if (!TOUR[i]) { if (dir > 0) { endTour(); return; } i = from; if (TOUR[i] && TOUR[i].enter) TOUR[i].enter(); }
+    tour.i = i; const s = TOUR[i], a = tour.anchor = s.find();
+    // Bring a thing of the canvas into view, clear of the toolbar and with room for the card.
+    if (a.closest('#world')) { const r = a.getBoundingClientRect(), dx = r.left < 60 ? 60 - r.left : r.right > innerWidth - 360 ? Math.max(60 - r.left, innerWidth - 360 - r.right) : 0, dy = r.top < 90 ? 90 - r.top : r.bottom > innerHeight - 110 ? innerHeight - 110 - r.bottom : 0; if (dx || dy) { state.cam.x += dx; state.cam.y += dy; animCam(); applyCam(); } }
+    const shown = TOUR.filter(x => x.find() || x.enter), n = shown.indexOf(s), last = !TOUR.slice(i + 1).some(x => x.enter || x.find());
+    card.innerHTML = `<h3>${esc(s.title)}</h3><p>${esc(typeof s.text === 'function' ? s.text() : s.text)}</p>
+      <div class="tf"><span class="dots" aria-label="Step ${n + 1} of ${shown.length}">${shown.map((_, k) => `<i${k === n ? ' class="on"' : ''}></i>`).join('')}</span>
+      ${last ? '' : '<button type="button" class="tiny" data-t="skip">Skip</button>'}${n > 0 ? '<button type="button" class="btn" data-t="back">Back</button>' : ''}<button type="button" class="btn primary" data-t="next">${last ? 'Done' : 'Next'}</button></div>`;
+    card.querySelector('[data-t="next"]').focus({ preventScroll:true });
+  };
+  card.addEventListener('click', e => { const t = e.target.closest('[data-t]')?.dataset.t; if (t === 'next') go(1); else if (t === 'back') go(-1); else if (t === 'skip') endTour(); });
+  tour.keys = e => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); endTour(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); go(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); if (tour.i > 0) go(-1); }
+  };
+  addEventListener('keydown', tour.keys, true);
+  go(1); tour.raf = requestAnimationFrame(place);
+}
+function endTour() {
+  if (!tour) return;
+  const s = TOUR[tour.i]; if (s && s.leave) s.leave();
+  cancelAnimationFrame(tour.raf); removeEventListener('keydown', tour.keys, true); tour.ring.remove(); tour.card.remove(); tour = null;
+  store.set('sbtel-help-seen', true);
+}
 addEventListener('keydown', e => {
   const typing = e.target.closest && e.target.closest('textarea, input');
   if (e.key === 'Escape') {
@@ -6769,7 +6871,13 @@ body.embed:not(.pl-live) .viewport { touch-action:pan-x pan-y; }
   if (mode && mode.boot) await mode.boot(); else { setSource(SAMPLE); histUse('sbtel-hist'); }
   fit(false);
   renderSendBtn(); syncUndo();
-  if (!store.get('sbtel-help-seen', store.get('marquee-help-seen', false))) { $('help').hidden = false; $('helpBtn').setAttribute('aria-expanded', 'true'); }
+  // A first visit starts the tour (a page inside another, an embedded demo and a diff do not; nor does a
+  // browser driven by a program, which gets the gestures panel as before, so scripts see a still page).
+  if (!store.get('sbtel-help-seen', store.get('marquee-help-seen', false))) {
+    const plain = SBTEL.mode !== 'diff' && !document.body.classList.contains('embed') && !sentFrom && $('helpBtn').offsetParent;
+    if (plain && !navigator.webdriver) setTimeout(startTour, 500);
+    else { $('help').hidden = false; $('helpBtn').setAttribute('aria-expanded', 'true'); }
+  }
 })();
 // @sbtel end Viewer.Boot
 </script>
