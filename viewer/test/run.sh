@@ -10,7 +10,7 @@ set -u
 T=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$T/../.." && pwd)
 PAGE=$(realpath "${1:-$ROOT/viewer/dist/index.html}")
 OUT=$(mktemp -d "${TMPDIR:-/tmp}/sbtel-accept.XXXXXX")
-SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7 accept8 accept9 accept10 accept11 accept12 accept13 accept14"}
+SUITES=${SUITES:-"accept accept2 accept3 accept3b accept3c redo accept4 accept5 accept6 accept7 accept8 accept9 accept10 accept11 accept12 accept13 accept14 accept15"}
 
 # Chrome --dump-dom suites: the test is appended to a copy of the page and reports through console.log.
 virtual() { # name test.js WxH budget timeout
@@ -52,6 +52,7 @@ run_suite() {
     # v0.2.5 files made by `sbtel export`, opened from disk: rendering, no network, read-only, bindings, undo.
     # They come from the binary ($SBTEL_BIN, default bin/sbtel), which must embed this page.
     accept14) cp "$PAGE" "$OUT/accept14.html"; timeout 180 python3 "$T/suites/pw.py" "$OUT/accept14.html" "$T/suites/accept14.js" 2>&1 | grep -o 'RESULT {.*}\|PAGEERRORS.*' | head -5 ;;
+    accept15) cp "$PAGE" "$OUT/accept15.html"; timeout 180 python3 "$T/suites/pw.py" "$OUT/accept15.html" "$T/suites/accept15.js" 2>&1 | grep -o 'RESULT {.*}\|PAGEERRORS.*' | head -5 ;;
     accept13) cp "$PAGE" "$OUT/accept13.html"; timeout 180 python3 "$T/suites/pw.py" "$OUT/accept13.html" "$T/suites/accept13.js" 2>&1 | grep -o 'RESULT {.*}\|PAGEERRORS.*' | head -5 ;;
     accept12) cp "$PAGE" "$OUT/accept12.html"; timeout 240 python3 "$T/suites/accept12.py" "$OUT/accept12.html" "${SBTEL_BIN:-$ROOT/bin/sbtel}" 2>&1 | grep -o 'RESULT {.*}\|Error.*' | head -5 ;;
     *) echo "unknown suite $1"; return 1 ;;

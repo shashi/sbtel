@@ -946,6 +946,16 @@ is the session's `tabs`.
   where their cells are (sideways, or downward under the ears). The viewer's drop targets come from laying
   out each candidate edit, so they follow either flow; its two gap helpers share `gapBetween`. The order
   check reads source order along rows or down columns.
+- Dismissal (v0.4.1). One list in the kit (`surfaces`, with `opened(id, close, opt)`, `closed(id)` and
+  `dismiss()`) holds everything open over the canvas, in the order it opened: callouts and their
+  editors, popovers, the large thread, the reading-order menu, dialogs, the file and code windows, the
+  sheets (shapes, source, review), the help panel, the tour, a diagram or comparison shown over the
+  page, and a drag in progress. One capture listener sends Escape to `dismiss()`, which closes the last
+  entry wherever the focus is. An entry marked `light` (a hover tip) closes on the way to the next one
+  and does not cost a press; an entry whose `live()` is false is skipped. A surface that closes any
+  other way calls `closed`, so the list matches the screen. With nothing listed, Escape leaves a text
+  box, then lets go of the talk outline, the ears and the selection. A new surface registers itself and
+  writes no key handling. The diff view's change list is the view's standing panel and is not listed.
 - The keyboard (v0.4.1). The selection is the cursor, and one table (`KEYS`) names every key, what it
   does and its line in the help panel; the global key handler looks keys up in it. Moving is by sight:
   the arrows use `stepTo`, which picks the nearest box ahead within a cone, preferring boxes in the same holder; `kbOrder` is
@@ -1237,7 +1247,9 @@ These are app features (index.html), in every mode; §11 entries 50-56 record th
   button. The type arrow on a row still goes to the type's card. The Edit dialog's port rows have a
   sketch field.
 - **Level labels.** A separator carries the name of the level below it (the persistent `.lsep`
-  element; it slides and fades with the line): name, line and + are flex items on one axis. A named
+  element; it slides and fades with the line): line, name and + are flex items on one axis, the name
+  right of the line unless Settings puts it left. Only a click on the name edits; the line is not a
+  target (hovering it shows an unnamed level's "Name this level", which is). A named
   first level gets a header separator (`'|0'`, and K.NAMEGAP more room); an unnamed one keeps its
   hover gutter. A long name truncates and the first click shows it whole; hover shows the level's
   sketch; a click edits name and sketch. An unnamed level shows "Name this level" on hover.

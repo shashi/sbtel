@@ -105,7 +105,7 @@ SBTEL.modes.server = (() => {
     refEl.querySelector('iframe').src = trail[last].url; refEl.querySelector('iframe').title = trail[last].name;
     if (trail[last].file) readRef(trail[last].file);
   }
-  function closeSpec() { refEl?.remove(); refEl = null; trail = []; }
+  function closeSpec() { closed('spec'); refEl?.remove(); refEl = null; trail = []; }
   function showHere(t) {
     if (!refEl) {
       refEl = document.createElement('div'); refEl.className = 'sb-cmp sb-ref'; refEl.setAttribute('role', 'dialog'); refEl.setAttribute('aria-label', 'A diagram this one refers to');
@@ -116,8 +116,7 @@ SBTEL.modes.server = (() => {
         else if (x === 'tab') { try { window.open(refEl.querySelector('iframe').contentWindow.location.pathname, '_blank', 'noopener'); } catch (err) { window.open(trail[trail.length - 1].url.replace(/&via=.*/, ''), '_blank', 'noopener'); } }
         else if (i != null) { trail.length = +i + 1; drawTrail(); }
       });
-      refEl.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeSpec(); } });
-      document.body.appendChild(refEl);
+      document.body.appendChild(refEl); opened('spec', closeSpec);
     }
     trail.push(t); drawTrail(); refEl.querySelector('[data-x="close"]').focus();
   }
@@ -125,10 +124,10 @@ SBTEL.modes.server = (() => {
     const t = { name: r.file.split('/').pop(), url: specURL(r) + '&via=' + (sentFrom || SBTEL.session), file: framed ? null : r.file };
     if (framed) window.parent.postMessage({ sbtel: 'open-spec', name: t.name, url: t.url }, location.origin); else showHere(t);
   };
-  // Escape in the diagram shown over this page closes that page's own popovers first; with none open
-  // (and nothing selected) it comes up here and closes the overlay.
+  // Escape in the diagram shown over this page closes what that page has open first (the app's dismiss()
+  // takes the key and this never runs); with nothing open and nothing selected it closes the overlay.
   if (framed) addEventListener('keydown', e => {
-    if (e.key !== 'Escape' || state.sel || state.selLine || document.querySelector('.pop, .modal, .codep, .sb-cmp, .callout:not([hidden]), .sheet:not(.closed)')) return;
+    if (e.key !== 'Escape' || state.sel || state.selLine) return;
     window.parent.postMessage({ sbtel: 'close-spec' }, location.origin);
   }, true);
   addEventListener('message', e => {
@@ -142,7 +141,7 @@ SBTEL.modes.server = (() => {
   // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.
   // Nothing is replaced until Reload is pressed there; Back returns to the page as it was, with the toast.
   let cmpEl = null;
-  function closeChanges() { cmpEl?.remove(); cmpEl = null; }
+  function closeChanges() { closed('changes'); cmpEl?.remove(); cmpEl = null; }
   async function seeChanges(info) {
     let spec;
     try { spec = await getJSON('spec'); } catch (e) { toast('Could not load the new version: the sbtel server is not answering.'); versionToast(info); return; }
@@ -158,8 +157,7 @@ SBTEL.modes.server = (() => {
       const x = e.target.closest('[data-x]')?.dataset.x; if (!x) return;
       closeChanges(); if (x === 'reload') reload(); else versionToast(info);
     });
-    cmpEl.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeChanges(); versionToast(info); } });
-    document.body.appendChild(cmpEl); cmpEl.querySelector('[data-x="reload"]').focus();
+    document.body.appendChild(cmpEl); opened('changes', () => { closeChanges(); versionToast(info); }); cmpEl.querySelector('[data-x="reload"]').focus();
   }
   // The "new version" toast. It never reloads by itself; with unsaved edits it says so and asks.
   function versionToast(info) {

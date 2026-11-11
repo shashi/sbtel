@@ -221,6 +221,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
     const o2 = open ?? !R.open; R.open = o2;
     if (o2) { closeMessages(); const ds = $('dSheet'); if (ds && !ds.classList.contains('closed')) $('dClose').click(); recount(); renderPanel(); }
     sheet().classList.toggle('closed', !o2); btn.setAttribute('aria-expanded', String(o2)); btn.classList.toggle('on', o2); if (o2) btn.classList.remove('unread');
+    if (o2) opened('review', () => toggle(false)); else closed('review');
   }
   const goTarget = key => {
     const kind = key.slice(0, key.indexOf(':')), rest = key.slice(key.indexOf(':') + 1);

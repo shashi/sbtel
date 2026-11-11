@@ -1001,7 +1001,7 @@ function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.beh
 const state = {
   src: SAMPLE, model: null, lay: null,
   open: new Set(['Shell.SessionView']), details: new Set(), seenTop: new Set(),
-  opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system', space:'balanced', labelSide:'left', flow:'rows' },
+  opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system', space:'balanced', labelSide:'right', flow:'rows' },
   cam: { x:40, y:80, k:1 }, elems: new Map(), openLabels: new Set(), carry: null, bhl: null, flash: null, sel: null, multi: new Set(), selLine: null, expanded: new Set(), drawers: new Map(), talk: null,
   comments: [], msgSort:'name', msgQ:'', msgOwner:null, msgOpen:null
 };
@@ -1020,6 +1020,24 @@ const store = {
   warned: false,
   warn(k, e) { if (store.warned) return; store.warned = true; try { console.warn(`sbtel: could not write ${k} to local storage (${e && e.name || e}); this tab keeps working but stops saving its undo history and drafts there.`); } catch (x) {} }
 };
+// ---------- Dismissal ----------
+// Everything that opens over the canvas tells this list when it opens and when it closes: a callout, an
+// editor, a thread, a menu, a dialog, a sheet, the tour, a drag. Escape closes the one opened last,
+// wherever the focus is (a text box included). No surface listens for Escape itself.
+//   opened(id, close, { light, live })   light: a hover tip, closed on the way to the next thing;
+//                                        live(): false once the thing has gone some other way.
+const surfaces = [];
+function opened(id, close, opt = {}) { closed(id); surfaces.push({ id, close, ...opt }); }
+function closed(id) { const i = surfaces.findIndex(o => o.id === id); if (i >= 0) surfaces.splice(i, 1); }
+function dismiss() {
+  let did = false;
+  while (surfaces.length) {
+    const o = surfaces.pop(); if (o.live && !o.live()) continue;
+    o.close(); did = true; if (!o.light) break;
+  }
+  return did;
+}
+addEventListener('keydown', e => { if (e.key === 'Escape' && !e.isComposing && dismiss()) { e.preventDefault(); e.stopImmediatePropagation(); } }, true);
 // @sbtel end App.Kit
 // @sbtel begin App.History
 // The undo history on disk (docs/DESIGN.md §6.7): the current text in full, and each undo and redo step as
@@ -1139,7 +1157,7 @@ function render(anchorId, pv) {
   if (world.classList.contains('anim')) setTimeout(() => { world.classList.remove('anim'); placeStrip(); placeCallout(); }, 340);
   document.body.classList.toggle('ro', readOnly());
   applySelection(); applyTalk(); applyCarry(); applyBeh(); refreshCallout();
-  world.classList.toggle('tint', !!state.opts.tint); world.classList.toggle('lab-right', state.opts.labelSide === 'right'); if (state.typePin) showType();
+  world.classList.toggle('tint', !!state.opts.tint); world.classList.toggle('lab-right', state.opts.labelSide !== 'left'); if (state.typePin) showType();
 }
 redraw = () => render();
 // Draw a layout: one element per block (reused by id so moves animate), lines, + buttons and bubbles.
@@ -1225,7 +1243,6 @@ function paint(lay, keep) {
     // The picker gone (a click elsewhere, Escape, a new drawing): the blocks are no longer held lit.
     setTimeout(() => { if (state.typePin && !(pops.info && pops.info.isConnected && pops.info.classList.contains('typepick'))) showType(null, false); }, 0);
   }, true);
-  addEventListener('keydown', e => { if (e.key === 'Escape' && state.typePin) setTimeout(() => showType(null, false), 0); });
 }
 // The + buttons within reach of the pointer (about 110px on screen) are the ones shown in full.
 {
@@ -1426,6 +1443,7 @@ function openTypePicker(pill) {
     <div class="sw">${HUES.map(h => `<button type="button" data-h="${h}" style="--h:${h}" aria-label="Hue ${h}"></button>`).join('')}</div>
     <label class="chk tpl"><input type="checkbox" data-live> Pulse its dot</label>
     <div class="tpf"><button type="button" class="tiny" data-auto>Automatic</button><span class="spacer"></span><button type="button" class="btn" data-done>Done</button></div>`, 'typepick');
+  opened('pop:info', () => { closePop('info'); showType(null, false); }); // closing lets go of the lit blocks too
   const ring = el.querySelector('.ring'), knob = el.querySelector('.knob');
   ring.style.background = `conic-gradient(from 90deg, ${Array.from({ length:13 }, (_, i) => col(i * 30)).join(', ')})`;
   const draw = h => { el.style.setProperty('--h', h); ring.setAttribute('aria-valuenow', Math.round(h)); const a = h * Math.PI / 180; knob.style.transform = `translate(${Math.cos(a) * 54}px, ${Math.sin(a) * 54}px)`;
@@ -1658,7 +1676,7 @@ vp.addEventListener('click', e => {
   const gc = T.closest('[data-gocard]'); if (gc) { clearTalk(); goTo('μ:' + gc.dataset.gocard); return; }
   const cy = T.closest('[data-carry]'); if (cy) { carryClick(cy); return; }
   const dr = T.closest('.drow[data-pi]'); if (dr) { portClick(dr); return; }
-  const lb = T.closest('.llab[data-lvl], .lhit[data-lvl]'); if (lb) { if (lb.classList.contains('lhit')) { if (!readOnly()) levelEditor(levelAt(lb.dataset.lvl)); } else levelClick(lb); return; }
+  const lb = T.closest('.llab[data-lvl], .lhit[data-lvl]'); if (lb) { if (lb.classList.contains('llab')) levelClick(lb); return; } // the line itself only shows the name to click
   const mg = T.closest('[data-msg]'); if (mg) { onMsgClick(mg.dataset.msg, mg); return; }
   const dm = T.closest('[data-dmin]'); if (dm) { setDrawer(dm.closest('.blk').dataset.id, dm.dataset.dmin, false); return; }
   const dw = T.closest('[data-drawer]'); if (dw) { setDrawer(dw.closest('.blk').dataset.id, dw.dataset.drawer); return; }
@@ -2043,6 +2061,7 @@ function startDrag(e) {
   const lifted = p.mode === 'move' ? state.lay.blocks.filter(owned).map(X => ({ el:state.elems.get(X.id), x:X.x, y:X.y })).filter(x => x.el) : [{ el, x:B.x, y:B.y }];
   // Zones and spans are rebuilt from the current state on every drag; nothing is kept from an earlier one.
   drag = { ...p, B, el, lifted, zones: p.mode === 'move' ? moveZones(p.id) : attachZones(p.id), spans: p.mode === 'move' ? groupSpans() : [], best:null, shown:undefined };
+  opened('drag', () => { const pid = drag.pid; endDrag(false); press = { dead:true, pid }; });
   { const w = worldPt({ clientX:p.x, clientY:p.y }); drag.grip = { x:w.x - B.x, y:w.y - B.y }; }
   drag.keep = new Set(p.mode === 'move' ? state.lay.blocks.filter(owned).map(X => X.id) : []);
   try { getSelection().removeAllRanges(); } catch (_) {}
@@ -2113,7 +2132,7 @@ function moveDrag(e) {
   drag.best = best;
 }
 function endDrag(commit) {
-  const d = drag; drag = null;
+  const d = drag; drag = null; closed('drag');
   endTies(d);
   vp.classList.remove('dragging'); $('ovl').innerHTML = '';
   const z = commit && d.best, why = z && (z.bad || z.why);
@@ -2214,7 +2233,6 @@ vp.addEventListener('pointerdown', e => {
   longT = setTimeout(() => { if (pts.size !== 1 || didMove || drag || link) return; if (press) press.dead = true; didMove = true; longFired = true; openMenu(t, x, y); }, 550);
 });
 ['pointerup', 'pointercancel'].forEach(t => addEventListener(t, () => clearTimeout(longT)));
-addEventListener('keydown', e => { if (drag && e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); const pid = drag.pid; endDrag(false); press = { dead:true, pid }; } }, true);
 
 // @sbtel end App.Input
 // @sbtel begin App.EditDialog
@@ -2337,7 +2355,7 @@ function editBehaviorsHTML(b) {
 // ---------- Popovers ----------
 const pops = {};
 function closePop(kind) {
-  Object.keys(pops).forEach(k => { if (!kind || k === kind || (kind === 'info' && k.startsWith('info'))) { pops[k].remove(); delete pops[k]; } });
+  Object.keys(pops).forEach(k => { if (!kind || k === kind || (kind === 'info' && k.startsWith('info'))) { pops[k].remove(); delete pops[k]; closed('pop:' + k); } });
 }
 function placeNear(el, r) {
   const w = el.offsetWidth, h = el.offsetHeight, m = 8;
@@ -2350,7 +2368,7 @@ function placeNear(el, r) {
 function pop(kind, anchor, html, cls = '') {
   closePop(kind.startsWith('info') ? 'info' : kind);
   const el = document.createElement('div'); el.className = 'pop ' + cls; el.innerHTML = html; document.body.appendChild(el);
-  pops[kind] = el; placeNear(el, anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : anchor);
+  pops[kind] = el; opened('pop:' + kind, () => closePop(kind), { live:() => pops[kind] === el && el.isConnected }); placeNear(el, anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : anchor);
   return el;
 }
 function msgInfoHTML(name, withActs) {
@@ -2415,12 +2433,12 @@ function showCallout(key, find, html, mode, extra = {}) {
   co.key = key; co.find = find; co.mode = mode; co.commit = extra.commit || null; co.toEdit = extra.toEdit || null;
   el.className = 'callout' + (mode === 'hover' ? ' hover' : '') + (mode === 'edit' ? ' edit' : '');
   el.setAttribute('role', mode === 'edit' ? 'dialog' : 'tooltip');
-  el.innerHTML = html; el.hidden = false; placeCallout();
+  el.innerHTML = html; el.hidden = false; opened('callout', hideCallout, { light: mode === 'hover' }); placeCallout();
   return el;
 }
 function hideCallout() {
   if (!co.el || co.el.hidden) return;
-  co.el.hidden = true; co.el.innerHTML = ''; co.mode = co.key = co.find = co.commit = co.toEdit = null;
+  closed('callout'); co.el.hidden = true; co.el.innerHTML = ''; co.mode = co.key = co.find = co.commit = co.toEdit = null;
   document.querySelectorAll('.drow.editing').forEach(r => r.classList.remove('editing'));
   if (state.talk && state.talk.hover) { state.talk = null; markTalkRow(); applyTalk(); }
 }
@@ -2531,7 +2549,6 @@ function portEditor(at, find) {
 function editorKeys(f) {
   f.addEventListener('submit', e => { e.preventDefault(); co.commit && co.commit(false); });
   f.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); hideCallout(); return; }
     if (e.key !== 'Enter' || e.isComposing) return;
     if (e.metaKey || e.ctrlKey) { e.preventDefault(); e.stopPropagation(); co.commit && co.commit(false); }
     else if (e.target.tagName === 'INPUT') e.preventDefault(); // not an accidental save
@@ -2831,7 +2848,7 @@ function openChat(key, anchor, focus) {
   walkNote(key); cmtCount();
   // Large: the same chat as a tall window over the page, for reading. Escape (or a click beside it) makes
   // it the callout again; a second Escape closes it.
-  { const me = chat, rm = el.remove.bind(el); el.remove = () => { me.scrim?.remove(); rm(); setTimeout(cmtCount); }; }
+  { const me = chat, rm = el.remove.bind(el); el.remove = () => { me.scrim?.remove(); closed('chat-big'); rm(); setTimeout(cmtCount); }; }
   const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
   refreshChat();
   if (focus) setTimeout(() => { if (chatOpen(key)) ta.focus(); }, 30);
@@ -2846,7 +2863,6 @@ function openChat(key, anchor, focus) {
   ta.addEventListener('paste', e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); attachTo(ta, fs); } });
   ta.addEventListener('input', () => { if (ta.value.trim()) chatDrafts.set(key, ta.value); else chatDrafts.delete(key); });
   ta.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (!chatShrink()) closePop('thread'); return; }
     if (e.key !== 'Enter' || e.isComposing) return;
     if (e.metaKey || e.ctrlKey) { e.preventDefault(); submit('send'); }
     else if (e.shiftKey) { e.preventDefault(); submit('keep'); }
@@ -2868,12 +2884,10 @@ function chatBig(on) {
   const el = chat.el, ul = el.querySelector('ul.thread'), b = el.querySelector('[data-t="big"]'), atEnd = ul.scrollTop + ul.clientHeight >= ul.scrollHeight - 4, was = ul.scrollTop;
   chat.big = on; el.classList.toggle('big', on);
   b.innerHTML = on ? ICON.shrink : ICON.grow; b.title = on ? 'Back to the small callout (Esc)' : 'Read in a large window'; b.setAttribute('aria-label', b.title);
-  if (on) { const sc = chat.scrim = document.createElement('div'); sc.className = 'scrim chatscrim'; for (const t of ['pointerdown', 'pointerup', 'mousedown', 'mouseup']) sc.addEventListener(t, e => e.stopPropagation()); sc.addEventListener('click', e => { e.stopPropagation(); chatBig(false); }); document.body.insertBefore(sc, el); }
-  else { chat.scrim?.remove(); chat.scrim = null; placeBeside(el, chat.anchor); }
+  if (on) { const sc = chat.scrim = document.createElement('div'); sc.className = 'scrim chatscrim'; for (const t of ['pointerdown', 'pointerup', 'mousedown', 'mouseup']) sc.addEventListener(t, e => e.stopPropagation()); sc.addEventListener('click', e => { e.stopPropagation(); chatBig(false); }); document.body.insertBefore(sc, el); opened('chat-big', () => chatBig(false)); }
+  else { closed('chat-big'); chat.scrim?.remove(); chat.scrim = null; placeBeside(el, chat.anchor); }
   ul.scrollTop = atEnd ? ul.scrollHeight : was;
 }
-// Escape on a large chat makes it small again; says whether it did.
-function chatShrink() { if (chatOpen() && chat.big) { chatBig(false); return true; } return false; }
 // Comment on a thing (the input has the focus), or read its thread (on a touch screen the keyboard stays down).
 function openComposer(key, anchor) { openChat(key, anchor, true); }
 function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: coarse)').matches); }
@@ -2968,8 +2982,8 @@ function nextUnread(reading) {
 }
 {
   let m = null;
-  const shut = () => { if (!m) return; m.remove(); m = null; $('cmtMore').setAttribute('aria-expanded', 'false'); removeEventListener('pointerdown', away, true); removeEventListener('keydown', esc2, true); };
-  const away = e => { if (!m.contains(e.target) && !e.target.closest('#cmtMore')) shut(); }, esc2 = e => { if (e.key === 'Escape') { e.stopPropagation(); shut(); $('cmtMore').focus(); } };
+  const shut = () => { if (!m) return; m.remove(); m = null; $('cmtMore').setAttribute('aria-expanded', 'false'); removeEventListener('pointerdown', away, true); closed('walk'); };
+  const away = e => { if (!m.contains(e.target) && !e.target.closest('#cmtMore')) shut(); };
   $('cmtMore').onclick = () => {
     if (m) { shut(); return; }
     m = document.createElement('div'); m.className = 'walkm'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-label', 'How new replies are read');
@@ -2980,7 +2994,7 @@ function nextUnread(reading) {
     const r = $('cmtMore').getBoundingClientRect(); m.style.bottom = (innerHeight - r.top + 10) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.left + r.width / 2 - m.offsetWidth / 2)) + 'px';
     $('cmtMore').setAttribute('aria-expanded', 'true');
     m.addEventListener('change', () => { WALK.order = m.querySelector('[name=wkOrder]:checked')?.value || 'near-back'; store.set('sbtel-walk', { order:WALK.order }); tip(); cmtCount(); });
-    addEventListener('pointerdown', away, true); addEventListener('keydown', esc2, true);
+    addEventListener('pointerdown', away, true); opened('walk', () => { shut(); $('cmtMore').focus(); });
   };
 }
 function openAllComments() {
@@ -3084,10 +3098,10 @@ function modal(title, html) {
   modalEl = document.createElement('div'); modalEl.className = 'modal'; modalEl.setAttribute('role', 'dialog'); modalEl.setAttribute('aria-label', title);
   modalEl.innerHTML = `<header><h2>${esc(title)}</h2><span class="spacer"></span><button class="xbtn" data-m="close" aria-label="Close">${ICON.close}</button></header><div class="body">${html}</div>`;
   modalEl.querySelector('header [data-m="close"]').onclick = closeModal;
-  document.body.append(scrimEl, modalEl);
+  document.body.append(scrimEl, modalEl); opened('modal', closeModal);
   return modalEl;
 }
-function closeModal() { modalEl?.remove(); scrimEl?.remove(); modalEl = scrimEl = null; }
+function closeModal() { closed('modal'); modalEl?.remove(); scrimEl?.remove(); modalEl = scrimEl = null; }
 $('setBtn').onclick = () => {
   const m = modal('Settings', $('settingsTpl').innerHTML);
   m.querySelectorAll('input[type=radio]').forEach(i => {
@@ -3161,11 +3175,11 @@ $('chkBtn').onclick = () => { if (pops.checks) closePop('checks'); else showChec
 function openMessages({ open, owner } = {}) {
   if (owner !== undefined) { state.msgOwner = owner; state.msgQ = ''; $('msgQ').value = ''; }
   if (open) { state.msgOpen = open; state.msgQ = ''; $('msgQ').value = ''; state.msgOwner = null; }
-  $('msgSheet').classList.remove('closed'); 
+  $('msgSheet').classList.remove('closed'); opened('messages', closeMessages);
   renderMsgTable();
   if (open) setTimeout(() => document.querySelector(`#msgRows tr[data-name="${CSS.escape(open)}"]`)?.scrollIntoView({ block:'center', behavior:'smooth' }), 60);
 }
-function closeMessages() { $('msgSheet').classList.add('closed'); }
+function closeMessages() { $('msgSheet').classList.add('closed'); closed('messages'); }
 function renderMsgTableIfOpen() { if (!$('msgSheet').classList.contains('closed')) renderMsgTable(); }
 function renderMsgTable() {
   if (!state.model) return;
@@ -3212,6 +3226,7 @@ $('msgClose').onclick = closeMessages;
 function toggleSource(open) {
   const s = $('srcSheet'); const o = open ?? s.classList.contains('closed');
   s.classList.toggle('closed', !o); $('srcBtn').classList.toggle('on', o); $('srcBtn').setAttribute('aria-expanded', o);
+  if (o) opened('source', () => toggleSource(false)); else closed('source');
 }
 function closeSheetsOnPhone() { if (innerWidth < 760) { closeMessages(); toggleSource(false); } }
 $('srcBtn').onclick = () => toggleSource();
@@ -3248,7 +3263,8 @@ $('expAll').onclick = () => { state.model.blocks.forEach(b => { if (hasInside(b)
 $('colAll').onclick = () => { state.open = new Set(); render(); fit(true); };
 $('helpX').onclick = () => $('helpBtn').click();
 $('tourBtn').onclick = () => { $('helpBtn').click(); startTour(0); };
-$('helpBtn').onclick = () => { const h = $('help'); h.hidden = !h.hidden; $('helpBtn').setAttribute('aria-expanded', !h.hidden); store.set('sbtel-help-seen', true); };
+function showHelp(on) { $('help').hidden = !on; $('helpBtn').setAttribute('aria-expanded', String(on)); if (on) opened('help', () => showHelp(false)); else closed('help'); }
+$('helpBtn').onclick = () => { showHelp($('help').hidden); store.set('sbtel-help-seen', true); };
 
 // @sbtel end App.Input
 // @sbtel begin App.Code
@@ -3547,9 +3563,8 @@ function openRefs(id, first, given) {
     else if (d.binary) body.innerHTML = `<p><code>${esc(r.file)}</code> is not text, so it is not shown.</p>`;
     else { const kind = d.pdf ? 'pdf' : d.image ? '' : refKind(r.file); cur = { r, d, kind, mode: r.from ? 'src' : 'view' }; draw(); say.hidden = !(sayKey && commentOn); }
   }
-  const close = () => { document.removeEventListener('keydown', onKey, true); drop(); p.remove(); scrim.remove(); };
-  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
-  document.addEventListener('keydown', onKey, true);
+  const close = () => { closed('file'); drop(); p.remove(); scrim.remove(); };
+  opened('file', close);
   p.addEventListener('click', e => {
     const k = e.target.closest('[data-k]')?.dataset.k;
     if (k === 'close') close();
@@ -3580,13 +3595,12 @@ function openCode(id) {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduce) { p.animate([{ transform:`translate(${from.left - L}px,${from.top - T}px) scale(${from.width / w},${from.height / h})`, opacity:.4 }, { transform:'none', opacity:1 }], { duration:260, easing:'cubic-bezier(.3,.7,.2,1)' }); }
   const close = () => {
-    document.removeEventListener('keydown', onKey, true);
+    closed('code');
     const now = el.isConnected ? el.getBoundingClientRect() : from;
     if (reduce) { p.remove(); scrim.remove(); }
     else { p.animate([{ transform:'none', opacity:1 }, { transform:`translate(${now.left - L}px,${now.top - T}px) scale(${now.width / w},${now.height / h})`, opacity:.2 }], { duration:200, easing:'ease-in' }).onfinish = () => p.remove(); scrim.remove(); }
   };
-  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
-  document.addEventListener('keydown', onKey, true);
+  opened('code', close);
   scrim.onclick = close; p.querySelector('[data-k="close"]').onclick = close;
   p.querySelector('[data-k="copy"]').onclick = e => { const btn = e.currentTarget; navigator.clipboard.writeText(text).then(() => btn.textContent = 'Copied', () => { const r = document.createRange(); r.selectNodeContents(p.querySelector('pre')); getSelection().removeAllRanges(); getSelection().addRange(r); btn.textContent = 'Selected'; }); };
   p.querySelector('[data-k="close"]').focus();
@@ -3662,17 +3676,16 @@ function startTour(from) {
   };
   card.addEventListener('click', e => { const t = e.target.closest('[data-t]')?.dataset.t; if (t === 'next') go(1); else if (t === 'back') go(-1); else if (t === 'skip') endTour(); });
   tour.keys = e => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); endTour(); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); go(1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); go(1); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); if (tour.i > 0) go(-1); }
   };
-  addEventListener('keydown', tour.keys, true);
+  addEventListener('keydown', tour.keys, true); opened('tour', endTour);
   tour.i = Math.max(-1, Math.min(TOUR.length - 2, (from | 0) - 1)); go(1); tour.raf = requestAnimationFrame(place);
 }
 function endTour() {
   if (!tour) return;
   const s = TOUR[tour.i]; if (s && s.leave) s.leave();
-  cancelAnimationFrame(tour.raf); removeEventListener('keydown', tour.keys, true); tour.ring.remove(); tour.card.remove(); tour = null;
+  closed('tour'); cancelAnimationFrame(tour.raf); removeEventListener('keydown', tour.keys, true); tour.ring.remove(); tour.card.remove(); tour = null;
   store.set('sbtel-tour', { done:true }); store.set('sbtel-help-seen', true);
 }
 // ---------- Keyboard ----------
@@ -3759,7 +3772,7 @@ const KEYS = [
   { group:'View', on:['f'], show:'F', does:'Fit everything on screen', run:() => (fit(true), true) },
   { on:['+', '='], show:'+ and -', does:'Zoom in and out', run:() => (zoomAt(1.2, innerWidth / 2, innerHeight / 2), true) }, { on:['-', '_'], run:() => (zoomAt(1 / 1.2, innerWidth / 2, innerHeight / 2), true) },
   { on:['?'], show:'?', does:'This panel', run:() => ($('helpBtn').click(), true) },
-  { on:[], show:'Esc', does:'Close what is open, then clear the selection' },
+  { on:[], show:'Esc', does:'Close what opened last; with nothing open, clear the selection' },
 ];
 const KEYMAP = new Map(KEYS.flatMap(k => k.on.map(key => [key, k])));
 // The key as KEYMAP names it, or null for one that is not the keyboard's to take (a browser or system shortcut).
@@ -3777,14 +3790,8 @@ function keyName(e) {
 }
 addEventListener('keydown', e => {
   const typing = e.target.closest && e.target.closest('textarea, input');
-  if (e.key === 'Escape') {
-    if (co.el && !co.el.hidden) { hideCallout(); return; }
-    if (chatShrink()) return;
-    if (Object.keys(pops).length) { closePop(); return; }
-    if (modalEl) { closeModal(); return; }
-    if (typing) return;
-    if (!$('msgSheet').classList.contains('closed')) { closeMessages(); return; }
-    if (!$('srcSheet').classList.contains('closed')) { toggleSource(false); return; }
+  if (e.key === 'Escape') { // nothing is open (Kit's dismiss() takes Escape first): let go of what is held
+    if (typing) { e.target.blur(); return; }
     if (state.talk) { clearTalk(); return; }
     if (closeAllDrawers()) return;
     select(null, null); return;
@@ -3846,7 +3853,7 @@ const SBTEL = (() => {
     const plain = SBTEL.mode !== 'diff' && !document.body.classList.contains('embed') && !sentFrom && $('helpBtn').offsetParent;
     const at = store.get('sbtel-tour', null) || {};
     if (plain && !navigator.webdriver) { if (!at.done) setTimeout(() => startTour(at.i || 0), 500); }
-    else if (!store.get('sbtel-help-seen', store.get('marquee-help-seen', false))) { $('help').hidden = false; $('helpBtn').setAttribute('aria-expanded', 'true'); }
+    else if (!store.get('sbtel-help-seen', store.get('marquee-help-seen', false))) showHelp(true);
   }
 })();
 // @sbtel end Viewer.Boot

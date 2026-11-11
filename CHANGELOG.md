@@ -20,7 +20,13 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   drop targets, the keyboard and the layout checks follow. A block too wide to have anything beside it
   (an open block that fills the row) takes a line to itself and the columns start again under it. Rows
   are still aligned across the columns.
-- Settings has Level names: left or right of their line.
+- A level's name sits right of its line (Settings, Level names, puts it on the left). Only the name opens
+  the level's editor; the line shows the name to click and does nothing more.
+- **Escape closes what opened last, everywhere.** Each thing that opens over the canvas (an editor, a
+  callout, a thread, a menu, a dialog, the file and code windows, a sheet, the help panel, the tour, a
+  diagram or comparison shown over the page, a drag) joins one list when it opens and leaves it when it
+  closes; Escape closes the last one, also from inside a text box. With nothing open it leaves the text
+  box, then clears the selection. No surface has an Escape handler of its own.
 - Settings has Spacing: compact, balanced (as before) or relaxed room between blocks, rows and levels.
   Relaxed also widens a row, so the same blocks still fit on it.
 - **Keyboard.** The selection is the cursor. The arrows move to the nearest block that way;
