@@ -762,6 +762,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
       const seq = e => { const n = parseInt(e.lastEventId, 10); if (n > lastSeq) lastSeq = n; };
       es.addEventListener('version', seq);
       es.addEventListener('reply', e => { seq(e); SC.onReply(JSON.parse(e.data || '{}')); });
+      es.addEventListener('note', e => { seq(e); SC.onNote(JSON.parse(e.data || '{}')); });
       es.addEventListener('closed', () => { closed = true; R.forget(); es.close(); versionToast('This session was closed.'); });
       es.onerror = () => { es.close(); if (!closed) setTimeout(connect, 5000); };
     };

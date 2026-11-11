@@ -294,6 +294,8 @@ func (e Event) MarshalJSON() ([]byte, error) {
 	case "comment":
 		m["id"], m["target"], m["targetLabel"], m["text"] = e.ID, e.Target, e.TargetLabel, e.Text
 		m["version"], m["hash"], m["source"] = e.Version, e.Hash, e.Source
+	case "note": // a thread the agent started (sbtel note)
+		m["id"], m["target"], m["targetLabel"], m["text"], m["version"] = e.ID, e.Target, e.TargetLabel, e.Text, e.Version
 	case "reply":
 		m["to"], m["text"] = e.To, e.Text
 	case "save":

@@ -335,6 +335,7 @@ SBTEL.modes.server = (() => {
       versionToast(d);
     });
     es.addEventListener('reply', e => { seq(e); SC.onReply(JSON.parse(e.data)); });
+    es.addEventListener('note', e => { seq(e); SC.onNote(JSON.parse(e.data)); });
     es.addEventListener('seen', e => { SC.setSeen(JSON.parse(e.data).ids); });
     es.addEventListener('ref', e => { seq(e); refEvent(JSON.parse(e.data), true); });
     es.addEventListener('closed', () => closedState());

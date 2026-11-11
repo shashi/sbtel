@@ -12,6 +12,9 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- **`sbtel note <session> <target> <text>`**: an agent can start a thread on a block, a shape, a behavior
+  or the whole file, for when you ask it to comment on things you have not commented on. It shows as a
+  thread with an unread dot; you answer in it as usual. The skill tells agents to use it only when asked.
 - **Comment on a file.** The file viewer has a comment box. The comment goes on the thread of the block
   that names the file (or, for a file opened from a comment, on that comment's thread) and carries the
   file as a ref. Select lines in the source to send `file:9-11`; select words on a rendered page to quote them.

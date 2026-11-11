@@ -81,6 +81,10 @@ sbtel reply "$id" c7.1 "What changed."    # answer each comment; r7 answers a re
 - Reply to every comment with what changed or why nothing did.
 - When the human asks to see a file or the evidence for something, name it in the reply as
   `(ref path:from-to)`: it becomes a button that opens the file at those lines. Only when asked.
+- When the human asks you to comment on blocks ("say something on each block about X"), start a thread
+  on each with `sbtel note "$id" <block> "…"` (also `shape:Name`, `behavior:Name`, or `.` for the file).
+  It prints an id (`n12`) that `sbtel reply` can add to; their answer arrives as a comment on that
+  block. Only when asked: unasked notes crowd the diagram.
 - A `(ref other.sbtel)` opens that spec as a diagram over the page, in a session of its own. A spec whose
   blocks each ref another spec is a map of them. What the human says in a spec opened from your session's
   page arrives in your inbox headed `in <file> (session <id>; …)`: edit that file, and reply with

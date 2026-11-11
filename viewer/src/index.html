@@ -621,6 +621,7 @@ body.diffmode .help .norm { display:none; }
 .walkm label { display:flex; gap:10px; align-items:flex-start; padding:7px 8px; border-radius:8px; cursor:pointer; } .walkm label:hover { background:var(--surface); }
 .walkm input { margin:3px 0 0; accent-color:var(--accent); flex:none; } .walkm b { display:block; font-weight:600; } .walkm small { display:block; color:var(--muted); font-size:12.5px; line-height:1.35; }
 .walkm fieldset { border:0; margin:0; padding:0; } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
+.pop.chat ul.thread li.agent > .sb-reply:first-child { margin-top:0; }
 .pop.chat .chh .in { flex:none; font-size:12.5px; color:var(--muted); }
 .pop.chat ul.thread li.where { position:sticky; top:-1px; z-index:1; padding:6px 0 4px; margin:0; background:var(--panel); border:0; }
 .pop.chat ul.thread li.where button { border:0; background:var(--surface); color:var(--ink-2); font:600 12px var(--ff-ui, inherit); padding:3px 9px; border-radius:999px; cursor:pointer; } .pop.chat ul.thread li.where button:disabled { cursor:default; color:var(--muted); }
@@ -2721,6 +2722,7 @@ function placeBeside(el, anchor) {
   el.style.setProperty('--tail', Math.max(14, Math.min(h - 26, r.top + Math.min(r.height / 2, 30) - y - 6)) + 'px');
 }
 function chatRow(c) {
+  if (c.agent) return `<li class="agent" data-id="${esc(c.id)}">${chatReplies(c)}</li>`; // a thread the agent started: its words only
   const [cls, text, title] = chatStatus(c);
   return `<li data-id="${esc(c.id)}"${c.status === 'sent' || c.status === 'sending' ? '' : ' class="mine"'}><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${whenText(c.at)}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }

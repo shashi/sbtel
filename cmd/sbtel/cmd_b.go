@@ -527,6 +527,43 @@ func cmdReply(e env, args []string) int {
 	return 0
 }
 
+// sbtel note <session> <target> <text>|-
+func cmdNote(e env, args []string) int {
+	const cmd = "note"
+	f, err := parseArgs(args, nil, nil)
+	if err != nil {
+		return usageErr(e, cmd, err)
+	}
+	if len(f.pos) != 3 {
+		return usageErr(e, cmd, errors.New("need a session, what the note is on and the text"))
+	}
+	id, target, text := f.pos[0], f.pos[1], f.pos[2]
+	if text == "-" {
+		b, err := io.ReadAll(e.stdin)
+		if err != nil {
+			return controlErr(e, cmd, err)
+		}
+		text = strings.TrimRight(string(b), "\r\n")
+	}
+	if strings.TrimSpace(text) == "" {
+		return usageErr(e, cmd, errors.New("the note text is empty"))
+	}
+	p, ok := paths(e, cmd)
+	if !ok || sessionMeta(e, cmd, p, id) == nil {
+		return 2
+	}
+	c := ensureServer(e, cmd, p)
+	if c == nil {
+		return 2
+	}
+	var out struct{ ID string }
+	if err := c.Do("POST", "/control/sessions/"+id+"/note", map[string]any{"target": target, "text": text}, &out); err != nil {
+		return controlErr(e, cmd, err)
+	}
+	fmt.Fprintln(e.stdout, out.ID)
+	return 0
+}
+
 // sbtel sessions [--json]  (§3.11)
 func cmdSessions(e env, args []string) int {
 	const cmd = "sessions"

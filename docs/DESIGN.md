@@ -628,8 +628,20 @@ tab and never reaches the server (§6.7), so `--wait` never wakes for it.
 Appends a `reply` event through the server (§5.3), so that connected tabs show it at once via SSE. The
 CLI starts the server if needed. `-` reads the text from stdin. The text must not be empty, and the id
 must name, in the session, a comment (`c<seq>`), a review's comment (`c<seq>.<k>`) or a review as a
-whole (`r<seq>`; the tab shows it under the review in the Review panel's "Sent reviews", and in a
-toast). Otherwise this is exit 2. It prints nothing on success.
+whole (`r<seq>`; the tab shows it under the review in the Review panel's "Sent reviews", with a dot on
+the Review button), or a note of the agent's own (`n<seq>`). Otherwise this is exit 2. It prints nothing
+on success.
+
+### 3.10a `sbtel note <session> <target> <text>|-`  (B, v0.4.1)
+
+Starts a thread with the agent's words first: the one thing an agent can say without a comment to
+answer. `<target>` is a block's name, `shape:Name`, `behavior:Name`, or `.` for the whole file; a thing
+the session's current spec does not declare is exit 2. It appends a `note` event (`id` `n<seq>`,
+`target`, `targetLabel`, `text`) through the server and prints the id. The tab shows the thread on the
+target with an unread dot, like a reply; nothing is announced. A note is not the human's, so no inbox
+delivers it. The human's answer is an ordinary comment on the same target; the agent adds to its own
+thread with `sbtel reply <session> n<seq> …`. Notes are kept in the project's comment log and restored
+with the rest. The skills tell agents to use it only when the human asks.
 
 ### 3.11 `sbtel sessions [--json]`  (B)
 

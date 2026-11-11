@@ -339,6 +339,12 @@ func (s *Server) control(w http.ResponseWriter, r *http.Request, route string) {
 				return
 			}
 			out, err = s.reply(id, in.To, in.Text)
+		case "note":
+			var in struct{ Target, Text string }
+			if !decode(w, r, controlBodyLimit, &in) {
+				return
+			}
+			out, err = s.note(id, in.Target, in.Text)
 		case "seen":
 			err = s.seen(id)
 			out = map[string]any{}

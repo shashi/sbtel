@@ -43,6 +43,8 @@ function sessionComments({ version, closed }) {
     const sent = (id, target, text, version, at, review) => { const c = { id, sid: id, target, text, status: 'sent', version, at, replies: [], review }; list.push(c); byId.set(id, c); };
     events.forEach(e => {
       if (e.kind === 'comment') sent(e.id, e.target, e.text, e.version, Date.parse(e.at));
+      // A thread the agent started (sbtel note): an entry with no words of the human's, whose first reply is the note.
+      if (e.kind === 'note') { sent(e.id, e.target, '', e.version, Date.parse(e.at)); const c = byId.get(e.id); c.agent = true; c.replies.push({ text: e.text, at: Date.parse(e.at) }); }
       if (e.kind === 'review') {
         (e.comments || []).forEach(c => sent(c.id, c.target, c.text, e.version, Date.parse(e.at), e.id));
         revs.set(e.id, { id: e.id, message: e.message || '', n: (e.comments || []).length, proposal: !!e.proposal, at: Date.parse(e.at), replies: [] });
@@ -73,6 +75,16 @@ function sessionComments({ version, closed }) {
     saveComments(); render(); refreshChat(); renderMsgTableIfOpen();
     if (failed) toast(`Could not send ${list.length - sent} comment${list.length - sent === 1 ? '' : 's'}: ${failed}. ${sent ? sent + ' sent.' : 'They are kept in your review.'}`);
     else if (!(list.length === 1 && chatOpen(list[0].target))) toast(`Sent ${sent} comment${sent === 1 ? '' : 's'} to the agent.`); // an open chat already says so
+  }
+  // SSE `note`: {seq, id, target, text, at}: the agent started a thread. It is unread until its thread is opened.
+  function onNote(d) {
+    if (C.seenReplies.has(d.seq) || state.comments.some(c => c.sid === d.id)) return;
+    C.seenReplies.add(d.seq);
+    const at = Date.parse(d.at) || Date.now();
+    state.comments.push({ id: d.id, sid: d.id, target: d.target, text: '', status: 'sent', at, agent: true, replies: [{ text: d.text, at }] });
+    render(); refreshChat();
+    if (chatShows(d.target)) markRead(chat.key);
+    markUnread(); changed();
   }
   // SSE `reply`: {seq, to, text, at}.
   function onReply(d) {
@@ -116,5 +128,5 @@ function sessionComments({ version, closed }) {
   const onChange = f => { C.listeners.push(f); };
   // What the agent has been given (ids of comments), from the log and from the server's `seen` news.
   function setSeen(ids) { let ch = false; (ids || []).forEach(i => { if (!C.seen.has(i)) { C.seen.add(i); ch = true; } }); if (ch) refreshChat(); }
-  return { rebuild, send, onReply, hook, reviews, addReview, onChange, setSeen, _state: C };
+  return { rebuild, send, onReply, onNote, hook, reviews, addReview, onChange, setSeen, _state: C };
 }

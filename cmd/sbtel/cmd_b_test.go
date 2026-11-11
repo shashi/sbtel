@@ -166,6 +166,29 @@ func TestSessionLoop(t *testing.T) {
 		t.Errorf("reply -: %d", c)
 	}
 
+	// note: the agent starts a thread; it prints the note's id, which reply can add to; a thing the spec
+	// does not declare is refused; a note is not the human's, so the inbox stays empty.
+	c, nid, errs := runT("", "note", id, "A", "Why two writers?")
+	nid = strings.TrimSpace(nid)
+	if c != 0 || !strings.HasPrefix(nid, "n") {
+		t.Fatalf("note: %d %q %q", c, nid, errs)
+	}
+	if c, _, _ := runT("", "note", id, ".", "About the whole file."); c != 0 {
+		t.Errorf("note on the file: %d", c)
+	}
+	if c, _, errs := runT("", "note", id, "Nope", "x"); c != 2 || !strings.Contains(errs, "no such thing") {
+		t.Errorf("note on a missing block: %d %q", c, errs)
+	}
+	if c, _, _ := runT("", "note", id, "A", " "); c != 2 {
+		t.Errorf("empty note: %d", c)
+	}
+	if c, _, errs := runT("", "reply", id, nid, "One more thing."); c != 0 {
+		t.Errorf("reply to a note: %d %q", c, errs)
+	}
+	if c, out, _ := runT("", "inbox", id); c != 0 || out != "" {
+		t.Errorf("a note must not reach the inbox: %d %q", c, out)
+	}
+
 	// open --session: a new version; the same content again is no new version.
 	os.WriteFile(spec, []byte("(block A2)\n"), 0o644)
 	c, out, _ = runT("", "open", spec, "--session", id, "--json", "--label", "renamed")

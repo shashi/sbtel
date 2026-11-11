@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -101,7 +102,7 @@ func (s *Server) append(ss *session, e state.Event) (state.Event, error) {
 	ss.seq = e.Seq
 	ss.meta.Updated = e.At
 	// What was said also goes to the project's own log, beside the spec (state.AppendProjectComment).
-	if (e.Kind == "comment" || e.Kind == "reply" || e.Kind == "review") && ss.meta.Spec != nil && ss.meta.Spec.Path != nil {
+	if (e.Kind == "comment" || e.Kind == "reply" || e.Kind == "review" || e.Kind == "note") && ss.meta.Spec != nil && ss.meta.Spec.Path != nil {
 		le, sid := e, ss.meta.ID
 		if e.Kind == "reply" { // an answer to something restored is logged against its first session and id
 			evs, _ := state.ReadEvents(s.paths, ss.meta.ID)
@@ -149,6 +150,11 @@ func (s *Server) restore(ss *session) {
 				e.Origins[c.ID] = o.Session + "/" + old
 				e.Comments = append(e.Comments, c)
 			}
+		case "note":
+			e.ID = "n" + n
+			e.Target, e.TargetLabel, e.Text = o.Target, o.TargetLabel, o.Text
+			ids[o.Session+"/"+o.ID] = e.ID
+			e.Origins = map[string]string{e.ID: o.Session + "/" + o.ID}
 		case "reply":
 			if e.To = ids[o.Session+"/"+o.To]; e.To == "" {
 				continue
@@ -606,6 +612,58 @@ func (s *Server) reply(id, to, text string) (map[string]any, error) {
 	return map[string]any{"seq": e.Seq}, nil
 }
 
+// note starts a thread on something in the spec, with the agent's words first (DESIGN.md §5.2, note): the
+// one thing an agent can say without a comment to answer. The human's answer is a comment on the same
+// target, and the agent may add to its own thread with reply (the note's id, n<seq>).
+func (s *Server) note(id, target, text string) (map[string]any, error) {
+	if strings.TrimSpace(text) == "" {
+		return nil, errBadRequest{"empty note"}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ss, err := s.get(id)
+	if err != nil {
+		return nil, err
+	}
+	key, label, ok := noteTarget(target, ss.src)
+	if !ok {
+		return nil, errBadRequest{"no such thing in the spec: " + target + " (a block's name, shape:Name, behavior:Name, or . for the whole file)"}
+	}
+	e := state.Event{Kind: "note", By: "agent", Target: key, TargetLabel: label, Text: text, Version: ss.meta.Version}
+	e.ID = "n" + strconv.Itoa(ss.seq+1)
+	if e, err = s.append(ss, e); err != nil {
+		return nil, err
+	}
+	_ = s.writeMeta(ss)
+	s.broadcast(ss, noteMsg(e), nil)
+	return map[string]any{"id": e.ID, "seq": e.Seq}, nil
+}
+
+// noteTarget turns what the agent names into a comment target (the page's keys: block:<id>, msg:<name>,
+// beh:<name>, block: for the file) and checks that the spec declares it.
+func noteTarget(t string, src []byte) (key, label string, ok bool) {
+	t = strings.TrimSpace(t)
+	form, name := "block", t
+	switch {
+	case t == "." || t == "file" || t == "block:":
+		return "block:", "the file", true
+	case strings.HasPrefix(t, "shape:"), strings.HasPrefix(t, "msg:"):
+		form, name = "shape", t[strings.Index(t, ":")+1:]
+	case strings.HasPrefix(t, "behavior:"), strings.HasPrefix(t, "beh:"):
+		form, name = "behavior", t[strings.Index(t, ":")+1:]
+	case strings.HasPrefix(t, "block:"):
+		name = t[len("block:"):]
+	}
+	if name == "" || strings.ContainsAny(name, " \t\n()\";") {
+		return "", "", false
+	}
+	last := name[strings.LastIndex(name, ".")+1:]
+	if src != nil && !regexp.MustCompile(`\(`+form+`\s+`+regexp.QuoteMeta(last)+`[\s)]`).Match(src) {
+		return "", "", false
+	}
+	return map[string]string{"block": "block:", "shape": "msg:", "behavior": "beh:"}[form] + name, form + " " + name, true
+}
+
 func (s *Server) closeSession(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -632,7 +690,7 @@ func (s *Server) closeSession(id string) error {
 // a review (r<seq>) or one comment of a review (c<seq>.<k>).
 func hasComment(evs []state.Event, to string) bool {
 	for _, e := range evs {
-		if (e.Kind == "comment" || e.Kind == "review") && e.ID == to {
+		if (e.Kind == "comment" || e.Kind == "review" || e.Kind == "note") && e.ID == to {
 			return true
 		}
 		if e.Kind == "review" {

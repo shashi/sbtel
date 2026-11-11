@@ -42,6 +42,10 @@ func versionMsg(e state.Event) sseMsg {
 	return sseMsg{id: e.Seq, event: "version", data: mustJSON(d)}
 }
 
+func noteMsg(e state.Event) sseMsg {
+	return sseMsg{id: e.Seq, event: "note", data: mustJSON(map[string]any{"id": e.ID, "target": e.Target, "text": e.Text, "seq": e.Seq, "at": e.At})}
+}
+
 func replyMsg(e state.Event) sseMsg {
 	return sseMsg{id: e.Seq, event: "reply", data: mustJSON(map[string]any{"to": e.To, "text": e.Text, "seq": e.Seq, "at": e.At})}
 }
@@ -130,6 +134,8 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request, id string) {
 			switch e.Kind {
 			case "reply":
 				replay = append(replay, replyMsg(e))
+			case "note":
+				replay = append(replay, noteMsg(e))
 			case "version", "save":
 				replay = append(replay, versionMsg(e))
 			}
