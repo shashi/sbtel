@@ -9,7 +9,8 @@
 # directory of a package that is linked (goja's ftoa code carries two of its own). The binary embeds
 # the file (assets.go) and `sbtel licenses` prints it; the release ships it beside the binaries.
 # The fonts that the viewer page embeds (viewer/fonts/*.woff2, inlined by viewer/build.mjs, so they are
-# in the binary too) get a section each, from their license file viewer/fonts/<font>-OFL.txt.
+# in the binary too) get a section each, from their license file viewer/fonts/<font>-OFL.txt, and the
+# icons it draws (viewer/icons/*.svg, Lucide) get one from viewer/icons/LICENSE.
 set -eu
 cd "$(dirname "$0")/.."
 : "${GOPROXY:=direct}" "${GOSUMDB:=off}"; export GOPROXY GOSUMDB
@@ -51,6 +52,11 @@ sub='---------------------------------------------------------------------------
     font=$(basename "$f" | sed -E 's/-(latin-ext|latin|greek|cyrillic-ext|cyrillic|vietnamese)-wght-normal\.woff2$//')
     [ -f "viewer/fonts/$font-OFL.txt" ] || { echo "third-party-notices: no license file viewer/fonts/$font-OFL.txt for $f" >&2; exit 1; }
   done
+  ls viewer/icons/*.svg >/dev/null 2>&1 && {
+    printf '\n%s\nicons Lucide (drawn into the viewer page: %s)\n' "$rule" "$(cd viewer/icons && ls *.svg | sed 's/\.svg$//' | tr '\n' ' ' | sed 's/ $//')"
+    printf '%s\n%s\n%s\n\n' "$sub" viewer/icons/LICENSE "$sub"
+    sed -e 's/[[:space:]]*$//' viewer/icons/LICENSE
+  }
   printf '\n%s\nThe Go standard library and runtime (Go %s)\n' "$rule" "$(sed -n 's/^go \([0-9.]*\).*/\1/p' go.mod)"
   for f in LICENSE PATENTS; do
     printf '%s\ngo/%s\n%s\n\n' "$sub" "$f" "$sub"

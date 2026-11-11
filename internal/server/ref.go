@@ -22,9 +22,14 @@ import (
 //     session names as (ref …) or as a Markdown link; never one the page merely asks for;
 //   - relative to the spec file's directory, with no "..", no absolute path and no dot-file or dot-directory;
 //   - inside that directory after symbolic links are resolved; a regular file of at most refMaxBytes;
-//   - answered as JSON text ({path, text, size}), or, with raw=1 and an image extension, as that image.
-//     Nothing is ever served as HTML or script, so a referenced file cannot run in the page's origin.
+//   - answered as JSON text ({path, text, size}), or, with raw=1, as the file itself for the few kinds the
+//     page shows as they are (refRaw): a picture, a PDF, a calendar invite. Those are sent with their own
+//     type and nosniff. Nothing is ever served as HTML, SVG or script, so a referenced file cannot run in
+//     the page's origin: the page draws HTML and SVG itself, from the JSON text, in a frame without script.
 const refMaxBytes = 2 << 20
+
+// A picture or a PDF is not read as text, so it may be larger.
+const refRawMaxBytes = 32 << 20
 
 var refForm = regexp.MustCompile(`\(ref\s+(?:"((?:[^"\\]|\\.)*)"|([^\s()";]+))`)
 var refLines = regexp.MustCompile(`^(.+?):\d+(?:-\d+)?$`)
@@ -32,6 +37,7 @@ var refLines = regexp.MustCompile(`^(.+?):\d+(?:-\d+)?$`)
 // In a comment or a reply a file is named as in a spec, (ref path), or as a Markdown link, [label](path).
 var refLink = regexp.MustCompile(`\]\(([^()\s]+)\)`)
 var refImages = map[string]string{".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp"}
+var refRaw = map[string]string{".pdf": "application/pdf", ".ics": "text/calendar; charset=utf-8"}
 
 // refFile is the file part of a ref's path as written: without `#anchor` and without `:line` or `:from-to`.
 func refFile(p string) string {
@@ -134,9 +140,35 @@ func (s *Server) serveRef(w http.ResponseWriter, r *http.Request, ss *session) {
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	ct, image := refImages[strings.ToLower(filepath.Ext(full))]
-	if info.Size() > refMaxBytes {
+	ext := strings.ToLower(filepath.Ext(full))
+	ct, image := refImages[ext]
+	pdf := ext == ".pdf"
+	if !image {
+		ct = refRaw[ext]
+	}
+	limit := int64(refMaxBytes)
+	if image || pdf {
+		limit = refRawMaxBytes
+	}
+	if info.Size() > limit {
 		writeJSON(w, 200, map[string]any{"path": rel, "size": info.Size(), "tooLarge": true, "image": image})
+		return
+	}
+	if ct != "" && r.URL.Query().Get("raw") == "1" {
+		f, err := os.Open(full)
+		if err != nil {
+			notFound(w)
+			return
+		}
+		defer f.Close()
+		w.Header().Set("Content-Type", ct)
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Content-Disposition", "inline")
+		http.ServeContent(w, r, "", info.ModTime(), f)
+		return
+	}
+	if image || pdf {
+		writeJSON(w, 200, map[string]any{"path": rel, "size": info.Size(), "image": image, "pdf": pdf, "raw": true})
 		return
 	}
 	b, err := os.ReadFile(full)
@@ -144,21 +176,11 @@ func (s *Server) serveRef(w http.ResponseWriter, r *http.Request, ss *session) {
 		notFound(w)
 		return
 	}
-	if image && r.URL.Query().Get("raw") == "1" {
-		w.Header().Set("Content-Type", ct)
-		w.Header().Set("Content-Disposition", "inline")
-		w.Write(b)
-		return
-	}
-	if image {
-		writeJSON(w, 200, map[string]any{"path": rel, "size": len(b), "image": true})
-		return
-	}
 	if !utf8.Valid(b) || strings.ContainsRune(string(b), 0) {
 		writeJSON(w, 200, map[string]any{"path": rel, "size": len(b), "binary": true})
 		return
 	}
-	writeJSON(w, 200, map[string]any{"path": rel, "size": len(b), "text": string(b)})
+	writeJSON(w, 200, map[string]any{"path": rel, "size": len(b), "text": string(b), "raw": ct != ""})
 }
 
 // isDropped says whether rel is a file in the project's own files folder: .sbtel/files/<name>, one level deep.

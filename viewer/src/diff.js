@@ -586,7 +586,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     seg.innerHTML = '<button data-view="before" aria-pressed="false" title="Show side a (B)">Before</button><button data-view="after" aria-pressed="true" title="Show side b, with ghosts (A)">After</button>';
     seg.addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) setView(b.dataset.view); });
     const btn = document.createElement('button'); btn.className = 'tb'; btn.id = 'dBtn'; btn.setAttribute('aria-controls', 'dSheet'); btn.setAttribute('aria-expanded', 'false'); btn.title = 'The list of changes';
-    btn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><path d="M2 4h1.5M2 8h1.5M2 12h1.5"/></svg><span class="lbl">Changes</span><span class="d-n" id="dN"></span>';
+    btn.innerHTML = '@@icon diff@@<span class="lbl">Changes</span><span class="d-n" id="dN"></span>';
     btn.onclick = () => toggleSheet();
     const dock = $('dock'); dock.prepend(btn); dock.prepend(seg);
     const sh = document.createElement('aside'); sh.className = 'float sheet right closed d-sheet'; sh.id = 'dSheet'; sh.setAttribute('aria-label', 'Changes');

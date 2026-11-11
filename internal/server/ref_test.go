@@ -31,10 +31,13 @@ func TestRefRoute(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, ".env"), []byte("KEY=1"), 0o644)
 	os.WriteFile(filepath.Join(dir, ".git", "config"), []byte("x"), 0o644)
 	os.WriteFile(filepath.Join(dir, "pic.png"), []byte("\x89PNG\r\n\x1a\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "doc.pdf"), []byte("%PDF-1.4\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "meet.ics"), []byte("BEGIN:VCALENDAR\nEND:VCALENDAR\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "art.svg"), []byte("<svg xmlns='http://www.w3.org/2000/svg'/>"), 0o644)
 	os.WriteFile(filepath.Join(dir, "blob.bin"), []byte{0, 1, 2}, 0o644)
 	linked := runtime.GOOS != "windows" && os.Symlink(filepath.Join(outer, "secret.txt"), filepath.Join(dir, "link.txt")) == nil
 	src := `(block A (ref src/store.ts:1-2) (ref "a b.md#title" (~ Notes. ~)) (ref page.html) (ref ../secret.txt)
-  (ref .env) (ref .git/config) (ref link.txt) (ref pic.png) (ref blob.bin) (ref missing.txt) (ref https://example.com/x))` + "\n"
+  (ref .env) (ref .git/config) (ref link.txt) (ref pic.png) (ref doc.pdf) (ref meet.ics) (ref art.svg) (ref blob.bin) (ref missing.txt) (ref https://example.com/x))` + "\n"
 	file := filepath.Join(dir, "x.sbtel")
 	os.WriteFile(file, []byte(src), 0o644)
 	id := h.create(src, &file)
@@ -60,6 +63,20 @@ func TestRefRoute(t *testing.T) {
 	}
 	if c, ct, _ := get("pic.png", "&raw=1"); c != 200 || ct != "image/png" {
 		t.Errorf("image raw: %d %s", c, ct)
+	}
+	for _, k := range []struct{ name, body, ct, want string }{
+		{"doc.pdf", "%PDF-1.4\n", "application/pdf", `"pdf":true`},
+		{"meet.ics", "BEGIN:VCALENDAR\nEND:VCALENDAR\n", "text/calendar; charset=utf-8", `"text":"BEGIN`},
+	} {
+		if c, ct, b := get(k.name, ""); c != 200 || !strings.Contains(b, k.want) || !strings.Contains(b, `"raw":true`) || !strings.HasPrefix(ct, "application/json") {
+			t.Errorf("%s: %d %s %s", k.name, c, ct, b)
+		}
+		if c, ct, b := get(k.name, "&raw=1"); c != 200 || ct != k.ct || b != k.body {
+			t.Errorf("%s raw: %d %s %q", k.name, c, ct, b)
+		}
+	}
+	if c, ct, _ := get("art.svg", "&raw=1"); c != 200 || !strings.HasPrefix(ct, "application/json") {
+		t.Errorf("svg raw must stay JSON: %d %s", c, ct)
 	}
 	if c, _, b := get("blob.bin", ""); c != 200 || !strings.Contains(b, `"binary":true`) || strings.Contains(b, "text") {
 		t.Errorf("binary: %d %s", c, b)

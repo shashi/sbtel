@@ -131,10 +131,7 @@ function sessionReview(o) {
   const KEY = 'sbtel-draft:' + o.id, HKEY = 'sbtel-hist:' + o.id;
   const pending = () => state.comments.filter(c => c.status === 'pending');
   const CSS = `
-.tb.rv-btn { background:var(--accent); color:#fff; font-weight:600; margin-left:4px; }
-.tb.rv-btn:hover { background:color-mix(in srgb, var(--accent) 86%, #000); }
-.tb.rv-btn .rv-n { min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#fff; color:var(--accent); font-size:11.5px; line-height:18px; text-align:center; font-variant-numeric:tabular-nums; }
-.tb.rv-btn[aria-expanded="true"] { box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+.tb.rv-btn .rv-n { min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:var(--accent); color:#fff; font-size:11.5px; font-weight:600; line-height:18px; text-align:center; font-variant-numeric:tabular-nums; }
 .cbub.pend { background:var(--surface); color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); }
 .cbub .pb { margin-left:3px; padding:0 5px; border-radius:7px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:600; line-height:14px; }
 .st-pending { color:var(--accent-ink); font-weight:600; }
@@ -222,7 +219,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
   function toggle(open) {
     const o2 = open ?? !R.open; R.open = o2;
     if (o2) { closeMessages(); const ds = $('dSheet'); if (ds && !ds.classList.contains('closed')) $('dClose').click(); recount(); renderPanel(); }
-    sheet().classList.toggle('closed', !o2); btn.setAttribute('aria-expanded', String(o2));
+    sheet().classList.toggle('closed', !o2); btn.setAttribute('aria-expanded', String(o2)); btn.classList.toggle('on', o2);
   }
   const goTarget = key => {
     const kind = key.slice(0, key.indexOf(':')), rest = key.slice(key.indexOf(':') + 1);
@@ -335,9 +332,10 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
       closePop('thread'); toggle(true);
       setTimeout(() => { const ta = document.querySelector(`#rvComments [data-cid="${CSS.escape(b.dataset.id)}"] textarea`); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ block:'nearest' }); } }, 60);
     });
-    // The dock: Review is the primary action, at the end.
+    // The dock: Review sits at the end, a button like the others (the toolbar has no primary action); a count
+    // shows what waits in the review.
     btn = document.createElement('button'); btn.className = 'tb rv-btn'; btn.id = 'rvBtn'; btn.setAttribute('aria-controls', 'rvSheet'); btn.setAttribute('aria-expanded', 'false');
-    btn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h10v8H8l-3 3v-3H3z"/><path d="M5.5 6.5l1.6 1.6L10.5 4.8"/></svg><span class="rv-l">Review</span><span class="rv-n" hidden></span>';
+    btn.innerHTML = '@@icon message-square-check@@<span class="rv-l">Review</span><span class="rv-n" hidden></span>';
     btn.onclick = () => toggle();
     $('dock').appendChild(btn);
     const sh = document.createElement('aside'); sh.className = 'float sheet right closed rv-sheet'; sh.id = 'rvSheet'; sh.setAttribute('aria-label', 'Review');

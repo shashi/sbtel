@@ -64,6 +64,20 @@ SBTEL.modes.standalone = (() => {
     return (b >>> 0).toString(16).padStart(8, '0') + (a >>> 0).toString(16).padStart(8, '0');
   }
 
+  // A hosted example may name files that sit beside it (examples/<folder>/…): the file modal fetches them
+  // from there. Only plain relative paths, so a spec cannot make the page fetch anything else.
+  function besideExample(name) {
+    const base = 'examples/' + name.replace(/[^/]*$/, '');
+    loadRef = async r => {
+      if (!/^[\w-]+(?:[./][\w-]+)*$/.test(r.file)) return null;
+      const url = base + r.file, ext = (/\.(\w+)$/.exec(r.file) || [])[1]?.toLowerCase();
+      if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return { image:true, src:url };
+      if (ext === 'pdf') return { pdf:true, src:url };
+      const res = await fetch(url); if (!res.ok) return { error:true };
+      return { text: await res.text(), src:url };
+    };
+  }
+
   // The spec the URL asks for, else an exported file's: { text, exported? } or { text:'', error, raw };
   // null for none (the sample).
   async function fromURL() {
@@ -75,7 +89,7 @@ SBTEL.modes.standalone = (() => {
     // sample would be; if it cannot be fetched, the sample is.
     const start = P.example === null ? (document.querySelector('meta[name="sbtel-example"]')?.getAttribute('content') || '').trim() : '';
     if (start && /^[\w-]+(?:\/[\w-]+)*$/.test(start)) {
-      try { const r = await fetch('examples/' + start + '.sbtel'); if (r.ok) return { text: await r.text(), start: true }; } catch (e) {}
+      try { const r = await fetch('examples/' + start + '.sbtel'); if (r.ok) { besideExample(start); return { text: await r.text(), start: true }; } } catch (e) {}
     }
     if (P.example !== null) {
       const name = dec(P.example), path = 'examples/' + name + '.sbtel';
@@ -83,6 +97,7 @@ SBTEL.modes.standalone = (() => {
       try {
         const r = await fetch(path);
         if (!r.ok) throw new Error('HTTP ' + r.status);
+        besideExample(name);
         return { text: await r.text() };
       } catch (e) { return { text: '', raw: 'example:' + name, error: `Could not load ${path} (${e.message}).` }; }
     }
@@ -96,7 +111,7 @@ SBTEL.modes.standalone = (() => {
 .brand a.home:hover { text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:3px; text-decoration-color:var(--frame-line); }
 .brand a.home:hover::after, .brand a.home:focus-visible::after { opacity:1; }
 @media (hover: none) { .brand a.home::after { opacity:.7; } }
-body.embed #brand, body.embed #help, body.embed .sheet, body.embed #expAll, body.embed #colAll, body.embed #msgBtn, body.embed #srcBtn,
+body.embed #brand, body.embed #help, body.embed .sheet, body.embed #expAll, body.embed #colAll, body.embed #srcBtn,
 body.embed #chkBtn, body.embed #sendBtn, body.embed #setBtn, body.embed .dock .sep.pl-gone { display:none !important; }
 body.embed .dock { padding:4px; border-radius:12px; bottom:10px; box-shadow:0 4px 16px var(--shadow); }
 body.embed .dock .tb { height:30px; min-width:30px; border-radius:8px; }

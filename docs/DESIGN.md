@@ -916,6 +916,13 @@ is the session's `tabs`.
   `{path: ".sbtel/files/<name>", size}`. A stdin spec answers 409.
 - `GET /s/<id>/ref?path=…` serves `.sbtel/files/<name>` (one level, no dot-file) without the spec or a
   comment naming it; every other dot-directory stays refused.
+- What `/ref` answers, by kind (v0.4.1). The JSON answer carries the text of a text file (at most 2 MiB).
+  With `raw=1` a picture (png, jpg, gif, webp), a PDF or a calendar invite (`.ics`) is sent as itself,
+  with its own type and `nosniff`; pictures and PDFs may be up to 32 MiB. HTML and SVG are never sent as
+  themselves, so a referenced file cannot run in the page's origin. The page draws them from the JSON
+  text: Markdown through its own small renderer (text escaped first, links limited to http, https and
+  mailto), HTML in an `<iframe sandbox>` without `allow-scripts` or `allow-same-origin`, SVG as an
+  `<img>`, an invite as a card. The viewer's icons are Lucide's (`viewer/icons`, ISC), inlined by the build.
 - `GET /s/<id>/open?path=…[&via=<session>]` (v0.4) opens a ref to another spec: the path must end in
   `.sbtel` and pass the tests of `/ref` (named in the spec or in a comment, inside the spec's directory, a
   regular file). The answer is `303` to the page of a session on that file: the most recently used

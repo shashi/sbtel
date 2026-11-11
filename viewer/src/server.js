@@ -137,7 +137,7 @@ SBTEL.modes.server = (() => {
     const u = String(e.data.url || ''); if (!u.startsWith(location.origin + '/s/')) return;
     showHere({ name: String(e.data.name || 'spec').slice(0, 80), url: u, file: null });
   });
-  loadRef = async r => { const q = 'ref?path=' + encodeURIComponent(r.file); const d = await getJSON(q); if (d.image) d.src = q + '&raw=1'; return d; };
+  loadRef = async r => { const q = 'ref?path=' + encodeURIComponent(r.file); const d = await getJSON(q); if (d.image || d.raw) d.src = q + '&raw=1'; return d; };
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
   // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.
   // Nothing is replaced until Reload is pressed there; Back returns to the page as it was, with the toast.
@@ -380,7 +380,7 @@ SBTEL.modes.server = (() => {
     // A Save control in the dock, before the checks pill; ⌘/Ctrl-S saves too.
     saveBtn = document.createElement('button');
     saveBtn.className = 'tb sb-save'; saveBtn.id = 'sbSave'; saveBtn.title = kb('Save to the spec file (⌘S)'); saveBtn.disabled = true;
-    saveBtn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h8l2.5 2.5v8.5h-11z"/><path d="M5 2.5v3.5h5V2.5M5 13.5V9.5h6v4"/></svg><span class="lbl">Saved</span>';
+    saveBtn.innerHTML = '@@icon save@@<span class="lbl">Saved</span>';
     saveBtn.title = kb('Save: write this text to the spec file now, without a review (⌘S)');
     saveBtn.onclick = () => save();
     $('chkBtn').before(saveBtn);

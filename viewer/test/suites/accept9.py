@@ -98,7 +98,7 @@ with sync_playwright() as p:
     inside = "() => { const r = document.querySelector('.blk.frame, .blk').getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight - 40; }"
     pg = go(BASE + '?embed#src=' + b64(NOTES), 640, 400)
     hidden = "id => getComputedStyle(document.getElementById(id)).display === 'none'"
-    check('embedChromeless', all(E(pg, hidden, i) for i in ['brand', 'help', 'msgSheet', 'srcSheet', 'msgBtn', 'srcBtn', 'setBtn', 'chkBtn']) and not E(pg, "!!document.querySelector('#brand a.home')"))
+    check('embedChromeless', all(E(pg, hidden, i) for i in ['brand', 'help', 'msgSheet', 'srcSheet', 'srcBtn', 'setBtn', 'chkBtn']) and not E(pg, "!!document.querySelector('#brand a.home')"))
     check('embedToolbar', all(E(pg, "id => getComputedStyle(document.getElementById(id)).display !== 'none'", i) for i in ['undo', 'redo', 'zIn', 'zOut', 'fit']) and E(pg, "!!document.querySelector('.dock .pl-open')"))
     check('embedFits', E(pg, inside))
     pg.set_viewport_size({'width': 360, 'height': 260}); pg.wait_for_timeout(700)

@@ -12,6 +12,13 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- **Files open as what they are.** In the file viewer a Markdown file is a page, an HTML file is shown in a
+  frame that can run no script, an SVG is a picture, a PDF opens in the browser's own reader, and a
+  calendar invite (`.ics`) is a card with the time in your zone and an **Add to calendar** button. "Show
+  source" gives the text; a ref to lines (`file.md:10-20`) opens as text with the lines marked.
+- The playground shows files that sit beside an example; the Notes example names four.
+- A web address in a comment or a reply is a link.
+- Icons are now Lucide's (ISC licence, listed in `THIRD_PARTY_NOTICES`), put in by the build (`@@icon name@@`).
 
 - **A tour.** A first visit starts a six-stop tour in place of the panel of gestures: a ring goes round
   a real thing of the diagram (a block, a level's name, a block inside a block, an ear, a block to
@@ -65,6 +72,11 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   was; the Sample button then loads it too. The project's playground uses it.
 
 ### Changed
+- The toolbar has no primary button: Review looks like the rest and shows a count when something waits in it.
+  The Shapes button is gone (the table still opens from a shape's Table action).
+- The comments button walks new replies: each press opens the thread with the latest one and it turns off
+  when none is left. `C` still lists every comment. Its dot no longer stays on after everything is read.
+- Sent and Seen are drawn ticks.
 
 - **Lines move with their blocks.** The lines between adjacent blocks, the band rules and the `+`
   buttons slide to their new places in step with the blocks. They were redrawn in place and faded out

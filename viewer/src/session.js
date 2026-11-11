@@ -15,7 +15,6 @@ function sessionComments({ version, closed }) {
   // reply that arrived while its chat was closed puts a dot on the count until the chat is opened.
   const RKEY = SBTEL.session ? 'sbtel-read:' + SBTEL.session : null;
   const unread = c => !!c.sid && (c.replies || []).length > ((C.read || {})[c.sid] || 0);
-  chatUnread = c => unread(c);
   function markUnread(root) {
     cmtCount();
     const u = new Set(state.comments.filter(unread).map(c => c.target));
@@ -107,6 +106,9 @@ function sessionComments({ version, closed }) {
     const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
     const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };
     const open0 = openChat; openChat = (key, anchor, focus) => { open0(key, anchor, focus); markRead(key); };
+    // Set here, with the rest of what a mode takes over: the page builds one of these for each mode it
+    // could be in, and only the one in use may say what is unread.
+    chatUnread = c => unread(c);
   }
   // The reviews sent in this session (from the log, and from this tab), and a listener for changes to
   // them or to the comments' threads (the Review panel's "Sent reviews").
