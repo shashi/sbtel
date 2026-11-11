@@ -22,7 +22,7 @@
 :root {
   --canvas:#EEEDE9; --dot:#D8D6CF; --surface:#FFFFFF; --frame-line:#9A968D;
   --card:#FBF4D8; --leaf:#F6F0E3; --tab:#F8F4EA; --ink:#1E1C19; --muted:#6E6A61;
-  --line:#8F8B82; --accent:#2D6BE4; --accent-soft:#DCE7FB; --warn:#D2412D; --warn-soft:#FBE3DF; --ok:#2F8A55; --ok-soft:#DDF0E4;
+  --line:#8F8B82; --accent:#2D6BE4; --accent-ink:#2253B5; --accent-soft:#DCE7FB; --warn:#D2412D; --warn-soft:#FBE3DF; --ok:#2F8A55; --ok-soft:#DDF0E4;
   --panel:#FBFBF9; --panel-line:#E2E0DA; --code-bg:#FBFAF6; --shadow:rgba(30,28,25,.16); --chip:#F3F1EC;
   --beh:#E8F0FB; --appx:#FAF9F6; --sk-hover:rgba(30,28,25,.06);
   --m1:#EE7543; --m2:#4CB963; --m3:#2E6FEA; --m4:#9B5DE5; --m5:#13A3A3; --m6:#E4508C;
@@ -36,7 +36,7 @@
   --ty-l:.8; --ty-c:.12; --ty-wash:14%;
   --canvas:#151617; --dot:#26282A; --surface:#1F2022; --frame-line:#6E6B65;
   --card:#38321F; --leaf:#2C2925; --tab:#2A2722; --ink:#ECEAE5; --muted:#A29E95;
-  --line:#8A867E; --accent:#79A2FF; --accent-soft:#22324F; --warn:#FF6B57; --warn-soft:#3D221E; --ok:#55C383; --ok-soft:#1D3326;
+  --line:#8A867E; --accent:#79A2FF; --accent-ink:#9DBBFF; --accent-soft:#22324F; --warn:#FF6B57; --warn-soft:#3D221E; --ok:#55C383; --ok-soft:#1D3326;
   --panel:#1B1C1D; --panel-line:#2E3032; --code-bg:#18191A; --shadow:rgba(0,0,0,.5); --chip:#2A2B2D;
   --beh:#1F2B3D; --appx:#1C1D1F; --sk-hover:rgba(236,234,229,.08);
   --pill-module-bg:#2F7A48; --pill-module-fg:#E9F7EE; --pill-process-bg:#5A2747; --pill-process-fg:#F6C8E2;
@@ -48,7 +48,7 @@
   --ty-l:.8; --ty-c:.12; --ty-wash:14%;
   --canvas:#151617; --dot:#26282A; --surface:#1F2022; --frame-line:#6E6B65;
   --card:#38321F; --leaf:#2C2925; --tab:#2A2722; --ink:#ECEAE5; --muted:#A29E95;
-  --line:#8A867E; --accent:#79A2FF; --accent-soft:#22324F; --warn:#FF6B57; --warn-soft:#3D221E; --ok:#55C383; --ok-soft:#1D3326;
+  --line:#8A867E; --accent:#79A2FF; --accent-ink:#9DBBFF; --accent-soft:#22324F; --warn:#FF6B57; --warn-soft:#3D221E; --ok:#55C383; --ok-soft:#1D3326;
   --panel:#1B1C1D; --panel-line:#2E3032; --code-bg:#18191A; --shadow:rgba(0,0,0,.5); --chip:#2A2B2D;
   --beh:#1F2B3D; --appx:#1C1D1F; --sk-hover:rgba(236,234,229,.08);
   --pill-module-bg:#2F7A48; --pill-module-fg:#E9F7EE; --pill-process-bg:#5A2747; --pill-process-fg:#F6C8E2;
@@ -601,7 +601,7 @@ body.diffmode .help .norm { display:none; }
 .thread { list-style:none; margin:0; padding:2px 16px 4px; flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; }
 .thread li { padding:11px 0 12px; border-top:1px solid var(--panel-line); }
 .thread li:first-child { border-top:0; }
-.sb-reply.unread .who::after { content:"new"; margin-left:7px; padding:0 6px; border-radius:7px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:600; }
+.sb-reply.unread .who::after { content:"new"; display:inline-block; margin-left:7px; padding:0 6px 1px; height:14px; line-height:14px; box-sizing:content-box; border-radius:8px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:600; vertical-align:1px; }
 .thread li.none { color:var(--muted); font-size:13.5px; padding:12px 0 8px; }
 .thread .ct { white-space:pre-wrap; overflow-wrap:anywhere; }
 .thread .cm { display:flex; align-items:center; gap:7px; margin-top:3px; font-size:12px; color:var(--muted); min-height:20px; }
@@ -630,6 +630,7 @@ body.diffmode .help .norm { display:none; }
 .walkm input { margin:3px 0 0; accent-color:var(--accent); flex:none; } .walkm b { display:block; font-weight:600; } .walkm small { display:block; color:var(--muted); font-size:12.5px; line-height:1.35; }
 .walkm fieldset { border:0; margin:0; padding:0; } .walkm .tip { margin:6px 8px 4px; padding-top:8px; border-top:1px solid var(--panel-line); font-size:12.5px; line-height:1.4; color:var(--muted); } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
 .pop.chat ul.thread li.agent > .sb-reply:first-child { margin-top:0; }
+.sb-reply .who svg.i { width:14px; height:14px; margin-right:5px; vertical-align:-2.5px; }
 .pop.chat .chh .in { flex:none; font-size:12.5px; color:var(--muted); }
 .pop.chat .chh .xbtn.big { margin-left:auto; } .pop.chat .chh .xbtn.big + .xbtn { margin-left:0; } .pop.chat .chh .xbtn.big svg.i { width:14px; height:14px; }
 .pop.chat.big { left:50% !important; top:4vh !important; right:auto !important; bottom:auto !important; transform:translateX(-50%); width:min(780px, calc(100vw - 32px)); height:92vh; max-height:none; z-index:2002; font-size:16px; line-height:1.62; border-radius:16px; }
@@ -776,6 +777,8 @@ body.diffmode .help .norm { display:none; }
     <div class="opts"><label><input type="radio" name="childDots" value="all"><span>Its own and its children's</span></label><label><input type="radio" name="childDots" value="own"><span>Its own only</span></label></div></div>
   <div class="rule"><div class="lbl">Canvas width</div>
     <div class="range"><input type="range" id="cw" min="560" max="2000" step="20"><output id="cwv"></output></div></div>
+  <div class="rule"><div class="lbl">Agent's name</div>
+    <input type="text" id="an" class="txt" maxlength="40" placeholder="Agent" spellcheck="false" autocomplete="off" aria-label="What the agent is called in comments"></div>
   <div class="rule"><div class="lbl">Font</div>
     <div class="row2f"><input type="text" id="uf" class="txt" list="ufl" placeholder="A font installed on this computer, such as Inter" spellcheck="false" autocomplete="off" aria-label="Font for names and text" aria-describedby="ufh"><button type="button" class="btn" id="ufAll" hidden>List all</button></div>
     <datalist id="ufl"></datalist>
@@ -2461,6 +2464,9 @@ const ctx2d = document.createElement('canvas').getContext('2d');
 // the built-in one, in the CSS (--ff-ui) and here, so the layout is measured in the font that is drawn.
 const UI_STACK = '"Commissioner", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
 const fontName = v => String(v || '').replace(/["'\\;{}<>]/g, '').trim().slice(0, 80);
+// What the agent is called in a thread (Settings, Agent's name): "Agent" unless the reader names it.
+let agentLabel = 'Agent';   // applyTheme sets it from the reader's settings
+const agentName = () => agentLabel;
 let uiFont = '';
 const KNOWN_FONTS = ['Inter', 'Instrument Sans', 'Commissioner', 'Source Sans 3', 'Source Serif 4', 'Literata', 'Newsreader', 'IBM Plex Sans', 'IBM Plex Serif', 'Geist', 'Figtree', 'Atkinson Hyperlegible', 'Public Sans', 'Work Sans', 'DM Sans', 'Manrope', 'Lato', 'Open Sans', 'Roboto', 'Noto Sans', 'Noto Serif', 'Merriweather', 'Lora', 'Crimson Pro', 'EB Garamond',
   'SF Pro Text', 'New York', 'Helvetica Neue', 'Avenir Next', 'Avenir', 'Optima', 'Gill Sans', 'Futura', 'Charter', 'Iowan Old Style', 'Palatino', 'Georgia', 'Segoe UI', 'Calibri', 'Cambria', 'Verdana', 'Tahoma', 'Trebuchet MS', 'Arial', 'Times New Roman', 'Ubuntu', 'Cantarell', 'DejaVu Sans', 'DejaVu Serif', 'Liberation Sans', 'Liberation Serif'];
@@ -2516,6 +2522,7 @@ const ICON = {
   cut:'<svg class="i" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>',
   trash:'<svg class="i" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
   go:'<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+  agent:'<svg class="i" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>',
   grow:'<svg class="i" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/></svg>',
   shrink:'<svg class="i" viewBox="0 0 24 24"><path d="m14 10 7-7"/><path d="M20 10h-6V4"/><path d="m3 21 7-7"/><path d="M4 14h6v6"/></svg>',
   close:'<svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
@@ -4512,7 +4519,7 @@ function openAllComments() {
   const by = new Map();
   for (const c of state.comments) { let t = by.get(c.target); if (!t) by.set(c.target, t = { key:c.target, list:[], unread:false, at:0 }); t.list.push(c); t.unread = t.unread || chatUnread(c); t.at = Math.max(t.at, c.at || 0, ...(c.replies || []).map(r => +r.at || 0)); }
   const rows = [...by.values()].sort((a, b) => (b.unread - a.unread) || (b.at - a.at));
-  const last = t => { const c = t.list[t.list.length - 1], r = (c.replies || [])[(c.replies || []).length - 1]; const plain = s => esc(String(s).replace(/\(ref\s+"?([^\s()"]+)"?\)/g, '$1')); return r ? `<b>Agent</b> ${plain(r.text)}` : plain(c.text); };
+  const last = t => { const c = t.list[t.list.length - 1], r = (c.replies || [])[(c.replies || []).length - 1]; const plain = s => esc(String(s).replace(/\(ref\s+"?([^\s()"]+)"?\)/g, '$1')); return r ? `<b>${esc(agentName())}</b> ${plain(r.text)}` : plain(c.text); };
   const m = modal('Comments', rows.length ? `<ul class="allc">${rows.map(t => `<li><button type="button" data-key="${esc(t.key)}" class="${t.unread ? 'unread' : ''}"><span class="on">${esc(targetLabel(t.key))}</span><span class="n">${t.list.length + t.list.reduce((s, c) => s + (c.replies || []).length, 0)}</span><span class="last">${last(t)}</span></button></li>`).join('')}</ul>` : '<p class="hint2">No comments yet. ⌘/Ctrl-click a block, or select it and press C, to write one.</p>');
   m.classList.add('allcm');
   m.addEventListener('click', e => {
@@ -4624,6 +4631,7 @@ $('setBtn').onclick = () => {
   cw.addEventListener('input', () => { state.opts.width = +cw.value; cwv.textContent = cw.value; persist(); const a = state.opts.animate; state.opts.animate = false; render(); state.opts.animate = a; });
   const cr = m.querySelector('#cr'), crv = m.querySelector('#crv'), rNow = () => state.opts.radius ?? 12; cr.value = rNow(); crv.textContent = rNow();
   cr.addEventListener('input', () => { state.opts.radius = +cr.value; crv.textContent = cr.value; persist(); applyTheme(); });
+  const agn = m.querySelector('#an'); agn.value = state.opts.agent || ''; agn.addEventListener('input', () => { state.opts.agent = agn.value.trim(); persist(); applyTheme(); redraw(); });
   const uf = m.querySelector('#uf'), ufh = m.querySelector('#ufh');
   const ufSay = () => { const n = fontName(uf.value); ufh.textContent = !n ? 'Empty uses the built-in font. Code keeps its own.' : fontThere(n) ? `Using ${n}.` : `No font named ${n} on this computer, so the built-in one is used. Install it, then type its name as your system lists it.`; };
   uf.value = state.opts.font || ''; ufSay();
@@ -4754,6 +4762,7 @@ function applyTheme() {
   const root = document.documentElement;
   if (state.opts.theme === 'system') delete root.dataset.theme; else root.dataset.theme = state.opts.theme;
   uiFont = fontName(state.opts.font);
+  agentLabel = String(state.opts.agent || '').trim().slice(0, 40) || 'Agent';
   if (uiFont) root.style.setProperty('--ff-ui', `"${uiFont}", ${UI_STACK}`); else root.style.removeProperty('--ff-ui');
   if (state.opts.radius == null || state.opts.radius === 12) root.style.removeProperty('--r'); else root.style.setProperty('--r', Math.max(0, Math.min(24, +state.opts.radius || 0)) + 'px');
 }
@@ -5355,9 +5364,9 @@ function sessionComments({ version, closed }) {
     // The chat's rows: a sent comment says how it went, cannot be deleted, and carries the agent's replies.
     const status0 = chatStatus, btns0 = chatRowBtns;
     // Sent: the server has it. Seen: `sbtel inbox` has handed it to the agent (the server says which, setSeen).
-    chatStatus = c => c.status === 'sent' ? (C.seen.has(c.sid) ? ['st-seen', 'Seen by the agent', (c.review ? 'Sent in review ' + c.review + '. ' : '') + 'The agent has been given this comment'] : ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent', 'The agent has not read its inbox since']) : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
+    chatStatus = c => c.status === 'sent' ? (C.seen.has(c.sid) ? ['st-seen', agentName() !== 'Agent' ? 'Seen by ' + agentName() : 'Seen by the agent', (c.review ? 'Sent in review ' + c.review + '. ' : '') + 'The agent has been given this comment'] : ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent', 'The agent has not read its inbox since']) : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
     chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
-    chatReplies = c => (c.replies || []).map((r, i) => `<div class="sb-reply${C.read && i >= (C.read[c.sid] || 0) ? ' unread' : ''}"><span class="who">Agent${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
+    chatReplies = c => (c.replies || []).map((r, i) => `<div class="sb-reply${C.read && i >= (C.read[c.sid] || 0) ? ' unread' : ''}"><span class="who">${ICON.agent}${esc(agentName())}${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
     // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
     const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
     const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };
