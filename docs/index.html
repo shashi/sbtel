@@ -184,7 +184,7 @@ store.save(note, saved =&gt; editor.markSaved(saved));</pre></div>
 </ul>
 <p>Here Editor saves through <code>Repo</code>, DiskStore and MemoryStore implement it, and Shell builds a store and hands it to the editor:</p>
 <figure class="demo" id="demo-notes-repo">
-    <div class="embed ar" style="--h:360px;--ar:597/1050;--nh:1050px;--hmax:720px;--arp:584/1050;--nhp:1050px">
+    <div class="embed ar" style="--h:360px;--ar:597/1044;--nh:1044px;--hmax:720px;--arp:584/1044;--nhp:1044px">
       <iframe data-src="../play/?embed#example=notes-repo" title="Live diagram of notes-repo.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-repo">Open notes-repo.sbtel in the playground</a></noscript>
@@ -211,7 +211,7 @@ Editor -&gt; Repo      <span class="hl-com"> # src/editor.ts:7  this.repo.save(n
 <p>This covers both directions an interface can point. A higher level can define an interface that a lower one implements, as with this <code>Repo</code>, which the domain needs and storage provides. And a lower level can define one that a higher level implements: a plugin host that calls the plugins it is given, or a framework that calls your code.</p>
 <p>An abstract class that holds shared code as well as abstract methods is two things braided together. Split it into a behavior, for the abstract methods, and a block in a lower level that holds the shared code:</p>
 <figure class="demo" id="demo-notes-split">
-    <div class="embed ar" style="--h:360px;--ar:597/858;--nh:858px;--hmax:720px;--arp:584/858;--nhp:858px">
+    <div class="embed ar" style="--h:360px;--ar:597/852;--nh:852px;--hmax:720px;--arp:584/852;--nhp:852px">
       <iframe data-src="../play/?embed#example=notes-split" title="Live diagram of notes-split.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=notes-split">Open notes-split.sbtel in the playground</a></noscript>
@@ -239,7 +239,7 @@ Editor -&gt; Repo      <span class="hl-com"> # src/editor.ts:7  this.repo.save(n
   def handle_info(:tick, n), do: {:noreply, n + 1} <span class="hl-com"># (takes Tick)</span>
 end</pre></div>
 <figure class="demo" id="demo-elixir-clock">
-    <div class="embed ar" style="--h:360px;--ar:597/1082;--nh:1082px;--hmax:720px;--arp:584/1082;--nhp:1082px">
+    <div class="embed ar" style="--h:360px;--ar:607/1076;--nh:1076px;--hmax:720px;--arp:584/1076;--nhp:1076px">
       <iframe data-src="../play/?embed#example=elixir-clock" title="Live diagram of elixir-clock.sbtel" loading="lazy" hidden></iframe>
       <button type="button" class="poster" data-load><span>Load the live diagram</span></button>
       <noscript><a class="poster" href="../play/#example=elixir-clock">Open elixir-clock.sbtel in the playground</a></noscript>
