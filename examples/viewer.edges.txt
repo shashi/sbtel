@@ -82,7 +82,7 @@ App.Canvas -> App.EditDialog  # viewer/src/index.html:1659 (+1 more)
 App.Canvas -> App.Code  # viewer/src/index.html:1660
 App.Canvas -> App.Messages  # viewer/src/index.html:1664
 App.Input -> Core.Model  # viewer/src/index.html:1759 (+4 more)
-App.Input -> App.Kit  # viewer/src/index.html:1760 (+31 more)
+App.Input -> App.Kit  # viewer/src/index.html:1760 (+32 more)
 App.Input -> Core.Layout  # viewer/src/index.html:1760 (+3 more)
 App.Input -> Core.Edits  # viewer/src/index.html:1766 (+11 more)
 App.Input -> Core.Lint  # viewer/src/index.html:1774
@@ -145,17 +145,17 @@ App.Files -> Core.Model  # viewer/src/index.html:2980 (+1 more)
 App.Files -> App.Document  # viewer/src/index.html:2993 (+9 more)
 App.Code -> App.Document  # viewer/src/index.html:3092 (+1 more)
 App.Code -> Core.Edits  # viewer/src/index.html:3093
-App.Input -> App.Modals  # viewer/src/index.html:3206 (+1 more)
-Viewer.Boot -> Core.Constants  # viewer/src/index.html:3254
-Viewer.Boot -> Viewer.Mode  # viewer/src/index.html:3255 (+1 more)
-Viewer.Boot -> App.Document  # viewer/src/index.html:3256 (+1 more)
-Viewer.Boot -> Viewer.Sample  # viewer/src/index.html:3256
-Viewer.Boot -> App.Camera  # viewer/src/index.html:3257
-Viewer.Boot -> App.Comments  # viewer/src/index.html:3258
-Viewer.Boot -> App.Kit  # viewer/src/index.html:3261 (+2 more)
-Viewer.Boot -> App.Files  # viewer/src/index.html:3262
-Viewer.Boot -> App.Page  # viewer/src/index.html:3262 (+1 more)
-Viewer.Boot -> App.Input  # viewer/src/index.html:3263
+App.Input -> App.Modals  # viewer/src/index.html:3208 (+1 more)
+Viewer.Boot -> Core.Constants  # viewer/src/index.html:3256
+Viewer.Boot -> Viewer.Mode  # viewer/src/index.html:3257 (+1 more)
+Viewer.Boot -> App.Document  # viewer/src/index.html:3258 (+1 more)
+Viewer.Boot -> Viewer.Sample  # viewer/src/index.html:3258
+Viewer.Boot -> App.Camera  # viewer/src/index.html:3259
+Viewer.Boot -> App.Comments  # viewer/src/index.html:3260
+Viewer.Boot -> App.Files  # viewer/src/index.html:3265
+Viewer.Boot -> App.Kit  # viewer/src/index.html:3265 (+2 more)
+Viewer.Boot -> App.Page  # viewer/src/index.html:3265 (+1 more)
+Viewer.Boot -> App.Input  # viewer/src/index.html:3267
 Viewer.Session -> Viewer.Mode  # viewer/src/session.js:16 (+1 more)
 Viewer.Session -> App.Comments  # viewer/src/session.js:18 (+17 more)
 Viewer.Session -> App.Document  # viewer/src/session.js:21 (+5 more)

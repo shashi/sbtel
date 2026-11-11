@@ -18,6 +18,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   comment on) and a card says one thing about it; the last stop opens the Source panel, the text an
   agent reads. Next, Back, the arrow keys, Escape. A stop the diagram has nothing for is passed over.
   The `?` button opens "Take the tour" and the gestures, now under Move around, Edit and Comment.
+  The browser remembers the stop reached: a tour left halfway picks up there on the next visit, and
+  one finished or skipped does not come back by itself.
 - **Sent and Seen.** A sent comment shows one tick and "Sent"; when `sbtel inbox` has handed it to the
   agent it shows two and "Seen by the agent", with nothing for the agent to do. `inbox --peek` does not
   count. A comment made in a spec opened over another page is seen when that page's agent reads it.
