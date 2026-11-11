@@ -85,8 +85,9 @@ function sessionComments({ version, closed }) {
     const c = state.comments.find(x => x.sid === d.to);
     if (!c) return;
     (c.replies = c.replies || []).push({ text: d.text, at: Date.parse(d.at) || Date.now() });
-    if (chatOpen(c.target)) markRead(c.target); // it is being read now
-    render(); refreshChat(); markUnread(); changed(); // explicitly: diff mode draws with its own render
+    render(); refreshChat(); // explicitly: diff mode draws with its own render
+    if (chatOpen(c.target)) markRead(c.target); // it is being read now: shown from its start, marked new this once
+    markUnread(); changed();
     if (!chatOpen(c.target)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
   }
   // The app hooks (§6.5). Call once, from the mode's boot().
@@ -101,7 +102,7 @@ function sessionComments({ version, closed }) {
     // Sent: the server has it. Seen: `sbtel inbox` has handed it to the agent (the server says which, setSeen).
     chatStatus = c => c.status === 'sent' ? (C.seen.has(c.sid) ? ['st-seen', 'Seen by the agent', (c.review ? 'Sent in review ' + c.review + '. ' : '') + 'The agent has been given this comment'] : ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent', 'The agent has not read its inbox since']) : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
     chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
-    chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
+    chatReplies = c => (c.replies || []).map((r, i) => `<div class="sb-reply${C.read && i >= (C.read[c.sid] || 0) ? ' unread' : ''}"><span class="who">Agent${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
     // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
     const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
     const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };

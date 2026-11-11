@@ -68,6 +68,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .modal, .codep, .sheet, .pop, textarea, input { -webkit-user-select:text; user-select:text; }
 .world { position:absolute; left:0; top:0; transform-origin:0 0; }
 .world.anim { transition: transform .32s cubic-bezier(.3,.7,.2,1); }
+.viewport.camanim { transition: background-position .32s cubic-bezier(.3,.7,.2,1), background-size .32s cubic-bezier(.3,.7,.2,1); }
 .world.pv .blk { transition: transform .22s cubic-bezier(.3,.7,.2,1), width .22s cubic-bezier(.3,.7,.2,1), height .22s cubic-bezier(.3,.7,.2,1); }
 .world.anim .blk { transition: transform .32s cubic-bezier(.3,.7,.2,1), width .32s cubic-bezier(.3,.7,.2,1), height .32s cubic-bezier(.3,.7,.2,1); }
 .lines { position:absolute; left:0; top:0; overflow:visible; z-index:400; pointer-events:none; transition: opacity .18s ease; }
@@ -551,6 +552,7 @@ body.diffmode .help .norm { display:none; }
 .thread { list-style:none; margin:0; padding:2px 16px 4px; flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; }
 .thread li { padding:11px 0 12px; border-top:1px solid var(--panel-line); }
 .thread li:first-child { border-top:0; }
+.sb-reply.unread .who::after { content:"new"; margin-left:7px; padding:0 6px; border-radius:7px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:600; }
 .thread li.none { color:var(--muted); font-size:13.5px; padding:12px 0 8px; }
 .thread .ct { white-space:pre-wrap; overflow-wrap:anywhere; }
 .thread .cm { display:flex; align-items:center; gap:7px; margin-top:3px; font-size:12px; color:var(--muted); min-height:20px; }
@@ -1404,12 +1406,15 @@ function toggleDetails(id) { if (state.details.has(id)) state.details.delete(id)
 // @sbtel begin App.Camera
 // ---------- Camera ----------
 const vp = $('vp');
-function applyCam() { $('world').style.transform = `translate(${state.cam.x}px,${state.cam.y}px) scale(${state.cam.k})`; $('zv').textContent = Math.round(state.cam.k * 100) + '%'; placeStrip(); placeCallout(); }
+// The dotted ground belongs to the canvas: it moves and scales with the camera, so a pan moves everything
+// together. Its dots keep at least 14px apart (the spacing doubles as the view zooms out).
+function applyGround() { let s = 22 * state.cam.k; while (s < 14) s *= 2; vp.style.backgroundSize = `${s}px ${s}px`; vp.style.backgroundPosition = `${state.cam.x}px ${state.cam.y}px`; }
+function applyCam() { applyGround(); $('world').style.transform = `translate(${state.cam.x}px,${state.cam.y}px) scale(${state.cam.k})`; $('zv').textContent = Math.round(state.cam.k * 100) + '%'; placeStrip(); placeCallout(); }
 function zoomAt(f, cx, cy) {
   const k = Math.min(2.5, Math.max(.12, state.cam.k * f)); const r = k / state.cam.k;
   state.cam.x = cx - (cx - state.cam.x) * r; state.cam.y = cy - (cy - state.cam.y) * r; state.cam.k = k; applyCam();
 }
-function animCam() { $('world').classList.add('anim'); setTimeout(() => { $('world').classList.remove('anim'); placeStrip(); }, 340); }
+function animCam() { $('world').classList.add('anim'); vp.classList.add('camanim'); setTimeout(() => { $('world').classList.remove('anim'); vp.classList.remove('camanim'); placeStrip(); }, 340); }
 // The room fit leaves for the floating chrome: the brand chip above, the dock below (embed mode has less).
 const fitPad = { top:70, bottom:80, side:48 };
 function fit(animate) {
@@ -2635,9 +2640,15 @@ const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || ch
 function refreshChat() {
   if (!chatOpen()) { chat = null; return; }
   const el = chat.el, ul = el.querySelector('ul.thread'), list = state.comments.filter(c => c.target === chat.key);
+  // Where the reader is stays put unless the thread itself changed. Then it shows the start of the first
+  // reply not yet read, or failing one, the end.
+  const sig = list.map(c => c.id + ':' + c.status + ':' + (c.replies || []).length).join('|'), was = ul.scrollTop, same = chat.sig === sig;
   ul.innerHTML = list.map(chatRow).join('') || '<li class="none">No comments here yet.</li>';
   placeBeside(el, chat.anchor);
-  ul.scrollTop = ul.scrollHeight;
+  chat.sig = sig;
+  if (same) { ul.scrollTop = was; return; }
+  const fresh = ul.querySelector('.sb-reply.unread');
+  ul.scrollTop = fresh ? Math.max(0, fresh.getBoundingClientRect().top - ul.getBoundingClientRect().top + ul.scrollTop - 10) : ul.scrollHeight;
 }
 function openChat(key, anchor, focus) {
   closePop('info');

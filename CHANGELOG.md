@@ -94,6 +94,11 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 - **Inline editors have a Save button**, and the save key is the same in every field: Ctrl/⌘-Enter. The
   port editor said "Enter saves", which was false in its sketch. Its direction buttons read "takes" and
   "gives".
+- **The dotted ground moves with the canvas.** It pans and zooms with everything else, where it stood
+  still behind a moving diagram.
+- **A thread opens at what is new.** Opening comments that have an unread reply shows the start of the
+  first unread reply, marked "new", where it showed the end of the thread. A redraw no longer moves you
+  from where you were reading.
 - **Comments are notes beside the block.** The callout stands beside what it is about, with a tail
   pointing at it, and no longer covers it; it keeps clear of the toolbar. A thread reads as text: your
   comment, what became of it in small type, the agent's answer set in from a rule. One field holds the
