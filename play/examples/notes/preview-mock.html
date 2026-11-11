@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Split view mock</title>
+<style>
+  body { margin: 0; font: 15px/1.55 system-ui, sans-serif; color: #1d2330; background: #f3f1ec; }
+  .bar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #dcd8cf; }
+  .bar b { font-size: 14px; } .bar span { margin-left: auto; font-size: 12.5px; color: #6b7280; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; min-height: calc(100vh - 43px); }
+  .pane { padding: 22px 26px; } .pane + .pane { background: #fff; border-left: 1px solid #dcd8cf; }
+  pre { margin: 0; font: 13.5px/1.7 ui-monospace, Menlo, monospace; white-space: pre-wrap; color: #374151; }
+  mark { background: #fde9a8; border-radius: 3px; }
+  h1 { font-size: 24px; margin: 0 0 10px; letter-spacing: -.01em; } ul { list-style: none; padding-left: 13px; } li { margin: 3px 0; }
+  .here { box-shadow: -3px 0 0 #2f6fed; padding-left: 10px; margin-left: -13px; }
+  @media (max-width: 560px) { .split { grid-template-columns: 1fr; } .pane + .pane { border-left: 0; border-top: 1px solid #dcd8cf; } }
+</style>
+<div class="bar"><b>Groceries.md</b><span>Saved a moment ago</span></div>
+<div class="split">
+  <div class="pane"><pre># Groceries
+
+For Saturday's dinner.
+
+<mark>- [ ] lemons, four</mark>
+- [x] olive oil
+- [ ] a loaf from the corner bakery</pre></div>
+  <div class="pane">
+    <h1>Groceries</h1>
+    <p>For Saturday's dinner.</p>
+    <ul>
+      <li class="here">☐ lemons, four</li>
+      <li>☑ olive oil</li>
+      <li>☐ a loaf from the corner bakery</li>
+    </ul>
+  </div>
+</div>
+</html>

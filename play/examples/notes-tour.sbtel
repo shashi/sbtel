@@ -5,12 +5,15 @@
   (shape Edit (carries Note) (~ A change to one note. ~))
   (shape NoteSaved (carries Note) (~ A note reached the disk. ~))
   (level :name "The app"
-    (block Shell :type "module" (~ Wires the parts together. ~)))
+    (block Shell :type "module" (~ Wires the parts together. ~)
+      (ref notes/design-review.ics (~ The review of the sync design. ~))))
   (level :name "Notes as text"
     (adjacent (~ The preview scrolls with the editor, line for line. ~)
       (block Editor :type "module" (gives Edit) (takes NoteSaved) (~ The text area. ~))
-      (block Preview :type "module" (~ Renders the note beside the editor. ~)))
-    (block Sync :type "service" (gives Edit) (takes NoteSaved) (~ Exchanges edits with the cloud copy. ~))
+      (block Preview :type "module" (~ Renders the note beside the editor. ~)
+        (ref notes/preview-mock.html (~ A mock of the split view. ~))))
+    (block Sync :type "service" (gives Edit) (takes NoteSaved) (~ Exchanges edits with the cloud copy. ~)
+      (ref notes/sync-design.md (~ How two copies of a note agree. ~)))
     (block Search :type "module" (~ Finds notes by their words. ~)))
   (level :name "Stored notes"
     (~ Notes as values on disk. Nothing here knows about editing. ~)
@@ -20,6 +23,7 @@
         (block save :type "function" (~ Writes one note. ~))
         (block load :type "function" (~ Reads one note by its title. ~)))
       (level :name "Files"
-        (block AtomicWrite :type "function" (~ Write beside, then rename. ~))))
+        (block AtomicWrite :type "function" (~ Write beside, then rename. ~)
+          (ref notes/atomic-write.svg (~ The two steps, drawn. ~)))))
     (block Markdown :type "module" (~ Turns text into a document tree. ~))
     (block Index :type "module" (~ Maps words to notes. ~))))

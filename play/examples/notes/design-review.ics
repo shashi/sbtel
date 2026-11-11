@@ -1,0 +1,18 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//sbtel//playground example//EN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:sync-design-review@sbtel.example
+DTSTAMP:20261110T200000Z
+DTSTART;TZID=America/Los_Angeles:20261119T100000
+DTEND;TZID=America/Los_Angeles:20261119T103000
+SUMMARY:Sync design review
+LOCATION:Video call
+DESCRIPTION:Walk through notes/sync-design.md and settle the open questions:\n how long history is kept\, and what the editor shows during a pull.
+ORGANIZER;CN=Ada:mailto:ada@example.com
+ATTENDEE;CN=Ada:mailto:ada@example.com
+ATTENDEE;CN=Grace:mailto:grace@example.com
+ATTENDEE;CN=Your agent:mailto:agent@example.com
+END:VEVENT
+END:VCALENDAR

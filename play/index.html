@@ -61,7 +61,7 @@ html, body { height:100%; }
 body { background:var(--canvas); color:var(--ink); font-family:var(--ff-ui); overflow:hidden; }
 button { font:inherit; color:inherit; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
 
 /* ---------- Canvas ---------- */
 .viewport { position:fixed; inset:0; overflow:hidden; cursor:grab; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
@@ -286,6 +286,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .refc.spec { background:var(--accent-soft); }
 .refb.unread::after { content:""; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
 .refc svg.i { width:11px; height:11px; }
+.pop a[target="_blank"] { color:var(--accent-ink); text-underline-offset:2px; overflow-wrap:anywhere; }
+.dgo svg.i, .cbub svg.i, .refb svg.i, .refc svg.i { stroke-width:2.5; }
 /* The file modal. It closes with its Close button or Escape, never by a click outside it. */
 .codep.refp { display:flex; flex-direction:column; left:50%; top:5vh; transform:translateX(-50%); width:min(920px, calc(100vw - 24px)); height:90vh; }
 .refp .reflist { display:flex; flex-wrap:wrap; gap:6px; padding:10px 14px 0 18px; }
@@ -299,6 +301,37 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .refp pre.reft span.l { display:block; padding:0 18px 0 0; counter-increment:ln; white-space:pre; }
 .refp pre.reft span.l::before { content:counter(ln); display:inline-block; width:4.5ch; margin-right:14px; text-align:right; color:var(--muted); opacity:.7; user-select:none; }
 .refp pre.reft span.l.hl { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
+.refp header a.btn { display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
+.refp .refbody.page { overflow:hidden; display:flex; }
+.refp iframe.reff { flex:1; width:100%; height:100%; border:0; background:#fff; }
+.refp .md { max-width:70ch; padding:22px 28px 40px; font-size:15px; line-height:1.6; color:var(--ink); overflow-wrap:break-word; }
+.refp .md > :first-child { margin-top:0; }
+.refp .md h1, .refp .md h2, .refp .md h3, .refp .md h4, .refp .md h5, .refp .md h6 { margin:1.5em 0 .45em; line-height:1.25; font-weight:650; letter-spacing:-.005em; }
+.refp .md h1 { font-size:1.7em; letter-spacing:-.015em; } .refp .md h2 { font-size:1.3em; } .refp .md h3 { font-size:1.1em; } .refp .md h4, .refp .md h5, .refp .md h6 { font-size:1em; }
+.refp .md p, .refp .refbody .md p { margin:0 0 .85em; padding:0; font-size:inherit; color:inherit; }
+.refp .md ul, .refp .md ol { margin:0 0 .85em; padding-left:1.5em; } .refp .md li { margin:.2em 0; } .refp .md li > ul, .refp .md li > ol { margin:.2em 0 0; }
+.refp .md li.task { list-style:none; margin-left:-1.35em; } .refp .md li.task input { margin:0 .35em 0 0; vertical-align:-1px; accent-color:var(--accent); }
+.refp .md a, .refp .cal a:not(.btn) { color:var(--accent-ink); text-underline-offset:2px; }
+.refp .md code { font-family:var(--ff-mono); font-size:.88em; background:var(--surface); border:1px solid var(--panel-line); border-radius:5px; padding:.08em .35em; }
+.refp .md pre { margin:0 0 1em; padding:12px 14px; overflow:auto; background:var(--surface); border:1px solid var(--panel-line); border-radius:9px; line-height:1.5; }
+.refp .md pre code { background:none; border:0; padding:0; font-size:13px; }
+.refp .md blockquote { margin:0 0 .85em; padding:.1em 0 .1em 14px; border-left:3px solid var(--frame-line); color:var(--ink-2); } .refp .md blockquote > :last-child { margin-bottom:0; }
+.refp .md hr { border:0; border-top:1px solid var(--panel-line); margin:1.6em 0; }
+.refp .md .mdt { overflow:auto; margin:0 0 1em; } .refp .md table { border-collapse:collapse; font-size:.93em; }
+.refp .md th, .refp .md td { padding:6px 12px 6px 0; border-bottom:1px solid var(--panel-line); text-align:left; vertical-align:top; } .refp .md th { font-weight:650; border-bottom-color:var(--frame-line); }
+.refp .md .mdpic { color:var(--muted); font-style:italic; }
+.refp .cal { padding:22px 22px 30px; max-width:620px; }
+.refp .calev { display:flex; gap:18px; padding:0 0 22px; } .refp .calev + .calev { padding-top:22px; border-top:1px solid var(--panel-line); }
+.refp .caltile { flex:none; width:64px; height:72px; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:12px; background:var(--surface); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1; overflow:hidden; }
+.refp .caltile b { font-size:11.5px; font-weight:650; color:var(--accent-ink); } .refp .caltile i { font-style:normal; font-size:27px; font-weight:650; margin:3px 0 2px; font-variant-numeric:tabular-nums; } .refp .caltile span { font-size:11px; color:var(--muted); }
+.refp .calmain { min-width:0; flex:1; } .refp .calmain h3 { margin:2px 0 10px; font-size:19px; line-height:1.25; font-weight:650; letter-spacing:-.01em; }
+.refp .calev.off h3 { text-decoration:line-through; color:var(--muted); }
+.refp .calmain ul { list-style:none; margin:0; padding:0; } .refp .calmain li { display:flex; gap:10px; margin:0 0 8px; font-size:14.5px; line-height:1.45; color:var(--ink-2); } .refp .calmain li svg.i { margin-top:2px; color:var(--muted); }
+.refp .calmain li em { font-style:normal; color:var(--muted); }
+.refp .refbody .calnote, .refp .refbody .calnotes { padding:0; margin:10px 0 0; font-size:14.5px; line-height:1.5; overflow-wrap:anywhere; } .refp .refbody .calnote { margin:-4px 0 10px; color:var(--warn); font-weight:600; }
+.refp .refbody .calact { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:0; margin:0 0 0 82px; font-size:13px; color:var(--muted); }
+.refp .calact a.btn { display:inline-flex; align-items:center; gap:7px; text-decoration:none; }
+@media (max-width: 520px) { .refp .md { padding:16px 16px 32px; } .refp .cal { padding:16px; } .refp .calev { gap:12px; } .refp .refbody .calact { margin-left:0; } .refp .caltile { width:54px; height:64px; } }
 
 .hdl { position:absolute; width:16px; height:16px; margin:-8px 0 0 -8px; box-sizing:border-box; border-radius:50%; background:var(--surface); border:2.5px solid var(--accent); cursor:crosshair; z-index:5; touch-action:none; }
 .hdl::after { content:""; position:absolute; inset:-12px; border-radius:50%; }
@@ -602,8 +635,8 @@ body.diffmode .help .norm { display:none; }
 .st-sent, .st-seen { font-weight:600; }
 .st-sent { color:var(--muted); }
 .st-seen { color:var(--ok); }
-.st-sent::before { content:"\2713"; margin-right:4px; }
-.st-seen::before { content:"\2713\2713"; letter-spacing:-.32em; margin-right:.5em; }
+.st-sent::before, .st-seen::before { content:""; display:inline-block; width:15px; height:15px; margin-right:4px; vertical-align:-3px; background:currentColor; -webkit-mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M20%206%209%2017l-5-5%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat; mask:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M20%206%209%2017l-5-5%22%2F%3E%3C%2Fsvg%3E") center/contain no-repeat; }
+.st-seen::before { -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M18%206%207%2017l-5-5%22%2F%3E%3Cpath%20d%3D%22m22%2010-7.5%207.5L13%2016%22%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M18%206%207%2017l-5-5%22%2F%3E%3Cpath%20d%3D%22m22%2010-7.5%207.5L13%2016%22%2F%3E%3C%2Fsvg%3E"); }
 .tiny { border:0; background:none; color:var(--muted); cursor:pointer; font-size:11.5px; padding:2px 4px; border-radius:5px; }
 .tiny:hover { color:var(--ink); background:var(--chip); }
 
@@ -660,29 +693,28 @@ body.diffmode .help .norm { display:none; }
 </div>
 
 <div class="float dock" id="dock" role="toolbar" aria-label="Canvas tools">
-  <button class="tb icon" id="undo" disabled title="Undo (⌘Z)" aria-label="Undo"><svg class="i" viewBox="0 0 16 16"><path d="M4 7h7a3.5 3.5 0 0 1 0 7H8"/><path d="M7 4L4 7l3 3"/></svg></button>
-  <button class="tb icon" id="redo" disabled title="Redo (⌘⇧Z)" aria-label="Redo"><svg class="i" viewBox="0 0 16 16"><path d="M12 7H5a3.5 3.5 0 0 0 0 7h3"/><path d="M9 4l3 3-3 3"/></svg></button>
+  <button class="tb icon" id="undo" disabled title="Undo (⌘Z)" aria-label="Undo"><svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></button>
+  <button class="tb icon" id="redo" disabled title="Redo (⌘⇧Z)" aria-label="Redo"><svg class="i" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></svg></button>
   <span class="sep"></span>
-  <button class="tb icon hide-sm" id="zOut" title="Zoom out" aria-label="Zoom out"><svg class="i" viewBox="0 0 16 16"><path d="M3.5 8h9"/></svg></button>
+  <button class="tb icon hide-sm" id="zOut" title="Zoom out" aria-label="Zoom out"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
   <span class="zv hide-sm" id="zv">100%</span>
-  <button class="tb icon hide-sm" id="zIn" title="Zoom in" aria-label="Zoom in"><svg class="i" viewBox="0 0 16 16"><path d="M3.5 8h9M8 3.5v9"/></svg></button>
-  <button class="tb" id="fit" title="Fit everything on screen"><svg class="i" viewBox="0 0 16 16"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></svg><span class="lbl">Fit</span></button>
+  <button class="tb icon hide-sm" id="zIn" title="Zoom in" aria-label="Zoom in"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+  <button class="tb" id="fit" title="Fit everything on screen"><svg class="i" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg><span class="lbl">Fit</span></button>
   <span class="sep"></span>
   <button class="tb hide-sm" id="expAll" title="Open every block"><span>Open all</span></button>
   <button class="tb hide-sm" id="colAll" title="Close every block"><span>Close all</span></button>
   <span class="sep"></span>
-  <button class="tb" id="msgBtn" aria-expanded="false" aria-controls="msgSheet"><svg class="i" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M6.5 6.5V13"/></svg><span class="lbl">Shapes</span></button>
-  <button class="tb" id="srcBtn" aria-expanded="false" aria-controls="srcSheet"><svg class="i" viewBox="0 0 16 16"><path d="M6 4L2 8l4 4M10 4l4 4-4 4"/></svg><span class="lbl">Source</span></button>
+  <button class="tb" id="srcBtn" aria-expanded="false" aria-controls="srcSheet"><svg class="i" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg><span class="lbl">Source</span></button>
   <button class="tb chkpill" id="chkBtn" title="Layout and spec checks"></button>
-  <button class="tb cmtbtn" id="chatBtn" title="Chat about the whole file" aria-label="Chat about the whole file"><svg class="i" viewBox="0 0 16 16"><path d="M3 3h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 13.5V11H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg><span class="hide-sm">Chat</span></button>
-  <button class="tb cmtbtn" id="cmtBtn" hidden title="Every comment in this session (C)" aria-label="All comments"><svg class="i" viewBox="0 0 16 16"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"/></svg><span id="cmtN"></span></button>
-  <button class="tb sendbtn" id="sendBtn" hidden title="Send saved comments to an agent"><svg class="i" viewBox="0 0 16 16"><path d="M2.5 8L13.5 2.5 10 13.5 7.5 9z"/><path d="M7.5 9L13.5 2.5"/></svg><span id="sendN"></span></button>
-  <button class="tb icon" id="setBtn" title="Settings" aria-label="Settings"><svg class="i" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4L5 11M11 5l1.4-1.4"/></svg></button>
+  <button class="tb cmtbtn" id="chatBtn" title="Chat about the whole file" aria-label="Chat about the whole file"><svg class="i" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/></svg><span class="hide-sm">Chat</span></button>
+  <button class="tb cmtbtn" id="cmtBtn" hidden disabled title="No new replies" aria-label="Next new reply"><svg class="i" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"/></svg><span id="cmtN"></span></button>
+  <button class="tb sendbtn" id="sendBtn" hidden title="Send saved comments to an agent"><svg class="i" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg><span id="sendN"></span></button>
+  <button class="tb icon" id="setBtn" title="Settings" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></button>
 </div>
 
 <aside class="float sheet right closed" id="msgSheet" aria-label="Shapes">
   <header><h2>Shapes</h2><span class="sub" id="msgCount"></span><span class="spacer"></span>
-    <button class="xbtn" id="msgClose" aria-label="Close shapes"><svg class="i" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></header>
+    <button class="xbtn" id="msgClose" aria-label="Close shapes"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></header>
   <div class="body">
     <input class="search" id="msgQ" type="search" placeholder="Search names, sketches, blocks" aria-label="Search shapes">
     <div class="tctl"><span>Sort by</span><div class="seg" role="group" aria-label="Sort"><button id="sortName" class="on">Name</button><button id="sortUses">Uses</button></div><span id="ownerFilter"></span></div>
@@ -692,7 +724,7 @@ body.diffmode .help .norm { display:none; }
 
 <aside class="float sheet left closed" id="srcSheet" aria-label="Source">
   <header><h2>Source</h2><span class="spacer"></span>
-    <button class="xbtn" id="srcClose" aria-label="Close source"><svg class="i" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></header>
+    <button class="xbtn" id="srcClose" aria-label="Close source"><svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></header>
   <div class="body">
     <div class="row2"><button class="btn" id="sample">Load sample</button><button class="btn" id="random">Random spec</button></div>
     <textarea class="src" id="src" spellcheck="false" aria-label="sbtel source"></textarea>
@@ -2405,16 +2437,24 @@ function setDotHue(id, h) { const m = dotRead(); if (h == null) delete m[id]; el
 const hueColor = h => `oklch(.68 .17 ${h})`;
 const msgColor = k => { const h = dotHue('μ:' + k); return h != null ? hueColor(h) : 'var(--m' + (1 + hash(k || '?') % 6) + ')'; };
 const GLYPH = ['★','◆','▲','●','■','✚'], GCOL = ['var(--m6)','var(--m4)','var(--m5)','var(--m1)','var(--m3)','var(--m2)'];
+// Icons are Lucide's (ISC, viewer/icons/LICENSE); the build puts each drawing in (viewer/build.mjs).
 const ICON = {
-  clip:'<svg class="i" viewBox="0 0 16 16"><path d="M13 7.5l-5 5a3 3 0 0 1-4.2-4.2l5.5-5.5a2 2 0 0 1 2.8 2.8L6.8 10.9a1 1 0 0 1-1.4-1.4L10 5"/></svg>',
-  details:'<svg class="i" viewBox="0 0 16 16"><path d="M6 4.5h7.5M6 8h7.5M6 11.5h7.5"/><circle cx="3" cy="4.5" r=".7"/><circle cx="3" cy="8" r=".7"/><circle cx="3" cy="11.5" r=".7"/></svg>',
-  code:'<svg class="i" viewBox="0 0 16 16"><path d="M6 4L2 8l4 4M10 4l4 4-4 4"/></svg>',
-  comment:'<svg class="i" viewBox="0 0 16 16"><path d="M3 3h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7.5L4.5 13.5V11H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg>',
-  cut:'<svg class="i" viewBox="0 0 16 16"><circle cx="4" cy="4.5" r="1.8"/><circle cx="4" cy="11.5" r="1.8"/><path d="M5.5 5.5L13.5 12M5.5 10.5L13.5 4"/></svg>',
-  trash:'<svg class="i" viewBox="0 0 16 16"><path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.7 9h6.6l.7-9M6.7 7v4.5M9.3 7v4.5"/></svg>',
-  go:'<svg class="i" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5"/></svg>',
-  close:'<svg class="i" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg>',
-  edit:'<svg class="i" viewBox="0 0 16 16"><path d="M10.5 2.5l3 3L6 13H3v-3z"/></svg>',
+  clip:'<svg class="i" viewBox="0 0 24 24"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>',
+  details:'<svg class="i" viewBox="0 0 24 24"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg>',
+  code:'<svg class="i" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>',
+  comment:'<svg class="i" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/></svg>',
+  cut:'<svg class="i" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>',
+  trash:'<svg class="i" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  go:'<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+  close:'<svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+  edit:'<svg class="i" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>',
+  file:'<svg class="i" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>',
+  open:'<svg class="i" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>',
+  cal:'<svg class="i" viewBox="0 0 24 24"><path d="M16 18h6"/><path d="M16 2v3"/><path d="M19 15v6"/><path d="M21 11.5V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h8.3"/><path d="M3 9h18"/><path d="M8 2v3"/></svg>',
+  place:'<svg class="i" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>',
+  people:'<svg class="i" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>',
+  clock:'<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  download:'<svg class="i" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>',
 };
 // @sbtel end App.Kit
 // @sbtel begin App.Document
@@ -2742,7 +2782,7 @@ function fillBlock(el, B, counts) {
   el.classList.toggle('typed', !!B.node.type);
   el.innerHTML = (B.kind === 'card' ? cardHTML(B) : frameHTML(B)) +
     (counts[key] ? `<button class="cbub" data-thread="${esc(key)}" aria-label="${counts[key]} comment${counts[key] === 1 ? '' : 's'}">${ICON.comment}${counts[key]}</button>` : '') +
-    (B.node && B.node.refs && B.node.refs.length ? `<button class="refb${B.node.refs.some(r => isSpec(r.path) && refUnread(r.file)) ? ' unread' : ''}" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.code + B.node.refs.length}</button>` : '');
+    (B.node && B.node.refs && B.node.refs.length ? `<button class="refb${B.node.refs.some(r => isSpec(r.path) && refUnread(r.file)) ? ' unread' : ''}" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.file + B.node.refs.length}</button>` : '');
 }
 // Opening a drawer never resizes the card: the row it sits in makes room instead.
 function setDrawer(id, side, open) {
@@ -4249,11 +4289,25 @@ function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: 
 // The toolbar's Comments button (and the C key) lists each thing that has comments, the ones with an
 // unread reply first, then by the latest word. A mode says which comments are unread (chatUnread).
 let chatUnread = c => false;
+// The toolbar's button walks the new replies: each press opens the thread with the latest one, until none
+// is left and the button is off. (C still lists every thread.)
+const unreadThreads = () => {
+  const by = new Map();
+  for (const c of state.comments) if (chatUnread(c)) by.set(c.target, Math.max(by.get(c.target) || 0, c.at || 0, ...(c.replies || []).map(r => +r.at || 0)));
+  return [...by].sort((x, y) => y[1] - x[1]).map(x => x[0]);
+};
 function cmtCount() {
-  const b = $('cmtBtn'), n = new Set(state.comments.map(c => c.target)).size;
-  b.hidden = !n; $('cmtN').textContent = n || ''; b.classList.toggle('unread', state.comments.some(c => c.target !== 'block:' && chatUnread(c)));
+  const b = $('cmtBtn'), n = unreadThreads().length;
+  b.hidden = !n && !state.comments.some(c => (c.replies || []).length); b.disabled = !n; $('cmtN').textContent = n || '';
+  b.classList.toggle('unread', n > 0); b.title = n ? `Read the next new reply (${n} thread${n === 1 ? '' : 's'})` : 'No new replies. Press C for every comment.';
   $('chatBtn').classList.toggle('unread', state.comments.some(c => c.target === 'block:' && chatUnread(c)));
 }
+function showThread(key) {
+  if (key.startsWith('block:') && key.length > 6 && state.model.node(key.slice(6))) { goTo(key.slice(6)); setTimeout(() => openThread(key), 380); }
+  else openThread(key);
+}
+// The open thread is closed first: closing is what marks its replies read, so the next press moves on.
+function nextUnread() { closePop('thread'); const k = unreadThreads()[0]; if (k) showThread(k); }
 function openAllComments() {
   const by = new Map();
   for (const c of state.comments) { let t = by.get(c.target); if (!t) by.set(c.target, t = { key:c.target, list:[], unread:false, at:0 }); t.list.push(c); t.unread = t.unread || chatUnread(c); t.at = Math.max(t.at, c.at || 0, ...(c.replies || []).map(r => +r.at || 0)); }
@@ -4264,12 +4318,11 @@ function openAllComments() {
   m.addEventListener('click', e => {
     const b = e.target.closest('button[data-key]'); if (!b) return;
     const key = b.dataset.key; closeModal();
-    if (key.startsWith('block:') && key.length > 6 && state.model.node(key.slice(6))) { goTo(key.slice(6)); setTimeout(() => openThread(key), 380); }
-    else openThread(key);
+    showThread(key);
   });
   m.querySelector('button[data-key]')?.focus();
 }
-$('cmtBtn').onclick = openAllComments;
+$('cmtBtn').onclick = nextUnread;
 $('chatBtn').onclick = () => chatOpen('block:') ? closePop('thread') : openComposer('block:', $('chatBtn'));
 // On a phone the chat is a sheet at the bottom; --kb lifts it above the on-screen keyboard.
 if (window.visualViewport) {
@@ -4417,11 +4470,11 @@ $('chkBtn').onclick = () => { if (pops.checks) closePop('checks'); else showChec
 function openMessages({ open, owner } = {}) {
   if (owner !== undefined) { state.msgOwner = owner; state.msgQ = ''; $('msgQ').value = ''; }
   if (open) { state.msgOpen = open; state.msgQ = ''; $('msgQ').value = ''; state.msgOwner = null; }
-  $('msgSheet').classList.remove('closed'); $('msgBtn').classList.add('on'); $('msgBtn').setAttribute('aria-expanded', 'true');
+  $('msgSheet').classList.remove('closed'); 
   renderMsgTable();
   if (open) setTimeout(() => document.querySelector(`#msgRows tr[data-name="${CSS.escape(open)}"]`)?.scrollIntoView({ block:'center', behavior:'smooth' }), 60);
 }
-function closeMessages() { $('msgSheet').classList.add('closed'); $('msgBtn').classList.remove('on'); $('msgBtn').setAttribute('aria-expanded', 'false'); }
+function closeMessages() { $('msgSheet').classList.add('closed'); }
 function renderMsgTableIfOpen() { if (!$('msgSheet').classList.contains('closed')) renderMsgTable(); }
 function renderMsgTable() {
   if (!state.model) return;
@@ -4460,7 +4513,6 @@ $('ownerFilter').addEventListener('click', e => { if (e.target.closest('[data-cl
 $('msgQ').addEventListener('input', e => { state.msgQ = e.target.value; renderMsgTable(); });
 $('sortName').onclick = () => { state.msgSort = 'name'; renderMsgTable(); };
 $('sortUses').onclick = () => { state.msgSort = 'uses'; renderMsgTable(); };
-$('msgBtn').onclick = () => $('msgSheet').classList.contains('closed') ? openMessages() : closeMessages();
 $('msgClose').onclick = closeMessages;
 
 // @sbtel end App.Messages
@@ -4521,16 +4573,21 @@ function highlight(t) {
 // @sbtel begin App.Files
 // ---------- Files: what a block's (ref …) forms name ----------
 // How a file's text is fetched: nothing here (a page on its own has no access to files); server mode
-// reassigns it (§6.5) and returns { text } | { image, src } | { binary } | { tooLarge } | null.
+// reassigns it (§6.5) and returns { text, src? } | { image, src } | { pdf, src } | { binary } | { tooLarge } | null
+// (src: where the file itself can be had, for a picture, a PDF's frame or an invite's download).
 let loadRef = async r => null;
 // A comment's or a reply's text, with the files it names as buttons: (ref path), as in a spec, or a Markdown
 // link [label](path). A link with a scheme is a link; anything else opens the file modal.
 function richText(s) {
-  return esc(s).replace(/\(ref\s+(?:&quot;((?:[^&]|&(?!quot;))*)&quot;|([^\s()&;]+))\)|\[([^\]\n]+)\]\(([^()\s]+)\)/g, (all, q, bare, label, href) => {
+  return esc(s).replace(/\(ref\s+(?:&quot;((?:[^&]|&(?!quot;))*)&quot;|([^\s()&;]+))\)|\[([^\]\n]+)\]\(([^()\s]+)\)|\bhttps?:\/\/[^\s<>]+/g, (all, q, bare, label, href) => {
+    if (q == null && bare == null && href == null) {   // a bare address: a link, less the punctuation that ends the sentence
+      const tail = /(?:&quot;|&#39;|&gt;|[.,;:!?)\]'])+$/.exec(all)?.[0] || '', u = all.slice(0, all.length - tail.length);
+      return `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>${tail}`;
+    }
     const path = q != null ? q : bare != null ? bare : href; if (!path) return all;
     const un = path.replace(/&amp;/g, '&');
     if (/^[a-z][a-z0-9+.-]*:\/\//i.test(un)) return `<a href="${path}" target="_blank" rel="noopener noreferrer">${label || path}</a>`;
-    return `<button type="button" class="refc${isSpec(un) ? ' spec' : ''}" draggable="true" data-ref="${path}" title="${isSpec(un) ? 'Open this diagram' : 'Open'}. Drag it onto a block to add it there.">${isSpec(un) ? ICON.go : ICON.code}${label || path}</button>`;
+    return `<button type="button" class="refc${isSpec(un) ? ' spec' : ''}" draggable="true" data-ref="${path}" title="${isSpec(un) ? 'Open this diagram' : 'Open'}. Drag it onto a block to add it there.">${isSpec(un) ? ICON.go : ICON.file}${label || path}</button>`;
   });
 }
 // A ref to another spec is a diagram: it opens in a new tab, as a session of its own (the session's page
@@ -4601,18 +4658,163 @@ async function attachTo(ta, files) {
     if (paths.length) toast(paths.length === 1 ? `Added ${paths[0].split('/').pop()} to ${p.n.name}` : `Added ${paths.length} files to ${p.n.name}`);
   });
 }
+// What a file is shown as, by its name: Markdown as a page, HTML in a frame, an invite as a card, a
+// drawing as a picture. Anything else with text is shown as text.
+const REFKIND = { md:{ as:'page' }, html:{ as:'page' }, cal:{ as:'invite' }, svg:{ as:'picture' }, pdf:{ as:'page' } };
+const refKind = f => ({ md:'md', markdown:'md', html:'html', htm:'html', ics:'cal', svg:'svg', pdf:'pdf' }[(/\.([a-z0-9]+)$/i.exec(f || '') || [])[1]?.toLowerCase()] || '');
+// Markdown to HTML, small on purpose: headings, paragraphs, lists (nested, with task boxes), quotes, fenced
+// code, tables, rules; inline code, bold, italic, strike and links. All text is escaped before any tag is
+// made, a link keeps only an http, https or mailto address, and a picture is named, never fetched.
+function mdInline(t) {
+  const keep = [], stash = h => '\u0001' + (keep.push(h) - 1) + '\u0001';
+  const link = (u, label) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  t = t.replace(/[\u0000\u0001]/g, '').replace(/`([^`\n]+)`/g, (_, c) => stash('<code>' + esc(c) + '</code>'));
+  t = esc(t)
+    .replace(/!\[([^\]\n]*)\]\(([^()\s]+)\)/g, (_, alt, u) => stash(`<span class="mdpic">${alt || u}</span>`))
+    .replace(/\[([^\]\n]+)\]\(([^()\s]+)\)/g, (_, label, u) => /^(?:https?:\/\/|mailto:)/i.test(u) ? stash(link(u, '\u0002')).replace('\u0002', label) : label)
+    .replace(/\bhttps?:\/\/[^\s<]*[^\s<.,;:!?)\]]/g, u => /&quot$|&gt$/.test(u) ? u : stash(link(u, u)))
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>').replace(/~~([^~\n]+)~~/g, '<del>$1</del>')
+    .replace(/(^|[^\w*])\*([^*\s](?:[^*\n]*[^*\s])?)\*(?![\w*])/g, '$1<em>$2</em>').replace(/(^|[^\w_])_([^_\s](?:[^_\n]*[^_\s])?)_(?![\w_])/g, '$1<em>$2</em>');
+  return t.replace(/\u0001(\d+)\u0001/g, (_, i) => keep[+i]);
+}
+function mdHTML(text, depth = 0) {
+  const L = String(text).replace(/\r\n?/g, '\n').split('\n'), out = [];
+  const item = /^(\s*)([-*+]|\d{1,9}[.)])\s+(.*)$/, rule = /^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/, head = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/, fence = /^\s{0,3}(```+|~~~+)\s*([\w+-]*)\s*$/;
+  const tsep = /^\s*\|?\s*:?-{1,}:?\s*(?:\|\s*:?-{1,}:?\s*)*\|?\s*$/, cells = l => l.trim().replace(/^\||\|$/g, '').split(/(?<!\\)\|/).map(c => c.trim().replace(/\\\|/g, '|'));
+  for (let i = 0; i < L.length;) {
+    const l = L[i]; let m;
+    if (!l.trim()) { i++; continue; }
+    if ((m = fence.exec(l))) { const b = []; i++; while (i < L.length && !(L[i].trim().startsWith(m[1]) && /^[`~\s]*$/.test(L[i]))) b.push(L[i++]); i++; out.push(`<pre><code>${esc(b.join('\n'))}</code></pre>`); continue; }
+    if ((m = head.exec(l))) { out.push(`<h${m[1].length}>${mdInline(m[2])}</h${m[1].length}>`); i++; continue; }
+    if (rule.test(l)) { out.push('<hr>'); i++; continue; }
+    if (/^\s{0,3}>/.test(l)) { const b = []; while (i < L.length && /^\s{0,3}>/.test(L[i])) b.push(L[i++].replace(/^\s{0,3}>\s?/, '')); out.push(`<blockquote>${depth < 6 ? mdHTML(b.join('\n'), depth + 1) : esc(b.join(' '))}</blockquote>`); continue; }
+    if (l.includes('|') && i + 1 < L.length && L[i + 1].includes('-') && tsep.test(L[i + 1]) && cells(l).length === cells(L[i + 1]).length) {
+      const h = cells(l), al = cells(L[i + 1]).map(c => /^:.*:$/.test(c) ? 'center' : /:$/.test(c) ? 'right' : ''), rows = []; i += 2;
+      while (i < L.length && L[i].trim() && L[i].includes('|')) rows.push(cells(L[i++]));
+      const td = (t, c, k) => `<${t}${al[k] ? ` style="text-align:${al[k]}"` : ''}>${mdInline(c || '')}</${t}>`;
+      out.push(`<div class="mdt"><table><thead><tr>${h.map((c, k) => td('th', c, k)).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${h.map((_, k) => td('td', r[k], k)).join('')}</tr>`).join('')}</tbody></table></div>`); continue;
+    }
+    if ((m = item.exec(l))) {
+      const ord = /\d/.test(m[2]), ind = m[1].length, items = [];
+      while (i < L.length) {
+        const k = item.exec(L[i]); if (!k || k[1].length > ind + 1 || k[1].length < ind || /\d/.test(k[2]) !== ord) break;
+        const pad = k[1].length + k[2].length + 1, b = [k[3]]; i++;
+        while (i < L.length) {
+          if (!L[i].trim()) { if (i + 1 < L.length && /^\s+\S/.test(L[i + 1]) && L[i + 1].search(/\S/) >= pad) { b.push(''); i++; continue; } break; }
+          const sp = L[i].search(/\S/); if (sp <= ind && (item.test(L[i]) || head.test(L[i]) || fence.test(L[i]) || rule.test(L[i]))) break;
+          if (sp > ind && item.test(L[i]) || sp >= pad) b.push(L[i].slice(Math.min(sp, pad))); else b.push(L[i].trim()); i++;
+        }
+        const box = /^\[([ xX])\]\s+/.exec(b[0]); if (box) b[0] = b[0].slice(box[0].length);
+        const one = b.length === 1 || b.slice(1).every(x => x && !item.test(x) && !fence.test(x));
+        items.push(`<li${box ? ' class="task"' : ''}>${box ? `<input type="checkbox" disabled${box[1] === ' ' ? '' : ' checked'}> ` : ''}${one || depth >= 6 ? mdInline(b.join(' ')) : mdHTML(b.join('\n'), depth + 1).replace(/^<p>([\s\S]*?)<\/p>/, '$1')}</li>`);
+        while (i < L.length && !L[i].trim() && i + 1 < L.length && item.test(L[i + 1]) && item.exec(L[i + 1])[1].length === ind) i++;
+      }
+      const st = ord && +/\d+/.exec(m[2])[0]; out.push(`<${ord ? 'ol' : 'ul'}${ord && st !== 1 ? ` start="${st}"` : ''}>${items.join('')}</${ord ? 'ol' : 'ul'}>`); continue;
+    }
+    const b = [l]; i++;
+    while (i < L.length && L[i].trim() && !head.test(L[i]) && !fence.test(L[i]) && !rule.test(L[i]) && !/^\s{0,3}>/.test(L[i]) && !item.test(L[i])) b.push(L[i++]);
+    out.push(`<p>${mdInline(b.map(x => x.trim()).join('\n')).replace(/ {2,}\n|\\\n/g, '<br>')}</p>`);
+  }
+  return out.join('');
+}
+// The events of an iCalendar file (RFC 5545), as far as an invite needs: what, when, where, who.
+function icsEvents(text) {
+  const lines = String(text).replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').split('\n'), evs = [];
+  const un = v => v.replace(/\\([nN,;\\])/g, (_, c) => c === 'n' || c === 'N' ? '\n' : c);
+  const who = (pr, v) => { const cn = /;CN=(?:"([^"]*)"|([^;:]*))/i.exec(pr); return (cn && (cn[1] ?? cn[2])) || v.replace(/^mailto:/i, ''); };
+  const wall = (y, mo, d, h, mi, sc, tz) => {   // a clock time in a named zone, as an instant
+    const want = Date.UTC(y, mo - 1, d, h, mi, sc); let t = want;
+    try {
+      const f = new Intl.DateTimeFormat('en-US', { timeZone:tz, hourCycle:'h23', year:'numeric', month:'numeric', day:'numeric', hour:'numeric', minute:'numeric', second:'numeric' });
+      for (let k = 0; k < 2; k++) { const q = {}; for (const x of f.formatToParts(new Date(t))) q[x.type] = +x.value; t -= Date.UTC(q.year, q.month - 1, q.day, q.hour % 24, q.minute, q.second) - want; }
+      return new Date(t);
+    } catch (e) { return new Date(y, mo - 1, d, h, mi, sc); }
+  };
+  const when = (pr, v) => {
+    const m = /^(\d{4})(\d\d)(\d\d)(?:T(\d\d)(\d\d)(\d\d)?(Z)?)?$/.exec(v.trim()); if (!m) return null;
+    const [y, mo, d, h, mi, sc] = [1, 2, 3, 4, 5, 6].map(k => +(m[k] || 0));
+    if (m[4] == null) return { at:new Date(y, mo - 1, d), day:true };
+    const tz = /;TZID=(?:"([^"]*)"|([^;:]*))/i.exec(pr);
+    return { at: m[7] ? new Date(Date.UTC(y, mo - 1, d, h, mi, sc)) : tz ? wall(y, mo, d, h, mi, sc, tz[1] ?? tz[2]) : new Date(y, mo - 1, d, h, mi, sc) };
+  };
+  let ev = null, skip = 0;
+  for (const l of lines) {
+    const m = /^([\w-]+)((?:;[\w-]+=(?:"[^"]*"|[^;:"]*)(?:,(?:"[^"]*"|[^;:",]*))*)*):(.*)$/.exec(l); if (!m) continue;
+    const k = m[1].toUpperCase(), pr = m[2], v = m[3];
+    if (k === 'BEGIN') { if (v.toUpperCase() === 'VEVENT' && !ev) ev = { people:[] }; else if (ev) skip++; continue; }
+    if (k === 'END') { if (skip) skip--; else if (ev && v.toUpperCase() === 'VEVENT') { if (ev.start) evs.push(ev); ev = null; } continue; }
+    if (!ev || skip) continue;
+    if (k === 'SUMMARY') ev.title = un(v); else if (k === 'DESCRIPTION') ev.notes = un(v); else if (k === 'LOCATION') ev.place = un(v);
+    else if (k === 'URL') ev.url = v.trim(); else if (k === 'STATUS') ev.status = v.trim().toUpperCase(); else if (k === 'RRULE') ev.rule = v;
+    else if (k === 'DTSTART') ev.start = when(pr, v); else if (k === 'DTEND') ev.end = when(pr, v);
+    else if (k === 'DURATION') { const d = /^P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(v.trim()); if (d) ev.dur = ((+d[1] || 0) * 7 + (+d[2] || 0)) * 864e5 + (+d[3] || 0) * 36e5 + (+d[4] || 0) * 6e4 + (+d[5] || 0) * 1e3; }
+    else if (k === 'ORGANIZER') ev.by = who(pr, v); else if (k === 'ATTENDEE') ev.people.push(who(pr, v));
+  }
+  return evs.slice(0, 50);
+}
+function calHTML(ev) {
+  const s = ev.start.at, day = ev.start.day, e = ev.end ? ev.end.at : ev.dur ? new Date(+s + ev.dur) : null;
+  const D = (d, o) => d.toLocaleDateString(undefined, o), T = d => d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+  const full = d => D(d, { weekday:'long', month:'long', day:'numeric', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
+  const same = e && s.toDateString() === e.toDateString(), last = day && e ? new Date(+e - 864e5) : e;   // an all-day end is the day after
+  const zone = (new Intl.DateTimeFormat(undefined, { timeZoneName:'short' }).formatToParts(s).find(x => x.type === 'timeZoneName') || {}).value || '';
+  const time = day ? (last && +last > +s ? `${full(s)} to ${full(last)}` : 'All day')
+    : !e ? T(s) : same ? `${T(s)} to ${T(e)}` : `${T(s)} to ${full(e)}, ${T(e)}`;
+  const freq = ev.rule && /FREQ=(\w+)/i.exec(ev.rule), n = ev.rule && +(/INTERVAL=(\d+)/i.exec(ev.rule) || [])[1] || 1;
+  const unit = freq && { DAILY:'day', WEEKLY:'week', MONTHLY:'month', YEARLY:'year' }[freq[1].toUpperCase()];
+  const row = (icon, html) => html ? `<li>${icon}<span>${html}</span></li>` : '';
+  const people = [ev.by, ...ev.people.filter(x => x !== ev.by)].filter(Boolean);
+  return `<section class="calev${ev.status === 'CANCELLED' ? ' off' : ''}"><div class="caltile" aria-hidden="true"><b>${esc(D(s, { month:'short' }))}</b><i>${s.getDate()}</i><span>${esc(D(s, { weekday:'short' }))}</span></div>
+    <div class="calmain"><h3>${esc(ev.title || 'Untitled event')}</h3>${ev.status === 'CANCELLED' ? '<p class="calnote">Cancelled</p>' : ''}<ul>` +
+    row(ICON.clock, esc(day ? time === 'All day' ? `${full(s)}, all day` : time : `${full(s)}, ${time}`) + (day || !zone ? '' : ` <em>${esc(zone)}, your time</em>`) + (unit ? `<br>Repeats every ${n > 1 ? n + ' ' + unit + 's' : unit}` : '')) +
+    row(ICON.place, ev.place && mdInline(ev.place)) + row(ICON.people, people.length && esc(people.slice(0, 12).join(', ') + (people.length > 12 ? ` and ${people.length - 12} more` : ''))) +
+    `</ul>${ev.notes ? `<p class="calnotes">${mdInline(ev.notes).replace(/\n/g, '<br>')}</p>` : ''}${ev.url && /^https?:\/\//i.test(ev.url) ? `<p class="calnotes"><a href="${esc(ev.url)}" target="_blank" rel="noopener noreferrer">${esc(ev.url)}</a></p>` : ''}</div></section>`;
+}
 function openRefs(id, first, given) {
   const n = given || state.model.node(id); if (!n || !n.refs || !n.refs.length) return;
   const scrim = document.createElement('div'); scrim.className = 'scrim';
   const p = document.createElement('div'); p.className = 'codep refp'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); p.setAttribute('aria-label', 'Files of ' + n.name);
-  p.innerHTML = `<header><b>${esc(n.name)}</b><span>${n.refs.length} file${n.refs.length === 1 ? '' : 's'}</span><span class="spacer"></span><button class="btn" data-k="spec" hidden>Open diagram</button>${n.addTo ? `<button class="btn" data-k="add">Add to ${esc(state.model.node(n.addTo)?.name || 'block')}</button>` : ''}<button class="btn primary" data-k="close">Close</button></header>` +
+  p.innerHTML = `<header><b>${esc(n.name)}</b><span>${n.refs.length} file${n.refs.length === 1 ? '' : 's'}</span><span class="spacer"></span><button class="btn" data-k="spec" hidden>Open diagram</button>${n.addTo ? `<button class="btn" data-k="add">Add to ${esc(state.model.node(n.addTo)?.name || 'block')}</button>` : ''}<button class="btn" data-k="mode" hidden></button><a class="btn" data-k="out" target="_blank" rel="noopener noreferrer" hidden>${ICON.open}Open in a new tab</a><button class="btn primary" data-k="close">Close</button></header>` +
     (n.refs.length > 1 ? `<nav class="reflist" aria-label="Files">${n.refs.map((r, i) => `<button type="button" data-i="${i}">${esc(r.path)}</button>`).join('')}</nav>` : '') +
     `<p class="refnote"></p><div class="refbody" tabindex="0"></div>`;
   document.body.append(scrim, p);
   const body = p.querySelector('.refbody'), note = p.querySelector('.refnote');
-  let shown = -1;
+  let shown = -1, cur = null, made = null;
+  const modeB = p.querySelector('[data-k="mode"]'), outB = p.querySelector('[data-k="out"]');
+  const drop = () => { if (made) URL.revokeObjectURL(made); made = null; };
+  // What is loaded, drawn: as itself (a page, a picture, an invite) or, for text, as its source.
+  function draw() {
+    const { r, d, kind } = cur, view = kind && cur.mode === 'view';
+    drop();
+    modeB.hidden = !(kind && d.text != null); modeB.textContent = view ? 'Show source' : 'Show ' + REFKIND[kind]?.as;
+    outB.hidden = !(d.src && (d.image || d.pdf)); if (!outB.hidden) outB.href = d.src;
+    body.classList.toggle('page', !!(view && (kind === 'html' || kind === 'pdf')));
+    if (d.image) body.innerHTML = `<img src="${esc(d.src)}" alt="${esc(r.file)}">`;
+    else if (d.pdf) body.innerHTML = d.src ? `<iframe class="reff" src="${esc(d.src)}" title="${esc(r.file)}"></iframe>` : `<p><code>${esc(r.file)}</code> is a PDF, which this page cannot load.</p>`;
+    else if (view && kind === 'md') body.innerHTML = `<article class="md">${mdHTML(d.text)}</article>`;
+    else if (view && kind === 'svg') body.innerHTML = `<img src="data:image/svg+xml,${encodeURIComponent(d.text)}" alt="${esc(r.file)}">`;
+    else if (view && kind === 'html') {
+      // The file's own page, in a frame that can run no script, send no form and reach nothing of this page;
+      // its links open in a new tab.
+      const f = document.createElement('iframe'); f.className = 'reff'; f.title = r.file;
+      f.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox'); f.setAttribute('referrerpolicy', 'no-referrer');
+      f.srcdoc = '<base target="_blank">' + d.text; body.replaceChildren(f);
+    }
+    else if (view && kind === 'cal') {
+      const evs = icsEvents(d.text);
+      if (!evs.length) { body.innerHTML = `<p><code>${esc(r.file)}</code> holds no event.</p>`; return; }
+      const href = d.src || (made = URL.createObjectURL(new Blob([d.text], { type:'text/calendar' })));
+      body.innerHTML = `<div class="cal">${evs.map(calHTML).join('')}<p class="calact"><a class="btn primary" href="${esc(href)}" download="${esc(r.file.split('/').pop())}">${ICON.cal}Add to calendar</a><span>Opens the invite in your calendar app.</span></p></div>`;
+    }
+    else {
+      const lines = d.text.replace(/\n$/, '').split('\n');
+      body.innerHTML = `<pre class="reft">${lines.map((l, k) => `<span class="l${r.from && k + 1 >= r.from && k + 1 <= r.to ? ' hl' : ''}">${esc(l) || ' '}</span>`).join('')}</pre>`;
+      const hl = body.querySelector('.hl'); if (hl) { hl.scrollIntoView({ block:'center' }); return; }
+    }
+    body.scrollTop = 0;
+  }
   async function show(i) {
-    const r = n.refs[i]; shown = i;
+    const r = n.refs[i]; shown = i; cur = null; drop(); modeB.hidden = outB.hidden = true; body.classList.remove('page');
     p.querySelectorAll('.reflist button').forEach((b, k) => { if (k === i) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
     note.textContent = (n.refs.length > 1 ? '' : r.path + (r.sketch ? '. ' : '')) + (r.sketch || ''); note.hidden = !note.textContent;
     p.querySelector('[data-k="spec"]').hidden = !isSpec(r.path);
@@ -4623,20 +4825,16 @@ function openRefs(id, first, given) {
     if (!d) body.innerHTML = `<p>This page has no access to files. Open the spec with <code>sbtel open</code> to read <code>${esc(r.file)}</code> here.</p>`;
     else if (d.error) body.innerHTML = `<p><code>${esc(r.file)}</code> could not be read. It must be a file beside or below the spec, named in the version the agent last pushed.</p>`;
     else if (d.tooLarge) body.innerHTML = `<p><code>${esc(r.file)}</code> is too large to show here (${Math.round(d.size / 1024)} KB).</p>`;
-    else if (d.image) body.innerHTML = `<img src="${esc(d.src)}" alt="${esc(r.file)}">`;
     else if (d.binary) body.innerHTML = `<p><code>${esc(r.file)}</code> is not text, so it is not shown.</p>`;
-    else {
-      const lines = d.text.replace(/\n$/, '').split('\n');
-      body.innerHTML = `<pre class="reft">${lines.map((l, k) => `<span class="l${r.from && k + 1 >= r.from && k + 1 <= r.to ? ' hl' : ''}">${esc(l) || ' '}</span>`).join('')}</pre>`;
-      const hl = body.querySelector('.hl'); if (hl) hl.scrollIntoView({ block:'center' }); else body.scrollTop = 0;
-    }
+    else { const kind = d.pdf ? 'pdf' : d.image ? '' : refKind(r.file); cur = { r, d, kind, mode: r.from ? 'src' : 'view' }; draw(); }
   }
-  const close = () => { document.removeEventListener('keydown', onKey, true); p.remove(); scrim.remove(); };
+  const close = () => { document.removeEventListener('keydown', onKey, true); drop(); p.remove(); scrim.remove(); };
   const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
   document.addEventListener('keydown', onKey, true);
   p.addEventListener('click', e => {
     const k = e.target.closest('[data-k]')?.dataset.k;
     if (k === 'close') close();
+    if (k === 'mode' && cur) { cur.mode = cur.mode === 'view' ? 'src' : 'view'; draw(); }
     if (k === 'spec') openSpec(n.refs[shown]);
     if (k === 'add' && addRef(n.addTo, n.refs[shown].path)) close();
     const b = e.target.closest('.reflist button'); if (b) show(+b.dataset.i);
@@ -4819,7 +5017,6 @@ function sessionComments({ version, closed }) {
   // reply that arrived while its chat was closed puts a dot on the count until the chat is opened.
   const RKEY = SBTEL.session ? 'sbtel-read:' + SBTEL.session : null;
   const unread = c => !!c.sid && (c.replies || []).length > ((C.read || {})[c.sid] || 0);
-  chatUnread = c => unread(c);
   function markUnread(root) {
     cmtCount();
     const u = new Set(state.comments.filter(unread).map(c => c.target));
@@ -4911,6 +5108,9 @@ function sessionComments({ version, closed }) {
     const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
     const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };
     const open0 = openChat; openChat = (key, anchor, focus) => { open0(key, anchor, focus); markRead(key); };
+    // Set here, with the rest of what a mode takes over: the page builds one of these for each mode it
+    // could be in, and only the one in use may say what is unread.
+    chatUnread = c => unread(c);
   }
   // The reviews sent in this session (from the log, and from this tab), and a listener for changes to
   // them or to the comments' threads (the Review panel's "Sent reviews").
@@ -5113,10 +5313,7 @@ function sessionReview(o) {
   const KEY = 'sbtel-draft:' + o.id, HKEY = 'sbtel-hist:' + o.id;
   const pending = () => state.comments.filter(c => c.status === 'pending');
   const CSS = `
-.tb.rv-btn { background:var(--accent); color:#fff; font-weight:600; margin-left:4px; }
-.tb.rv-btn:hover { background:color-mix(in srgb, var(--accent) 86%, #000); }
-.tb.rv-btn .rv-n { min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:#fff; color:var(--accent); font-size:11.5px; line-height:18px; text-align:center; font-variant-numeric:tabular-nums; }
-.tb.rv-btn[aria-expanded="true"] { box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+.tb.rv-btn .rv-n { min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:var(--accent); color:#fff; font-size:11.5px; font-weight:600; line-height:18px; text-align:center; font-variant-numeric:tabular-nums; }
 .cbub.pend { background:var(--surface); color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); }
 .cbub .pb { margin-left:3px; padding:0 5px; border-radius:7px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:600; line-height:14px; }
 .st-pending { color:var(--accent-ink); font-weight:600; }
@@ -5204,7 +5401,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
   function toggle(open) {
     const o2 = open ?? !R.open; R.open = o2;
     if (o2) { closeMessages(); const ds = $('dSheet'); if (ds && !ds.classList.contains('closed')) $('dClose').click(); recount(); renderPanel(); }
-    sheet().classList.toggle('closed', !o2); btn.setAttribute('aria-expanded', String(o2));
+    sheet().classList.toggle('closed', !o2); btn.setAttribute('aria-expanded', String(o2)); btn.classList.toggle('on', o2);
   }
   const goTarget = key => {
     const kind = key.slice(0, key.indexOf(':')), rest = key.slice(key.indexOf(':') + 1);
@@ -5317,9 +5514,10 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
       closePop('thread'); toggle(true);
       setTimeout(() => { const ta = document.querySelector(`#rvComments [data-cid="${CSS.escape(b.dataset.id)}"] textarea`); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ block:'nearest' }); } }, 60);
     });
-    // The dock: Review is the primary action, at the end.
+    // The dock: Review sits at the end, a button like the others (the toolbar has no primary action); a count
+    // shows what waits in the review.
     btn = document.createElement('button'); btn.className = 'tb rv-btn'; btn.id = 'rvBtn'; btn.setAttribute('aria-controls', 'rvSheet'); btn.setAttribute('aria-expanded', 'false');
-    btn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h10v8H8l-3 3v-3H3z"/><path d="M5.5 6.5l1.6 1.6L10.5 4.8"/></svg><span class="rv-l">Review</span><span class="rv-n" hidden></span>';
+    btn.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.7.7 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="m9 11 2 2 4-4"/></svg><span class="rv-l">Review</span><span class="rv-n" hidden></span>';
     btn.onclick = () => toggle();
     $('dock').appendChild(btn);
     const sh = document.createElement('aside'); sh.className = 'float sheet right closed rv-sheet'; sh.id = 'rvSheet'; sh.setAttribute('aria-label', 'Review');
@@ -5497,7 +5695,7 @@ SBTEL.modes.server = (() => {
     const u = String(e.data.url || ''); if (!u.startsWith(location.origin + '/s/')) return;
     showHere({ name: String(e.data.name || 'spec').slice(0, 80), url: u, file: null });
   });
-  loadRef = async r => { const q = 'ref?path=' + encodeURIComponent(r.file); const d = await getJSON(q); if (d.image) d.src = q + '&raw=1'; return d; };
+  loadRef = async r => { const q = 'ref?path=' + encodeURIComponent(r.file); const d = await getJSON(q); if (d.image || d.raw) d.src = q + '&raw=1'; return d; };
   function hideVersionToast() { vtEl?.remove(); vtEl = null; }
   // "See changes": the arriving version against the one this tab loaded, in the diff view, over the page.
   // Nothing is replaced until Reload is pressed there; Back returns to the page as it was, with the toast.
@@ -5740,7 +5938,7 @@ SBTEL.modes.server = (() => {
     // A Save control in the dock, before the checks pill; ⌘/Ctrl-S saves too.
     saveBtn = document.createElement('button');
     saveBtn.className = 'tb sb-save'; saveBtn.id = 'sbSave'; saveBtn.title = kb('Save to the spec file (⌘S)'); saveBtn.disabled = true;
-    saveBtn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M3 2.5h8l2.5 2.5v8.5h-11z"/><path d="M5 2.5v3.5h5V2.5M5 13.5V9.5h6v4"/></svg><span class="lbl">Saved</span>';
+    saveBtn.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg><span class="lbl">Saved</span>';
     saveBtn.title = kb('Save: write this text to the spec file now, without a review (⌘S)');
     saveBtn.onclick = () => save();
     $('chkBtn').before(saveBtn);
@@ -6376,7 +6574,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     seg.innerHTML = '<button data-view="before" aria-pressed="false" title="Show side a (B)">Before</button><button data-view="after" aria-pressed="true" title="Show side b, with ghosts (A)">After</button>';
     seg.addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) setView(b.dataset.view); });
     const btn = document.createElement('button'); btn.className = 'tb'; btn.id = 'dBtn'; btn.setAttribute('aria-controls', 'dSheet'); btn.setAttribute('aria-expanded', 'false'); btn.title = 'The list of changes';
-    btn.innerHTML = '<svg class="i" viewBox="0 0 16 16"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><path d="M2 4h1.5M2 8h1.5M2 12h1.5"/></svg><span class="lbl">Changes</span><span class="d-n" id="dN"></span>';
+    btn.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M12 3v14"/><path d="M5 10h14"/><path d="M5 21h14"/></svg><span class="lbl">Changes</span><span class="d-n" id="dN"></span>';
     btn.onclick = () => toggleSheet();
     const dock = $('dock'); dock.prepend(btn); dock.prepend(seg);
     const sh = document.createElement('aside'); sh.className = 'float sheet right closed d-sheet'; sh.id = 'dSheet'; sh.setAttribute('aria-label', 'Changes');
@@ -6625,6 +6823,20 @@ SBTEL.modes.standalone = (() => {
     return (b >>> 0).toString(16).padStart(8, '0') + (a >>> 0).toString(16).padStart(8, '0');
   }
 
+  // A hosted example may name files that sit beside it (examples/<folder>/…): the file modal fetches them
+  // from there. Only plain relative paths, so a spec cannot make the page fetch anything else.
+  function besideExample(name) {
+    const base = 'examples/' + name.replace(/[^/]*$/, '');
+    loadRef = async r => {
+      if (!/^[\w-]+(?:[./][\w-]+)*$/.test(r.file)) return null;
+      const url = base + r.file, ext = (/\.(\w+)$/.exec(r.file) || [])[1]?.toLowerCase();
+      if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) return { image:true, src:url };
+      if (ext === 'pdf') return { pdf:true, src:url };
+      const res = await fetch(url); if (!res.ok) return { error:true };
+      return { text: await res.text(), src:url };
+    };
+  }
+
   // The spec the URL asks for, else an exported file's: { text, exported? } or { text:'', error, raw };
   // null for none (the sample).
   async function fromURL() {
@@ -6636,7 +6848,7 @@ SBTEL.modes.standalone = (() => {
     // sample would be; if it cannot be fetched, the sample is.
     const start = P.example === null ? (document.querySelector('meta[name="sbtel-example"]')?.getAttribute('content') || '').trim() : '';
     if (start && /^[\w-]+(?:\/[\w-]+)*$/.test(start)) {
-      try { const r = await fetch('examples/' + start + '.sbtel'); if (r.ok) return { text: await r.text(), start: true }; } catch (e) {}
+      try { const r = await fetch('examples/' + start + '.sbtel'); if (r.ok) { besideExample(start); return { text: await r.text(), start: true }; } } catch (e) {}
     }
     if (P.example !== null) {
       const name = dec(P.example), path = 'examples/' + name + '.sbtel';
@@ -6644,6 +6856,7 @@ SBTEL.modes.standalone = (() => {
       try {
         const r = await fetch(path);
         if (!r.ok) throw new Error('HTTP ' + r.status);
+        besideExample(name);
         return { text: await r.text() };
       } catch (e) { return { text: '', raw: 'example:' + name, error: `Could not load ${path} (${e.message}).` }; }
     }
@@ -6657,7 +6870,7 @@ SBTEL.modes.standalone = (() => {
 .brand a.home:hover { text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:3px; text-decoration-color:var(--frame-line); }
 .brand a.home:hover::after, .brand a.home:focus-visible::after { opacity:1; }
 @media (hover: none) { .brand a.home::after { opacity:.7; } }
-body.embed #brand, body.embed #help, body.embed .sheet, body.embed #expAll, body.embed #colAll, body.embed #msgBtn, body.embed #srcBtn,
+body.embed #brand, body.embed #help, body.embed .sheet, body.embed #expAll, body.embed #colAll, body.embed #srcBtn,
 body.embed #chkBtn, body.embed #sendBtn, body.embed #setBtn, body.embed .dock .sep.pl-gone { display:none !important; }
 body.embed .dock { padding:4px; border-radius:12px; bottom:10px; box-shadow:0 4px 16px var(--shadow); }
 body.embed .dock .tb { height:30px; min-width:30px; border-radius:8px; }
