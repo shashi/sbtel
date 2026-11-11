@@ -64,6 +64,10 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   differ clearly; each theme sets how light the colours are. Point at a type and every block of that
   type stays lit while the rest dim; a click keeps it so until the next click or Escape. Settings has
   "Tint cards by type", which washes each typed card in its colour: a status board at a glance.
+  Click a type to choose its colour: a ring of hues to drag around, the twelve standard hues, and
+  Automatic. The blocks recolour as you move. The choice is kept in the browser for that spec file, and
+  is the hue only, so it suits both themes.
+- **An ear joins its card without a line.** The card's border no longer shows across the join.
 - **Inline editors have a Save button**, and the save key is the same in every field: Ctrl/⌘-Enter. The
   port editor said "Enter saves", which was false in its sketch. Its direction buttons read "takes" and
   "gives".

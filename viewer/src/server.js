@@ -79,6 +79,8 @@ SBTEL.modes.server = (() => {
     if (!res.ok) throw new Error(await errText(res));
     return (await res.json()).path;
   };
+  // Colours chosen for types belong to the spec's file (a stdin spec: to the session), in this browser.
+  typeStoreKey = () => 'sbtel-types:' + ((S.meta && S.meta.spec && S.meta.spec.path) || SBTEL.session);
   // ---------- A ref to another spec: its diagram over this page ----------
   // The frame shows that spec's own session, with ?via= naming the session at the top of the trail, so
   // what is said in it reaches this page's agent. A framed page asks the top page to move on to a spec
