@@ -741,7 +741,7 @@ body.diffmode .help .norm { display:none; }
   <button class="tb" id="srcBtn" aria-expanded="false" aria-controls="srcSheet">@@icon code@@<span class="lbl">Source</span></button>
   <button class="tb chkpill" id="chkBtn" title="Layout and spec checks"></button>
   <button class="tb cmtbtn" id="chatBtn" title="Chat about the whole file" aria-label="Chat about the whole file">@@icon message-square@@<span class="hide-sm">Chat</span></button>
-  <span class="cmtnav" id="cmtNav" hidden role="group" aria-label="Threads with replies"><button class="tb icon" id="cmtPrev" disabled title="Back to the thread before" aria-label="Back to the thread before">@@icon chevron-left@@</button><button class="tb cmtmore" id="cmtMore" aria-expanded="false" title="The order new replies are read in" aria-label="New replies: the order they are read in">@@icon messages-square@@<span id="cmtN"></span></button><button class="tb icon cmtbtn" id="cmtBtn" disabled title="No new replies" aria-label="Next new reply">@@icon chevron-right@@</button></span>
+  <span class="cmtnav" id="cmtNav" hidden role="group" aria-label="Threads with replies"><button class="tb icon" id="cmtPrev" disabled title="Back to the thread before ([)" aria-label="Back to the thread before">@@icon chevron-left@@</button><button class="tb cmtmore" id="cmtMore" aria-expanded="false" title="The order new replies are read in" aria-label="New replies: the order they are read in">@@icon messages-square@@<span id="cmtN"></span></button><button class="tb icon cmtbtn" id="cmtBtn" disabled title="No new replies" aria-label="Next new reply">@@icon chevron-right@@</button></span>
   <button class="tb sendbtn" id="sendBtn" hidden title="Send saved comments to an agent">@@icon send@@<span id="sendN"></span></button>
   <button class="tb icon" id="setBtn" title="Settings" aria-label="Settings">@@icon settings@@</button>
 </div>
@@ -776,6 +776,9 @@ body.diffmode .help .norm { display:none; }
     <div class="opts"><label><input type="radio" name="expandWidth" value="fit"><span>Shrink to fit</span></label><label><input type="radio" name="expandWidth" value="fill"><span>Fill the row</span></label></div></div>
   <div class="rule"><div class="lbl">Ports shown on a block</div>
     <div class="opts"><label><input type="radio" name="childDots" value="all"><span>Its own and its children's</span></label><label><input type="radio" name="childDots" value="own"><span>Its own only</span></label></div></div>
+  <div class="rule"><div class="lbl">Spacing</div>
+    <div class="opts"><label><input type="radio" name="space" value="compact"><span>Compact</span></label><label><input type="radio" name="space" value="balanced"><span>Balanced</span></label><label><input type="radio" name="space" value="relaxed"><span>Relaxed</span></label></div>
+    <div class="hint2">Room between blocks, rows and levels. More room makes Fit zoom out further.</div></div>
   <div class="rule"><div class="lbl">Canvas width</div>
     <div class="range"><input type="range" id="cw" min="560" max="2000" step="20"><output id="cwv"></output></div></div>
   <div class="rule"><div class="lbl">Agent's name</div>
@@ -990,7 +993,7 @@ function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.beh
 const state = {
   src: SAMPLE, model: null, lay: null,
   open: new Set(['Shell.SessionView']), details: new Set(), seenTop: new Set(),
-  opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system' },
+  opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system', space:'balanced' },
   cam: { x:40, y:80, k:1 }, elems: new Map(), openLabels: new Set(), carry: null, bhl: null, flash: null, sel: null, multi: new Set(), selLine: null, expanded: new Set(), drawers: new Map(), talk: null,
   comments: [], msgSort:'name', msgQ:'', msgOwner:null, msgOpen:null
 };
@@ -2924,23 +2927,26 @@ function cmtCount() {
   $('cmtNav').hidden = !n && !state.comments.some(c => (c.replies || []).length);
   next.disabled = !n && !ahead; prev.disabled = walkPos < 0 || (walkPos === 0 && chatOpen());
   $('cmtN').textContent = n || ''; next.classList.toggle('unread', n > 0);
-  next.title = ahead ? 'Forward to the thread after' : to ? `Next new reply: ${targetLabel(to.key)}${n > 1 ? ` (${n} threads have one)` : ''}` : 'No new replies. Press C for every comment.';
+  next.title = ahead ? 'Forward to the thread after (])' : to ? `Next new reply: ${targetLabel(to.key)}${n > 1 ? ` (${n} threads have one)` : ''}. Press ]` : 'No new replies. Press C for every comment.';
   $('chatBtn').classList.toggle('unread', state.comments.some(c => c.target === 'block:' && chatUnread(c)));
 }
-function showThread(key) {
-  if (key.startsWith('block:') && key.length > 6 && state.model.node(key.slice(6))) { goTo(key.slice(6)); setTimeout(() => openThread(key), 380); }
-  else openThread(key);
+// reading: open it to read, with the typing box left alone, so the key that brought the reader here can be
+// pressed again to go on (the keyboard's walk); C then starts a comment.
+function showThread(key, reading) {
+  const open = () => (reading ? openChat(key, undefined, false) : openThread(key));
+  if (key.startsWith('block:') && key.length > 6 && state.model.node(key.slice(6))) { goTo(key.slice(6)); setTimeout(open, 380); }
+  else open();
 }
-function walkTo(i) { walkPos = i; walkGo = true; try { closePop('thread'); showThread(walked[i]); } finally { setTimeout(() => { walkGo = false; cmtCount(); }, 450); } cmtCount(); }
-function prevThread() {
-  if (walkPos === 0 && !chatOpen()) { walkTo(0); return; }   // closed since: the first press shows it again
-  if (walkPos > 0) walkTo(chatOpen() ? walkPos - 1 : walkPos);
+function walkTo(i, reading) { walkPos = i; walkGo = true; try { closePop('thread'); showThread(walked[i], reading); } finally { setTimeout(() => { walkGo = false; cmtCount(); }, 450); } cmtCount(); }
+function prevThread(reading) {
+  if (walkPos === 0 && !chatOpen()) { walkTo(0, reading); return; }   // closed since: the first press shows it again
+  if (walkPos > 0) walkTo(chatOpen() ? walkPos - 1 : walkPos, reading);
 }
-function nextUnread() {
-  if (walkPos < walked.length - 1) { walkTo(walkPos + 1); return; }
+function nextUnread(reading) {
+  if (walkPos < walked.length - 1) { walkTo(walkPos + 1, reading); return; }
   closePop('thread');
   const pick = nextStop(unreadStops()); if (!pick) { cmtCount(); return; }
-  showThread(pick.key);
+  showThread(pick.key, reading);
 }
 {
   let m = null;
@@ -2973,7 +2979,7 @@ function openAllComments() {
   });
   m.querySelector('button[data-key]')?.focus();
 }
-$('cmtBtn').onclick = nextUnread; $('cmtPrev').onclick = prevThread;
+$('cmtBtn').onclick = () => nextUnread(); $('cmtPrev').onclick = () => prevThread();
 $('chatBtn').onclick = () => chatOpen('block:') ? closePop('thread') : openComposer('block:', $('chatBtn'));
 // On a phone the chat is a sheet at the bottom; --kb lifts it above the on-screen keyboard.
 if (window.visualViewport) {
@@ -3657,10 +3663,10 @@ function endTour() {
 // written from it, so the two cannot drift apart. A key is named as the browser names it (e.key), a letter
 // in lower case, with "S-" in front when Shift is held on a letter or a named key (keyName).
 //
-// Moving is by sight, not by structure: H J K L and the arrows go to the nearest box in that direction on
-// the screen (stepTo), whatever its parent. Tab and Shift+Tab go through every box in reading order, and
-// leave the canvas at either end so the toolbar stays reachable. Shift+H and Shift+L go out to the block
-// that holds this one and in to the first block it holds.
+// Moving is by sight, not by structure: the arrows go to the nearest box in that direction on the screen
+// (stepTo), whatever its parent. Tab and Shift+Tab go through every box in reading order, and leave the
+// canvas at either end so the toolbar stays reachable. Shift+Up and Shift+Down go out to the block that
+// holds this one and in to the first block it holds.
 const kbBoxes = () => (state.lay ? state.lay.blocks.filter(B => state.elems.has(B.id)) : []);
 // Where a box is, for judging direction: a card's middle; an open block's title, since its middle is its children's.
 const kbAt = B => B.kind === 'frame' ? { x: B.x + Math.min(B.w / 2, 110), y: B.y + Math.min(B.h / 2, 30) } : { x: B.x + B.w / 2, y: B.y + B.h / 2 };
@@ -3726,17 +3732,17 @@ const kbWith = f => () => { const n = kbNode(); return !!n && (f(n), true); };
 const kbEar = side => kbWith(n => setDrawer(n.id, side));
 // { on: the keys, show: how the help names them, does: what the help says, run: returns false if it did nothing }
 const KEYS = [
-  { group:'Move', on:['h', 'ArrowLeft'], show:'H J K L, arrows', does:'To the nearest block that way', run:kbStep(-1, 0) },
-  { on:['j', 'ArrowDown'], run:kbStep(0, 1) }, { on:['k', 'ArrowUp'], run:kbStep(0, -1) }, { on:['l', 'ArrowRight'], run:kbStep(1, 0) },
+  { group:'Move', on:['ArrowLeft'], show:'Arrows', does:'To the nearest block that way', run:kbStep(-1, 0) },
+  { on:['ArrowDown'], run:kbStep(0, 1) }, { on:['ArrowUp'], run:kbStep(0, -1) }, { on:['ArrowRight'], run:kbStep(1, 0) },
   { on:['Tab'], show:'Tab, Shift+Tab', does:'Next and previous, in reading order', run:kbTab(1) }, { on:['S-Tab'], run:kbTab(-1) },
-  { on:['S-h'], show:'Shift+H, Shift+L', does:'Out to the block around it, in to its first block', run:kbOut }, { on:['S-l'], run:kbIn },
+  { on:['S-ArrowUp'], show:'Shift+Up, Shift+Down', does:'Out to the block around it, in to its first block', run:kbOut }, { on:['S-ArrowDown'], run:kbIn },
   { group:'On the selected block', on:[' '], show:'Space', does:'Open or close it', run:kbToggle },
   { on:['Enter', 'e'], show:'Enter, E', does:'Edit it', run:() => { const n = kbNode(); return !!n && !readOnly() && (openEdit(n.id), true); } },
   { on:['c'], show:'C', does:'Comment on it (with nothing selected: every comment)', run:() => { const n = kbNode(); if (n) openComposer(targetKey(n.id)); else openAllComments(); return true; } },
-  { on:['['], show:'[ and ]', does:'What it takes, what it gives', run:kbEar('top') }, { on:[']'], run:kbEar('bot') },
+  { on:['<'], show:'< and >', does:'What it takes, what it gives', run:kbEar('top') }, { on:['>'], run:kbEar('bot') },
   { on:['r'], show:'R', does:'Its files', run:() => { const n = kbNode(); return !!(n && n.refs && n.refs.length) && (openRefs(n.id, 0), true); } },
   { on:['s'], show:'S', does:'Its text in the spec', run:() => { const n = kbNode(); return !!(n && n.form === 'block') && (openCode(n.id), true); } },
-  { group:'Replies', on:['n'], show:'N, P', does:'Next new reply, back to the thread before', run:() => ($('cmtBtn').disabled ? false : (nextUnread(), true)) }, { on:['p'], run:() => ($('cmtPrev').disabled ? false : (prevThread(), true)) },
+  { group:'Replies', on:[']', ';'], show:'] and [', does:'Next new reply, and back to the thread before (also ; and :)', run:() => ($('cmtBtn').disabled ? false : (nextUnread(true), true)) }, { on:['[', ':'], run:() => ($('cmtPrev').disabled ? false : (prevThread(true), true)) },
   { group:'View', on:['f'], show:'F', does:'Fit everything on screen', run:() => (fit(true), true) },
   { on:['+', '='], show:'+ and -', does:'Zoom in and out', run:() => (zoomAt(1.2, innerWidth / 2, innerHeight / 2), true) }, { on:['-', '_'], run:() => (zoomAt(1 / 1.2, innerWidth / 2, innerHeight / 2), true) },
   { on:['?'], show:'?', does:'This panel', run:() => ($('helpBtn').click(), true) },

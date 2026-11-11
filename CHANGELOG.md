@@ -12,11 +12,14 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
-- **Keyboard.** The selection is the cursor. `H J K L` or the arrows move to the nearest block that way;
+- Settings has Spacing: compact, balanced (as before) or relaxed room between blocks, rows and levels.
+  Relaxed also widens a row, so the same blocks still fit on it.
+- **Keyboard.** The selection is the cursor. The arrows move to the nearest block that way;
   `Tab` and `Shift+Tab` go through every block in reading order and leave the canvas at either end;
-  `Shift+L` goes into a block (opening it) and `Shift+H` out. On the selected block: `Space` opens or
-  closes, `Enter` or `E` edits, `C` comments, `[` and `]` show what it takes and gives, `R` its files, `S`
-  its text. `N` and `P` walk replies, `F` fits, `+` and `-` zoom, `?` shows help, which lists the keys. The
+  `Shift+Down` goes into a block (opening it) and `Shift+Up` out. On the selected block: `Space` opens or
+  closes, `Enter` or `E` edits, `C` comments, `<` and `>` show what it takes and gives, `R` its files, `S`
+  its text. `]` goes to the next new reply and `[` back (also `;` and `:`), leaving the typing box alone
+  so the key can be pressed again; `F` fits, `+` and `-` zoom, `?` shows help, which lists the keys. The
   view pans to keep the selection in sight. A focused button keeps Space, Enter and Tab.
 - Settings has Agent's name: what the agent is called in threads ("Agent" by default).
 - Settings has Font: the name of a font installed on your computer, used for names and text (code keeps

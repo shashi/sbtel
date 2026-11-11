@@ -1,6 +1,18 @@
 // @sbtel begin Core.Constants
 /*CORE-START*/
 const K = { PAD:22, GAPX:56, ROWGAP:30, TAB:20, LEVELGAP:44, NAMEGAP:10, BANDGAP:34, BANDLAB:22, MIN_EXP:320, CARD_MIN:220, CARD_MAX:340, DETAIL_MAX:440, LABEL:52 };
+// How much room the layout leaves between things (opts.space): the gaps between blocks in a row, between
+// rows, between levels and bands, and inside an open block's edge. "balanced" is K as written. A level's
+// gap never goes under two ears' height, since an ear of the row above and one of the row below share it.
+const SPACE = {
+  compact:  { PAD:16, GAPX:34, ROWGAP:24, LEVELGAP:42, BANDGAP:26 },
+  balanced: { PAD:K.PAD, GAPX:K.GAPX, ROWGAP:K.ROWGAP, LEVELGAP:K.LEVELGAP, BANDGAP:K.BANDGAP },
+  relaxed:  { PAD:32, GAPX:88, ROWGAP:48, LEVELGAP:74, BANDGAP:54 },
+};
+// With more room between blocks a row also gets more width, so the same blocks still fit on it.
+const SPACE_WIDTH = { relaxed:1.3 };
+// K is the one table everything reads (the layout here, drop zones in the viewer), so the choice is written into it.
+function setSpace(name) { Object.assign(K, SPACE[name] || SPACE.balanced); }
 const FONT = {
   title:'600 17px "Commissioner"', sketch:'400 13.5px "Commissioner"',
   htitle:'600 20px "Commissioner"', hsketch:'400 14.5px "Commissioner"',
@@ -594,6 +606,8 @@ function placementFindings(model) {
 // @sbtel end MeasuresText
 /** @param {MeasuresText} M  how wide a text is (tw) and how many lines it wraps to (wrap), in a CSS font */
 function layout(model, opts, M) {
+  setSpace(opts.space);
+  if (SPACE_WIDTH[opts.space] && opts.width) opts = { ...opts, width: opts.width * SPACE_WIDTH[opts.space] };
   const out = { blocks:[], connectors:[], dividers:[], bands:[], gutters:[], plus:[], levels:[], loc:new Map() };
   const isOpen = b => opts.open.has(b.id) && hasInside(b);
   const det = n => opts.allDetails || opts.details.has(n.id);
