@@ -12,6 +12,7 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- Settings has Level names: left or right of their line.
 - Settings has Spacing: compact, balanced (as before) or relaxed room between blocks, rows and levels.
   Relaxed also widens a row, so the same blocks still fit on it.
 - **Keyboard.** The selection is the cursor. The arrows move to the nearest block that way;

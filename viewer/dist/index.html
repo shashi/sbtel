@@ -366,6 +366,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 .llab { position:relative; flex:0 1 auto; min-width:0; max-width:min(60%, 520px); margin:0 10px 0 -3px; padding:0 3px; border:0; border-radius:5px; background:none; color:var(--muted);
   font:500 15px/20px var(--ff-ui); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; cursor:pointer; pointer-events:auto; }
 .llab:hover { color:var(--ink); background:var(--sk-hover); }
+/* Settings, Level names: on the right, the name follows its line, before the + that adds a level. */
+.world.lab-right .lsep .llab { order:2; margin:0 -3px 0 10px; } .world.lab-right .lsep .plus { order:3; }
 .llab.open { white-space:normal; max-width:calc(100% - 40px); }
 .llab.ph { display:none; font-weight:400; font-style:italic; opacity:.55; }
 .lsep:hover .llab.ph, .gutter:hover .llab.ph, .llab.ph:focus-visible { display:block; }
@@ -779,6 +781,8 @@ body.diffmode .help .norm { display:none; }
   <div class="rule"><div class="lbl">Spacing</div>
     <div class="opts"><label><input type="radio" name="space" value="compact"><span>Compact</span></label><label><input type="radio" name="space" value="balanced"><span>Balanced</span></label><label><input type="radio" name="space" value="relaxed"><span>Relaxed</span></label></div>
     <div class="hint2">Room between blocks, rows and levels. More room makes Fit zoom out further.</div></div>
+  <div class="rule"><div class="lbl">Level names</div>
+    <div class="opts"><label><input type="radio" name="labelSide" value="left"><span>Left of the line</span></label><label><input type="radio" name="labelSide" value="right"><span>Right of the line</span></label></div></div>
   <div class="rule"><div class="lbl">Canvas width</div>
     <div class="range"><input type="range" id="cw" min="560" max="2000" step="20"><output id="cwv"></output></div></div>
   <div class="rule"><div class="lbl">Agent's name</div>
@@ -2564,7 +2568,7 @@ function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.beh
 const state = {
   src: SAMPLE, model: null, lay: null,
   open: new Set(['Shell.SessionView']), details: new Set(), seenTop: new Set(),
-  opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system', space:'balanced' },
+  opts: { wrap:'keep', vlink:'same', expandWidth:'fit', childDots:true, width:1180, animate:true, allDetails:false, theme:'system', space:'balanced', labelSide:'left' },
   cam: { x:40, y:80, k:1 }, elems: new Map(), openLabels: new Set(), carry: null, bhl: null, flash: null, sel: null, multi: new Set(), selLine: null, expanded: new Set(), drawers: new Map(), talk: null,
   comments: [], msgSort:'name', msgQ:'', msgOwner:null, msgOpen:null
 };
@@ -2702,7 +2706,7 @@ function render(anchorId, pv) {
   if (world.classList.contains('anim')) setTimeout(() => { world.classList.remove('anim'); placeStrip(); placeCallout(); }, 340);
   document.body.classList.toggle('ro', readOnly());
   applySelection(); applyTalk(); applyCarry(); applyBeh(); refreshCallout();
-  world.classList.toggle('tint', !!state.opts.tint); if (state.typePin) showType();
+  world.classList.toggle('tint', !!state.opts.tint); world.classList.toggle('lab-right', state.opts.labelSide === 'right'); if (state.typePin) showType();
 }
 redraw = () => render();
 // Draw a layout: one element per block (reused by id so moves animate), lines, + buttons and bubbles.
