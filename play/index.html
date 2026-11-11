@@ -148,8 +148,9 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
    so the outline runs from the card around the ear in one line, like a jigsaw piece. */
 .tab { position:absolute; left:50%; transform:translateX(-50%); height:20px; box-sizing:border-box; background:inherit;
   border:1.5px solid var(--frame-line); display:flex; align-items:center; justify-content:center; gap:7px; padding:0 12px; }
-.tab.top { bottom:100%; border-radius:10px 10px 0 0; border-bottom:0; }
-.tab.bot { top:100%; border-radius:0 0 10px 10px; border-top:0; }
+/* An ear overlaps its card's edge by a pixel, so the card's own border does not draw a line across the join. */
+.tab.top { bottom:calc(100% - 1px); border-radius:10px 10px 0 0; border-bottom:0; }
+.tab.bot { top:calc(100% - 1px); border-radius:0 0 10px 10px; border-top:0; }
 .tab { cursor:pointer; }
 .tab.open { height:auto; overflow:hidden; flex-direction:column; align-items:stretch; gap:2px; padding:7px 14px; min-width:96px; z-index:3; }
 .tab.top.open { padding-top:9px; }
@@ -194,6 +195,21 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 /* With "Tint cards by type" on, a typed card takes a wash of its type's hue and an edge in it. */
 .world.tint .blk.card.typed { background:color-mix(in oklch, var(--leaf), oklch(var(--ty-l) var(--ty-c) var(--h)) var(--ty-wash)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 55%); }
 .world.typing .blk.card:not(.ty-on) { opacity:.3; }
+.blk .ttl > .pill { cursor:pointer; border-radius:5px; }
+.blk .ttl > .pill:hover { text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+.pop.typepick { width:212px; padding:12px 14px 12px; }
+.typepick .tph { display:flex; align-items:baseline; gap:6px; font-size:14px; margin-bottom:12px; }
+.typepick .tph .dot { width:9px; height:9px; border-radius:50%; background:oklch(var(--ty-l) var(--ty-c) var(--h)); align-self:center; flex:none; }
+.typepick .tph span { color:var(--muted); font-size:12.5px; }
+.typepick .ring { position:relative; width:128px; height:128px; margin:0 auto 14px; border-radius:50%; cursor:crosshair; touch-action:none; outline:none;
+  -webkit-mask:radial-gradient(circle, transparent 43px, #000 44px); mask:radial-gradient(circle, transparent 43px, #000 44px); }
+.typepick .ring:focus-visible { box-shadow:0 0 0 2px var(--accent); }
+.typepick .knob { position:absolute; left:50%; top:50%; width:18px; height:18px; margin:-9px 0 0 -9px; border-radius:50%; background:oklch(var(--ty-l) var(--ty-c) var(--h)); border:2.5px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.45); box-sizing:border-box; pointer-events:none; }
+.typepick .sw { display:grid; grid-template-columns:repeat(6, 1fr); gap:7px; margin-bottom:10px; }
+.typepick .sw button { aspect-ratio:1; border-radius:50%; border:0; padding:0; cursor:pointer; background:oklch(var(--ty-l) var(--ty-c) var(--h)); }
+.typepick .sw button[aria-pressed="true"] { box-shadow:0 0 0 2px var(--panel), 0 0 0 4px oklch(var(--ty-l) var(--ty-c) var(--h)); }
+.typepick .tpf { display:flex; align-items:center; }
+.typepick .tpf .btn { padding:4px 12px; font-size:12.5px; }
 .world.typing .blk.ty-on { box-shadow:0 0 0 2px oklch(var(--ty-l) var(--ty-c) var(--h)); }
 .blk.card { transition:opacity .15s ease; }
 .ttl { font-size:17px; font-weight:600; height:24px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:7px; }
@@ -2560,15 +2576,21 @@ function paint(lay, keep) {
   const mo = new MutationObserver(soon); const watch = () => document.querySelectorAll('.sheet').forEach(s => { if (!s._fd) { s._fd = 1; mo.observe(s, { attributes:true, attributeFilter:['class'] }); } });
   watch(); new MutationObserver(watch).observe(document.body, { childList:true });
 }
-// Types: point to find, click to keep (showType).
-document.addEventListener('pointerover', e => { if (e.pointerType === 'mouse' && e.target.closest?.('.blk .ttl > .pill')) showType(e.target.closest('.pill').dataset.k); });
-document.addEventListener('pointerout', e => { if (e.pointerType === 'mouse' && e.target.closest?.('.blk .ttl > .pill')) showType(null); });
-document.addEventListener('click', e => {
-  const p = e.target.closest?.('.blk .ttl > .pill');
-  if (p) { e.stopPropagation(); showType(p.dataset.k, state.typePin !== p.dataset.k); return; }
-  if (state.typePin && !e.target.closest('.modal, .pop, .dock')) showType(null, false);
-}, true);
-addEventListener('keydown', e => { if (e.key === 'Escape' && state.typePin) showType(null, false); });
+// Types: resting the pointer on a type's text (a tenth of a second) lights its blocks; a click opens its
+// colour picker (openTypePicker), which keeps them lit until it closes.
+{
+  let wait = 0;
+  const pillAt = e => e.target.closest?.('.blk .ttl > .pill');
+  document.addEventListener('pointerover', e => { const p = e.pointerType === 'mouse' && pillAt(e); if (!p) return; clearTimeout(wait); wait = setTimeout(() => showType(p.dataset.k), 110); });
+  document.addEventListener('pointerout', e => { if (e.pointerType === 'mouse' && pillAt(e)) { clearTimeout(wait); showType(null); } });
+  document.addEventListener('click', e => {
+    const p = pillAt(e);
+    if (p) { e.stopPropagation(); clearTimeout(wait); openTypePicker(p); return; }
+    // The picker gone (a click elsewhere, Escape, a new drawing): the blocks are no longer held lit.
+    setTimeout(() => { if (state.typePin && !(pops.info && pops.info.isConnected && pops.info.classList.contains('typepick'))) showType(null, false); }, 0);
+  }, true);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && state.typePin) setTimeout(() => showType(null, false), 0); });
+}
 // The + buttons within reach of the pointer (about 110px on screen) are the ones shown in full.
 {
   let raf = 0, at = null;
@@ -2725,21 +2747,62 @@ function topHTML(n, top, detailed) {
   return `<div class="toprow" style="height:${top.h - 6}px">${bs.length ? `<span class="behs">${bs.map(detailed ? behChip : badge).join('')}</span>` : ''}</div>`;
 }
 // A block's :type, in quiet type after its name.
-const typeHTML = n => n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}" style="--h:${typeHue(n.type)}" title="${esc(n.type)}: point here to find every ${esc(n.type)}">${esc(n.type)}</span>` : '';
+const typeHTML = n => n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}" style="--h:${typeHue(n.type)}" title="Find every ${esc(n.type)}. Click to choose its color.">${esc(n.type)}</span>` : '';
 // A type's colour comes from its text alone (the language says nothing of colour): a hash picks one of
 // twelve hues, and the theme sets how light and how strong it is drawn (--ty-l, --ty-c). The first type
 // drawn keeps its hashed hue; each later one takes the free hue farthest from those in use (its own hashed
 // hue when that is as far as any), so the types of one diagram are easy to tell apart.
 const typeHues = new Map();
+// A colour the reader chose for a type is kept in this browser, for this spec (typeStoreKey: the session's
+// page names the spec's file, so the choice outlives a session), and comes before the automatic one.
+let typeStoreKey = () => 'sbtel-types' + prefs.key;
+const typeChosen = () => store.get(typeStoreKey(), {}) || {};
 function typeHue(type) {
-  const k = String(type).toLowerCase(); if (typeHues.has(k)) return typeHues.get(k);
-  const used = [...new Set(typeHues.values())].map(h => (h - 20) / 30), own = hash(k) % 12, gap = (a, b) => Math.min((a - b + 12) % 12, (b - a + 12) % 12);
+  const k = String(type).toLowerCase(), mine = typeChosen();
+  if (mine[k] != null) return mine[k];
+  if (typeHues.has(k)) return typeHues.get(k);
+  const used = [...new Set([...typeHues.values(), ...Object.values(mine)])].map(h => Math.round((h - 20) / 30 + 12) % 12), own = hash(k) % 12, gap = (a, b) => Math.min((a - b + 12) % 12, (b - a + 12) % 12);
   let i = own;
   if (used.length && used.length < 12) {
     let best = -1;
     for (let c = 0; c < 12; c++) { if (used.includes(c)) continue; const far = Math.min(...used.map(u => gap(c, u))), score = far * 100 - gap(c, own); if (score > best) { best = score; i = c; } }
   }
   typeHues.set(k, i * 30 + 20); return i * 30 + 20;
+}
+// Choose a type's hue (null: back to the automatic one), and repaint it everywhere without a new layout.
+function setTypeHue(k, h) {
+  const mine = typeChosen(); if (h == null) delete mine[k]; else mine[k] = Math.round(h); store.set(typeStoreKey(), mine);
+  const now = typeHue(k);
+  document.querySelectorAll('.blk .ttl > .pill').forEach(p => { if (p.dataset.k === k) { p.style.setProperty('--h', now); p.closest('.blk').style.setProperty('--h', now); } });
+  return now;
+}
+// The colour picker of a type: a ring of hues to drag around, the twelve standard hues to click, and
+// Automatic. Only the hue is chosen; each theme sets how light and strong it is, so a choice suits both.
+// While it is open the type's blocks stay lit, and they recolour as the hue moves.
+function openTypePicker(pill) {
+  const k = pill.dataset.k, name = pill.textContent, HUES = Array.from({ length:12 }, (_, i) => i * 30 + 20);
+  const col = h => `oklch(var(--ty-l) var(--ty-c) ${h})`;
+  const el = pop('info', pill, `<div class="tph"><i class="dot"></i><b>${esc(name)}</b><span>color</span></div>
+    <div class="ring" role="slider" tabindex="0" aria-label="Hue of ${esc(name)}" aria-valuemin="0" aria-valuemax="359"><span class="knob"></span></div>
+    <div class="sw">${HUES.map(h => `<button type="button" data-h="${h}" style="--h:${h}" aria-label="Hue ${h}"></button>`).join('')}</div>
+    <div class="tpf"><button type="button" class="tiny" data-auto>Automatic</button><span class="spacer"></span><button type="button" class="btn" data-done>Done</button></div>`, 'typepick');
+  const ring = el.querySelector('.ring'), knob = el.querySelector('.knob');
+  ring.style.background = `conic-gradient(from 90deg, ${Array.from({ length:13 }, (_, i) => col(i * 30)).join(', ')})`;
+  const draw = h => { el.style.setProperty('--h', h); ring.setAttribute('aria-valuenow', Math.round(h)); const a = h * Math.PI / 180; knob.style.transform = `translate(${Math.cos(a) * 54}px, ${Math.sin(a) * 54}px)`;
+    el.querySelectorAll('.sw button').forEach(b => b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.h - h) < 1))); };
+  const pick = h => draw(setTypeHue(k, ((h % 360) + 360) % 360));
+  draw(typeHue(name)); showType(k, true);
+  const at = e => { const r = ring.getBoundingClientRect(); pick(Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI); };
+  ring.addEventListener('pointerdown', e => { ring.setPointerCapture(e.pointerId); at(e); e.preventDefault(); ring.focus(); });
+  ring.addEventListener('pointermove', e => { if (ring.hasPointerCapture(e.pointerId)) at(e); });
+  ring.addEventListener('keydown', e => { const d = { ArrowRight:5, ArrowUp:5, ArrowLeft:-5, ArrowDown:-5 }[e.key]; if (d) { e.preventDefault(); pick(typeHue(name) + d); } });
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.h) pick(+b.dataset.h);
+    else if ('auto' in b.dataset) { typeHues.delete(k); draw(setTypeHue(k, null)); }
+    else if ('done' in b.dataset) { closePop('info'); showType(null, false); }
+  });
 }
 // Pointing at a type lights every block of that type and dims the rest; a click keeps it until the next
 // click or Escape.
@@ -5205,6 +5268,8 @@ SBTEL.modes.server = (() => {
     if (!res.ok) throw new Error(await errText(res));
     return (await res.json()).path;
   };
+  // Colours chosen for types belong to the spec's file (a stdin spec: to the session), in this browser.
+  typeStoreKey = () => 'sbtel-types:' + ((S.meta && S.meta.spec && S.meta.spec.path) || SBTEL.session);
   // ---------- A ref to another spec: its diagram over this page ----------
   // The frame shows that spec's own session, with ?via= naming the session at the top of the trail, so
   // what is said in it reaches this page's agent. A framed page asks the top page to move on to a spec
