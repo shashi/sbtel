@@ -51,6 +51,8 @@ a `;` comment. Tell the human which items you kept.
 
 - **Adjacency used to dodge levels.** Was a pair made adjacent because one needs the other? *Fix*:
   put the needed one in a lower level. Adjacency is for mutual cooperation, not one-way use.
+  (When the subject is not code, a group may instead read left to right, a thing and what details
+  it: see "When the subject is not code" in SKILL.md.)
 - **Large or chained groups.** Does a group have more than three members, or do groups chain across
   most of a level? *Fix*: stratify. A level that is one big clique has no structure.
 - **Unexplained braid.** Does an adjacent group lack a sketch? *Fix*: name the reason for the braid in

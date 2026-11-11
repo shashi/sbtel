@@ -56,7 +56,7 @@ second concern.
 - **Open a block** (give it levels of its own) when the task changes something inside it, a comment
   asks about it, a violation points into it, or the human opens the subject. Leave the rest as leaves.
 - **Grounded in code**: stop at files unless the task is inside one; go to functions only in the block
-  being changed or debugged. Give `:type` to what maps to code.
+  being changed or debugged. Give every block a `:type` (sbtel-design, "One card, one thing").
 - **Not grounded** (ideas, prompts, processes): stop where one sentence says what a block is.
 - **By task**: understanding: broad and shallow, then deeper where asked. Debugging: the path the
   shape or call in question takes, deep; everything else closed. Review: what changed and what it

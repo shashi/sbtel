@@ -7,6 +7,9 @@ description: Design or restructure something as an sbtel spec with the human rev
 
 Syntax, what a view shows and the review loop are in sbtel-language. This is what to write.
 
+Aim for small yet beautiful: the fewest blocks, levels and types that say the thing, each one earning
+its place. A spec that grows should be able to say what each new part is for.
+
 ## The method
 
 Stratified design (SICP 2.2.4) and Simple Made Easy (Hickey), applied literally:
@@ -52,12 +55,31 @@ Worked reasoning for each: [principles.md](principles.md).
 - No shape with exactly one fixed giver and one fixed taker that could be a plain call.
 - The spec has fewer blocks than the last version, or you can say what each new one is for.
 
+## One card, one thing
+
+- A block stands for one thing of one kind. If a card holds a claim and its evidence, make two cards.
+- Give every block a `:type` that says its kind. The viewer colours cards by type, so the reader sees
+  at a glance which cards are evidence, which are complaints and which are excerpts. Use few types in
+  a view, three to six, and the same word every time.
+- Take the types from the subject, in the human's own words:
+  - code: what the thing is in code (module, function, table)
+  - a process or an investigation: the kinds of thing the human talks about (finding, evidence,
+    excerpt, recommendation)
+  - progress: statuses (todo, doing, done, blocked)
+  - people and schedules: roles or teams, weeks or milestones
+  - a product: features
+- Keep a card short: a name and a sentence or two.
+
 ## When the subject is not code
 
 The same method. A prompt: the task at the top, the judgements it makes below, the vocabulary those
 use at the bottom. A document: the claim, the argument, what the reader must already know. A process:
-the outcome, the steps, the roles and tools the steps draw on. `:type` says what a block is
-("Prompt", "Section", "Role").
+the outcome, the steps, the roles and tools the steps draw on.
+
+Here, and only here, an `adjacent` group may also read left to right: the left card is the thing and
+the ones to its right detail it (a finding, then its evidence, then the excerpt it points at). Keep
+the same order of types in every such group. In a spec of code, adjacency keeps its strict meaning:
+peers that work as one.
 
 ## When code exists or follows
 

@@ -82,6 +82,9 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   was; the Sample button then loads it too. The project's playground uses it.
 
 ### Changed
+- The design skill asks for small yet beautiful specs and for one thing per card, typed in the human's
+  own words (code kinds, findings and evidence, statuses, roles, features), so the type colours carry
+  meaning. When the subject is not code, a linked group may read left to right: a thing, then what details it.
 - The toolbar has no primary button: Review looks like the rest and shows a count when something waits in it.
   The Shapes button is gone (the table still opens from a shape's Table action).
 - The comments button turns off when no new reply is left. `C` still lists every comment. Its dot no longer
