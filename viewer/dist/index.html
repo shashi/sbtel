@@ -126,14 +126,15 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 .editf .btn.small { font-size:12.5px; padding:5px 10px; }
 .editf .prow2 .psk { flex:1 1 100%; min-height:34px; height:34px; font-size:12.5px; }
 
-.blk { position:absolute; left:0; top:0; box-sizing:border-box; border:1.5px solid var(--frame-line); border-radius:12px; cursor:default; }
+/* --r: how round the boxes are (Settings, Corners). A frame is a little rounder than a card; an ear follows. */
+.blk { position:absolute; left:0; top:0; box-sizing:border-box; border:1.5px solid var(--frame-line); border-radius:var(--r, 12px); cursor:default; }
 .blk.card { background:var(--card); z-index:500; }
 .blk.card.leaf { background:var(--leaf); }
 .blk.card.beh { background:var(--beh); }
 .blk.card.msg { background:var(--surface); border-style:dashed; }
 .ttl .md { width:11px; height:11px; border-radius:50%; flex:none; }
 .rel2 { font-family:var(--ff-mono); font-size:12px; }
-.blk.frame { background:var(--surface); border-radius:14px; }
+.blk.frame { background:var(--surface); border-radius:calc(var(--r, 12px) * 1.17); }
 .blk.flash { animation: flash 1.4s ease-out; }
 @keyframes flash { 0% { box-shadow:0 0 0 7px var(--accent); } 100% { box-shadow:0 0 0 0 transparent; } }
 .blk.sel { outline:2.5px solid var(--accent); outline-offset:4px; }
@@ -147,8 +148,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 .tab { position:absolute; left:50%; transform:translateX(-50%); height:20px; box-sizing:border-box; background:inherit;
   border:1.5px solid var(--frame-line); display:flex; align-items:center; justify-content:center; gap:7px; padding:0 12px; }
 /* An ear overlaps its card's edge by a pixel, so the card's own border does not draw a line across the join. */
-.tab.top { bottom:calc(100% - 1px); border-radius:10px 10px 0 0; border-bottom:0; }
-.tab.bot { top:calc(100% - 1px); border-radius:0 0 10px 10px; border-top:0; }
+.tab.top { bottom:calc(100% - 1px); border-radius:min(10px, var(--r, 12px)) min(10px, var(--r, 12px)) 0 0; border-bottom:0; }
+.tab.bot { top:calc(100% - 1px); border-radius:0 0 min(10px, var(--r, 12px)) min(10px, var(--r, 12px)); border-top:0; }
 .tab { cursor:pointer; }
 .tab.open { height:auto; overflow:hidden; flex-direction:column; align-items:stretch; gap:2px; padding:7px 14px; min-width:96px; z-index:3; }
 .tab.top.open { padding-top:9px; }
@@ -760,6 +761,8 @@ body.diffmode .help .norm { display:none; }
     <div class="opts"><label><input type="radio" name="childDots" value="all"><span>Its own and its children's</span></label><label><input type="radio" name="childDots" value="own"><span>Its own only</span></label></div></div>
   <div class="rule"><div class="lbl">Canvas width</div>
     <div class="range"><input type="range" id="cw" min="560" max="2000" step="20"><output id="cwv"></output></div></div>
+  <div class="rule"><div class="lbl">Corners</div>
+    <div class="range"><input type="range" id="cr" min="0" max="24" step="1" aria-label="How round the boxes are"><output id="crv"></output></div></div>
   <div class="rule"><div class="lbl">Theme</div>
     <div class="opts"><label><input type="radio" name="theme" value="system"><span>Follow system</span></label><label><input type="radio" name="theme" value="light"><span>Light</span></label><label><input type="radio" name="theme" value="dark"><span>Dark</span></label></div></div>
   <label class="chk"><input type="checkbox" id="tint"> Tint cards by type</label>
@@ -4536,6 +4539,8 @@ $('setBtn').onclick = () => {
   });
   const cw = m.querySelector('#cw'), cwv = m.querySelector('#cwv'); cw.value = state.opts.width; cwv.textContent = state.opts.width;
   cw.addEventListener('input', () => { state.opts.width = +cw.value; cwv.textContent = cw.value; persist(); const a = state.opts.animate; state.opts.animate = false; render(); state.opts.animate = a; });
+  const cr = m.querySelector('#cr'), crv = m.querySelector('#crv'), rNow = () => state.opts.radius ?? 12; cr.value = rNow(); crv.textContent = rNow();
+  cr.addEventListener('input', () => { state.opts.radius = +cr.value; crv.textContent = cr.value; persist(); applyTheme(); });
   m.querySelector('#verNo').textContent = SBTEL.version;
   const ti = m.querySelector('#tint'); ti.checked = !!state.opts.tint; ti.onchange = () => { state.opts.tint = ti.checked; persist(); render(); };
   const an = m.querySelector('#anim'); an.checked = state.opts.animate; an.onchange = () => { state.opts.animate = an.checked; persist(); };
@@ -4652,6 +4657,7 @@ const isDark = () => state.opts.theme === 'dark' || (state.opts.theme === 'syste
 function applyTheme() {
   const root = document.documentElement;
   if (state.opts.theme === 'system') delete root.dataset.theme; else root.dataset.theme = state.opts.theme;
+  if (state.opts.radius == null || state.opts.radius === 12) root.style.removeProperty('--r'); else root.style.setProperty('--r', Math.max(0, Math.min(24, +state.opts.radius || 0)) + 'px');
 }
 darkMQ.addEventListener?.('change', applyTheme);
 applyTheme();

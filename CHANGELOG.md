@@ -12,6 +12,7 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- Settings has Corners: how round the boxes are, from square to very round.
 - **Names show without what the picture already says.** A block named `store/index` inside `store`, or
   `slow-login/evidence` linked beside `slow-login`, shows as `index` or `evidence`; moved elsewhere it shows
   its whole name again. The name itself is unchanged, so threads and checks still follow it. The design
