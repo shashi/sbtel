@@ -12,6 +12,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- **A chat can be read large.** The button beside a chat's close button opens it as a tall window with
+  bigger type; Escape (or a click beside it) makes it the small callout again, and a second Escape closes it.
 - Settings has Corners: how round the boxes are, from square to very round.
 - **Names show without what the picture already says.** A block named `store/index` inside `store`, or
   `slow-login/evidence` linked beside `slow-login`, shows as `index` or `evidence`; moved elsewhere it shows

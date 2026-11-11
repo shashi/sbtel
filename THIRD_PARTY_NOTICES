@@ -613,7 +613,7 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ================================================================================
-icons Lucide (drawn into the viewer page: arrow-right calendar-plus check-check check chevron-up clock code diff download external-link file-text list map-pin maximize message-square-check message-square messages-square minus paperclip pencil plus redo-2 save scissors send settings trash-2 undo-2 users x)
+icons Lucide (drawn into the viewer page: arrow-right calendar-plus check-check check chevron-up clock code diff download external-link file-text list map-pin maximize-2 maximize message-square-check message-square messages-square minimize-2 minus paperclip pencil plus redo-2 save scissors send settings trash-2 undo-2 users x)
 --------------------------------------------------------------------------------
 viewer/icons/LICENSE
 --------------------------------------------------------------------------------

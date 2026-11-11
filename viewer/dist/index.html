@@ -626,6 +626,15 @@ body.diffmode .help .norm { display:none; }
 .walkm fieldset { border:0; margin:0; padding:0; } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
 .pop.chat ul.thread li.agent > .sb-reply:first-child { margin-top:0; }
 .pop.chat .chh .in { flex:none; font-size:12.5px; color:var(--muted); }
+.pop.chat .chh .xbtn.big { margin-left:auto; } .pop.chat .chh .xbtn.big + .xbtn { margin-left:0; } .pop.chat .chh .xbtn.big svg.i { width:14px; height:14px; }
+.pop.chat.big { left:50% !important; top:4vh !important; right:auto !important; bottom:auto !important; transform:translateX(-50%); width:min(780px, calc(100vw - 32px)); height:92vh; max-height:none; z-index:2002; font-size:16px; line-height:1.62; border-radius:16px; }
+.pop.chat.big::before { display:none; }
+.pop.chat.big .chh { padding:14px 12px 12px 26px; } .pop.chat.big .chh .on { font-size:16px; }
+.pop.chat.big ul.thread { flex:1; padding-left:26px; padding-right:26px; }
+.pop.chat.big ul.thread > li { max-width:68ch; }
+.pop.chat.big .sb-reply { padding-left:16px; margin-top:12px; } .pop.chat.big .sb-reply .who { font-size:13px; margin-bottom:3px; }
+.pop.chat.big .composer { margin:6px 20px 18px; } .pop.chat.big .composer textarea { min-height:64px; padding:12px 14px 6px; }
+@media (max-width: 759px) { .pop.chat.big { left:0 !important; top:0 !important; transform:none; width:100vw; height:100dvh; border-radius:0; border:0; } .pop.chat.big ul.thread { padding-left:18px; padding-right:18px; } }
 .pop.chat ul.thread li.where { position:sticky; top:-1px; z-index:1; padding:6px 0 4px; margin:0; background:var(--panel); border:0; }
 .pop.chat ul.thread li.where button { border:0; background:var(--surface); color:var(--ink-2); font:600 12px var(--ff-ui, inherit); padding:3px 9px; border-radius:999px; cursor:pointer; } .pop.chat ul.thread li.where button:disabled { cursor:default; color:var(--muted); }
 .pop.chat ul.thread li.where button:not(:disabled):hover { background:var(--accent-soft); color:var(--accent-ink); }
@@ -2487,6 +2496,8 @@ const ICON = {
   cut:'<svg class="i" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>',
   trash:'<svg class="i" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
   go:'<svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+  grow:'<svg class="i" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/></svg>',
+  shrink:'<svg class="i" viewBox="0 0 24 24"><path d="m14 10 7-7"/><path d="M20 10h-6V4"/><path d="m3 21 7-7"/><path d="M4 14h6v6"/></svg>',
   close:'<svg class="i" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
   edit:'<svg class="i" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>',
   file:'<svg class="i" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>',
@@ -4271,7 +4282,7 @@ function whenText(at) { const d = new Date(at), today = d.toDateString() === new
 // when there is room, else to the left, else under or over it (placeNear). A thing too wide to stand beside
 // (an open block) is stood beside at its heading. It keeps clear of the toolbar at the foot.
 function placeBeside(el, anchor) {
-  if (innerWidth < 760 || el.classList.contains('filechat')) return;
+  if (innerWidth < 760 || el.classList.contains('filechat') || el.classList.contains('big')) return;
   let r = anchor.getBoundingClientRect();
   const head = r.width > innerWidth * .45 && anchor.querySelector ? anchor.querySelector('.fh, .ft, .hd') : null;
   if (head) { const h = head.getBoundingClientRect(); r = new DOMRect(h.left, h.top, Math.min(h.width, 260), h.height); }
@@ -4319,12 +4330,15 @@ function openChat(key, anchor, focus) {
   const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 190, innerHeight / 3, 380, 0) };
   const keep = chatKeep(), mac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
   const lab = key === 'block:' ? 'The whole file' : targetLabel(key), sp = key === 'block:' ? -1 : lab.indexOf(' ');
-  const el = pop('thread', a, `<div class="chh" title="Comments on ${esc(key === 'block:' ? 'the whole file' : lab)}"><span class="on">${sp > 0 ? `<i>${esc(lab.slice(0, sp))}</i>${esc(lab.slice(sp + 1))}` : esc(lab)}</span><span class="in" hidden>and what is inside</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
+  const el = pop('thread', a, `<div class="chh" title="Comments on ${esc(key === 'block:' ? 'the whole file' : lab)}"><span class="on">${sp > 0 ? `<i>${esc(lab.slice(0, sp))}</i>${esc(lab.slice(sp + 1))}` : esc(lab)}</span><span class="in" hidden>and what is inside</span><button class="xbtn big" data-t="big" aria-label="Read in a large window" title="Read in a large window">${ICON.grow}</button><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
     <ul class="thread" aria-live="polite"></ul>
     <div class="composer"><textarea id="cmtText" rows="2" placeholder="${key === 'block:' ? 'Say anything about the whole file.' : 'What should change, or what is unclear?'}" aria-label="Comment on ${esc(key === 'block:' ? 'the whole file' : lab)}"></textarea><input type="file" multiple hidden>
     <div class="acts"><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><span class="keys">${kb('⌘ ↵')} sends</span><button class="btn quiet" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div></div>`, 'chat');
   el.classList.toggle('filechat', key === 'block:');
-  chat = { key, el, anchor:a };
+  chat = { key, el, anchor:a, big:false, scrim:null };
+  // Large: the same chat as a tall window over the page, for reading. Escape (or a click beside it) makes
+  // it the callout again; a second Escape closes it.
+  { const me = chat, rm = el.remove.bind(el); el.remove = () => { me.scrim?.remove(); rm(); }; }
   const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
   refreshChat();
   if (focus) setTimeout(() => { if (chatOpen(key)) ta.focus(); }, 30);
@@ -4339,7 +4353,7 @@ function openChat(key, anchor, focus) {
   ta.addEventListener('paste', e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); attachTo(ta, fs); } });
   ta.addEventListener('input', () => { if (ta.value.trim()) chatDrafts.set(key, ta.value); else chatDrafts.delete(key); });
   ta.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePop('thread'); return; }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (!chatShrink()) closePop('thread'); return; }
     if (e.key !== 'Enter' || e.isComposing) return;
     if (e.metaKey || e.ctrlKey) { e.preventDefault(); submit('send'); }
     else if (e.shiftKey) { e.preventDefault(); submit('keep'); }
@@ -4349,12 +4363,24 @@ function openChat(key, anchor, focus) {
     const g = e.target.closest('[data-goto]'); if (g) { const k = g.dataset.goto; closePop('thread'); targetChain(k).forEach(b => state.open.add(b.id)); render(); setTimeout(() => showThread(k), 60); return; }
     const b = e.target.closest('[data-t]'); if (!b) return;
     if (b.dataset.t === 'close') { closePop('thread'); return; }
+    if (b.dataset.t === 'big') { chatBig(!chat.big); return; }
     if (b.dataset.t === 'file') { pick.click(); return; }
     const cm = state.comments.find(x => x.id === b.dataset.id); if (!cm) return;
     if (b.dataset.t === 'del') { state.comments = state.comments.filter(x => x !== cm); saveComments(); render(); refreshChat(); if (key.startsWith('msg:')) renderMsgTable(); }
     if (b.dataset.t === 'send') openSend([cm]);
   });
 }
+function chatBig(on) {
+  if (!chatOpen() || chat.big === on) return;
+  const el = chat.el, ul = el.querySelector('ul.thread'), b = el.querySelector('[data-t="big"]'), atEnd = ul.scrollTop + ul.clientHeight >= ul.scrollHeight - 4, was = ul.scrollTop;
+  chat.big = on; el.classList.toggle('big', on);
+  b.innerHTML = on ? ICON.shrink : ICON.grow; b.title = on ? 'Back to the small callout (Esc)' : 'Read in a large window'; b.setAttribute('aria-label', b.title);
+  if (on) { const sc = chat.scrim = document.createElement('div'); sc.className = 'scrim chatscrim'; for (const t of ['pointerdown', 'pointerup', 'mousedown', 'mouseup']) sc.addEventListener(t, e => e.stopPropagation()); sc.addEventListener('click', e => { e.stopPropagation(); chatBig(false); }); document.body.insertBefore(sc, el); }
+  else { chat.scrim?.remove(); chat.scrim = null; placeBeside(el, chat.anchor); }
+  ul.scrollTop = atEnd ? ul.scrollHeight : was;
+}
+// Escape on a large chat makes it small again; says whether it did.
+function chatShrink() { if (chatOpen() && chat.big) { chatBig(false); return true; } return false; }
 // Comment on a thing (the input has the focus), or read its thread (on a touch screen the keyboard stays down).
 function openComposer(key, anchor) { openChat(key, anchor, true); }
 function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: coarse)').matches); }
@@ -5106,6 +5132,7 @@ addEventListener('keydown', e => {
   const typing = e.target.closest && e.target.closest('textarea, input');
   if (e.key === 'Escape') {
     if (co.el && !co.el.hidden) { hideCallout(); return; }
+    if (chatShrink()) return;
     if (Object.keys(pops).length) { closePop(); return; }
     if (modalEl) { closeModal(); return; }
     if (typing) return;
@@ -5125,7 +5152,7 @@ addEventListener('keydown', e => {
   if ((e.key === 'Delete' || e.key === 'Backspace') && state.sel) { e.preventDefault(); askDelete(state.sel); }
 });
 document.addEventListener('pointerdown', e => {
-  if (e.target.closest('.pop, .strip, .dock, [data-thread], [data-msg], [data-beh], .ulink, [data-cmsg], [data-tmsg]')) return;
+  if (e.target.closest('.pop, .chatscrim, .strip, .dock, [data-thread], [data-msg], [data-beh], .ulink, [data-cmsg], [data-tmsg]')) return;
   ['thread', 'checks', 'info-pin', 'menu'].forEach(k => { if (pops[k]) closePop(k); }); // a chat keeps its unsent text (chatDrafts)
 }, true);
 addEventListener('resize', () => placeStrip());
