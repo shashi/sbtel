@@ -90,6 +90,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   was; the Sample button then loads it too. The project's playground uses it.
 
 ### Changed
+- Card outlines are fainter and open blocks a little firmer than cards; shapes keep the full line. The ears
+  of a tinted card now take its outline's colour.
 - The duplicate block name warning says why names must differ and what to do.
 - The design skill asks for small yet beautiful specs and for one thing per card, typed in the human's
   own words (code kinds, findings and evidence, statuses, roles, features), so the type colours carry
