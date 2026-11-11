@@ -193,6 +193,17 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .world.tint .blk.card.typed { background:color-mix(in oklch, var(--leaf), oklch(var(--ty-l) var(--ty-c) var(--h)) var(--ty-wash)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 55%); }
 .world.typing .blk.card:not(.ty-on) { opacity:.3; }
 .blk .ttl > .pill { cursor:pointer; border-radius:5px; }
+.dotpick { flex:1; min-width:0; }
+.dotpick .sw { display:grid; grid-template-columns:repeat(12, 1fr); gap:6px; max-width:330px; }
+.dotpick .sw button { aspect-ratio:1; border-radius:50%; border:0; padding:0; cursor:pointer; }
+.dotpick .sw button[aria-pressed="true"] { box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--ink); }
+.dotpick .hrow { display:flex; align-items:center; gap:10px; margin-top:10px; max-width:330px; }
+.dotpick input[type=range] { flex:1; min-width:0; height:10px; border-radius:5px; -webkit-appearance:none; appearance:none; background:linear-gradient(to right in oklch longer hue, oklch(.68 .17 0), oklch(.68 .17 359)); }
+.dotpick input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.4); cursor:pointer; }
+.dotpick input[type=range]::-moz-range-thumb { width:13px; height:13px; border-radius:50%; background:#fff; border:2px solid var(--ink); cursor:pointer; }
+.dotpick input[type=range].auto::-webkit-slider-thumb { opacity:.35; }
+.dotpick .hint2 { margin:8px 0 0; font-size:12.5px; line-height:1.4; color:var(--muted); }
+.editf .fld.dotc { align-items:flex-start; }
 .blk .ttl > .pill:hover { text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
 .pop.typepick { width:212px; padding:12px 14px 12px; }
 .typepick .tph { display:flex; align-items:baseline; gap:6px; font-size:14px; margin-bottom:12px; }
@@ -2340,7 +2351,14 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&l
 // A sketch on a card: its paragraphs half a line apart when the card shows all of it, else run together.
 const skHTML = (t, gaps) => t.split('\n\n').filter(p => p.trim()).map(esc).join(gaps ? '<i class="pg"></i>' : '\n');
 const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
-const msgColor = k => 'var(--m' + (1 + hash(k || '?') % 6) + ')';
+// A shape's dot and a behavior's badge take one of six colours by name, unless the reader chose a hue for
+// that one in its Edit dialog. Choices are kept in this browser for the spec (dotKey, set by the page's mode).
+let dotKey = () => 'sbtel-dots';
+const dotRead = () => { try { return JSON.parse(localStorage.getItem(dotKey()) || '{}') || {}; } catch (e) { return {}; } };
+const dotHue = id => { const h = dotRead()[id]; return h == null ? null : h; };
+function setDotHue(id, h) { const m = dotRead(); if (h == null) delete m[id]; else m[id] = Math.round(h); try { localStorage.setItem(dotKey(), JSON.stringify(m)); } catch (e) {} }
+const hueColor = h => `oklch(.68 .17 ${h})`;
+const msgColor = k => { const h = dotHue('μ:' + k); return h != null ? hueColor(h) : 'var(--m' + (1 + hash(k || '?') % 6) + ')'; };
 const GLYPH = ['★','◆','▲','●','■','✚'], GCOL = ['var(--m6)','var(--m4)','var(--m5)','var(--m1)','var(--m3)','var(--m2)'];
 const ICON = {
   clip:'<svg class="i" viewBox="0 0 16 16"><path d="M13 7.5l-5 5a3 3 0 0 1-4.2-4.2l5.5-5.5a2 2 0 0 1 2.8 2.8L6.8 10.9a1 1 0 0 1-1.4-1.4L10 5"/></svg>',
@@ -2357,7 +2375,7 @@ const ICON = {
 // @sbtel begin App.Document
 // glyphFor sits among the canvas helpers, but it is a query on the page's model (a behavior's glyph by
 // its declaration order) that the canvas, the popovers and the shape table all use.
-function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.behaviorOrder.indexOf(name)) % GLYPH.length; return { g:GLYPH[i], c:GCOL[i] }; }
+function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.behaviorOrder.indexOf(name)) % GLYPH.length, h = dotHue('β:' + name); return { g:GLYPH[i], c: h != null ? hueColor(h) : GCOL[i] }; }
 
 // @sbtel end App.Document
 // @sbtel begin App.Document
@@ -2438,6 +2456,7 @@ const histCodec = {
 // playground and server mode, ':spec-<hash>' or ':embed-<hash>' for a spec loaded from the URL
 // (Viewer.Play, §6.9), which reads them again with loadPrefs, from the defaults.
 const prefs = { key:'', defaults:{ ...state.opts } };
+dotKey = () => 'sbtel-dots' + prefs.key;
 function loadPrefs(key) {
   prefs.key = key;
   Object.assign(state.opts, prefs.defaults, (key ? store.get('sbtel-play' + key, {}) : store.get('sbtel-play', store.get('marquee-play', {}))).opts || {}); state.opts.allDetails = false;
@@ -3582,6 +3601,9 @@ function openEdit(id) {
     <label class="fld"><span>Sketch</span><textarea name="sketch" rows="4">${esc(n.sketch || '')}</textarea></label>
     ${n.form !== 'message' ? editBehaviorsHTML(n) : ''}
     ${n.form === 'message' ? `<label class="fld"><span>Carries</span><input name="carries" value="${esc(n.carries.join(' '))}" placeholder="Shapes a value of ${esc(n.name)} holds" spellcheck="false" list="edCarry"><datalist id="edCarry">${typesInScope(state.model, n).map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>` : ''}
+    ${isBlk ? '' : `<div class="fld dotc"><span>Color</span><div class="dotpick"><div class="sw">${Array.from({ length:12 }, (_, i) => `<button type="button" data-h="${i * 30 + 20}" style="background:${hueColor(i * 30 + 20)}" aria-label="Hue ${i * 30 + 20}"></button>`).join('')}</div>
+      <div class="hrow"><input type="range" name="hue" min="0" max="359" step="1" aria-label="Hue"><button type="button" class="tiny" data-m="autocolor">Automatic</button></div>
+      <p class="hint2">The ${kind}'s dot, in this browser only. It is not part of the spec.</p></div></div>`}
     ${isBlk || n.form === 'behavior' ? `<fieldset class="fset"><legend>Ports</legend><div class="prows"></div><div class="pinh"></div>
       <button type="button" class="btn small" data-m="addport">Add port</button></fieldset>` : ''}
     <p class="merr" role="alert" hidden></p>
@@ -3589,6 +3611,16 @@ function openEdit(id) {
   const f = md.querySelector('form'), err = md.querySelector('.merr');
   f.elements.name.focus(); f.elements.name.select();
   md.querySelector('[data-m="cancel"]').onclick = closeModal;
+  if (!isBlk) {
+    // The dot's colour is a choice about this page, not the spec: it applies as it is made, apart from Save.
+    const did = (n.form === 'behavior' ? 'β:' : 'μ:') + n.name, hue = f.elements.hue, sws = [...md.querySelectorAll('.dotpick .sw button')];
+    const show = () => { const h = dotHue(did); if (h != null) hue.value = h; hue.classList.toggle('auto', h == null); sws.forEach(b => b.setAttribute('aria-pressed', String(h != null && Math.abs(+b.dataset.h - h) < 1))); };
+    const put = h => { setDotHue(did, h); show(); render(); };
+    sws.forEach(b => b.onclick = () => put(+b.dataset.h));
+    hue.addEventListener('input', () => put(+hue.value));
+    md.querySelector('[data-m="autocolor"]').onclick = () => put(null);
+    show();
+  }
   const hasPorts = isBlk || n.form === 'behavior', types = hasPorts ? typesInScope(state.model, n) : [];
   const rowsEl = md.querySelector('.prows'), inhEl = md.querySelector('.pinh');
   const implNow = () => hasPorts ? [...f.querySelectorAll('input[name="impl"]:checked')].map(x => x.value) : null;
@@ -3597,7 +3629,7 @@ function openEdit(id) {
     const row = document.createElement('div'); row.className = 'prow2'; row.portNode = p.node || null;
     const opts = (p.kind && !types.includes(p.kind) ? [p.kind] : []).concat(types);
     row.innerHTML = `<input class="pname" aria-label="Port name" value="${esc(p.name || '')}" spellcheck="false">
-      <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${p.dir === 'in'}">in</button><button type="button" data-dir="out" aria-pressed="${p.dir === 'out'}">out</button></span>
+      <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${p.dir === 'in'}">takes</button><button type="button" data-dir="out" aria-pressed="${p.dir === 'out'}">gives</button></span>
       <select class="pkind" aria-label="Shape"><option value="">Type…</option>${opts.map(t => `<option${t === p.kind ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
       <button type="button" class="pdel" aria-label="Delete this port" title="Delete this port">${ICON.close}</button>
       <textarea class="psk" rows="1" aria-label="Port sketch" placeholder="Sketch: what this port promises (optional)">${esc(p.sketch || '')}</textarea>`;
@@ -5267,6 +5299,7 @@ SBTEL.modes.server = (() => {
   };
   // Colours chosen for types belong to the spec's file (a stdin spec: to the session), in this browser.
   typeStoreKey = () => 'sbtel-types:' + ((S.meta && S.meta.spec && S.meta.spec.path) || SBTEL.session);
+  dotKey = () => 'sbtel-dots:' + ((S.meta && S.meta.spec && S.meta.spec.path) || SBTEL.session);
   // ---------- A ref to another spec: its diagram over this page ----------
   // The frame shows that spec's own session, with ?via= naming the session at the top of the trail, so
   // what is said in it reaches this page's agent. A framed page asks the top page to move on to a spec

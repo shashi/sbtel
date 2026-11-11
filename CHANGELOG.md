@@ -67,6 +67,9 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   Click a type to choose its colour: a ring of hues to drag around, the twelve standard hues, and
   Automatic. The blocks recolour as you move. The choice is kept in the browser for that spec file, and
   is the hue only, so it suits both themes.
+- **A shape's dot and a behavior's badge can be given a colour**, in that shape's or behavior's Edit
+  dialog only: twelve hues, a hue slider, and Automatic. It applies as you choose and is kept in the
+  browser for that spec file, by the thing's name; it is not part of the spec.
 - **An ear joins its card without a line.** The card's border no longer shows across the join.
 - **Inline editors have a Save button**, and the save key is the same in every field: Ctrl/⌘-Enter. The
   port editor said "Enter saves", which was false in its sketch. Its direction buttons read "takes" and
