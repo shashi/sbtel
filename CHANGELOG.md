@@ -12,6 +12,12 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- **Keyboard.** The selection is the cursor. `H J K L` or the arrows move to the nearest block that way;
+  `Tab` and `Shift+Tab` go through every block in reading order and leave the canvas at either end;
+  `Shift+L` goes into a block (opening it) and `Shift+H` out. On the selected block: `Space` opens or
+  closes, `Enter` or `E` edits, `C` comments, `[` and `]` show what it takes and gives, `R` its files, `S`
+  its text. `N` and `P` walk replies, `F` fits, `+` and `-` zoom, `?` shows help, which lists the keys. The
+  view pans to keep the selection in sight. A focused button keeps Space, Enter and Tab.
 - Settings has Agent's name: what the agent is called in threads ("Agent" by default).
 - Settings has Font: the name of a font installed on your computer, used for names and text (code keeps
   its own). Nothing is downloaded; if the font is not installed the built-in one is used and the setting says so.

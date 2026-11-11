@@ -929,6 +929,12 @@ is the session's `tabs`.
   `{path: ".sbtel/files/<name>", size}`. A stdin spec answers 409.
 - `GET /s/<id>/ref?path=…` serves `.sbtel/files/<name>` (one level, no dot-file) without the spec or a
   comment naming it; every other dot-directory stays refused.
+- The keyboard (v0.4.1). The selection is the cursor, and one table (`KEYS`) names every key, what it
+  does and its line in the help panel; the global key handler looks keys up in it. Moving is by sight:
+  `stepTo` picks the nearest box ahead within a cone, preferring boxes in the same holder; `kbOrder` is
+  the picture's reading order for Tab, which hands the key back to the browser at either end so the
+  toolbar stays reachable. Keys are not taken while typing, in a dialog, with Ctrl, Alt or Cmd held, or
+  (Space, Enter, Tab) from a focused control. A letter is matched in lower case, so Caps Lock is not Shift.
 - Reading replies (v0.4.1) is the page's own business; the server only says which comments have replies.
   "Unread" is a fact of the log (a reply the reader has not opened), never something an agent declares.
   A comment whose target is hidden inside a closed block is read at the outermost closed block that hides

@@ -418,6 +418,10 @@ body.diffmode .help .norm { display:none; }
 .help #helpX { position:absolute; top:6px; right:6px; width:28px; height:28px; font-size:18px; line-height:1; color:var(--muted); }
 .help #helpX:hover { color:var(--ink); }
 .help li { margin:2px 0; }
+.help { max-height:calc(100vh - 150px); overflow:auto; }
+.help .hkeys { margin-top:12px; } .help .hkeys summary { font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; }
+.help .hkeys h5 { margin:9px 0 2px; font-size:12px; font-weight:600; color:var(--ink-2); }
+.help .hkeys dl { margin:0; display:grid; grid-template-columns:max-content 1fr; gap:2px 12px; } .help .hkeys dt { font-family:var(--ff-mono); font-size:11.5px; color:var(--ink); white-space:nowrap; } .help .hkeys dd { margin:0; }
 .dock { left:50%; transform:translateX(-50%); bottom:max(14px, env(safe-area-inset-bottom, 0px)); border-radius:14px; padding:6px; display:flex; align-items:center; gap:2px;
   max-width:calc(100vw - 24px); overflow-x:auto; scrollbar-width:none; }
 .dock::-webkit-scrollbar { display:none; }
@@ -716,9 +720,9 @@ body.diffmode .help .norm { display:none; }
     <h4>Comment</h4>
     <ul>
       <li>Select a block or a line and press C, or ⌘/Ctrl-click it.</li>
-      <li>C with nothing selected lists every comment.</li>
       <li>Drop a file on a block or into a comment to attach it.</li>
     </ul>
+    <details class="hkeys"><summary>Keyboard</summary><div id="helpKeys"></div></details>
   </div>
 </div>
 
@@ -3647,6 +3651,111 @@ function endTour() {
   cancelAnimationFrame(tour.raf); removeEventListener('keydown', tour.keys, true); tour.ring.remove(); tour.card.remove(); tour = null;
   store.set('sbtel-tour', { done:true }); store.set('sbtel-help-seen', true);
 }
+// ---------- Keyboard ----------
+// The selection is the keyboard's cursor: keys move it from box to box and act on the box it is on. One
+// table (KEYS) says what every key does; the handler below looks keys up in it and the help panel is
+// written from it, so the two cannot drift apart. A key is named as the browser names it (e.key), a letter
+// in lower case, with "S-" in front when Shift is held on a letter or a named key (keyName).
+//
+// Moving is by sight, not by structure: H J K L and the arrows go to the nearest box in that direction on
+// the screen (stepTo), whatever its parent. Tab and Shift+Tab go through every box in reading order, and
+// leave the canvas at either end so the toolbar stays reachable. Shift+H and Shift+L go out to the block
+// that holds this one and in to the first block it holds.
+const kbBoxes = () => (state.lay ? state.lay.blocks.filter(B => state.elems.has(B.id)) : []);
+// Where a box is, for judging direction: a card's middle; an open block's title, since its middle is its children's.
+const kbAt = B => B.kind === 'frame' ? { x: B.x + Math.min(B.w / 2, 110), y: B.y + Math.min(B.h / 2, 30) } : { x: B.x + B.w / 2, y: B.y + B.h / 2 };
+const kbHolder = B => (B.node.form === 'block' ? B.node.parent : B.node.owner) || null;
+// Reading order, as the picture is read: a box, then what it holds row by row and left to right, each held
+// box followed by its own contents before the next.
+function kbOrder() {
+  const boxes = kbBoxes(), ids = new Set(boxes.map(B => B.node)), kids = new Map();
+  for (const B of boxes) { let h = kbHolder(B); if (!ids.has(h)) h = null; if (!kids.has(h)) kids.set(h, []); kids.get(h).push(B); }
+  const out = [], walk = h => (kids.get(h) || []).sort((a, b) => (Math.abs(a.y - b.y) > 24 ? a.y - b.y : a.x - b.x)).forEach(B => { out.push(B); walk(B.node); });
+  walk(null); return out;
+}
+// The box to start from when nothing is selected: the one nearest the middle of the window.
+function kbHome() {
+  const cx = (innerWidth / 2 - state.cam.x) / state.cam.k, cy = (innerHeight / 2 - state.cam.y) / state.cam.k;
+  return kbBoxes().reduce((best, B) => { const p = kbAt(B), d = Math.hypot(p.x - cx, p.y - cy); return !best || d < best.d ? { B, d } : best; }, null)?.B || null;
+}
+// The nearest box in a direction: ahead of this one, and more ahead than aside (a cone of about 63 degrees
+// either way); among those, the closest, with distance aside counting for more so a row is walked along.
+function stepTo(id, dx, dy) {
+  const cur = kbBoxes().find(B => B.id === id); if (!cur) return null;
+  const a = kbAt(cur); let best = null, least = Infinity;
+  for (const B of kbBoxes()) {
+    if (B === cur) continue;
+    const q = kbAt(B), ux = q.x - a.x, uy = q.y - a.y, ahead = ux * dx + uy * dy, aside = Math.abs(ux * dy - uy * dx);
+    if (ahead <= 1 || aside > ahead * 2) continue;
+    // A box in the same holder is preferred to one outside it, so a block's contents are walked before leaving it.
+    const cost = (ahead + aside * 1.6) * (kbHolder(B) === kbHolder(cur) ? .45 : 1); if (cost < least) { least = cost; best = B; }
+  }
+  return best ? best.id : null;
+}
+// Bring the selected box into view if it is not: the smallest pan that shows it (an open block's title end).
+function kbReveal(id) {
+  const B = state.lay && state.lay.blocks.find(b => b.id === id); if (!B) return;
+  const k = state.cam.k, w = B.kind === 'frame' ? Math.min(B.w, 320) : B.w, h = B.kind === 'frame' ? Math.min(B.h, 70) : B.h;
+  const x0 = B.x * k + state.cam.x, y0 = B.y * k + state.cam.y, x1 = x0 + w * k, y1 = y0 + h * k, m = 28;
+  const dx = x0 < m ? m - x0 : x1 > innerWidth - m ? innerWidth - m - x1 : 0, dy = y0 < fitPad.top ? fitPad.top - y0 : y1 > innerHeight - fitPad.bottom - 12 ? innerHeight - fitPad.bottom - 12 - y1 : 0;
+  if (dx || dy) { state.cam.x += dx; state.cam.y += dy; animCam(); applyCam(); }
+}
+function kbSelect(id) { if (!id) return false; closePop('info'); select(id, null); kbReveal(id); return true; }
+const kbStep = (dx, dy) => () => kbSelect(state.sel && state.elems.has(state.sel) ? stepTo(state.sel, dx, dy) || state.sel : (kbHome() || {}).id);
+// Tab order: every box, in reading order. At either end the key is left to the browser (returns false).
+const kbTab = by => () => {
+  const list = kbOrder(), i = list.findIndex(B => B.id === state.sel), to = i < 0 ? (by > 0 ? list[0] : list[list.length - 1]) : list[i + by];
+  if (!to) { select(null, null); return false; }
+  return kbSelect(to.id);
+};
+const kbNode = () => (state.sel ? state.model.node(state.sel) : null);
+function kbOut() { const n = kbNode(), up = n && (n.form === 'block' ? n.parent : n.owner); return !!(up && up !== state.model.root && kbSelect(up.id)); }
+function kbIn() {
+  const n = kbNode(); if (!n || n.form !== 'block' || !hasInside(n)) return false;
+  if (!state.open.has(n.id)) toggle(n.id);
+  const first = kbOrder().find(B => kbHolder(B) === n);
+  return first ? kbSelect(first.id) : true;
+}
+function kbToggle() {
+  const n = kbNode(); if (!n) return false;
+  if (n.form === 'block' && hasInside(n)) { toggle(n.id); kbReveal(n.id); return true; }
+  const more = state.elems.get(n.id)?.querySelector('[data-expand]'); if (more) { toggleSketch(n.id); return true; }
+  return false;
+}
+const kbWith = f => () => { const n = kbNode(); return !!n && (f(n), true); };
+const kbEar = side => kbWith(n => setDrawer(n.id, side));
+// { on: the keys, show: how the help names them, does: what the help says, run: returns false if it did nothing }
+const KEYS = [
+  { group:'Move', on:['h', 'ArrowLeft'], show:'H J K L, arrows', does:'To the nearest block that way', run:kbStep(-1, 0) },
+  { on:['j', 'ArrowDown'], run:kbStep(0, 1) }, { on:['k', 'ArrowUp'], run:kbStep(0, -1) }, { on:['l', 'ArrowRight'], run:kbStep(1, 0) },
+  { on:['Tab'], show:'Tab, Shift+Tab', does:'Next and previous, in reading order', run:kbTab(1) }, { on:['S-Tab'], run:kbTab(-1) },
+  { on:['S-h'], show:'Shift+H, Shift+L', does:'Out to the block around it, in to its first block', run:kbOut }, { on:['S-l'], run:kbIn },
+  { group:'On the selected block', on:[' '], show:'Space', does:'Open or close it', run:kbToggle },
+  { on:['Enter', 'e'], show:'Enter, E', does:'Edit it', run:() => { const n = kbNode(); return !!n && !readOnly() && (openEdit(n.id), true); } },
+  { on:['c'], show:'C', does:'Comment on it (with nothing selected: every comment)', run:() => { const n = kbNode(); if (n) openComposer(targetKey(n.id)); else openAllComments(); return true; } },
+  { on:['['], show:'[ and ]', does:'What it takes, what it gives', run:kbEar('top') }, { on:[']'], run:kbEar('bot') },
+  { on:['r'], show:'R', does:'Its files', run:() => { const n = kbNode(); return !!(n && n.refs && n.refs.length) && (openRefs(n.id, 0), true); } },
+  { on:['s'], show:'S', does:'Its text in the spec', run:() => { const n = kbNode(); return !!(n && n.form === 'block') && (openCode(n.id), true); } },
+  { group:'Replies', on:['n'], show:'N, P', does:'Next new reply, back to the thread before', run:() => ($('cmtBtn').disabled ? false : (nextUnread(), true)) }, { on:['p'], run:() => ($('cmtPrev').disabled ? false : (prevThread(), true)) },
+  { group:'View', on:['f'], show:'F', does:'Fit everything on screen', run:() => (fit(true), true) },
+  { on:['+', '='], show:'+ and -', does:'Zoom in and out', run:() => (zoomAt(1.2, innerWidth / 2, innerHeight / 2), true) }, { on:['-', '_'], run:() => (zoomAt(1 / 1.2, innerWidth / 2, innerHeight / 2), true) },
+  { on:['?'], show:'?', does:'This panel', run:() => ($('helpBtn').click(), true) },
+  { on:[], show:'Esc', does:'Close what is open, then clear the selection' },
+];
+const KEYMAP = new Map(KEYS.flatMap(k => k.on.map(key => [key, k])));
+// The key as KEYMAP names it, or null for one that is not the keyboard's to take (a browser or system shortcut).
+// A letter is named in lower case whatever Caps Lock says, so only Shift makes it "S-h".
+function keyName(e) {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return null;
+  const letter = /^[a-z]$/i.test(e.key);
+  return (e.shiftKey && (letter || e.key.length > 1) ? 'S-' : '') + (letter ? e.key.toLowerCase() : e.key);
+}
+// Written into the help panel, from the same table.
+{
+  let html = '';
+  for (const k of KEYS) { if (k.group) html += `${html ? '</dl>' : ''}<h5>${esc(k.group)}</h5><dl>`; if (k.show) html += `<dt>${esc(k.show)}</dt><dd>${esc(k.does)}</dd>`; }
+  $('helpKeys').innerHTML = html + '</dl>';
+}
 addEventListener('keydown', e => {
   const typing = e.target.closest && e.target.closest('textarea, input');
   if (e.key === 'Escape') {
@@ -3663,7 +3772,12 @@ addEventListener('keydown', e => {
   }
   if (typing || modalEl) return;
   const mod = e.metaKey || e.ctrlKey;
-  if (!mod && !e.altKey && e.key.toLowerCase() === 'c') { e.preventDefault(); if (state.sel && state.model.node(state.sel)) openComposer(targetKey(state.sel)); else openAllComments(); return; }
+  // The keyboard's own keys (KEYS). A focused button or link keeps Space, Enter and Tab for itself.
+  const key = keyName(e), cmd = key != null && KEYMAP.get(key);
+  if (cmd && !((key === ' ' || key === 'Enter' || key.endsWith('Tab')) && e.target.closest && e.target.closest('button, a, [role="button"], [role="slider"], [tabindex], select, summary'))) {
+    if (cmd.run() !== false) e.preventDefault();
+    return;
+  }
   if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
   if ((e.key === 'Delete' || e.key === 'Backspace') && state.selLine) { e.preventDefault(); cutSelected(); return; }

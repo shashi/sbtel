@@ -59,11 +59,11 @@ Sbtel.Server.Core -> Sbtel.State  # internal/server/server.go:52 (+1 more)
 # type of the session store above it: the usual Go pattern of one struct whose methods live in other
 # files. Moving `session` into Core would be gaming check: it is the session store's own record.
 Sbtel.Server.Core -> Sbtel.Server.Sessions  # internal/server/server.go:58 (+1 more)
-Sbtel.Server.Lifecycle -> Sbtel.Server.Core  # internal/server/server.go:105 (+32 more)
-Sbtel.Server.Lifecycle -> Sbtel.State  # internal/server/server.go:113 (+10 more)
-Sbtel.Server.Lifecycle -> Sbtel.Server.Client  # internal/server/server.go:144
-Sbtel.Server.Lifecycle -> Sbtel.Server.Sessions  # internal/server/server.go:198
-Sbtel.Server.Lifecycle -> Sbtel.Server.Fanout  # internal/server/server.go:202
+Sbtel.Server.Lifecycle -> Sbtel.Server.Core  # internal/server/server.go:102 (+35 more)
+Sbtel.Server.Lifecycle -> Sbtel.State  # internal/server/server.go:110 (+10 more)
+Sbtel.Server.Lifecycle -> Sbtel.Server.Client  # internal/server/server.go:141
+Sbtel.Server.Lifecycle -> Sbtel.Server.Sessions  # internal/server/server.go:204
+Sbtel.Server.Lifecycle -> Sbtel.Server.Fanout  # internal/server/server.go:208
 Sbtel.Server.Sessions -> Sbtel.State  # internal/server/sessions.go:20 (+202 more)
 Sbtel.Server.Sessions -> Sbtel.Server.Fanout  # internal/server/sessions.go:25 (+12 more)
 Sbtel.Server.Sessions -> Sbtel.Server.Core  # internal/server/sessions.go:39 (+92 more)
