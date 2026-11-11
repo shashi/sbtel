@@ -751,7 +751,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
       }
     }
     vtEl?.remove(); vtEl = null;
-    try { const log = await get('log'); lastSeq = Math.max(lastSeq, SC.rebuild(log.events || [])); dRender(); } catch (e) {}
+    try { const log = await get('log'); lastSeq = Math.max(lastSeq, SC.rebuild(log.events || [])); SC.setSeen(log.seen); dRender(); } catch (e) {}
     R.recount(); R.prune();
     const connect = () => {
       const es = new EventSource(SBTEL.base + 'events?after=' + lastSeq);

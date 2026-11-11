@@ -335,6 +335,7 @@ SBTEL.modes.server = (() => {
       versionToast(d);
     });
     es.addEventListener('reply', e => { seq(e); SC.onReply(JSON.parse(e.data)); });
+    es.addEventListener('seen', e => { SC.setSeen(JSON.parse(e.data).ids); });
     es.addEventListener('ref', e => { seq(e); refEvent(JSON.parse(e.data), true); });
     es.addEventListener('closed', () => closedState());
     es.onerror = () => {
@@ -404,7 +405,7 @@ SBTEL.modes.server = (() => {
         if (draft && draft.base && draft.base !== spec.hash && (draft.src != null || draft.proposal) && draft.version >= 1) {
           try { const old = await getJSON('versions/' + draft.version); if (old.hash === draft.base) { S.base = old.hash; S.version = old.version; S.loaded = old.src; } } catch (e) {}
         }
-        S.lastSeq = Math.max(S.lastSeq, SC.rebuild(log.events || []));
+        S.lastSeq = Math.max(S.lastSeq, SC.rebuild(log.events || [])); SC.setSeen(log.seen);
         refN.clear(); (log.events || []).forEach(e => refEvent(e, false));
         break;
       } catch (e) {

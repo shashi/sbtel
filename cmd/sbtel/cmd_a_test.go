@@ -243,9 +243,9 @@ func TestDiffTextFixture(t *testing.T) {
 	     "levels":[{"level":1,"name":{"from":null,"to":"Core"},"sketch":{"from":"a","to":"b","words":[{"op":"-","text":"a"},{"op":"+","text":"b\n\nc"}]},"groups":[{"blocks":["X","Y"],"sketch":{"from":"","to":"why","words":[{"op":"+","text":"why"}]}}]}]}},
 	  {"element":"behavior","tags":["changed"],"a":{"id":"β:Box","name":"Box","in":null,"lines":{"start":1,"end":1}},"b":{"id":"β:Box","name":"Box","in":null,"lines":{"start":1,"end":1}},
 	   "moved":null,"renamed":null,"fields":{"params":{"from":["T"],"to":["T","K"]}}},
-	  {"element":"message","tags":["moved","changed"],"a":{"id":"μ:Ack","name":"Ack","in":"A","lines":{"start":1,"end":1}},"b":{"id":"μ:Ack","name":"Ack","in":null,"lines":{"start":1,"end":1}},
+	  {"element":"shape","tags":["moved","changed"],"a":{"id":"μ:Ack","name":"Ack","in":"A","lines":{"start":1,"end":1}},"b":{"id":"μ:Ack","name":"Ack","in":null,"lines":{"start":1,"end":1}},
 	   "moved":{"from":{"in":"A","level":null},"to":{"in":null,"level":null}},"renamed":null,"fields":{"refines":{"from":"Msg","to":null}}},
-	  {"element":"message","tags":["removed"],"a":{"id":"μ:Notice","name":"Notice","in":"Shell","lines":{"start":5,"end":5}},"b":null,"moved":null,"renamed":null,"fields":null}
+	  {"element":"shape","tags":["removed"],"a":{"id":"μ:Notice","name":"Notice","in":"Shell","lines":{"start":5,"end":5}},"b":null,"moved":null,"renamed":null,"fields":null}
 	 ],
 	 "affected":[{"owner":"Shell.Router","port":"intent","dir":"in","kind":"Intent","lost":[{"owner":"Shell.Composer","port":"submit"}],"gained":[{"owner":"Shell.X","port":"y"}]}],
 	 "summary":{"added":1,"removed":1,"moved":2,"renamed":1,"changed":3,"affected":1}

@@ -195,6 +195,11 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .world.tint .blk.frame.typed { background:color-mix(in oklch, var(--surface), oklch(var(--ty-l) var(--ty-c) var(--h)) calc(var(--ty-wash) * .4)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 40%); }
 .world.typing .blk.card:not(.ty-on) { opacity:.3; }
 .blk .ttl > .pill { cursor:pointer; border-radius:5px; }
+/* A live type's dot sends out a soft ring, about every two seconds. */
+.pill.live::before { animation:typelive 2.2s ease-out infinite; }
+@keyframes typelive { 0% { box-shadow:0 0 0 0 oklch(var(--ty-l) var(--ty-c) var(--h) / .55); } 70%, 100% { box-shadow:0 0 0 7px oklch(var(--ty-l) var(--ty-c) var(--h) / 0); } }
+@media (prefers-reduced-motion: reduce) { .pill.live::before { animation:none; box-shadow:0 0 0 3px oklch(var(--ty-l) var(--ty-c) var(--h) / .3); } }
+.typepick .tpl { margin:0 0 10px; font-size:13px; }
 .dotpick { flex:1; min-width:0; }
 .dotpick .sw { display:grid; grid-template-columns:repeat(12, 1fr); gap:6px; max-width:330px; }
 .dotpick .sw button { aspect-ratio:1; border-radius:50%; border:0; padding:0; cursor:pointer; }
@@ -572,7 +577,12 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
   .thread { max-height:32vh; }
 }
 .st-saved { color:var(--accent); font-weight:600; }
-.st-sent { color:var(--ok); font-weight:600; }
+/* A sent comment's ticks: one when the server has it, two when the agent has been given it. */
+.st-sent, .st-seen { font-weight:600; }
+.st-sent { color:var(--muted); }
+.st-seen { color:var(--ok); }
+.st-sent::before { content:"\2713"; margin-right:4px; }
+.st-seen::before { content:"\2713\2713"; letter-spacing:-.32em; margin-right:.5em; }
 .tiny { border:0; background:none; color:var(--muted); cursor:pointer; font-size:11.5px; padding:2px 4px; border-radius:5px; }
 .tiny:hover { color:var(--ink); background:var(--chip); }
 
@@ -1034,7 +1044,7 @@ function carriers(model, T) {
   const msgs = all.filter(m => hit.has(m.name)).sort((a, b) => a.s - b.s), ports = [], blocks = [];
   model.behaviors.forEach(bh => bh.ports.forEach(p => { if (hit.has(p.kind)) ports.push({ owner:bh.id, port:p.name }); }));
   [...model.blocks.values()].sort((a, b) => a.s - b.s).forEach(b => { const ps = portsOf(b).filter(p => hit.has(p.kind)); ps.forEach(p => { if (!p.via) ports.push({ owner:b.id, port:p.name }); }); if (ps.length) blocks.push(b.id); });
-  return { messages:msgs.map(m => m.name), ports, blocks };
+  return { shapes:msgs.map(m => m.name), ports, blocks };
 }
 function portLabel(p) { return p.name && p.kind && p.name.toLowerCase() !== p.kind.toLowerCase() && p.name !== defaultPortName(p.kind) ? p.name + ': ' + p.kind : (p.kind || p.name || '?'); }
 // The behavior badges of a card: a block's behaviors, or a behavior's (the ones it extends); direct ones only.
@@ -1222,7 +1232,7 @@ function lintSpec(model) {
 // message, and each behavior with a port of one of them, is declared. Users of a behavior: the blocks that implement it.
 // The file (model.root) is the top. A declaration strictly above the LCA could move down to it; one with
 // no users is never used. Below the LCA is a scope failure, reported by lintSpec, so never suggested here.
-// Returns [{ kind: 'message'|'behavior', name, id, s (offset of the declaration), in (block id, '' for the
+// Returns [{ kind: 'shape'|'behavior', name, id, s (offset of the declaration), in (block id, '' for the
 // file), home (block id, '' for the file) | null, text }] in source order.
 function placementFindings(model) {
   const root = model.root, at = n => n || root, out = [];
@@ -1231,7 +1241,7 @@ function placementFindings(model) {
   const where = n => n === root ? 'the top level' : n.name;
   const judge = (d, kind, users) => {
     if (!d.name) return;
-    const D = at(d.owner), L = lca(users), id = kind === 'message' ? 'μ:' + d.name : 'β:' + d.name;
+    const D = at(d.owner), L = lca(users), id = kind === 'shape' ? 'μ:' + d.name : 'β:' + d.name;
     if (!users.length) { out.push({ s:d.s, kind, name:d.name, id, in:D.id, home:null, text:`${d.name} is never used.` }); return; }
     if (L !== D && chain(L).includes(D)) out.push({ s:d.s, kind, name:d.name, id, in:D.id, home:L.id, text:`${d.name} is declared ${D === root ? 'at the top level' : 'in ' + D.name} but only used within ${where(L)}; it could live there.` });
   };
@@ -1239,12 +1249,12 @@ function placementFindings(model) {
   // subtypes of T and what carries them count as T too.
   const subs = name => { const out = new Set([name]); let grow = true; while (grow) { grow = false; model.messages.forEach(x => { if (x.refines && out.has(x.refines) && !out.has(x.name)) { out.add(x.name); grow = true; } }); } return out; };
   model.messages.forEach(m => {
-    const kinds = new Set(); subs(m.name).forEach(t => { kinds.add(t); carriers(model, t).messages.forEach(c => kinds.add(c)); });
+    const kinds = new Set(); subs(m.name).forEach(t => { kinds.add(t); carriers(model, t).shapes.forEach(c => kinds.add(c)); });
     const users = [];
     model.blocks.forEach(b => { if (portsOf(b).some(p => kinds.has(p.kind))) users.push(b); });
     model.messages.forEach(x => { if (x !== m && kinds.has(x.name)) users.push(at(x.owner)); });
     model.behaviors.forEach(bh => { if (bh.ports.some(p => kinds.has(p.kind) && !bh.params.includes(p.kind)) || bh.impl.some(x => (bh.implArgs[x] || []).some(t => kinds.has(t)))) users.push(at(bh.owner)); });
-    judge(m, 'message', users);
+    judge(m, 'shape', users);
   });
   // Users of a behavior B: its implementers, through other behaviors too, and the places where each
   // behavior that implements B directly is declared (B must be visible there).
@@ -2175,7 +2185,7 @@ function diffSpecs(m0, m1) {
     return Object.keys(F).length ? F : null;
   }
   const out = [];
-  const element = n => n.form === 'block' ? 'block' : n.form;
+  const element = n => n.form === 'block' ? 'block' : n.form === 'message' ? 'shape' : n.form; // the model's 'message' is a shape to everyone outside
   KINDS.forEach(kind => E[1][kind].forEach(b => {
     const a = ba.get(b);
     if (!a) { out.push({ s:b.s, c:{ element:element(b), tags:['added'], a:null, b:ref(b, 1), moved:null, renamed:null, fields:null } }); return; }
@@ -2767,7 +2777,7 @@ function topHTML(n, top, detailed) {
   return `<div class="toprow" style="height:${top.h - 6}px">${bs.length ? `<span class="behs">${bs.map(detailed ? behChip : badge).join('')}</span>` : ''}</div>`;
 }
 // A block's :type, in quiet type after its name.
-const typeHTML = n => n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}" style="--h:${typeHue(n.type)}" title="Find every ${esc(n.type)}. Click to choose its color.">${esc(n.type)}</span>` : '';
+const typeHTML = n => n.type ? `<span class="pill${typeLive()[n.type.toLowerCase()] ? ' live' : ''}" data-k="${esc(n.type.toLowerCase())}" style="--h:${typeHue(n.type)}" title="Find every ${esc(n.type)}. Click to choose its color.">${esc(n.type)}</span>` : '';
 // A type's colour comes from its text alone (the language says nothing of colour): a hash picks one of
 // twelve hues, and the theme sets how light and how strong it is drawn (--ty-l, --ty-c). The first type
 // drawn keeps its hashed hue; each later one takes the free hue farthest from those in use (its own hashed
@@ -2789,6 +2799,9 @@ function typeHue(type) {
   }
   typeHues.set(k, i * 30 + 20); return i * 30 + 20;
 }
+// A type can also be marked live (in progress, say): its dot then pulses, softly. Kept with the colours.
+const typeLive = () => store.get(typeStoreKey() + ':live', {}) || {};
+function setTypeLive(k, on) { const m = typeLive(); if (on) m[k] = 1; else delete m[k]; store.set(typeStoreKey() + ':live', m); document.querySelectorAll('.blk .ttl > .pill').forEach(p => { if (p.dataset.k === k) p.classList.toggle('live', !!on); }); }
 // Choose a type's hue (null: back to the automatic one), and repaint it everywhere without a new layout.
 function setTypeHue(k, h) {
   const mine = typeChosen(); if (h == null) delete mine[k]; else mine[k] = Math.round(h); store.set(typeStoreKey(), mine);
@@ -2805,12 +2818,14 @@ function openTypePicker(pill) {
   const el = pop('info', pill, `<div class="tph"><i class="dot"></i><b>${esc(name)}</b><span>color</span></div>
     <div class="ring" role="slider" tabindex="0" aria-label="Hue of ${esc(name)}" aria-valuemin="0" aria-valuemax="359"><span class="knob"></span></div>
     <div class="sw">${HUES.map(h => `<button type="button" data-h="${h}" style="--h:${h}" aria-label="Hue ${h}"></button>`).join('')}</div>
+    <label class="chk tpl"><input type="checkbox" data-live> Pulse its dot</label>
     <div class="tpf"><button type="button" class="tiny" data-auto>Automatic</button><span class="spacer"></span><button type="button" class="btn" data-done>Done</button></div>`, 'typepick');
   const ring = el.querySelector('.ring'), knob = el.querySelector('.knob');
   ring.style.background = `conic-gradient(from 90deg, ${Array.from({ length:13 }, (_, i) => col(i * 30)).join(', ')})`;
   const draw = h => { el.style.setProperty('--h', h); ring.setAttribute('aria-valuenow', Math.round(h)); const a = h * Math.PI / 180; knob.style.transform = `translate(${Math.cos(a) * 54}px, ${Math.sin(a) * 54}px)`;
     el.querySelectorAll('.sw button').forEach(b => b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.h - h) < 1))); };
   const pick = h => draw(setTypeHue(k, ((h % 360) + 360) % 360));
+  const live = el.querySelector('[data-live]'); live.checked = !!typeLive()[k]; live.onchange = () => setTypeLive(k, live.checked);
   draw(typeHue(name)); showType(k, true);
   const at = e => { const r = ring.getBoundingClientRect(); pick(Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI); };
   ring.addEventListener('pointerdown', e => { ring.setPointerCapture(e.pointerId); at(e); e.preventDefault(); ring.focus(); });
@@ -3996,7 +4011,7 @@ function carryOn(T, src) {
   if (state.talk || (state.carry && state.carry.T === T)) return;
   // The type's own users too: whoever touches T directly or inside a carrier.
   const r = carriers(state.model, T), own = [...state.model.blocks.values()].filter(b => portsOf(b).some(p => p.kind === T)).map(b => b.id);
-  state.carry = { T, src, r:{ messages:r.messages, blocks:[...new Set([...r.blocks, ...own])], kinds:[T, ...r.messages] } }; applyCarry();
+  state.carry = { T, src, r:{ messages:r.shapes, blocks:[...new Set([...r.blocks, ...own])], kinds:[T, ...r.shapes] } }; applyCarry();
 }
 function carryOff(src) {
   if (!state.carry || (src && state.carry.src !== src)) return;
@@ -4676,7 +4691,7 @@ const SBTEL = (() => {
 // into its thread as well as a toast. Inlined by viewer/build.mjs after the app and before server.js
 // and diff.js; at load it only defines sessionComments, so standalone mode is untouched.
 function sessionComments({ version, closed }) {
-  const C = { read: null, seenReplies: new Set(), reviews: [], listeners: [] };
+  const C = { read: null, seenReplies: new Set(), seen: new Set(), reviews: [], listeners: [] };
   const changed = () => C.listeners.forEach(f => f());
   const CSS = `
 .sb-reply { margin:9px 0 0 2px; padding:1px 0 1px 12px; border-left:2px solid var(--accent); overflow-wrap:anywhere; white-space:pre-wrap; }
@@ -4769,7 +4784,8 @@ function sessionComments({ version, closed }) {
     commentCounts = () => { const c = {}; state.comments.forEach(x => { c[x.target] = (c[x.target] || 0) + 1; }); return c; };
     // The chat's rows: a sent comment says how it went, cannot be deleted, and carries the agent's replies.
     const status0 = chatStatus, btns0 = chatRowBtns;
-    chatStatus = c => c.status === 'sent' ? ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent to the agent'] : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
+    // Sent: the server has it. Seen: `sbtel inbox` has handed it to the agent (the server says which, setSeen).
+    chatStatus = c => c.status === 'sent' ? (C.seen.has(c.sid) ? ['st-seen', 'Seen by the agent', (c.review ? 'Sent in review ' + c.review + '. ' : '') + 'The agent has been given this comment'] : ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent', 'The agent has not read its inbox since']) : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
     chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
     chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
     // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
@@ -4782,7 +4798,9 @@ function sessionComments({ version, closed }) {
   const reviews = () => C.reviews;
   const addReview = r => { C.reviews.push(r); changed(); };
   const onChange = f => { C.listeners.push(f); };
-  return { rebuild, send, onReply, hook, reviews, addReview, onChange, _state: C };
+  // What the agent has been given (ids of comments), from the log and from the server's `seen` news.
+  function setSeen(ids) { let ch = false; (ids || []).forEach(i => { if (!C.seen.has(i)) { C.seen.add(i); ch = true; } }); if (ch) refreshChat(); }
+  return { rebuild, send, onReply, hook, reviews, addReview, onChange, setSeen, _state: C };
 }
 // @sbtel file Viewer.Bindings
 // Code bindings in the page (docs/DESIGN.md §6.3, §6.9): an edges file's violations as one more check in
@@ -5558,6 +5576,7 @@ SBTEL.modes.server = (() => {
       versionToast(d);
     });
     es.addEventListener('reply', e => { seq(e); SC.onReply(JSON.parse(e.data)); });
+    es.addEventListener('seen', e => { SC.setSeen(JSON.parse(e.data).ids); });
     es.addEventListener('ref', e => { seq(e); refEvent(JSON.parse(e.data), true); });
     es.addEventListener('closed', () => closedState());
     es.onerror = () => {
@@ -5627,7 +5646,7 @@ SBTEL.modes.server = (() => {
         if (draft && draft.base && draft.base !== spec.hash && (draft.src != null || draft.proposal) && draft.version >= 1) {
           try { const old = await getJSON('versions/' + draft.version); if (old.hash === draft.base) { S.base = old.hash; S.version = old.version; S.loaded = old.src; } } catch (e) {}
         }
-        S.lastSeq = Math.max(S.lastSeq, SC.rebuild(log.events || []));
+        S.lastSeq = Math.max(S.lastSeq, SC.rebuild(log.events || [])); SC.setSeen(log.seen);
         refN.clear(); (log.events || []).forEach(e => refEvent(e, false));
         break;
       } catch (e) {
@@ -6403,7 +6422,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
       }
     }
     vtEl?.remove(); vtEl = null;
-    try { const log = await get('log'); lastSeq = Math.max(lastSeq, SC.rebuild(log.events || [])); dRender(); } catch (e) {}
+    try { const log = await get('log'); lastSeq = Math.max(lastSeq, SC.rebuild(log.events || [])); SC.setSeen(log.seen); dRender(); } catch (e) {}
     R.recount(); R.prune();
     const connect = () => {
       const es = new EventSource(SBTEL.base + 'events?after=' + lastSeq);

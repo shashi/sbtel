@@ -753,3 +753,68 @@ func (s *Server) review(id string, in reviewIn) (map[string]any, error) {
 	_ = s.writeMeta(ss)
 	return map[string]any{"id": e.ID, "seq": e.Seq, "comments": ids, "proposal": proposal}, nil
 }
+
+// seenIDs is the comments and reviews of a session that `sbtel inbox` has handed to an agent (DESIGN.md
+// §5.2, seen): those of this session's own inbox up to its cursor; those sent from another session's page
+// (Event.From) once that session's cursor has passed its copy; and everything brought from the project
+// log (it was heard in an earlier session). A review's comments are seen with it. Caller holds s.mu.
+func (s *Server) seenIDs(ss *session) []string {
+	id := ss.meta.ID
+	evs, _ := state.ReadEvents(s.paths, id)
+	cur := state.ReadCursor(s.paths, id)
+	out := []string{}
+	add := func(e state.Event) {
+		out = append(out, e.ID)
+		for _, c := range e.Comments {
+			out = append(out, c.ID)
+		}
+	}
+	senders := map[string]bool{}
+	for _, e := range evs {
+		if e.Kind != "comment" && e.Kind != "review" {
+			continue
+		}
+		switch {
+		case e.From != "":
+			senders[e.From] = true
+		case e.Old || e.Seq <= cur:
+			add(e)
+		}
+	}
+	for from := range senders {
+		pc := state.ReadCursor(s.paths, from)
+		pevs, _ := state.ReadEvents(s.paths, from)
+		for _, e := range pevs {
+			if e.Kind == "ref" && e.Session == id && e.Ref != nil && e.Ref.By == "user" && e.Seq <= pc {
+				add(*e.Ref)
+			}
+		}
+	}
+	return out
+}
+
+// seen tells the tabs of a session, and of every session whose comments reached the agent through this
+// one's inbox, what has now been seen. `sbtel inbox` calls it after it moves the cursor.
+func (s *Server) seen(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ss, err := s.get(id)
+	if err != nil {
+		return err
+	}
+	tell := map[string]*session{id: ss}
+	evs, _ := state.ReadEvents(s.paths, id)
+	for _, e := range evs {
+		if e.Kind == "ref" && e.Session != "" {
+			if o, err := s.get(e.Session); err == nil {
+				tell[e.Session] = o
+			}
+		}
+	}
+	for _, o := range tell {
+		if len(o.subs) > 0 {
+			s.broadcast(o, sseMsg{event: "seen", data: mustJSON(map[string]any{"ids": s.seenIDs(o)})}, nil)
+		}
+	}
+	return nil
+}

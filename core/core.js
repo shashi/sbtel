@@ -353,7 +353,7 @@ function carriers(model, T) {
   const msgs = all.filter(m => hit.has(m.name)).sort((a, b) => a.s - b.s), ports = [], blocks = [];
   model.behaviors.forEach(bh => bh.ports.forEach(p => { if (hit.has(p.kind)) ports.push({ owner:bh.id, port:p.name }); }));
   [...model.blocks.values()].sort((a, b) => a.s - b.s).forEach(b => { const ps = portsOf(b).filter(p => hit.has(p.kind)); ps.forEach(p => { if (!p.via) ports.push({ owner:b.id, port:p.name }); }); if (ps.length) blocks.push(b.id); });
-  return { messages:msgs.map(m => m.name), ports, blocks };
+  return { shapes:msgs.map(m => m.name), ports, blocks };
 }
 function portLabel(p) { return p.name && p.kind && p.name.toLowerCase() !== p.kind.toLowerCase() && p.name !== defaultPortName(p.kind) ? p.name + ': ' + p.kind : (p.kind || p.name || '?'); }
 // The behavior badges of a card: a block's behaviors, or a behavior's (the ones it extends); direct ones only.
@@ -541,7 +541,7 @@ function lintSpec(model) {
 // message, and each behavior with a port of one of them, is declared. Users of a behavior: the blocks that implement it.
 // The file (model.root) is the top. A declaration strictly above the LCA could move down to it; one with
 // no users is never used. Below the LCA is a scope failure, reported by lintSpec, so never suggested here.
-// Returns [{ kind: 'message'|'behavior', name, id, s (offset of the declaration), in (block id, '' for the
+// Returns [{ kind: 'shape'|'behavior', name, id, s (offset of the declaration), in (block id, '' for the
 // file), home (block id, '' for the file) | null, text }] in source order.
 function placementFindings(model) {
   const root = model.root, at = n => n || root, out = [];
@@ -550,7 +550,7 @@ function placementFindings(model) {
   const where = n => n === root ? 'the top level' : n.name;
   const judge = (d, kind, users) => {
     if (!d.name) return;
-    const D = at(d.owner), L = lca(users), id = kind === 'message' ? 'μ:' + d.name : 'β:' + d.name;
+    const D = at(d.owner), L = lca(users), id = kind === 'shape' ? 'μ:' + d.name : 'β:' + d.name;
     if (!users.length) { out.push({ s:d.s, kind, name:d.name, id, in:D.id, home:null, text:`${d.name} is never used.` }); return; }
     if (L !== D && chain(L).includes(D)) out.push({ s:d.s, kind, name:d.name, id, in:D.id, home:L.id, text:`${d.name} is declared ${D === root ? 'at the top level' : 'in ' + D.name} but only used within ${where(L)}; it could live there.` });
   };
@@ -558,12 +558,12 @@ function placementFindings(model) {
   // subtypes of T and what carries them count as T too.
   const subs = name => { const out = new Set([name]); let grow = true; while (grow) { grow = false; model.messages.forEach(x => { if (x.refines && out.has(x.refines) && !out.has(x.name)) { out.add(x.name); grow = true; } }); } return out; };
   model.messages.forEach(m => {
-    const kinds = new Set(); subs(m.name).forEach(t => { kinds.add(t); carriers(model, t).messages.forEach(c => kinds.add(c)); });
+    const kinds = new Set(); subs(m.name).forEach(t => { kinds.add(t); carriers(model, t).shapes.forEach(c => kinds.add(c)); });
     const users = [];
     model.blocks.forEach(b => { if (portsOf(b).some(p => kinds.has(p.kind))) users.push(b); });
     model.messages.forEach(x => { if (x !== m && kinds.has(x.name)) users.push(at(x.owner)); });
     model.behaviors.forEach(bh => { if (bh.ports.some(p => kinds.has(p.kind) && !bh.params.includes(p.kind)) || bh.impl.some(x => (bh.implArgs[x] || []).some(t => kinds.has(t)))) users.push(at(bh.owner)); });
-    judge(m, 'message', users);
+    judge(m, 'shape', users);
   });
   // Users of a behavior B: its implementers, through other behaviors too, and the places where each
   // behavior that implements B directly is declared (B must be visible there).
@@ -1494,7 +1494,7 @@ function diffSpecs(m0, m1) {
     return Object.keys(F).length ? F : null;
   }
   const out = [];
-  const element = n => n.form === 'block' ? 'block' : n.form;
+  const element = n => n.form === 'block' ? 'block' : n.form === 'message' ? 'shape' : n.form; // the model's 'message' is a shape to everyone outside
   KINDS.forEach(kind => E[1][kind].forEach(b => {
     const a = ba.get(b);
     if (!a) { out.push({ s:b.s, c:{ element:element(b), tags:['added'], a:null, b:ref(b, 1), moved:null, renamed:null, fields:null } }); return; }

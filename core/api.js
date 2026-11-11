@@ -64,7 +64,7 @@ var __api = (function () {
     if (typeof src !== 'string') throw new TypeError('spec source must be a string');
     try { return { model: parse(src), error: null }; } catch (e) { return { model: null, error: errorOf(e) }; }
   }
-  function counts(model) { return { blocks: model.blocks.size, behaviors: model.behaviors.size, messages: model.messages.size }; }
+  function counts(model) { return { blocks: model.blocks.size, behaviors: model.behaviors.size, shapes: model.messages.size }; }
   function asList(x) { return typeof x === 'string' ? JSON.parse(x) : (x || []); }
 
   // ---------- lint ----------
@@ -89,7 +89,7 @@ var __api = (function () {
     r.warnings.forEach(function (w) { out += at(name, w) + 'warning: ' + w.message + '\n'; });
     r.checks.forEach(function (c) { c.failures.forEach(function (f) { out += name + ': ' + c.label + ': ' + f + '\n'; }); });
     (r.info || []).forEach(function (f) { out += at(name, f) + 'info: ' + f.message + '\n'; });
-    var tally = plural(r.counts.blocks, 'block') + ', ' + plural(r.counts.behaviors, 'behavior') + ', ' + plural(r.counts.messages, 'shape');
+    var tally = plural(r.counts.blocks, 'block') + ', ' + plural(r.counts.behaviors, 'behavior') + ', ' + plural(r.counts.shapes, 'shape');
     return out + name + ': ' + (r.ok ? 'ok' : plural(r.problems, 'problem')) + ' (' + tally + ')\n';
   }
 
@@ -101,7 +101,7 @@ var __api = (function () {
     if (m) return (m[1] === 'β' || m[1] === 'beh') ? model.behaviors.get(m[2]) || null : model.messages.get(m[2]) || null;
     return model.blocks.get(id) || model.behaviors.get(id) || model.messages.get(id) || null;
   }
-  function kindOf(n) { return n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'message'; }
+  function kindOf(n) { return n.form === 'block' ? 'block' : n.form === 'behavior' ? 'behavior' : 'shape'; }
   function describe(model, starts, n) {
     var holder = n.form === 'block' ? n.parent : n.owner, path = [];
     for (var x = holder; x; x = x.parent) path.unshift(x.id);
@@ -496,8 +496,8 @@ var __api = (function () {
     if (!r.results.length) return '';
     var out = '; sbtel query ' + name + ' ' + ids.join(' ') + (withDeps ? ' --with-deps' : '') + '\n';
     r.results.forEach(function (e) {
-      out += '; ' + e.id + ': ' + (e.kind === 'message' ? 'shape' : e.kind) + ' in ' + (e.path.length ? e.path.join(' > ') : 'the file') + ', lines ' + e.lines.start + '-' + e.lines.end + '\n';
-      if (e.kind === 'message' && e.carriers.messages.length) out += ';   carried by ' + e.carriers.messages.join(', ') + (e.carriers.blocks.length ? '; on the ports of ' + e.carriers.blocks.join(', ') : '') + '\n';
+      out += '; ' + e.id + ': ' + e.kind + ' in ' + (e.path.length ? e.path.join(' > ') : 'the file') + ', lines ' + e.lines.start + '-' + e.lines.end + '\n';
+      if (e.kind === 'shape' && e.carriers.shapes.length) out += ';   carried by ' + e.carriers.shapes.join(', ') + (e.carriers.blocks.length ? '; on the ports of ' + e.carriers.blocks.join(', ') : '') + '\n';
     });
     if (withDeps) out += '; may bind to (collapsed): ' + (F.stubs.length ? F.stubs.join(', ') : 'nothing else') + '\n';
     if (F.unresolved.length) out += '; unresolved: ' + F.unresolved.join(', ') + '\n';
@@ -521,7 +521,7 @@ var __api = (function () {
     };
     var set = function (s, fmt) { fmt = fmt || String; return [].concat((s.added || []).map(function (x) { return '+' + fmt(x); }), (s.removed || []).map(function (x) { return '-' + fmt(x); })).join(' '); };
     (d.changes || []).forEach(function (c) {
-      var r = c.b || c.a, head = c.element === 'file' ? 'the file' : (c.element === 'message' ? 'shape' : c.element) + ' ' + refName(c.element, r);
+      var r = c.b || c.a, head = c.element === 'file' ? 'the file' : c.element + ' ' + refName(c.element, r);
       if (c.tags.indexOf('added') >= 0) { out += '+ ' + head + ' (in ' + where(c.b.in) + ')\n'; return; }
       if (c.tags.indexOf('removed') >= 0) { out += '- ' + head + ' (was in ' + where(c.a.in) + ')\n'; return; }
       var parts = [], f = c.fields || {};

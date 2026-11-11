@@ -33,135 +33,135 @@ Core.Edits -> Core.Scope  # core/core.js:1206
 Core.Scope -> Core.Model  # core/core.js:1227 (+3 more)
 Core.Random -> Core.Model  # core/core.js:1283
 Core.Diff -> Core.Model  # core/core.js:1361 (+7 more)
-App.Document -> App.Kit  # viewer/src/index.html:837 (+14 more)
-App.Document -> Viewer.Sample  # viewer/src/index.html:842
-App.History -> App.Kit  # viewer/src/index.html:896 (+3 more)
-App.Comments -> App.Document  # viewer/src/index.html:928 (+22 more)
-App.Comments -> App.Kit  # viewer/src/index.html:928 (+18 more)
-App.Document -> App.Page  # viewer/src/index.html:937 (+6 more)
-App.Document -> Core.Model  # viewer/src/index.html:939 (+3 more)
+App.Document -> App.Kit  # viewer/src/index.html:847 (+14 more)
+App.Document -> Viewer.Sample  # viewer/src/index.html:852
+App.History -> App.Kit  # viewer/src/index.html:906 (+3 more)
+App.Comments -> App.Document  # viewer/src/index.html:938 (+22 more)
+App.Comments -> App.Kit  # viewer/src/index.html:938 (+18 more)
+App.Document -> App.Page  # viewer/src/index.html:947 (+6 more)
+App.Document -> Core.Model  # viewer/src/index.html:949 (+3 more)
 # VIOLATION: setSource() calls render() directly; the page state refreshes the canvas instead of announcing a change.
-App.Document -> App.Canvas  # viewer/src/index.html:950
+App.Document -> App.Canvas  # viewer/src/index.html:960
 # VIOLATION: setSource() re-renders the message table directly (same pattern as render).
-App.Document -> App.Messages  # viewer/src/index.html:951
-App.Canvas -> App.Document  # viewer/src/index.html:961 (+95 more)
-App.Canvas -> App.Popovers  # viewer/src/index.html:962 (+3 more)
-App.Canvas -> App.Kit  # viewer/src/index.html:963 (+52 more)
-App.Canvas -> App.Page  # viewer/src/index.html:963 (+7 more)
-App.Canvas -> Core.Layout  # viewer/src/index.html:968 (+1 more)
-App.Canvas -> Core.Lint  # viewer/src/index.html:969
-App.Canvas -> App.Camera  # viewer/src/index.html:976 (+2 more)
-App.Canvas -> App.Checks  # viewer/src/index.html:978
-App.Canvas -> App.Callouts  # viewer/src/index.html:979 (+1 more)
-App.Canvas -> App.Comments  # viewer/src/index.html:988 (+2 more)
-App.Canvas -> Core.Model  # viewer/src/index.html:996 (+19 more)
-App.Canvas -> App.Files  # viewer/src/index.html:1159
-App.Document -> App.History  # viewer/src/index.html:1327 (+1 more)
-App.Document -> Core.Edits  # viewer/src/index.html:1346
-App.Camera -> App.Kit  # viewer/src/index.html:1364 (+2 more)
-App.Camera -> App.Page  # viewer/src/index.html:1364 (+2 more)
+App.Document -> App.Messages  # viewer/src/index.html:961
+App.Canvas -> App.Document  # viewer/src/index.html:971 (+95 more)
+App.Canvas -> App.Popovers  # viewer/src/index.html:972 (+3 more)
+App.Canvas -> App.Kit  # viewer/src/index.html:973 (+54 more)
+App.Canvas -> App.Page  # viewer/src/index.html:973 (+7 more)
+App.Canvas -> Core.Layout  # viewer/src/index.html:978 (+1 more)
+App.Canvas -> Core.Lint  # viewer/src/index.html:979
+App.Canvas -> App.Camera  # viewer/src/index.html:986 (+2 more)
+App.Canvas -> App.Checks  # viewer/src/index.html:988
+App.Canvas -> App.Callouts  # viewer/src/index.html:989 (+1 more)
+App.Canvas -> App.Comments  # viewer/src/index.html:998 (+2 more)
+App.Canvas -> Core.Model  # viewer/src/index.html:1006 (+19 more)
+App.Canvas -> App.Files  # viewer/src/index.html:1169
+App.Document -> App.History  # viewer/src/index.html:1342 (+1 more)
+App.Document -> Core.Edits  # viewer/src/index.html:1361
+App.Camera -> App.Kit  # viewer/src/index.html:1379 (+2 more)
+App.Camera -> App.Page  # viewer/src/index.html:1379 (+2 more)
 # VIOLATION: applyCam() also re-places an open callout (placeCallout), as it does the selection strip: the camera tells what floats over the canvas to follow it.
-App.Camera -> App.Callouts  # viewer/src/index.html:1365
+App.Camera -> App.Callouts  # viewer/src/index.html:1380
 # VIOLATION: applyCam() repositions the selection strip (placeStrip) and goTo() calls render() and select(): navigation is braided into the camera.
-App.Camera -> App.Canvas  # viewer/src/index.html:1365 (+3 more)
-App.Camera -> App.Document  # viewer/src/index.html:1365 (+11 more)
+App.Camera -> App.Canvas  # viewer/src/index.html:1380 (+3 more)
+App.Camera -> App.Document  # viewer/src/index.html:1380 (+11 more)
 # VIOLATION: goTo() closes the source sheet on phones (closeSheetsOnPhone, owned by the source-sheet input code).
-App.Camera -> App.Input  # viewer/src/index.html:1391
+App.Camera -> App.Input  # viewer/src/index.html:1406
 # VIOLATION: goTo() closes popovers (closePop) before navigating.
-App.Camera -> App.Popovers  # viewer/src/index.html:1391
-App.Input -> App.Camera  # viewer/src/index.html:1406 (+32 more)
-App.Input -> App.Document  # viewer/src/index.html:1409 (+56 more)
-App.Input -> App.Canvas  # viewer/src/index.html:1415 (+41 more)
-App.Input -> App.Popovers  # viewer/src/index.html:1443 (+11 more)
-App.Input -> App.Callouts  # viewer/src/index.html:1481 (+21 more)
-App.Input -> App.Comments  # viewer/src/index.html:1485 (+5 more)
-App.Input -> App.Files  # viewer/src/index.html:1486
-App.Input -> App.Messages  # viewer/src/index.html:1489 (+3 more)
-App.Canvas -> Core.Constants  # viewer/src/index.html:1571
-App.Canvas -> App.EditDialog  # viewer/src/index.html:1617 (+1 more)
-App.Canvas -> App.Code  # viewer/src/index.html:1618
-App.Canvas -> App.Messages  # viewer/src/index.html:1622
-App.Input -> Core.Model  # viewer/src/index.html:1717 (+4 more)
-App.Input -> App.Kit  # viewer/src/index.html:1718 (+27 more)
-App.Input -> Core.Layout  # viewer/src/index.html:1718 (+3 more)
-App.Input -> Core.Edits  # viewer/src/index.html:1724 (+11 more)
-App.Input -> Core.Lint  # viewer/src/index.html:1732
-App.Input -> Core.Constants  # viewer/src/index.html:1750 (+1 more)
-App.Input -> App.Page  # viewer/src/index.html:1828 (+22 more)
-App.Input -> App.Code  # viewer/src/index.html:1997
-App.Input -> App.EditDialog  # viewer/src/index.html:1997 (+3 more)
-App.EditDialog -> Core.Model  # viewer/src/index.html:2052 (+4 more)
-App.EditDialog -> App.Document  # viewer/src/index.html:2057 (+24 more)
-App.EditDialog -> App.Modals  # viewer/src/index.html:2059 (+6 more)
-App.EditDialog -> App.Kit  # viewer/src/index.html:2060 (+21 more)
-App.EditDialog -> Core.Scope  # viewer/src/index.html:2064 (+8 more)
-App.Popovers -> App.Document  # viewer/src/index.html:2180 (+4 more)
-App.Popovers -> Core.Model  # viewer/src/index.html:2181 (+3 more)
-App.Popovers -> App.Kit  # viewer/src/index.html:2182 (+12 more)
+App.Camera -> App.Popovers  # viewer/src/index.html:1406
+App.Input -> App.Camera  # viewer/src/index.html:1421 (+32 more)
+App.Input -> App.Document  # viewer/src/index.html:1424 (+56 more)
+App.Input -> App.Canvas  # viewer/src/index.html:1430 (+41 more)
+App.Input -> App.Popovers  # viewer/src/index.html:1458 (+11 more)
+App.Input -> App.Callouts  # viewer/src/index.html:1496 (+21 more)
+App.Input -> App.Comments  # viewer/src/index.html:1500 (+5 more)
+App.Input -> App.Files  # viewer/src/index.html:1501
+App.Input -> App.Messages  # viewer/src/index.html:1504 (+3 more)
+App.Canvas -> Core.Constants  # viewer/src/index.html:1586
+App.Canvas -> App.EditDialog  # viewer/src/index.html:1632 (+1 more)
+App.Canvas -> App.Code  # viewer/src/index.html:1633
+App.Canvas -> App.Messages  # viewer/src/index.html:1637
+App.Input -> Core.Model  # viewer/src/index.html:1732 (+4 more)
+App.Input -> App.Kit  # viewer/src/index.html:1733 (+27 more)
+App.Input -> Core.Layout  # viewer/src/index.html:1733 (+3 more)
+App.Input -> Core.Edits  # viewer/src/index.html:1739 (+11 more)
+App.Input -> Core.Lint  # viewer/src/index.html:1747
+App.Input -> Core.Constants  # viewer/src/index.html:1765 (+1 more)
+App.Input -> App.Page  # viewer/src/index.html:1843 (+22 more)
+App.Input -> App.Code  # viewer/src/index.html:2012
+App.Input -> App.EditDialog  # viewer/src/index.html:2012 (+3 more)
+App.EditDialog -> Core.Model  # viewer/src/index.html:2067 (+4 more)
+App.EditDialog -> App.Document  # viewer/src/index.html:2072 (+24 more)
+App.EditDialog -> App.Modals  # viewer/src/index.html:2074 (+6 more)
+App.EditDialog -> App.Kit  # viewer/src/index.html:2075 (+21 more)
+App.EditDialog -> Core.Scope  # viewer/src/index.html:2079 (+8 more)
+App.Popovers -> App.Document  # viewer/src/index.html:2195 (+4 more)
+App.Popovers -> Core.Model  # viewer/src/index.html:2196 (+3 more)
+App.Popovers -> App.Kit  # viewer/src/index.html:2197 (+12 more)
 # VIOLATION: onMsgClick/onBehClick read the pointer state (hoverT, lastPointer) that the pointer code owns.
-App.Popovers -> App.Input  # viewer/src/index.html:2205 (+1 more)
+App.Popovers -> App.Input  # viewer/src/index.html:2220 (+1 more)
 # VIOLATION: the info-card actions (onMsgClick and the document click listener) open the message table.
-App.Popovers -> App.Messages  # viewer/src/index.html:2205 (+1 more)
-App.Popovers -> App.Camera  # viewer/src/index.html:2206 (+1 more)
-App.Callouts -> App.Kit  # viewer/src/index.html:2223 (+25 more)
-App.Callouts -> App.Camera  # viewer/src/index.html:2232 (+1 more)
-App.Callouts -> App.Canvas  # viewer/src/index.html:2248 (+6 more)
-App.Callouts -> App.Document  # viewer/src/index.html:2248 (+42 more)
-App.Callouts -> Core.Model  # viewer/src/index.html:2275 (+3 more)
-App.Callouts -> Core.Scope  # viewer/src/index.html:2322 (+1 more)
-App.Callouts -> App.EditDialog  # viewer/src/index.html:2332
-App.Comments -> Core.Edits  # viewer/src/index.html:2542
+App.Popovers -> App.Messages  # viewer/src/index.html:2220 (+1 more)
+App.Popovers -> App.Camera  # viewer/src/index.html:2221 (+1 more)
+App.Callouts -> App.Kit  # viewer/src/index.html:2238 (+25 more)
+App.Callouts -> App.Camera  # viewer/src/index.html:2247 (+1 more)
+App.Callouts -> App.Canvas  # viewer/src/index.html:2263 (+6 more)
+App.Callouts -> App.Document  # viewer/src/index.html:2263 (+42 more)
+App.Callouts -> Core.Model  # viewer/src/index.html:2290 (+3 more)
+App.Callouts -> Core.Scope  # viewer/src/index.html:2337 (+1 more)
+App.Callouts -> App.EditDialog  # viewer/src/index.html:2347
+App.Comments -> Core.Edits  # viewer/src/index.html:2557
 # VIOLATION: comment actions call render() to redraw the comment badges.
-App.Comments -> App.Canvas  # viewer/src/index.html:2563 (+4 more)
-App.Comments -> App.Popovers  # viewer/src/index.html:2582 (+6 more)
-App.Comments -> App.Files  # viewer/src/index.html:2589 (+3 more)
-App.Comments -> App.Messages  # viewer/src/index.html:2639 (+1 more)
-App.Comments -> App.Page  # viewer/src/index.html:2653 (+6 more)
-App.Comments -> App.Modals  # viewer/src/index.html:2662 (+4 more)
-App.Comments -> App.Camera  # viewer/src/index.html:2667
-App.Comments -> Core.Model  # viewer/src/index.html:2685
-App.EditDialog -> Core.Edits  # viewer/src/index.html:2733
-App.Modals -> App.Kit  # viewer/src/index.html:2757 (+2 more)
-App.Modals -> App.Page  # viewer/src/index.html:2763 (+1 more)
-App.Modals -> App.Document  # viewer/src/index.html:2766 (+7 more)
+App.Comments -> App.Canvas  # viewer/src/index.html:2578 (+4 more)
+App.Comments -> App.Popovers  # viewer/src/index.html:2597 (+6 more)
+App.Comments -> App.Files  # viewer/src/index.html:2604 (+3 more)
+App.Comments -> App.Messages  # viewer/src/index.html:2654 (+1 more)
+App.Comments -> App.Page  # viewer/src/index.html:2668 (+6 more)
+App.Comments -> App.Modals  # viewer/src/index.html:2677 (+4 more)
+App.Comments -> App.Camera  # viewer/src/index.html:2682
+App.Comments -> Core.Model  # viewer/src/index.html:2700
+App.EditDialog -> Core.Edits  # viewer/src/index.html:2748
+App.Modals -> App.Kit  # viewer/src/index.html:2772 (+2 more)
+App.Modals -> App.Page  # viewer/src/index.html:2778 (+1 more)
+App.Modals -> App.Document  # viewer/src/index.html:2781 (+7 more)
 # VIOLATION: the settings dialog calls render() when an option changes.
-App.Modals -> App.Canvas  # viewer/src/index.html:2768 (+2 more)
-App.Modals -> Viewer.Mode  # viewer/src/index.html:2772
-App.Checks -> App.Document  # viewer/src/index.html:2784 (+8 more)
-App.Checks -> App.Kit  # viewer/src/index.html:2790 (+6 more)
-App.Checks -> App.Page  # viewer/src/index.html:2790 (+3 more)
-App.Checks -> App.Popovers  # viewer/src/index.html:2792 (+4 more)
-App.Messages -> App.Document  # viewer/src/index.html:2818 (+14 more)
-App.Messages -> App.Kit  # viewer/src/index.html:2818 (+21 more)
-App.Messages -> App.Page  # viewer/src/index.html:2818 (+16 more)
-App.Messages -> Core.Model  # viewer/src/index.html:2828 (+10 more)
-App.Messages -> App.Comments  # viewer/src/index.html:2836 (+2 more)
-App.Messages -> App.Camera  # viewer/src/index.html:2850
-App.Input -> Viewer.Sample  # viewer/src/index.html:2878
-App.Input -> Core.Random  # viewer/src/index.html:2879
-App.Code -> App.Kit  # viewer/src/index.html:2912 (+5 more)
-App.Files -> App.Kit  # viewer/src/index.html:2928 (+16 more)
-App.Files -> Core.Model  # viewer/src/index.html:2937 (+1 more)
-App.Files -> App.Document  # viewer/src/index.html:2950 (+9 more)
-App.Code -> App.Document  # viewer/src/index.html:3049 (+1 more)
-App.Code -> Core.Edits  # viewer/src/index.html:3050
-App.Input -> App.Modals  # viewer/src/index.html:3089 (+1 more)
-Viewer.Boot -> Core.Constants  # viewer/src/index.html:3137
-Viewer.Boot -> Viewer.Mode  # viewer/src/index.html:3138
-Viewer.Boot -> App.Document  # viewer/src/index.html:3139 (+1 more)
-Viewer.Boot -> Viewer.Sample  # viewer/src/index.html:3139
-Viewer.Boot -> App.Camera  # viewer/src/index.html:3140
-Viewer.Boot -> App.Comments  # viewer/src/index.html:3141
-Viewer.Boot -> App.Kit  # viewer/src/index.html:3142
-Viewer.Boot -> App.Page  # viewer/src/index.html:3142
+App.Modals -> App.Canvas  # viewer/src/index.html:2783 (+2 more)
+App.Modals -> Viewer.Mode  # viewer/src/index.html:2787
+App.Checks -> App.Document  # viewer/src/index.html:2799 (+8 more)
+App.Checks -> App.Kit  # viewer/src/index.html:2805 (+6 more)
+App.Checks -> App.Page  # viewer/src/index.html:2805 (+3 more)
+App.Checks -> App.Popovers  # viewer/src/index.html:2807 (+4 more)
+App.Messages -> App.Document  # viewer/src/index.html:2833 (+14 more)
+App.Messages -> App.Kit  # viewer/src/index.html:2833 (+21 more)
+App.Messages -> App.Page  # viewer/src/index.html:2833 (+16 more)
+App.Messages -> Core.Model  # viewer/src/index.html:2843 (+10 more)
+App.Messages -> App.Comments  # viewer/src/index.html:2851 (+2 more)
+App.Messages -> App.Camera  # viewer/src/index.html:2865
+App.Input -> Viewer.Sample  # viewer/src/index.html:2893
+App.Input -> Core.Random  # viewer/src/index.html:2894
+App.Code -> App.Kit  # viewer/src/index.html:2927 (+5 more)
+App.Files -> App.Kit  # viewer/src/index.html:2943 (+16 more)
+App.Files -> Core.Model  # viewer/src/index.html:2952 (+1 more)
+App.Files -> App.Document  # viewer/src/index.html:2965 (+9 more)
+App.Code -> App.Document  # viewer/src/index.html:3064 (+1 more)
+App.Code -> Core.Edits  # viewer/src/index.html:3065
+App.Input -> App.Modals  # viewer/src/index.html:3104 (+1 more)
+Viewer.Boot -> Core.Constants  # viewer/src/index.html:3152
+Viewer.Boot -> Viewer.Mode  # viewer/src/index.html:3153
+Viewer.Boot -> App.Document  # viewer/src/index.html:3154 (+1 more)
+Viewer.Boot -> Viewer.Sample  # viewer/src/index.html:3154
+Viewer.Boot -> App.Camera  # viewer/src/index.html:3155
+Viewer.Boot -> App.Comments  # viewer/src/index.html:3156
+Viewer.Boot -> App.Kit  # viewer/src/index.html:3157
+Viewer.Boot -> App.Page  # viewer/src/index.html:3157
 Viewer.Session -> Viewer.Mode  # viewer/src/session.js:16 (+1 more)
-Viewer.Session -> App.Comments  # viewer/src/session.js:18 (+16 more)
+Viewer.Session -> App.Comments  # viewer/src/session.js:18 (+17 more)
 Viewer.Session -> App.Document  # viewer/src/session.js:21 (+5 more)
 Viewer.Session -> App.Kit  # viewer/src/session.js:32 (+7 more)
 Viewer.Session -> App.Files  # viewer/src/session.js:68 (+1 more)
 Viewer.Session -> App.Canvas  # viewer/src/session.js:74 (+3 more)
 Viewer.Session -> App.Messages  # viewer/src/session.js:74
-Viewer.Session -> App.Page  # viewer/src/session.js:105
+Viewer.Session -> App.Page  # viewer/src/session.js:106
 Viewer.Bindings -> App.Document  # viewer/src/bindings.js:24 (+5 more)
 Viewer.Bindings -> Core.Bindings  # viewer/src/bindings.js:27 (+2 more)
 Viewer.Bindings -> App.Kit  # viewer/src/bindings.js:43 (+2 more)
@@ -192,9 +192,9 @@ Viewer.Server -> Viewer.Review  # viewer/src/server.js:151 (+10 more)
 Viewer.Server -> Core.Model  # viewer/src/server.js:191
 Viewer.Server -> App.Page  # viewer/src/server.js:193 (+4 more)
 Viewer.Server -> Core.Bindings  # viewer/src/server.js:214
-Viewer.Server -> Viewer.Session  # viewer/src/server.js:236 (+3 more)
+Viewer.Server -> Viewer.Session  # viewer/src/server.js:236 (+4 more)
 Viewer.Server -> App.Modals  # viewer/src/server.js:286 (+2 more)
-Viewer.Server -> Viewer.Bindings  # viewer/src/server.js:374
+Viewer.Server -> Viewer.Bindings  # viewer/src/server.js:375
 Viewer.Diff -> Viewer.Mode  # viewer/src/diff.js:11 (+10 more)
 Viewer.Diff -> Viewer.Sample  # viewer/src/diff.js:34 (+3 more)
 Viewer.Diff -> Viewer.Session  # viewer/src/diff.js:122 (+3 more)

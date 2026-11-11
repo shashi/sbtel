@@ -5,7 +5,7 @@
 // into its thread as well as a toast. Inlined by viewer/build.mjs after the app and before server.js
 // and diff.js; at load it only defines sessionComments, so standalone mode is untouched.
 function sessionComments({ version, closed }) {
-  const C = { read: null, seenReplies: new Set(), reviews: [], listeners: [] };
+  const C = { read: null, seenReplies: new Set(), seen: new Set(), reviews: [], listeners: [] };
   const changed = () => C.listeners.forEach(f => f());
   const CSS = `
 .sb-reply { margin:9px 0 0 2px; padding:1px 0 1px 12px; border-left:2px solid var(--accent); overflow-wrap:anywhere; white-space:pre-wrap; }
@@ -98,7 +98,8 @@ function sessionComments({ version, closed }) {
     commentCounts = () => { const c = {}; state.comments.forEach(x => { c[x.target] = (c[x.target] || 0) + 1; }); return c; };
     // The chat's rows: a sent comment says how it went, cannot be deleted, and carries the agent's replies.
     const status0 = chatStatus, btns0 = chatRowBtns;
-    chatStatus = c => c.status === 'sent' ? ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent to the agent'] : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
+    // Sent: the server has it. Seen: `sbtel inbox` has handed it to the agent (the server says which, setSeen).
+    chatStatus = c => c.status === 'sent' ? (C.seen.has(c.sid) ? ['st-seen', 'Seen by the agent', (c.review ? 'Sent in review ' + c.review + '. ' : '') + 'The agent has been given this comment'] : ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent', 'The agent has not read its inbox since']) : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
     chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
     chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
     // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
@@ -111,5 +112,7 @@ function sessionComments({ version, closed }) {
   const reviews = () => C.reviews;
   const addReview = r => { C.reviews.push(r); changed(); };
   const onChange = f => { C.listeners.push(f); };
-  return { rebuild, send, onReply, hook, reviews, addReview, onChange, _state: C };
+  // What the agent has been given (ids of comments), from the log and from the server's `seen` news.
+  function setSeen(ids) { let ch = false; (ids || []).forEach(i => { if (!C.seen.has(i)) { C.seen.add(i); ch = true; } }); if (ch) refreshChat(); }
+  return { rebuild, send, onReply, hook, reviews, addReview, onChange, setSeen, _state: C };
 }

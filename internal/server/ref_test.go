@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"os"
@@ -320,5 +321,46 @@ func TestCommentsRestored(t *testing.T) {
 	evs, _ = state.ReadEvents(h.s.paths, third)
 	if len(evs) != 1+6 {
 		t.Errorf("third session has %d events, want 7", len(evs))
+	}
+}
+
+// What an inbox has handed over is seen: a session's own comments up to its cursor, and a comment sent
+// from another session's page once that session's cursor has passed its copy.
+func TestSeen(t *testing.T) {
+	h := start(t, Options{})
+	dir := t.TempDir()
+	mapFile, siteFile := filepath.Join(dir, "all.sbtel"), filepath.Join(dir, "site.sbtel")
+	os.WriteFile(mapFile, []byte("(block All (ref site.sbtel))\n"), 0o644)
+	os.WriteFile(siteFile, []byte("(block Site)\n"), 0o644)
+	parent := h.create("(block All (ref site.sbtel))\n", &mapFile)
+	child := h.create("(block Site)\n", &siteFile)
+	say := func(text, from string) {
+		t.Helper()
+		if r, b := h.req("POST", "/s/"+child+"/comment", `{"target":"block:Site","targetLabel":"block Site","text":"`+text+`","version":1,"source":"","from":"`+from+`"}`, nil); r.StatusCode != 200 {
+			t.Fatalf("comment: %d %s", r.StatusCode, b)
+		}
+	}
+	say("own", "")         // c2 in the child
+	say("via map", parent) // c3 in the child, copied to the parent as its event 2
+	seen := func() string {
+		_, b := h.req("GET", "/s/"+child+"/log", "", nil)
+		var out struct{ Seen []string }
+		json.Unmarshal([]byte(b), &out)
+		sort.Strings(out.Seen)
+		return strings.Join(out.Seen, ",")
+	}
+	if got := seen(); got != "" {
+		t.Errorf("before any inbox: %q", got)
+	}
+	state.WriteCursor(h.s.paths, child, 3) // the child's inbox has read everything of its own
+	if got := seen(); got != "c2" {
+		t.Errorf("after the child's inbox: %q, want c2", got)
+	}
+	state.WriteCursor(h.s.paths, parent, 2) // the map's inbox has read the copy
+	if err := h.c.Do("POST", "/control/sessions/"+parent+"/seen", map[string]any{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := seen(); got != "c2,c3" {
+		t.Errorf("after the map's inbox: %q, want c2,c3", got)
 	}
 }

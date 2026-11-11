@@ -5,8 +5,19 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 
 ## 0.4.1 (2026-11-10)
 
+### Breaking
+
+- **`--json` output says "shape".** The count in `lint --json` is `shapes` (was `messages`); an entry of
+  `show --json` has `kind: "shape"` and `carriers.shapes`; a change in `diff --json` has
+  `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
+
 ### Added
 
+- **Sent and Seen.** A sent comment shows one tick and "Sent"; when `sbtel inbox` has handed it to the
+  agent it shows two and "Seen by the agent", with nothing for the agent to do. `inbox --peek` does not
+  count. A comment made in a spec opened over another page is seen when that page's agent reads it.
+- **A type can pulse.** In a type's colour picker, "Pulse its dot" makes the dot of every block of that
+  type send out a soft ring: for what is in progress.
 - **Attach a file.** Drop a file on a block and the block gets a `ref` to it, as an edit in your draft.
   Drop or paste a file into a comment, or use the paperclip in the comment box (the way to attach on a
   phone), and the comment's text gets the `ref`. The file is stored in `.sbtel/files/` beside the spec,
@@ -70,6 +81,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 - **A shape's dot and a behavior's badge can be given a colour**, in that shape's or behavior's Edit
   dialog only: twelve hues, a hue slider, and Automatic. It applies as you choose and is kept in the
   browser for that spec file, by the thing's name; it is not part of the spec.
+- **Link handles stand just outside a block's edge**, all four alike. An open block of a type takes a
+  fainter wash of its hue when cards are tinted.
 - **An ear joins its card without a line.** The card's border no longer shows across the join.
 - **Inline editors have a Save button**, and the save key is the same in every field: Ctrl/⌘-Enter. The
   port editor said "Enter saves", which was false in its sketch. Its direction buttons read "takes" and

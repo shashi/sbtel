@@ -92,7 +92,7 @@ async function until(fn, ms = 8000, step = 100) {
   await page.click('.pop [data-c="send"]');
   await until(() => page.evaluate(() => state.comments.some(c => c.status === 'sent')));
   check('comment marked sent in the page', await page.evaluate(() => state.comments.filter(c => c.status === 'sent').length === 1));
-  check('the chat stays open after Send: the comment is in its thread and the input is empty', await page.evaluate(() => { const p = document.querySelector('.pop.chat'); return !!p && p.querySelector('ul.thread').textContent.includes('Second line: ünïcödé') && p.querySelector('.st-sent')?.textContent === 'Sent to the agent' && p.querySelector('#cmtText').value === '' && !p.querySelector('[data-t="del"]'); }));
+  check('the chat stays open after Send: the comment is in its thread and the input is empty', await page.evaluate(() => { const p = document.querySelector('.pop.chat'); return !!p && p.querySelector('ul.thread').textContent.includes('Second line: ünïcödé') && p.querySelector('.st-sent')?.textContent === 'Sent' && p.querySelector('#cmtText').value === '' && !p.querySelector('[data-t="del"]'); }));
   await page.evaluate(() => closePop('thread'));
 
   // ---- inbox ----

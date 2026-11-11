@@ -218,7 +218,7 @@ LintResult = {
   counts:   { blocks, behaviors, messages } | null
 }
 ```
-`Info = { severity: "info", message, line, col, kind: "message"|"behavior", name, in: block id ('' =
+`Info = { severity: "info", message, line, col, kind: "shape"|"behavior", name, in: block id ('' =
 the file), home: block id ('' = the file) | null }`: `home` is where the declaration could move, null
 when nothing uses it. `__api.lintText(name, src)` returns the human text described in §3.3.
 
@@ -256,7 +256,7 @@ QueryResult = {
   suggest:    { [missingId]: string[] }   // up to 3 close ids per missing id ("did you mean")
 }
 Element = {
-  id, kind: "block"|"behavior"|"message", name,
+  id, kind: "block"|"behavior"|"shape", name,
   in:     string|null,            // holder: parent block (blocks), declaring block (behavior, message); null = file
   path:   string[],               // ancestor block ids, outermost first (excludes self)
   sketch: string,                 // "" if none
@@ -271,7 +271,7 @@ Element = {
   params: string[], implements: string[] /* direct */, ports: Port[] /* own, then from what it extends */,
   // message only:
   refines: string|null, carries: string[],   // own (carries …)
-  carriers: { messages: string[], ports: { owner, port }[], blocks: string[] }   // §2.8 carriers
+  carriers: { shapes: string[], ports: { owner, port }[], blocks: string[] }   // §2.8 carriers
 }
 Port = { name, dir: string|null /* "in"|"out" when valid; else as written, and lint warns */, kind: string|null, via: string|null, sketch: string }
 ```
@@ -928,6 +928,12 @@ is the session's `tabs`.
   sender's spec) and the event itself. A reply to such a comment or review is copied the same way. The
   sender's tabs get the copy as SSE `ref`. `sbtel inbox` shows a `ref` whose event is the user's, and
   skips a comment, review or save that has `from`: each agent hears what was sent from its own page.
+- **Seen (v0.4.1).** `GET /s/<id>/log` also answers `seen`: the ids of the comments and reviews (and
+  the reviews' comments) that `sbtel inbox` has handed to an agent. Those are the session's own up to
+  its cursor, those sent from another session's page once that session's cursor has passed its `ref`
+  copy, and everything restored from the project log. After it moves a cursor, `sbtel inbox` posts
+  `/control/sessions/<id>/seen`; the server then sends SSE `seen {ids}` to that session's tabs and to
+  the tabs of every session it holds copies for. `inbox --peek` moves no cursor, so it marks nothing.
 - `/` lists nothing (404).
 - Control bodies (§5.3) are limited to 64 MiB, like browser writes. (Before the integration pass browser
   writes had a 4 MiB limit, so a tab could not save a big spec an agent had pushed; §11, entry 27.)
@@ -1421,7 +1427,7 @@ DiffResult = {
   summary:  { added, removed, moved, renamed, changed, affected }   // counts; a Change counts once per tag
 }
 Change = {
-  element: "block" | "behavior" | "message" | "file",   // "file": the file's own levels changed (§7.3)
+  element: "block" | "behavior" | "shape" | "file",   // "file": the file's own levels changed (§7.3)
   tags:    ("added" | "removed" | "moved" | "renamed" | "changed")[],  // added/removed alone; others combine, in this order
   a: Ref | null,                  // null when added
   b: Ref | null,                  // null when removed

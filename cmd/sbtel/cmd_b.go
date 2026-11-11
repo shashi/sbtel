@@ -484,6 +484,10 @@ func cmdInbox(e env, args []string) int {
 		if err := state.WriteCursor(p, id, last); err != nil {
 			return controlErr(e, cmd, err)
 		}
+		// Tell the page what the agent now has, so it can mark it seen. The cursor is the record; this is only news.
+		if c := server.Connect(p); c != nil {
+			_ = c.Do("POST", "/control/sessions/"+id+"/seen", map[string]any{}, nil)
+		}
 	}
 	return 0
 }

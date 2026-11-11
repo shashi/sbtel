@@ -248,7 +248,7 @@ func (s *Server) browser(w http.ResponseWriter, r *http.Request, id, route strin
 		if evs == nil {
 			evs = []state.Event{}
 		}
-		writeJSON(w, 200, map[string]any{"events": evs})
+		writeJSON(w, 200, map[string]any{"events": evs, "seen": s.seenIDs(ss)})
 	case route == "save" && !isGet:
 		if m.Kind != "spec" {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -339,6 +339,9 @@ func (s *Server) control(w http.ResponseWriter, r *http.Request, route string) {
 				return
 			}
 			out, err = s.reply(id, in.To, in.Text)
+		case "seen":
+			err = s.seen(id)
+			out = map[string]any{}
 		case "close":
 			err = s.closeSession(id)
 			out = map[string]any{}
