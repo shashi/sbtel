@@ -1,4 +1,4 @@
-; The Notes app: levels, an adjacent pair, and the shapes its blocks give and take.
+; The Notes app: blocks inside blocks, levels, an adjacent pair, and the shapes blocks give and take.
 (block Notes :type "app"
   (~ Write notes, see them rendered, keep them on disk. ~)
   (shape Note :type "struct" (~ A title and a body. ~))
@@ -14,6 +14,12 @@
     (block Search :type "module" (~ Finds notes by their words. ~)))
   (level :name "Stored notes"
     (~ Notes as values on disk. Nothing here knows about editing. ~)
-    (block Store :type "module" (takes Edit) (gives NoteSaved) (~ Keeps notes on disk. ~))
+    (block Store :type "module" (takes Edit) (gives NoteSaved)
+      (~ Keeps notes on disk. ~)
+      (level :name "What the app calls"
+        (block save :type "function" (~ Writes one note. ~))
+        (block load :type "function" (~ Reads one note by its title. ~)))
+      (level :name "Files"
+        (block AtomicWrite :type "function" (~ Write beside, then rename. ~))))
     (block Markdown :type "module" (~ Turns text into a document tree. ~))
     (block Index :type "module" (~ Maps words to notes. ~))))
