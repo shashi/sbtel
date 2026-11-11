@@ -13,6 +13,11 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 
 ### Added
 
+- **A tour.** A first visit starts a six-stop tour in place of the panel of gestures: a ring goes round
+  a real thing of the diagram (a block, a level's name, a block inside a block, an ear, a block to
+  comment on) and a card says one thing about it; the last stop opens the Source panel, the text an
+  agent reads. Next, Back, the arrow keys, Escape. A stop the diagram has nothing for is passed over.
+  The `?` button opens "Take the tour" and the gestures, now under Move around, Edit and Comment.
 - **Sent and Seen.** A sent comment shows one tick and "Sent"; when `sbtel inbox` has handed it to the
   agent it shows two and "Seen by the agent", with nothing for the agent to do. `inbox --peek` does not
   count. A comment made in a spec opened over another page is seen when that page's agent reads it.
