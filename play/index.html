@@ -194,8 +194,26 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 :root { --ty-l:.5; --ty-c:.15; --ty-wash:11%; }
 /* With "Tint cards by type" on, a typed card takes a wash of its type's hue and an edge in it. */
 .world.tint .blk.card.typed { background:color-mix(in oklch, var(--leaf), oklch(var(--ty-l) var(--ty-c) var(--h)) var(--ty-wash)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 55%); }
+/* An open block of a type takes the same hue, fainter: it is a container, and its own blocks keep theirs. */
+.world.tint .blk.frame.typed { background:color-mix(in oklch, var(--surface), oklch(var(--ty-l) var(--ty-c) var(--h)) calc(var(--ty-wash) * .4)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 40%); }
 .world.typing .blk.card:not(.ty-on) { opacity:.3; }
 .blk .ttl > .pill { cursor:pointer; border-radius:5px; }
+/* A live type's dot sends out a soft ring, about every two seconds. */
+.pill.live::before { animation:typelive 2.2s ease-out infinite; }
+@keyframes typelive { 0% { box-shadow:0 0 0 0 oklch(var(--ty-l) var(--ty-c) var(--h) / .55); } 70%, 100% { box-shadow:0 0 0 7px oklch(var(--ty-l) var(--ty-c) var(--h) / 0); } }
+@media (prefers-reduced-motion: reduce) { .pill.live::before { animation:none; box-shadow:0 0 0 3px oklch(var(--ty-l) var(--ty-c) var(--h) / .3); } }
+.typepick .tpl { margin:0 0 10px; font-size:13px; }
+.dotpick { flex:1; min-width:0; }
+.dotpick .sw { display:grid; grid-template-columns:repeat(12, 1fr); gap:6px; max-width:330px; }
+.dotpick .sw button { aspect-ratio:1; border-radius:50%; border:0; padding:0; cursor:pointer; }
+.dotpick .sw button[aria-pressed="true"] { box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--ink); }
+.dotpick .hrow { display:flex; align-items:center; gap:10px; margin-top:10px; max-width:330px; }
+.dotpick input[type=range] { flex:1; min-width:0; height:10px; border-radius:5px; -webkit-appearance:none; appearance:none; background:linear-gradient(to right in oklch longer hue, oklch(.68 .17 0), oklch(.68 .17 359)); }
+.dotpick input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.4); cursor:pointer; }
+.dotpick input[type=range]::-moz-range-thumb { width:13px; height:13px; border-radius:50%; background:#fff; border:2px solid var(--ink); cursor:pointer; }
+.dotpick input[type=range].auto::-webkit-slider-thumb { opacity:.35; }
+.dotpick .hint2 { margin:8px 0 0; font-size:12.5px; line-height:1.4; color:var(--muted); }
+.editf .fld.dotc { align-items:flex-start; }
 .blk .ttl > .pill:hover { text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
 .pop.typepick { width:212px; padding:12px 14px 12px; }
 .typepick .tph { display:flex; align-items:baseline; gap:6px; font-size:14px; margin-bottom:12px; }
@@ -562,7 +580,12 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
   .thread { max-height:32vh; }
 }
 .st-saved { color:var(--accent); font-weight:600; }
-.st-sent { color:var(--ok); font-weight:600; }
+/* A sent comment's ticks: one when the server has it, two when the agent has been given it. */
+.st-sent, .st-seen { font-weight:600; }
+.st-sent { color:var(--muted); }
+.st-seen { color:var(--ok); }
+.st-sent::before { content:"\2713"; margin-right:4px; }
+.st-seen::before { content:"\2713\2713"; letter-spacing:-.32em; margin-right:.5em; }
 .tiny { border:0; background:none; color:var(--muted); cursor:pointer; font-size:11.5px; padding:2px 4px; border-radius:5px; }
 .tiny:hover { color:var(--ink); background:var(--chip); }
 
@@ -1024,7 +1047,7 @@ function carriers(model, T) {
   const msgs = all.filter(m => hit.has(m.name)).sort((a, b) => a.s - b.s), ports = [], blocks = [];
   model.behaviors.forEach(bh => bh.ports.forEach(p => { if (hit.has(p.kind)) ports.push({ owner:bh.id, port:p.name }); }));
   [...model.blocks.values()].sort((a, b) => a.s - b.s).forEach(b => { const ps = portsOf(b).filter(p => hit.has(p.kind)); ps.forEach(p => { if (!p.via) ports.push({ owner:b.id, port:p.name }); }); if (ps.length) blocks.push(b.id); });
-  return { messages:msgs.map(m => m.name), ports, blocks };
+  return { shapes:msgs.map(m => m.name), ports, blocks };
 }
 function portLabel(p) { return p.name && p.kind && p.name.toLowerCase() !== p.kind.toLowerCase() && p.name !== defaultPortName(p.kind) ? p.name + ': ' + p.kind : (p.kind || p.name || '?'); }
 // The behavior badges of a card: a block's behaviors, or a behavior's (the ones it extends); direct ones only.
@@ -1212,7 +1235,7 @@ function lintSpec(model) {
 // message, and each behavior with a port of one of them, is declared. Users of a behavior: the blocks that implement it.
 // The file (model.root) is the top. A declaration strictly above the LCA could move down to it; one with
 // no users is never used. Below the LCA is a scope failure, reported by lintSpec, so never suggested here.
-// Returns [{ kind: 'message'|'behavior', name, id, s (offset of the declaration), in (block id, '' for the
+// Returns [{ kind: 'shape'|'behavior', name, id, s (offset of the declaration), in (block id, '' for the
 // file), home (block id, '' for the file) | null, text }] in source order.
 function placementFindings(model) {
   const root = model.root, at = n => n || root, out = [];
@@ -1221,7 +1244,7 @@ function placementFindings(model) {
   const where = n => n === root ? 'the top level' : n.name;
   const judge = (d, kind, users) => {
     if (!d.name) return;
-    const D = at(d.owner), L = lca(users), id = kind === 'message' ? 'μ:' + d.name : 'β:' + d.name;
+    const D = at(d.owner), L = lca(users), id = kind === 'shape' ? 'μ:' + d.name : 'β:' + d.name;
     if (!users.length) { out.push({ s:d.s, kind, name:d.name, id, in:D.id, home:null, text:`${d.name} is never used.` }); return; }
     if (L !== D && chain(L).includes(D)) out.push({ s:d.s, kind, name:d.name, id, in:D.id, home:L.id, text:`${d.name} is declared ${D === root ? 'at the top level' : 'in ' + D.name} but only used within ${where(L)}; it could live there.` });
   };
@@ -1229,12 +1252,12 @@ function placementFindings(model) {
   // subtypes of T and what carries them count as T too.
   const subs = name => { const out = new Set([name]); let grow = true; while (grow) { grow = false; model.messages.forEach(x => { if (x.refines && out.has(x.refines) && !out.has(x.name)) { out.add(x.name); grow = true; } }); } return out; };
   model.messages.forEach(m => {
-    const kinds = new Set(); subs(m.name).forEach(t => { kinds.add(t); carriers(model, t).messages.forEach(c => kinds.add(c)); });
+    const kinds = new Set(); subs(m.name).forEach(t => { kinds.add(t); carriers(model, t).shapes.forEach(c => kinds.add(c)); });
     const users = [];
     model.blocks.forEach(b => { if (portsOf(b).some(p => kinds.has(p.kind))) users.push(b); });
     model.messages.forEach(x => { if (x !== m && kinds.has(x.name)) users.push(at(x.owner)); });
     model.behaviors.forEach(bh => { if (bh.ports.some(p => kinds.has(p.kind) && !bh.params.includes(p.kind)) || bh.impl.some(x => (bh.implArgs[x] || []).some(t => kinds.has(t)))) users.push(at(bh.owner)); });
-    judge(m, 'message', users);
+    judge(m, 'shape', users);
   });
   // Users of a behavior B: its implementers, through other behaviors too, and the places where each
   // behavior that implements B directly is declared (B must be visible there).
@@ -2165,7 +2188,7 @@ function diffSpecs(m0, m1) {
     return Object.keys(F).length ? F : null;
   }
   const out = [];
-  const element = n => n.form === 'block' ? 'block' : n.form;
+  const element = n => n.form === 'block' ? 'block' : n.form === 'message' ? 'shape' : n.form; // the model's 'message' is a shape to everyone outside
   KINDS.forEach(kind => E[1][kind].forEach(b => {
     const a = ba.get(b);
     if (!a) { out.push({ s:b.s, c:{ element:element(b), tags:['added'], a:null, b:ref(b, 1), moved:null, renamed:null, fields:null } }); return; }
@@ -2343,7 +2366,15 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&l
 // A sketch on a card: its paragraphs half a line apart when the card shows all of it, else run together.
 const skHTML = (t, gaps) => t.split('\n\n').filter(p => p.trim()).map(esc).join(gaps ? '<i class="pg"></i>' : '\n');
 const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
-const msgColor = k => 'var(--m' + (1 + hash(k || '?') % 6) + ')';
+// A shape's dot and a behavior's badge take one of six colours by name, unless the reader chose a hue for
+// that one in its Edit dialog. Choices are kept in this browser for the spec (dotKey, set by the page's mode).
+let dotKey = () => 'sbtel-dots';
+let redraw = () => {}; // the canvas sets it: draw again, for a choice that changes how things look and nothing else
+const dotRead = () => { try { return JSON.parse(localStorage.getItem(dotKey()) || '{}') || {}; } catch (e) { return {}; } };
+const dotHue = id => { const h = dotRead()[id]; return h == null ? null : h; };
+function setDotHue(id, h) { const m = dotRead(); if (h == null) delete m[id]; else m[id] = Math.round(h); try { localStorage.setItem(dotKey(), JSON.stringify(m)); } catch (e) {} }
+const hueColor = h => `oklch(.68 .17 ${h})`;
+const msgColor = k => { const h = dotHue('μ:' + k); return h != null ? hueColor(h) : 'var(--m' + (1 + hash(k || '?') % 6) + ')'; };
 const GLYPH = ['★','◆','▲','●','■','✚'], GCOL = ['var(--m6)','var(--m4)','var(--m5)','var(--m1)','var(--m3)','var(--m2)'];
 const ICON = {
   clip:'<svg class="i" viewBox="0 0 16 16"><path d="M13 7.5l-5 5a3 3 0 0 1-4.2-4.2l5.5-5.5a2 2 0 0 1 2.8 2.8L6.8 10.9a1 1 0 0 1-1.4-1.4L10 5"/></svg>',
@@ -2360,7 +2391,7 @@ const ICON = {
 // @sbtel begin App.Document
 // glyphFor sits among the canvas helpers, but it is a query on the page's model (a behavior's glyph by
 // its declaration order) that the canvas, the popovers and the shape table all use.
-function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.behaviorOrder.indexOf(name)) % GLYPH.length; return { g:GLYPH[i], c:GCOL[i] }; }
+function glyphFor(name) { const ctx = state.model; const i = Math.max(0, ctx.behaviorOrder.indexOf(name)) % GLYPH.length, h = dotHue('β:' + name); return { g:GLYPH[i], c: h != null ? hueColor(h) : GCOL[i] }; }
 
 // @sbtel end App.Document
 // @sbtel begin App.Document
@@ -2441,6 +2472,7 @@ const histCodec = {
 // playground and server mode, ':spec-<hash>' or ':embed-<hash>' for a spec loaded from the URL
 // (Viewer.Play, §6.9), which reads them again with loadPrefs, from the defaults.
 const prefs = { key:'', defaults:{ ...state.opts } };
+dotKey = () => 'sbtel-dots' + prefs.key;
 function loadPrefs(key) {
   prefs.key = key;
   Object.assign(state.opts, prefs.defaults, (key ? store.get('sbtel-play' + key, {}) : store.get('sbtel-play', store.get('marquee-play', {}))).opts || {}); state.opts.allDetails = false;
@@ -2506,6 +2538,7 @@ function render(anchorId, pv) {
   applySelection(); applyTalk(); applyCarry(); applyBeh(); refreshCallout();
   world.classList.toggle('tint', !!state.opts.tint); if (state.typePin) showType();
 }
+redraw = () => render();
 // Draw a layout: one element per block (reused by id so moves animate), lines, + buttons and bubbles.
 function paint(lay, keep) {
   const world = $('world'), pv = !!keep;
@@ -2747,7 +2780,7 @@ function topHTML(n, top, detailed) {
   return `<div class="toprow" style="height:${top.h - 6}px">${bs.length ? `<span class="behs">${bs.map(detailed ? behChip : badge).join('')}</span>` : ''}</div>`;
 }
 // A block's :type, in quiet type after its name.
-const typeHTML = n => n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}" style="--h:${typeHue(n.type)}" title="Find every ${esc(n.type)}. Click to choose its color.">${esc(n.type)}</span>` : '';
+const typeHTML = n => n.type ? `<span class="pill${typeLive()[n.type.toLowerCase()] ? ' live' : ''}" data-k="${esc(n.type.toLowerCase())}" style="--h:${typeHue(n.type)}" title="Find every ${esc(n.type)}. Click to choose its color.">${esc(n.type)}</span>` : '';
 // A type's colour comes from its text alone (the language says nothing of colour): a hash picks one of
 // twelve hues, and the theme sets how light and how strong it is drawn (--ty-l, --ty-c). The first type
 // drawn keeps its hashed hue; each later one takes the free hue farthest from those in use (its own hashed
@@ -2769,6 +2802,9 @@ function typeHue(type) {
   }
   typeHues.set(k, i * 30 + 20); return i * 30 + 20;
 }
+// A type can also be marked live (in progress, say): its dot then pulses, softly. Kept with the colours.
+const typeLive = () => store.get(typeStoreKey() + ':live', {}) || {};
+function setTypeLive(k, on) { const m = typeLive(); if (on) m[k] = 1; else delete m[k]; store.set(typeStoreKey() + ':live', m); document.querySelectorAll('.blk .ttl > .pill').forEach(p => { if (p.dataset.k === k) p.classList.toggle('live', !!on); }); }
 // Choose a type's hue (null: back to the automatic one), and repaint it everywhere without a new layout.
 function setTypeHue(k, h) {
   const mine = typeChosen(); if (h == null) delete mine[k]; else mine[k] = Math.round(h); store.set(typeStoreKey(), mine);
@@ -2785,12 +2821,14 @@ function openTypePicker(pill) {
   const el = pop('info', pill, `<div class="tph"><i class="dot"></i><b>${esc(name)}</b><span>color</span></div>
     <div class="ring" role="slider" tabindex="0" aria-label="Hue of ${esc(name)}" aria-valuemin="0" aria-valuemax="359"><span class="knob"></span></div>
     <div class="sw">${HUES.map(h => `<button type="button" data-h="${h}" style="--h:${h}" aria-label="Hue ${h}"></button>`).join('')}</div>
+    <label class="chk tpl"><input type="checkbox" data-live> Pulse its dot</label>
     <div class="tpf"><button type="button" class="tiny" data-auto>Automatic</button><span class="spacer"></span><button type="button" class="btn" data-done>Done</button></div>`, 'typepick');
   const ring = el.querySelector('.ring'), knob = el.querySelector('.knob');
   ring.style.background = `conic-gradient(from 90deg, ${Array.from({ length:13 }, (_, i) => col(i * 30)).join(', ')})`;
   const draw = h => { el.style.setProperty('--h', h); ring.setAttribute('aria-valuenow', Math.round(h)); const a = h * Math.PI / 180; knob.style.transform = `translate(${Math.cos(a) * 54}px, ${Math.sin(a) * 54}px)`;
     el.querySelectorAll('.sw button').forEach(b => b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.h - h) < 1))); };
   const pick = h => draw(setTypeHue(k, ((h % 360) + 360) % 360));
+  const live = el.querySelector('[data-live]'); live.checked = !!typeLive()[k]; live.onchange = () => setTypeLive(k, live.checked);
   draw(typeHue(name)); showType(k, true);
   const at = e => { const r = ring.getBoundingClientRect(); pick(Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI); };
   ring.addEventListener('pointerdown', e => { ring.setPointerCapture(e.pointerId); at(e); e.preventDefault(); ring.focus(); });
@@ -3091,10 +3129,11 @@ function applySelection() {
       const B = lay.blocks.find(b => b.id === id);
       const tabs = dotsOf(B.node, state.opts.childDots);
       const t = el.querySelector(':scope > .tab.top'), b = el.querySelector(':scope > .tab.bot');
-      const top = tabs.in.length ? -((t ? t.offsetHeight : K.TAB) + 10) : 0, bot = tabs.out.length ? (b ? b.offsetHeight : K.TAB) + 10 : 0;
-      [['0%', '50%', 0], ['100%', '50%', 0], ['50%', '0%', top], ['50%', '100%', bot]].forEach(([x, y, dy]) => {
+      // Each handle stands a little outside the block's edge (beyond an ear, where there is one), all four alike.
+      const OUT = 13, top = -(tabs.in.length ? (t ? t.offsetHeight : K.TAB) + 10 : OUT), bot = tabs.out.length ? (b ? b.offsetHeight : K.TAB) + 10 : OUT;
+      [['0%', '50%', -OUT, 0], ['100%', '50%', OUT, 0], ['50%', '0%', 0, top], ['50%', '100%', 0, bot]].forEach(([x, y, dx, dy]) => {
         const hd = document.createElement('span'); hd.className = 'hdl'; hd.title = 'Drag to another block in this level to link them';
-        hd.style.left = x; hd.style.top = `calc(${y} + ${dy}px)`; el.appendChild(hd);
+        hd.style.left = `calc(${x} + ${dx}px)`; hd.style.top = `calc(${y} + ${dy}px)`; el.appendChild(hd);
       });
     }
   });
@@ -3103,7 +3142,7 @@ function applySelection() {
   // steps aside while the block is selected.
   const S = state.sel && state.multi.size === 1 && lay.loc.has(state.sel) ? lay.blocks.find(b => b.id === state.sel) : null;
   document.querySelectorAll('.aff.keep:not(.gutter)').forEach(el => {
-    el.classList.toggle('covered', !!S && [[S.x, S.y + S.h / 2], [S.x + S.w, S.y + S.h / 2]].some(h => Math.hypot(el._x - h[0], el._y - h[1]) < 30));
+    el.classList.toggle('covered', !!S && [[S.x - 13, S.y + S.h / 2], [S.x + S.w + 13, S.y + S.h / 2]].some(h => Math.hypot(el._x - h[0], el._y - h[1]) < 30));
   });
   renderStrip();
 }
@@ -3585,6 +3624,9 @@ function openEdit(id) {
     <label class="fld"><span>Sketch</span><textarea name="sketch" rows="4">${esc(n.sketch || '')}</textarea></label>
     ${n.form !== 'message' ? editBehaviorsHTML(n) : ''}
     ${n.form === 'message' ? `<label class="fld"><span>Carries</span><input name="carries" value="${esc(n.carries.join(' '))}" placeholder="Shapes a value of ${esc(n.name)} holds" spellcheck="false" list="edCarry"><datalist id="edCarry">${typesInScope(state.model, n).map(t => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>` : ''}
+    ${isBlk ? '' : `<div class="fld dotc"><span>Color</span><div class="dotpick"><div class="sw">${Array.from({ length:12 }, (_, i) => `<button type="button" data-h="${i * 30 + 20}" style="background:${hueColor(i * 30 + 20)}" aria-label="Hue ${i * 30 + 20}"></button>`).join('')}</div>
+      <div class="hrow"><input type="range" name="hue" min="0" max="359" step="1" aria-label="Hue"><button type="button" class="tiny" data-m="autocolor">Automatic</button></div>
+      <p class="hint2">The ${kind}'s dot, in this browser only. It is not part of the spec.</p></div></div>`}
     ${isBlk || n.form === 'behavior' ? `<fieldset class="fset"><legend>Ports</legend><div class="prows"></div><div class="pinh"></div>
       <button type="button" class="btn small" data-m="addport">Add port</button></fieldset>` : ''}
     <p class="merr" role="alert" hidden></p>
@@ -3592,6 +3634,16 @@ function openEdit(id) {
   const f = md.querySelector('form'), err = md.querySelector('.merr');
   f.elements.name.focus(); f.elements.name.select();
   md.querySelector('[data-m="cancel"]').onclick = closeModal;
+  if (!isBlk) {
+    // The dot's colour is a choice about this page, not the spec: it applies as it is made, apart from Save.
+    const did = (n.form === 'behavior' ? 'β:' : 'μ:') + n.name, hue = f.elements.hue, sws = [...md.querySelectorAll('.dotpick .sw button')];
+    const show = () => { const h = dotHue(did); if (h != null) hue.value = h; hue.classList.toggle('auto', h == null); sws.forEach(b => b.setAttribute('aria-pressed', String(h != null && Math.abs(+b.dataset.h - h) < 1))); };
+    const put = h => { setDotHue(did, h); show(); redraw(); };
+    sws.forEach(b => b.onclick = () => put(+b.dataset.h));
+    hue.addEventListener('input', () => put(+hue.value));
+    md.querySelector('[data-m="autocolor"]').onclick = () => put(null);
+    show();
+  }
   const hasPorts = isBlk || n.form === 'behavior', types = hasPorts ? typesInScope(state.model, n) : [];
   const rowsEl = md.querySelector('.prows'), inhEl = md.querySelector('.pinh');
   const implNow = () => hasPorts ? [...f.querySelectorAll('input[name="impl"]:checked')].map(x => x.value) : null;
@@ -3600,7 +3652,7 @@ function openEdit(id) {
     const row = document.createElement('div'); row.className = 'prow2'; row.portNode = p.node || null;
     const opts = (p.kind && !types.includes(p.kind) ? [p.kind] : []).concat(types);
     row.innerHTML = `<input class="pname" aria-label="Port name" value="${esc(p.name || '')}" spellcheck="false">
-      <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${p.dir === 'in'}">in</button><button type="button" data-dir="out" aria-pressed="${p.dir === 'out'}">out</button></span>
+      <span class="pdir" role="group" aria-label="Direction"><button type="button" data-dir="in" aria-pressed="${p.dir === 'in'}">takes</button><button type="button" data-dir="out" aria-pressed="${p.dir === 'out'}">gives</button></span>
       <select class="pkind" aria-label="Shape"><option value="">Type…</option>${opts.map(t => `<option${t === p.kind ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>
       <button type="button" class="pdel" aria-label="Delete this port" title="Delete this port">${ICON.close}</button>
       <textarea class="psk" rows="1" aria-label="Port sketch" placeholder="Sketch: what this port promises (optional)">${esc(p.sketch || '')}</textarea>`;
@@ -3962,7 +4014,7 @@ function carryOn(T, src) {
   if (state.talk || (state.carry && state.carry.T === T)) return;
   // The type's own users too: whoever touches T directly or inside a carrier.
   const r = carriers(state.model, T), own = [...state.model.blocks.values()].filter(b => portsOf(b).some(p => p.kind === T)).map(b => b.id);
-  state.carry = { T, src, r:{ messages:r.messages, blocks:[...new Set([...r.blocks, ...own])], kinds:[T, ...r.messages] } }; applyCarry();
+  state.carry = { T, src, r:{ messages:r.shapes, blocks:[...new Set([...r.blocks, ...own])], kinds:[T, ...r.shapes] } }; applyCarry();
 }
 function carryOff(src) {
   if (!state.carry || (src && state.carry.src !== src)) return;
@@ -4642,7 +4694,7 @@ const SBTEL = (() => {
 // into its thread as well as a toast. Inlined by viewer/build.mjs after the app and before server.js
 // and diff.js; at load it only defines sessionComments, so standalone mode is untouched.
 function sessionComments({ version, closed }) {
-  const C = { read: null, seenReplies: new Set(), reviews: [], listeners: [] };
+  const C = { read: null, seenReplies: new Set(), seen: new Set(), reviews: [], listeners: [] };
   const changed = () => C.listeners.forEach(f => f());
   const CSS = `
 .sb-reply { margin:9px 0 0 2px; padding:1px 0 1px 12px; border-left:2px solid var(--accent); overflow-wrap:anywhere; white-space:pre-wrap; }
@@ -4735,7 +4787,8 @@ function sessionComments({ version, closed }) {
     commentCounts = () => { const c = {}; state.comments.forEach(x => { c[x.target] = (c[x.target] || 0) + 1; }); return c; };
     // The chat's rows: a sent comment says how it went, cannot be deleted, and carries the agent's replies.
     const status0 = chatStatus, btns0 = chatRowBtns;
-    chatStatus = c => c.status === 'sent' ? ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent to the agent'] : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
+    // Sent: the server has it. Seen: `sbtel inbox` has handed it to the agent (the server says which, setSeen).
+    chatStatus = c => c.status === 'sent' ? (C.seen.has(c.sid) ? ['st-seen', 'Seen by the agent', (c.review ? 'Sent in review ' + c.review + '. ' : '') + 'The agent has been given this comment'] : ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent', 'The agent has not read its inbox since']) : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
     chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
     chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
     // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
@@ -4748,7 +4801,9 @@ function sessionComments({ version, closed }) {
   const reviews = () => C.reviews;
   const addReview = r => { C.reviews.push(r); changed(); };
   const onChange = f => { C.listeners.push(f); };
-  return { rebuild, send, onReply, hook, reviews, addReview, onChange, _state: C };
+  // What the agent has been given (ids of comments), from the log and from the server's `seen` news.
+  function setSeen(ids) { let ch = false; (ids || []).forEach(i => { if (!C.seen.has(i)) { C.seen.add(i); ch = true; } }); if (ch) refreshChat(); }
+  return { rebuild, send, onReply, hook, reviews, addReview, onChange, setSeen, _state: C };
 }
 // @sbtel file Viewer.Bindings
 // Code bindings in the page (docs/DESIGN.md §6.3, §6.9): an edges file's violations as one more check in
@@ -5270,6 +5325,7 @@ SBTEL.modes.server = (() => {
   };
   // Colours chosen for types belong to the spec's file (a stdin spec: to the session), in this browser.
   typeStoreKey = () => 'sbtel-types:' + ((S.meta && S.meta.spec && S.meta.spec.path) || SBTEL.session);
+  dotKey = () => 'sbtel-dots:' + ((S.meta && S.meta.spec && S.meta.spec.path) || SBTEL.session);
   // ---------- A ref to another spec: its diagram over this page ----------
   // The frame shows that spec's own session, with ?via= naming the session at the top of the trail, so
   // what is said in it reaches this page's agent. A framed page asks the top page to move on to a spec
@@ -5523,6 +5579,7 @@ SBTEL.modes.server = (() => {
       versionToast(d);
     });
     es.addEventListener('reply', e => { seq(e); SC.onReply(JSON.parse(e.data)); });
+    es.addEventListener('seen', e => { SC.setSeen(JSON.parse(e.data).ids); });
     es.addEventListener('ref', e => { seq(e); refEvent(JSON.parse(e.data), true); });
     es.addEventListener('closed', () => closedState());
     es.onerror = () => {
@@ -5592,7 +5649,7 @@ SBTEL.modes.server = (() => {
         if (draft && draft.base && draft.base !== spec.hash && (draft.src != null || draft.proposal) && draft.version >= 1) {
           try { const old = await getJSON('versions/' + draft.version); if (old.hash === draft.base) { S.base = old.hash; S.version = old.version; S.loaded = old.src; } } catch (e) {}
         }
-        S.lastSeq = Math.max(S.lastSeq, SC.rebuild(log.events || []));
+        S.lastSeq = Math.max(S.lastSeq, SC.rebuild(log.events || [])); SC.setSeen(log.seen);
         refN.clear(); (log.events || []).forEach(e => refEvent(e, false));
         break;
       } catch (e) {
@@ -6368,7 +6425,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
       }
     }
     vtEl?.remove(); vtEl = null;
-    try { const log = await get('log'); lastSeq = Math.max(lastSeq, SC.rebuild(log.events || [])); dRender(); } catch (e) {}
+    try { const log = await get('log'); lastSeq = Math.max(lastSeq, SC.rebuild(log.events || [])); SC.setSeen(log.seen); dRender(); } catch (e) {}
     R.recount(); R.prune();
     const connect = () => {
       const es = new EventSource(SBTEL.base + 'events?after=' + lastSeq);
