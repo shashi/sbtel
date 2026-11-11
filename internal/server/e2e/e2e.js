@@ -186,7 +186,7 @@ async function until(fn, ms = 8000, step = 100) {
   const vSaved = fs.readFileSync(SPEC, 'utf8');
   check('the chat offers Send (primary) and Add to review', await (async () => {
     await page.evaluate(() => openComposer('block:Shell.Keymap'));
-    const b = await page.evaluate(() => [...document.querySelectorAll('.pop .acts button')].map(x => x.textContent + (x.classList.contains('primary') ? '*' : '')));
+    const b = await page.evaluate(() => [...document.querySelectorAll('.pop .acts .btn')].map(x => x.textContent + (x.classList.contains('primary') ? '*' : '')));
     if (SHOTS) { await page.evaluate(() => closePop('thread')); await shotView(page, 'Shell.Keymap'); await page.evaluate(() => openComposer('block:Shell.Keymap')); await page.fill('#cmtText', 'Should the keymap own chords, or the palette?'); await page.screenshot({ path: path.join(SHOTS, 'composer.png') }); await page.fill('#cmtText', ''); }
     await page.evaluate(() => closePop('thread'));
     return JSON.stringify(b) === JSON.stringify(['Add to review', 'Send*']);
@@ -493,7 +493,7 @@ async function until(fn, ms = 8000, step = 100) {
   await sp.waitForTimeout(800);
   check('standalone page makes no network request', outside.length === 0, outside.join(' '));
   check('standalone page has no server UI', await sp.evaluate(() => SBTEL.mode === 'standalone' && !document.getElementById('sbSave') && !document.querySelector('.sb-bar') && !document.getElementById('rvBtn') && document.title === 'sbtel Playground'));
-  check('standalone chat keeps Save and Send', await sp.evaluate(() => { openComposer('block:Shell.Router'); const b = [...document.querySelectorAll('.pop .acts button')].map(x => x.textContent); return JSON.stringify(b) === '["Save","Send"]'; }));
+  check('standalone chat keeps Save and Send', await sp.evaluate(() => { openComposer('block:Shell.Router'); const b = [...document.querySelectorAll('.pop .acts .btn')].map(x => x.textContent); return JSON.stringify(b) === '["Save","Send"]'; }));
   await sp.fill('#cmtText', 'Kept for later'); await sp.press('#cmtText', 'Shift+Enter');
   check('Shift+Enter keeps the comment and the chat stays open', await sp.evaluate(() => { const p = document.querySelector('.pop.chat'); return state.comments.length === 1 && state.comments[0].status === 'saved' && !!p && p.querySelector('ul.thread').textContent.includes('Kept for later') && p.querySelector('#cmtText').value === ''; }));
   await sp.fill('#cmtText', 'line one'); await sp.press('#cmtText', 'Enter'); await sp.type('#cmtText', 'line two');

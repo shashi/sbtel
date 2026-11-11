@@ -8,8 +8,9 @@ function sessionComments({ version, closed }) {
   const C = { read: null, seenReplies: new Set(), reviews: [], listeners: [] };
   const changed = () => C.listeners.forEach(f => f());
   const CSS = `
-.sb-reply { margin-top:7px; overflow-wrap:anywhere; line-height:1.45; padding:6px 8px; border-radius:7px; background:var(--accent-soft); white-space:pre-wrap; }
-.sb-reply .who { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:600; margin-bottom:2px; }`;
+.sb-reply { margin:9px 0 0 2px; padding:1px 0 1px 12px; border-left:2px solid var(--accent); overflow-wrap:anywhere; white-space:pre-wrap; }
+.sb-reply .who { display:block; font-size:12px; font-weight:600; color:var(--accent-ink); margin-bottom:1px; }
+.sb-reply .who time { font-weight:400; color:var(--muted); margin-left:6px; }`;
   // Replies read so far: { comment id: how many of its replies the reader has seen }, kept per session, so a
   // reply that arrived while its chat was closed puts a dot on the count until the chat is opened.
   const RKEY = SBTEL.session ? 'sbtel-read:' + SBTEL.session : null;
@@ -99,7 +100,7 @@ function sessionComments({ version, closed }) {
     const status0 = chatStatus, btns0 = chatRowBtns;
     chatStatus = c => c.status === 'sent' ? ['st-sent', c.review ? 'Sent in review ' + c.review : 'Sent to the agent'] : c.status === 'sending' ? ['st-sending', 'Sending…'] : status0(c);
     chatRowBtns = c => c.status === 'sent' || c.status === 'sending' ? '' : btns0(c);
-    chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent</span>${richText(r.text)}</div>`).join('');
+    chatReplies = c => (c.replies || []).map(r => `<div class="sb-reply"><span class="who">Agent${r.at ? `<time>${whenText(r.at)}</time>` : ''}</span>${richText(r.text)}</div>`).join('');
     // Unread replies: a dot on the count, drawn with every paint, cleared when the chat opens.
     const paint0 = paint; paint = (lay, keep) => { paint0(lay, keep); if (!keep) markUnread($('world')); };
     const fill0 = fillBlock; fillBlock = (el, B, counts) => { fill0(el, B, counts); markUnread(el); };

@@ -61,8 +61,8 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
 .d-inner { position:absolute; top:-8px; left:-8px; z-index:7; min-width:16px; height:16px; box-sizing:border-box; padding:0 4px; border-radius:8px; border:1.5px solid var(--d-amb); background:var(--canvas); color:var(--d-amb); font-size:10px; font-weight:700; line-height:13px; text-align:center; }
 .blk.d-hasdot .d-inner { left:10px; }
 .ttl .d-was { color:var(--muted); font-size:.8em; text-decoration:line-through; text-decoration-color:var(--warn); flex:none; }
-.pill.d-was { text-decoration:line-through; opacity:.55; box-shadow:inset 0 0 0 1.5px var(--warn); }
-.pill.d-now { box-shadow:0 0 0 1.5px var(--ok); }
+.pill.d-was { text-decoration:line-through; color:var(--warn); opacity:.8; }
+.pill.d-now { color:var(--ok); font-weight:600; }
 .sk .d-ins { background:var(--ok-soft); color:var(--ok); text-decoration:none; border-radius:3px; padding:0 1px; }
 .sk .d-del { background:var(--warn-soft); color:var(--warn); text-decoration:line-through; border-radius:3px; padding:0 1px; }
 .badge.d-badd { box-shadow:inset 0 0 0 2px var(--ok), inset 0 0 0 3.5px var(--surface); }
@@ -416,12 +416,12 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
     const F = c.fields || {}, n = B.node, frame = B.kind === 'frame';
     const head = frame ? el.querySelector(':scope > .fh') : el.querySelector(':scope > .bd');
     if (!head) return;
-    if (c.renamed) { const s = head.querySelector('.ttl > span:last-child'); if (s) s.insertAdjacentHTML('afterend', `<s class="d-was" title="Old name">${esc(c.renamed.from)}</s>`); }
+    if (c.renamed) { const s = [...head.querySelectorAll('.ttl > span:not(.pill)')].pop(); if (s) s.insertAdjacentHTML('afterend', `<s class="d-was" title="Old name">${esc(c.renamed.from)}</s>`); }
     if (F.type) {
-      const pill = head.querySelector('.toprow > .pill');
+      const pill = head.querySelector('.ttl > .pill:not(.d-was)');
       const old = F.type.from ? `<span class="pill d-was" data-k="${esc(F.type.from.toLowerCase())}" title="Old type">${esc(F.type.from)}</span>` : '';
       if (pill) { if (F.type.from) pill.insertAdjacentHTML('beforebegin', old); pill.classList.add('d-now'); }
-      else if (old) { const row = head.querySelector('.toprow'); if (row) row.insertAdjacentHTML('afterbegin', old); else head.querySelector('.ttl')?.insertAdjacentHTML('beforeend', old); }
+      else if (old) head.querySelector('.ttl')?.insertAdjacentHTML('beforeend', old);
     }
     if (F.sketch) {
       const sk = head.querySelector('.sk');

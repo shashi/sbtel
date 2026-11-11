@@ -37,7 +37,7 @@ with sync_playwright() as p:
     pg.goto(PAGE); pg.wait_for_timeout(1500)
     pg.evaluate("s => { document.getElementById('help').hidden = true; setSource(s); state.open = new Set(['Notes']); render(); fit(false); }", SPEC)
     pg.wait_for_timeout(700)
-    pill = lambda id: pg.evaluate("id => { const p = state.elems.get(id)?.querySelector('.toprow .pill'); return p ? p.textContent : null; }", id)
+    pill = lambda id: pg.evaluate("id => { const p = state.elems.get(id)?.querySelector('.ttl .pill'); return p ? p.textContent : null; }", id)
     r['behaviorPill'] = 'pass' if pill('β:Durable') == 'trait' else 'fail %r' % pill('β:Durable')
     r['messagePill'] = 'pass' if pill('μ:Edit') == 'struct' else 'fail %r' % pill('μ:Edit')
     r['noPillWithoutType'] = 'pass' if pill('β:Journaled') is None else 'fail'

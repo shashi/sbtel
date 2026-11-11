@@ -137,7 +137,7 @@ function sessionReview(o) {
 .tb.rv-btn[aria-expanded="true"] { box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
 .cbub.pend { background:var(--surface); color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); }
 .cbub .pb { margin-left:3px; padding:0 5px; border-radius:7px; background:var(--accent); color:#fff; font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; line-height:14px; }
-.st-pending { color:var(--accent); font-weight:600; }
+.st-pending { color:var(--accent-ink); font-weight:600; }
 .thread .cm .tiny { white-space:nowrap; }
 .rv-sheet { z-index:1260; }
 .rv-sheet .body { display:flex; flex-direction:column; gap:4px; }
@@ -325,9 +325,9 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
       if (o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; }
       const cm = addPending(key, text);
       if (how === 'send') openSend([cm]);
-      else toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
+      else if (!chatOpen(key)) toast(`Added to your review (${pending().length} comment${pending().length === 1 ? '' : 's'}). Send it with Review.`);
     };
-    chatStatus = c => c.status === 'pending' ? ['st-pending', 'Pending', 'In your review: it goes to the agent when you send the review'] : status0(c);
+    chatStatus = c => c.status === 'pending' ? ['st-pending', 'In your review', 'It goes to the agent when you send the review'] : status0(c);
     chatRowBtns = c => c.status === 'pending' ? `<button class="tiny" data-t="rvedit" data-id="${esc(c.id)}">Edit</button><button class="tiny" data-t="send" data-id="${esc(c.id)}">Send now</button><button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>` : btns0(c);
     openComposer = (key, anchor) => { if (SBTEL.session && o.closed()) { toast('This session is closed; comments can no longer be sent.'); return; } composer0(key, anchor); };
     document.addEventListener('click', e => {

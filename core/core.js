@@ -2,9 +2,9 @@
 /*CORE-START*/
 const K = { PAD:22, GAPX:56, ROWGAP:30, TAB:20, LEVELGAP:44, NAMEGAP:10, BANDGAP:34, BANDLAB:22, MIN_EXP:320, CARD_MIN:220, CARD_MAX:340, DETAIL_MAX:440, LABEL:52 };
 const FONT = {
-  title:'500 17px "Hanken Grotesk"', sketch:'400 13.5px "Hanken Grotesk"',
+  title:'600 17px "Hanken Grotesk"', sketch:'400 13.5px "Hanken Grotesk"',
   htitle:'600 20px "Hanken Grotesk"', hsketch:'400 14.5px "Hanken Grotesk"',
-  chip:'500 12px "JetBrains Mono"', pill:'600 11.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
+  chip:'500 12px "JetBrains Mono"', pill:'400 12.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
 };
 // The twelve forms. A model node of (takes …) or (gives …) has form 'port', and one of (shape …) has form
 // 'message': the names the model has always used for them.
@@ -600,27 +600,28 @@ function layout(model, opts, M) {
   };
 
   function topRow(n, inner, detailed) {
-    const pillW = n.type ? M.tw(n.type, FONT.pill) + 20 : 0, bs = behsOf(n);
-    if (!pillW && !bs.length) return { h:0 };
-    if (!detailed || !bs.length) return { h:26 };
+    // The row above the title holds the behaviors a block implements. Its :type stands beside its name.
+    const bs = behsOf(n);
+    if (!bs.length) return { h:0 };
+    if (!detailed) return { h:26 };
     const bw = bs.map(bchipW);
-    if ((pillW ? pillW + 8 : 0) + line(bw) <= inner) return { h:30 };
-    return { h:(pillW ? 25 : 0) + rowsH(rowsOf(bw, inner)) + 6 };
+    if (line(bw) <= inner) return { h:30 };
+    return { h:rowsH(rowsOf(bw, inner)) + 6 };
   }
   function cardMetrics(n, availW) {
     const isB = n.form === 'behavior', isM = n.form === 'message', d = det(n);
-    const tW = M.tw(n.name, FONT.title) + (isB ? 27 : isM ? 20 : 0);
-    const pillW = n.type ? M.tw(n.type, FONT.pill) + 20 : 0, bs = behsOf(n);
+    const pillW = n.type ? M.tw(n.type, FONT.pill) + 9 : 0, bs = behsOf(n);
+    const tW = M.tw(n.name, FONT.title) + (isB ? 27 : isM ? 20 : 0) + pillW;
     // The collapsed footer (open arrow plus counts) also asks for room, within the card maximum.
     const footText = hasInside(n) ? countText(n) : isM && n.refines ? 'refines ' + n.refines : '';
     const footW = footText ? M.tw(footText, isM ? FONT.chip : FONT.foot) + (isM ? 0 : 24) : 0;
-    let w = Math.min(K.CARD_MAX, Math.max(K.CARD_MIN, Math.ceil(Math.max(tW, pillW + bs.length * 26 + 10, footW) + 54)));
+    let w = Math.min(K.CARD_MAX, Math.max(K.CARD_MIN, Math.ceil(Math.max(tW, bs.length * 26 + 10, footW) + 54)));
     const P = d ? portsFor(n) : null;
     let iw = [], ow = [];
     if (d) {
       iw = P.in.map(p => chipW(portLabel(p))); ow = P.out.map(p => chipW(portLabel(p)));
       const want = 36 + K.LABEL + Math.max(line(iw), line(ow));
-      const wantTop = 36 + (pillW ? pillW + 8 : 0) + line(bs.map(bchipW));
+      const wantTop = 36 + line(bs.map(bchipW));
       w = Math.min(K.DETAIL_MAX, Math.max(w, 300, want, wantTop));
     }
     w = Math.min(w, availW);

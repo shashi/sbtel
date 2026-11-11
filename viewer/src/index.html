@@ -75,10 +75,25 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .lines path.bad { stroke:var(--warn); stroke-width:2; stroke-dasharray:5 4; }
 .lines path.hit { stroke:transparent; stroke-width:18; pointer-events:stroke; cursor:pointer; }
 .lines path.vis.selected { stroke:var(--accent); stroke-width:3.5; stroke-dasharray:none; }
-.lines.fading { opacity:0; }
+.lines g.fresh { animation:linein .26s ease .12s both; }
+@keyframes linein { from { opacity:0; } to { opacity:1; } }
 .ovl { position:absolute; left:0; top:0; overflow:visible; z-index:900; pointer-events:none; }
 .ovl path { fill:none; stroke:var(--accent); stroke-width:2.5; stroke-dasharray:6 5; }
 .ovl circle { fill:var(--accent); }
+/* A dragged block's ties (drawTies): the cable, and the two halves and spark of a break. */
+.ties { z-index:1400; }
+.ties path { stroke:var(--line); stroke-width:1.5; stroke-dasharray:none; stroke-linecap:round; }
+.ties .cable { transition:opacity .08s linear; }
+.ties .half { stroke:var(--warn); stroke-dasharray:1; stroke-dashoffset:0; opacity:0; }
+.ties .spark { opacity:0; }
+.ties .spark path { stroke:var(--warn); stroke-width:2; }
+.ties .broken .cable { opacity:0; }
+.ties .broken .half { opacity:.7; stroke-dashoffset:.86; transition:stroke-dashoffset .42s cubic-bezier(.2,1.5,.4,1), opacity .5s ease .3s; }
+.ties .broken .spark { animation:tiesnap .36s ease-out both; }
+.ties .joined .half { animation:tiejoin .16s ease-in both; }
+.ties .joined .cable { transition:opacity .01s linear .15s; }
+@keyframes tiesnap { 0% { opacity:1; } 100% { opacity:0; } }
+@keyframes tiejoin { 0% { stroke-dashoffset:.86; opacity:1; } 99% { stroke-dashoffset:0; opacity:1; } 100% { stroke-dashoffset:0; opacity:0; } }
 .ovl rect.dropz { fill:var(--accent-soft); stroke:var(--accent); stroke-width:2; stroke-dasharray:6 5; }
 .blk.dragsrc { z-index:1500 !important; pointer-events:none; opacity:.85; box-shadow:0 14px 40px var(--shadow); transition:none !important; }
 .editf .fld { display:block; margin-bottom:12px; }
@@ -165,11 +180,12 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .bd { position:absolute; inset:0; padding:14px 18px 12px; overflow:hidden; border-radius:inherit; }
 .toprow { display:flex; flex-wrap:wrap; align-items:center; gap:5px 8px; margin-bottom:6px; overflow:hidden; }
 .behs { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:5px 6px; margin-left:auto; max-width:100%; }
-.pill { display:inline-flex; align-items:center; height:20px; border-radius:10px; padding:0 9px; font-size:11.5px; font-weight:600; letter-spacing:.02em; background:var(--pill-other-bg); color:var(--pill-other-fg); white-space:nowrap; }
-.pill[data-k="module"] { background:var(--pill-module-bg); color:var(--pill-module-fg); }
-.pill[data-k="process"] { background:var(--pill-process-bg); color:var(--pill-process-fg); }
-.ttl { font-size:17px; font-weight:500; height:24px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:7px; }
-.ttl > span { overflow:hidden; text-overflow:ellipsis; }
+/* A block's :type follows its name on the same line, in the sketch's quiet colour: the name leads. */
+.pill { flex:none; font-size:12.5px; font-weight:400; color:var(--muted); white-space:nowrap; align-self:baseline; margin-left:2px; }
+.ttl { font-size:17px; font-weight:600; height:24px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:7px; }
+.ttl > span:not(.pill) { overflow:hidden; text-overflow:ellipsis; }
+.ttl { align-items:baseline; }
+.ttl .md, .ttl .badge { align-self:center; }
 .sk { font-size:13.5px; line-height:18px; color:var(--muted); overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; margin-top:4px; white-space:pre-line; }
 .foot { display:flex; align-items:center; gap:6px; height:26px; margin-top:4px; font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; }
 .tw { border:0; background:none; padding:0 2px; cursor:pointer; color:var(--muted); font-size:11px; line-height:1; width:18px; height:22px; border-radius:4px; flex:none; }
@@ -206,7 +222,7 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .cvx .bandlab { left:0; white-space:nowrap; }
 .foot.wrap { white-space:normal; align-items:flex-start; overflow:visible; }
 .foot.wrap .cnt, .foot.wrap .rel2 { line-height:17px; padding-top:4px; }
-.bandlab { position:absolute; left:22px; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+.bandlab { position:absolute; left:22px; margin-top:-3px; font-size:13px; color:var(--muted); }
 .cbub { position:absolute; top:-11px; right:-11px; z-index:6; min-width:22px; height:22px; padding:0 6px; box-sizing:border-box; border-radius:11px; border:0;
   background:var(--accent); color:#fff; font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; gap:3px; cursor:pointer; }
 .cbub svg.i { width:12px; height:12px; }
@@ -239,8 +255,11 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .hdl::after { content:""; position:absolute; inset:-12px; border-radius:50%; }
 .hdl:hover { background:var(--accent); }
 
-.aff { position:absolute; left:0; top:0; z-index:600; animation: affin .3s ease .2s both; }
-@keyframes affin { from { opacity:0; } to { opacity:1; } }
+.aff { position:absolute; left:0; top:0; z-index:600; }
+.world.anim .aff.keep { transition: transform .32s cubic-bezier(.3,.7,.2,1); }
+.world.noaff .aff { visibility:hidden; }
+/* A + is faint until the pointer comes near it (nearAff), so a diagram at rest shows the design, not its handles. */
+@media (hover: hover) { .aff.keep:not(.gutter) > .plus, .lsep > .plus { opacity:.25; transition:opacity .15s ease; } .aff.keep.near > .plus, .lsep.near > .plus, .aff.keep > .plus:focus-visible, .lsep > .plus:focus-visible { opacity:1; } }
 .plus { position:relative; box-sizing:border-box; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%; border:1px solid transparent; background:transparent; color:var(--muted); cursor:pointer; font-size:0; line-height:0; padding:0; }
 /* The + is drawn with two bars centred in the button, so it sits exactly on its line whatever the font. */
 .plus::before, .plus::after { content:""; position:absolute; left:50%; top:50%; width:10px; height:1.6px; margin:-0.8px 0 0 -5px; background:currentColor; border-radius:1px; }
@@ -450,17 +469,43 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .strip .tb { height:30px; min-width:30px; font-size:12.5px; padding:0 8px; }
 /* Comments on one target: a chat. The thread scrolls, newest at the bottom, over the input. Its copy is a size
    up from the cards' sketches, since the popover does not zoom with the canvas. */
-.pop.chat { width:min(380px, calc(100vw - 24px)); max-width:none; box-sizing:border-box; padding:10px 12px 12px; font-size:15px; }
-.pop.chat .chh { display:flex; align-items:center; gap:8px; }
-.pop.chat .chh .xbtn { width:28px; height:28px; margin:-4px -6px -4px auto; }
-.composer textarea { width:100%; min-height:64px; max-height:30vh; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:8px; padding:8px 10px; font:inherit; font-size:15px; line-height:1.45; background:var(--surface); color:var(--ink); resize:vertical; display:block; margin-top:8px; }
-.composer textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
-@media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
-.pop.chat .acts { align-items:center; justify-content:flex-end; }
-.pop.chat .composer { position:relative; }
-.pop.chat .composer textarea { padding-right:38px; }
-.pop.chat .attach { position:absolute; right:3px; bottom:20px; width:32px; height:32px; color:var(--muted); }
+/* ---------- Comments on a thing: a note in the margin, tied to it ----------
+   The callout stands beside what it is about (placeBeside) with a tail pointing at it. Inside, a thread is
+   text on a page, not cards: your comment in full ink, what became of it in small type under it, and the
+   agent's answer set in from a rule. The field at the foot holds the text, the paperclip and both ways to
+   send it. */
+.pop.chat { width:min(372px, calc(100vw - 24px)); max-width:none; box-sizing:border-box; padding:0; font-size:14.5px; line-height:1.5; display:flex; flex-direction:column; max-height:min(620px, calc(100vh - 100px)); }
+.pop.chat::before { content:""; position:absolute; width:11px; height:11px; background:var(--panel); border:1px solid var(--panel-line); border-top:0; border-right:0; top:var(--tail, 24px); display:none; }
+.pop.chat.right::before { display:block; left:-6.5px; transform:rotate(45deg); }
+.pop.chat.left::before { display:block; right:-6.5px; transform:rotate(225deg); }
+.pop.chat .chh { display:flex; align-items:baseline; gap:8px; padding:11px 8px 9px 16px; border-bottom:1px solid var(--panel-line); }
+.pop.chat .chh .on { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14.5px; font-weight:600; }
+.pop.chat .chh .on i { font-style:normal; font-weight:400; color:var(--muted); margin-right:5px; }
+.pop.chat .chh .xbtn { width:28px; height:28px; margin:-4px 0 -4px auto; align-self:center; flex:none; color:var(--muted); }
+.thread { list-style:none; margin:0; padding:2px 16px 4px; flex:1 1 auto; min-height:0; overflow:auto; overscroll-behavior:contain; }
+.thread li { padding:11px 0 12px; border-top:1px solid var(--panel-line); }
+.thread li:first-child { border-top:0; }
+.thread li.none { color:var(--muted); font-size:13.5px; padding:12px 0 8px; }
+.thread .ct { white-space:pre-wrap; overflow-wrap:anywhere; }
+.thread .cm { display:flex; align-items:center; gap:7px; margin-top:3px; font-size:12px; color:var(--muted); min-height:20px; }
+.thread .cm .tiny { opacity:0; }
+.thread li:hover .cm .tiny, .thread li:focus-within .cm .tiny { opacity:1; }
+@media (hover: none) { .thread .cm .tiny { opacity:1; } }
+/* A comment still in your hands (saved, or in your review) is marked by a dashed rule; a sent one has none. */
+.thread li.mine { padding-left:9px; margin-left:-11px; border-left:2px dashed var(--panel-line); border-top-color:transparent; }
+.thread li.mine + li, .thread li + li.mine { margin-top:2px; }
+.pop.chat .composer { position:relative; margin:4px 10px 10px; border:1px solid var(--panel-line); border-radius:10px; background:var(--surface); }
+.pop.chat .composer:focus-within { border-color:var(--accent); }
+.pop.chat .composer textarea { width:100%; min-height:46px; max-height:28vh; box-sizing:border-box; border:0; outline:0; background:none; padding:9px 12px 4px; margin:0; font:inherit; color:var(--ink); resize:none; display:block; field-sizing:content; }
+.pop.chat .acts { display:flex; align-items:center; gap:4px; margin:0; padding:2px 5px 5px 4px; flex-wrap:nowrap; }
+.pop.chat .attach { width:30px; height:30px; flex:none; color:var(--muted); }
 .pop.chat .attach:hover { color:var(--ink); }
+.pop.chat .keys { flex:1 1 0; min-width:0; font-size:11px; line-height:1.3; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0; transition:opacity .15s ease; }
+.pop.chat .composer:focus-within .keys { opacity:1; }
+.pop.chat .acts .btn { flex:none; padding:5px 11px; font-size:13px; border-radius:7px; }
+.pop.chat .acts .btn.quiet { border-color:transparent; background:none; color:var(--ink-2); }
+.pop.chat .acts .btn.quiet:hover { background:var(--chip); color:var(--ink); }
+@media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
 .tb.cmtbtn { position:relative; }
 .tb.cmtbtn.unread::after { content:""; position:absolute; top:3px; right:3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
 .allc { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
@@ -473,15 +518,6 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 .allc button.unread .on::before { content:""; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--warn); margin-right:7px; vertical-align:1px; }
 .dropon { outline:2px dashed var(--accent); outline-offset:3px; }
 .modal .ver { margin-top:14px; font-size:12px; color:var(--muted); }
-.pop.chat .keys { margin-right:auto; font-size:11.5px; line-height:1.35; color:var(--muted); min-width:0; flex:1 1 0; }
-.pop.chat .acts .btn { flex:none; }
-.pop.chat .acts { flex-wrap:nowrap; }
-.thread { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:8px; max-height:min(44vh, 420px); overflow:auto; overscroll-behavior:contain; }
-.thread li { border:1px solid var(--panel-line); border-radius:9px; padding:8px 10px; background:var(--surface); }
-.thread li.none { border:0; background:none; padding:2px 0; color:var(--muted); font-size:13.5px; }
-.thread .ct { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.45; }
-.thread .cm { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12px; color:var(--muted); }
-/* A reply nobody has read yet: a dot on the count. */
 .cbub.unread::after { content:""; position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--canvas); }
 /* The whole-file chat sits above the toolbar, at its right end, not over it. */
 @media (min-width: 760px) { .pop.chat.filechat { left:auto !important; top:auto !important; right:16px; bottom:76px; max-height:calc(100vh - 150px); } }
@@ -911,9 +947,7 @@ function paint(lay, keep) {
   const svg = $('lines');
   const d = p => 'M' + p.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L');
   paintSeps(lay, pv);
-  svg.innerHTML = lay.bands.map(v => `<path class="band" d="M${v.x1} ${v.y} L${v.x2} ${v.y}"/>`).join('') +
-    lay.connectors.map((c, i) => `<path class="hit" data-ci="${i}" d="${d(c.pts)}"><title>${esc(c.a)} — ${esc(c.b)}${c.bad ? ' (not adjacent!)' : ''}</title></path><path class="vis ${c.bad ? 'bad' : ''}" data-key="${esc(c.a + '|' + c.b)}" d="${d(c.pts)}"/>`).join('');
-  if (world.classList.contains('anim')) { svg.classList.add('fading'); clearTimeout(render._t); render._t = setTimeout(() => svg.classList.remove('fading'), 330); }
+  drawLines(lay, world.classList.contains('anim') ? 320 : world.classList.contains('pv') ? 220 : 0, pv ? keep : null);
 
   // The file's own appendix (top-level behaviors and shapes): tint and band labels on the canvas.
   world.querySelectorAll('.cvx').forEach(n => n.remove());
@@ -922,22 +956,71 @@ function paint(lay, keep) {
     cx.innerHTML = `<div class="appx" style="top:${lay.canvas.appendixY}px;height:${lay.canvas.h - lay.canvas.appendixY}px;width:${lay.size.w}px"></div>` + lay.canvas.bandLabs.map(l => `<div class="bandlab" style="top:${l.y}px">${esc(l.text)}</div>`).join('');
     world.prepend(cx);
   }
-  world.querySelectorAll('.aff').forEach(n => n.remove());
+  // The + buttons and gutters are kept from paint to paint (by kind and order), so they slide with the
+  // blocks. In a drag preview they wait, hidden, for the next real render.
+  world.querySelectorAll('.aff.tmp').forEach(n => n.remove());
+  world.classList.toggle('noaff', pv);
   if (pv) return;
+  const pool = { '': [...world.querySelectorAll('.aff.keep:not(.gutter)')], gutter: [...world.querySelectorAll('.aff.keep.gutter')] };
+  const moving = world.classList.contains('anim');
   const add = (html, x, y, w, act, cls, key) => {
-    const el = document.createElement('div'); el.className = 'aff ' + cls; if (key) el.dataset.key = key; el.style.transform = `translate(${x}px,${y}px)`;
-    if (w != null) el.style.width = w + 'px';
-    el.innerHTML = html; el.querySelector('button').addEventListener('click', e => { e.stopPropagation(); edit(act); }); world.appendChild(el);
+    let el = pool[cls].shift(); const at = `translate(${x}px,${y}px)`;
+    if (!el) { el = document.createElement('div'); el.className = 'aff keep ' + cls; el.style.transform = at; world.appendChild(el); el.addEventListener('click', e => { if (e.target.closest('.plus')) { e.stopPropagation(); edit(el._act); } }); }
+    else if (moving) requestAnimationFrame(() => { el.style.transform = at; }); else el.style.transform = at;
+    if (key) el.dataset.key = key; else delete el.dataset.key;
+    el.style.width = w != null ? w + 'px' : '';
+    el._act = act; if (el._html !== html) { el._html = html; el.innerHTML = html; }
   };
   lay.plus.forEach(p => add(`<button class="plus" title="${p.title}" aria-label="${p.title}">+</button>`, p.x, p.y, null, p.act, ''));
   // The first level's gutter offers to name it (an unnamed first level has no line of its own).
   lay.gutters.forEach(g => add('<button class="plus" title="Insert a level here" aria-label="Insert a level here">+</button>' + (g.act.at === 0 && g.act.block.levels.length ? levelLabelHTML(g.act.block, 0) : ''), g.x1, g.y, g.x2 - g.x1, g.act, 'gutter', g.key));
+  [...pool[''], ...pool.gutter].forEach(el => el.remove());
   lay.connectors.forEach(c => {
     const k = 'line:' + c.a + '|' + c.b; if (!counts[k]) return;
     const [x, y] = midOf(c.pts);
-    const el = document.createElement('div'); el.className = 'aff'; el.style.transform = `translate(${x - 11}px,${y - 30}px)`;
+    const el = document.createElement('div'); el.className = 'aff tmp'; el.style.transform = `translate(${x - 11}px,${y - 30}px)`;
     el.innerHTML = `<button class="cbub" style="position:static" data-thread="${esc(k)}">${ICON.comment}${counts[k]}</button>`; world.appendChild(el);
   });
+}
+// The + buttons within reach of the pointer (about 110px on screen) are the ones shown in full.
+{
+  let raf = 0, at = null;
+  const mark = () => { raf = 0; document.querySelectorAll('.aff.keep:not(.gutter), .lsep').forEach(el => {
+    const b = el.querySelector(':scope > .plus'); if (!b) return; const r = b.getBoundingClientRect();
+    el.classList.toggle('near', !!at && Math.hypot(at.x - (r.left + r.width / 2), at.y - (r.top + r.height / 2)) < 110); }); };
+  addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; at = { x:e.clientX, y:e.clientY }; if (!raf) raf = requestAnimationFrame(mark); }, { passive:true });
+  document.addEventListener('pointerleave', () => { at = null; if (!raf) raf = requestAnimationFrame(mark); });
+}
+// Lines keep their place in step with the blocks. A line that was there before slides from where it is
+// drawn now to its new points, over the same time and curve as the blocks' own transition (ms); a new one
+// fades in. In a drag preview the lifted block's own lines are left out: the drag draws them (ties).
+const lineNow = new Map(); let lineRaf = 0;
+const bez = (x1, y1, x2, y2) => { const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx, cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  return x => { let u = x; for (let i = 0; i < 6; i++) { const f = ((ax * u + bx) * u + cx) * u - x, df = (3 * ax * u + 2 * bx) * u + cx; if (Math.abs(df) < 1e-6) break; u -= f / df; } return ((ay * u + by) * u + cy) * u; }; };
+const moveEase = bez(.3, .7, .2, 1);
+function drawLines(lay, ms, lifted) {
+  const svg = $('lines'), d = p => 'M' + p.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L');
+  const items = lay.bands.map((v, i) => ({ key:'band:' + i, pts:[[v.x1, v.y], [v.x2, v.y]], html:p => `<path class="band" d="${d(p)}"/>` }))
+    .concat(lay.connectors.map((c, i) => lifted && (lifted.has(c.a) || lifted.has(c.b)) ? null : ({ key:'c:' + c.a + '|' + c.b, pts:c.pts,
+      html:p => `<path class="hit" data-ci="${i}" d="${d(p)}"><title>${esc(c.a)} — ${esc(c.b)}${c.bad ? ' (not adjacent!)' : ''}</title></path><path class="vis ${c.bad ? 'bad' : ''}" data-key="${esc(c.a + '|' + c.b)}" d="${d(p)}"/>` })).filter(Boolean));
+  cancelAnimationFrame(lineRaf);
+  const moves = [];
+  svg.innerHTML = items.map(it => {
+    const a = lineNow.get(it.key), slide = ms && a && a.length === it.pts.length && a.some((q, i) => Math.abs(q[0] - it.pts[i][0]) > .5 || Math.abs(q[1] - it.pts[i][1]) > .5);
+    if (slide) moves.push({ it, a });
+    return `<g data-lk="${esc(it.key)}"${ms && !a ? ' class="fresh"' : ''}>${it.html(slide ? a : it.pts)}</g>`;
+  }).join('');
+  for (const k of [...lineNow.keys()]) if (!items.some(it => it.key === k)) lineNow.delete(k);
+  items.forEach(it => { if (!moves.some(m => m.it === it)) lineNow.set(it.key, it.pts); });
+  if (!moves.length) return;
+  moves.forEach(m => { m.els = [...svg.querySelectorAll(`g[data-lk="${CSS.escape(m.it.key)}"] path`)]; });
+  const t0 = performance.now();
+  const step = now => {
+    const u = Math.min(1, (now - t0) / ms), e = moveEase(u);
+    moves.forEach(m => { const p = m.it.pts.map((q, i) => [m.a[i][0] + (q[0] - m.a[i][0]) * e, m.a[i][1] + (q[1] - m.a[i][1]) * e]); lineNow.set(m.it.key, p); const s = d(p); m.els.forEach(el => el.setAttribute('d', s)); });
+    if (u < 1) lineRaf = requestAnimationFrame(step);
+  };
+  lineRaf = requestAnimationFrame(step);
 }
 // Level separators are elements kept by key across paints (like blocks), each with its own + at its end,
 // so they slide to their new place with the blocks instead of vanishing and coming back. A separator that
@@ -1049,8 +1132,10 @@ function prowHTML(label, list, h) { return `<div class="prow" style="height:${h}
 function topHTML(n, top, detailed) {
   if (!top.h) return '';
   const bs = behsOf(n);
-  return `<div class="toprow" style="height:${top.h - 6}px">${n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}">${esc(n.type)}</span>` : ''}${bs.length ? `<span class="behs">${bs.map(detailed ? behChip : badge).join('')}</span>` : ''}</div>`;
+  return `<div class="toprow" style="height:${top.h - 6}px">${bs.length ? `<span class="behs">${bs.map(detailed ? behChip : badge).join('')}</span>` : ''}</div>`;
 }
+// A block's :type, in quiet type after its name.
+const typeHTML = n => n.type ? `<span class="pill" data-k="${esc(n.type.toLowerCase())}">${esc(n.type)}</span>` : '';
 function cardHTML(B) {
   const n = B.node, m = B.m, isB = n.form === 'behavior';
   const P = m.d ? dotsOf(n, state.opts.childDots) : null;
@@ -1060,7 +1145,7 @@ function cardHTML(B) {
   const foot = isM ? `<div class="foot"><span class="rel2">${esc('refines ' + n.refines)}</span></div>`
     : hasInside(n) ? `<div class="foot"><button class="tw" data-tog="${esc(n.id)}" aria-label="Open ${esc(n.name)}">▶</button><span class="cnt" data-tog="${esc(n.id)}">${countText(n)}</span></div>` : '';
   const foot2 = m.foot > 26 ? foot.replace('<div class="foot">', `<div class="foot wrap" style="height:${m.foot}px">`) : foot;
-  return (isM ? carryEarHTML(n) : m.d ? '' : tabsHTML(n)) + `<div class="bd">${topHTML(n, m.top, m.d)}<div class="ttl" title="${esc(n.name)}">${title}</div>` +
+  return (isM ? carryEarHTML(n) : m.d ? '' : tabsHTML(n)) + `<div class="bd">${topHTML(n, m.top, m.d)}<div class="ttl" title="${esc(n.name)}">${title}${typeHTML(n)}</div>` +
     (m.d ? prowHTML('Input', P.in, m.inH) : '') +
     (m.lines ? `<div class="sk${m.more ? ' more' : ''}"${m.more ? ` data-expand="${esc(n.id)}" role="button" tabindex="0" aria-expanded="${state.expanded.has(n.id)}" title="${state.expanded.has(n.id) ? 'Show less' : 'Show the whole sketch'}"` : ''} style="-webkit-line-clamp:${m.lines};height:${m.lines * 18 + m.gaps * 9}px">${skHTML(n.sketch, m.gaps)}</div>` : '') +
     (m.d ? prowHTML('Output', P.out, m.outH) : '') +
@@ -1070,7 +1155,7 @@ function cardHTML(B) {
 function frameHTML(B) {
   const b = B.node, h = B.hdr, P = dotsOf(b, state.opts.childDots);
   const nm = b.messageDecls.length;
-  return tabsHTML(b) + (B.appendixY != null ? `<div class="appx" style="top:${B.appendixY}px"></div>` : '') + `<div class="fh">${topHTML(b, h.top, true)}<div class="ttl"><span>${esc(b.name)}</span></div>` +
+  return tabsHTML(b) + (B.appendixY != null ? `<div class="appx" style="top:${B.appendixY}px"></div>` : '') + `<div class="fh">${topHTML(b, h.top, true)}<div class="ttl"><span>${esc(b.name)}</span>${typeHTML(b)}</div>` +
     (h.lines ? `<div class="sk" style="-webkit-line-clamp:${h.lines};height:${h.lines * 20 + h.gaps * 10}px">${skHTML(b.sketch, h.gaps)}</div>` : '') +
     `<div class="foot"><button class="tw open" data-tog="${esc(b.id)}" aria-label="Close ${esc(b.name)}">▶</button><span class="cnt" data-tog="${esc(b.id)}">${countText(b)}</span>` +
     `</div></div>` + B.bandLabs.map(l => `<div class="bandlab" style="top:${l.y}px">${esc(l.text)}</div>`).join('');
@@ -1489,7 +1574,7 @@ function moveZones(id) {
     // A declaration keeps its id; a moved block is found by where its copy starts.
     const nb = isDecl ? sp.m.node(id) : [...sp.m.blocks.values()].find(b => b.s === r.at); if (!nb) continue;
     const B = sp.lay.blocks.find(b => b.id === nb.id); if (!B) continue;
-    const z = { act, src:r.src, noop, bad, join: act.dest.unit != null, x:B.x, y:B.y, w:B.w, h:B.h, lay:sp.lay };
+    const z = { act, src:r.src, noop, bad, join: act.dest.unit != null, x:B.x, y:B.y, w:B.w, h:B.h, lay:sp.lay, nid:nb.id };
     if (z.join && !noop) {
       // The group member the block lands beside (none when it lands strictly between two members).
       const d = act.dest, bs = d.block.levels[d.level].units[d.unit].blocks.filter(b => b !== act.node);
@@ -1566,6 +1651,44 @@ function attachZones(id) {
   }
   return zones;
 }
+// ---------- Ties: a dragged block's links stay with it ----------
+// Each line the block has to a neighbour (an adjacent pair) is drawn from the neighbour, where it stands
+// in the preview, to the block under the pointer, as a slack cable. It holds while the spot the pointer is
+// over would keep the pair (the block's own place, a place in the same group, or no spot at all, where a
+// release puts everything back). Over a spot that would part them it snaps: the two halves spring back
+// from the middle. Moving back joins them again.
+function startTies() {
+  const id = drag.id, cs = state.lay.connectors.filter(c => c.a === id || c.b === id);
+  if (!cs.length) return;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'ovl ties'); svg.setAttribute('width', 1); svg.setAttribute('height', 1);
+  svg.innerHTML = cs.map(() => '<g class="tie"><path class="cable"/><path class="half a" pathLength="1"/><path class="half b" pathLength="1"/><g class="spark"><path d="M-7 -6 L-3 -2 M7 -6 L3 -2 M-7 6 L-3 2 M7 6 L3 2"/></g></g>').join('');
+  $('world').appendChild(svg);
+  drag.ties = cs.map((c, i) => ({ other: c.a === id ? c.b : c.a, g: svg.children[i] })); drag.tieSvg = svg;
+  const tick = () => { if (!drag || !drag.ties) return; drawTies(); drag.tieRaf = requestAnimationFrame(tick); };
+  drag.tieRaf = requestAnimationFrame(tick);
+}
+function drawTies() {
+  const k = state.cam.k, D = { x:drag.B.x + (drag.dx || 0), y:drag.B.y + (drag.dy || 0), w:drag.B.w, h:drag.B.h }, z = drag.best;
+  const f = n => n.toFixed(1);
+  drag.ties.forEach(t => {
+    const el = state.elems.get(t.other); if (!el || el.style.display === 'none') { t.g.style.display = 'none'; return; }
+    t.g.style.display = '';
+    // The neighbour as it is drawn this frame (it may be sliding to its place in the preview).
+    const r = el.getBoundingClientRect(), P = { x:(r.left - state.cam.x) / k, y:(r.top - state.cam.y) / k, w:r.width / k, h:r.height / k };
+    const right = D.x + D.w / 2 >= P.x + P.w / 2;
+    const a = [right ? P.x + P.w : P.x, P.y + Math.min(P.h / 2, 60)], b = [right ? D.x : D.x + D.w, D.y + Math.min(D.h / 2, 60)];
+    const reach = Math.max(24, Math.min(140, Math.hypot(b[0] - a[0], b[1] - a[1]) * .4)) * (right ? 1 : -1);
+    const c1 = [a[0] + reach, a[1]], c2 = [b[0] - reach, b[1]];
+    const at = u => { const v = 1 - u; return [v * v * v * a[0] + 3 * v * v * u * c1[0] + 3 * v * u * u * c2[0] + u * u * u * b[0], v * v * v * a[1] + 3 * v * v * u * c1[1] + 3 * v * u * u * c2[1] + u * u * u * b[1]]; };
+    const poly = (u0, u1) => { const out = []; for (let i = 0; i <= 10; i++) { const q = at(u0 + (u1 - u0) * i / 10); out.push(f(q[0]) + ' ' + f(q[1])); } return 'M' + out.join(' L'); };
+    const [cable, ha, hb, spark] = t.g.children, mid = at(.5);
+    cable.setAttribute('d', `M${f(a[0])} ${f(a[1])} C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${f(b[0])} ${f(b[1])}`);
+    ha.setAttribute('d', poly(0, .5)); hb.setAttribute('d', poly(1, .5)); spark.setAttribute('transform', `translate(${f(mid[0])} ${f(mid[1])})`);
+    const kept = !z || z.noop || z.lay.connectors.some(c => (c.a === z.nid && c.b === t.other) || (c.b === z.nid && c.a === t.other));
+    if (t.kept !== kept) { t.g.classList.toggle('broken', !kept); t.g.classList.toggle('joined', kept && t.kept === false); t.kept = kept; }
+  });
+}
+function endTies(d) { if (!d.ties) return; cancelAnimationFrame(d.tieRaf); d.tieSvg.remove(); d.ties = null; }
 function startDrag(e) {
   const p = press; press = null;
   const B = state.lay.blocks.find(b => b.id === p.id), el = state.elems.get(p.id); if (!B || !el) return;
@@ -1582,12 +1705,14 @@ function startDrag(e) {
   if (drag.mode === 'attach') vp.classList.add('dragging');
   strip.hidden = true; $('world').classList.remove('anim');
   lifted.forEach(m => m.el.classList.add('dragsrc'));
+  if (drag.mode === 'move') startTies();
   if (drag.mode === 'attach') drag.zones.forEach(z => { if (!z.why) z.el.classList.add('tgt'); });
   moveDrag(e);
 }
 function moveDrag(e) {
   const k = state.cam.k, dx = (e.clientX - drag.x) / k, dy = (e.clientY - drag.y) / k;
   drag.lifted.forEach(m => { m.el.style.transform = `translate(${m.x + dx}px,${m.y + dy}px)`; });
+  drag.dx = dx; drag.dy = dy;
   let best = null;
   const rect = (z, cls, rx) => `<rect class="${cls}" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="${rx}"/>`;
   if (drag.mode === 'move') {
@@ -1631,7 +1756,7 @@ function moveDrag(e) {
     // Over no zone (the lifted-out layout) there is none.
     // A drop that would bounce is drawn in the warning colour; its preview is the same as any other.
     $('ovl').innerHTML = (best && !best.noop ? rect(best, best.bad ? 'dropz bad' : 'dropz', 12) : '') +
-      (best && best.links ? best.links.map(q => `<path d="M${q.map(v => v[0] + ' ' + v[1]).join(' L')}"/>`).join('') : '');
+      (best && best.links && !best.noop ? best.links.map(q => `<path d="M${q.map(v => v[0] + ' ' + v[1]).join(' L')}"/>`).join('') : '');
   } else {
     // The smallest zone under the pointer, tested in world coordinates.
     const p = worldPt(e); let ba = Infinity;
@@ -1644,6 +1769,7 @@ function moveDrag(e) {
 }
 function endDrag(commit) {
   const d = drag; drag = null;
+  endTies(d);
   vp.classList.remove('dragging'); $('ovl').innerHTML = '';
   const z = commit && d.best, why = z && (z.bad || z.why);
   // A refused drop (bad) leaves the lifted elements where they were dropped, and the normal render puts
@@ -2256,9 +2382,27 @@ let chatAdd = (key, text, how) => {
 let chatStatus = c => c.status === 'sent' ? ['st-sent', 'Sent'] : ['st-saved', 'Saved'];
 let chatRowBtns = c => (c.status === 'saved' ? `<button class="tiny" data-t="send" data-id="${esc(c.id)}">Send</button>` : '') + `<button class="tiny" data-t="del" data-id="${esc(c.id)}">Delete</button>`;
 let chatReplies = c => '';
+// A time as a reader wants it: the clock for today, the day too for anything older.
+function whenText(at) { const d = new Date(at), today = d.toDateString() === new Date().toDateString(); return d.toLocaleString([], today ? { hour:'numeric', minute:'2-digit' } : { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); }
+// The callout stands beside its thing, top to top, with its tail at the thing's upper part: to the right
+// when there is room, else to the left, else under or over it (placeNear). A thing too wide to stand beside
+// (an open block) is stood beside at its heading. It keeps clear of the toolbar at the foot.
+function placeBeside(el, anchor) {
+  if (innerWidth < 760 || el.classList.contains('filechat')) return;
+  let r = anchor.getBoundingClientRect();
+  const head = r.width > innerWidth * .45 && anchor.querySelector ? anchor.querySelector('.fh, .ft, .hd') : null;
+  if (head) { const h = head.getBoundingClientRect(); r = new DOMRect(h.left, h.top, Math.min(h.width, 260), h.height); }
+  const w = el.offsetWidth, h = el.offsetHeight, gap = 14, floor = innerHeight - 76;
+  const side = r.right + gap + w <= innerWidth - 8 ? 'right' : r.left - gap - w >= 8 ? 'left' : '';
+  el.classList.toggle('right', side === 'right'); el.classList.toggle('left', side === 'left');
+  if (!side) { placeNear(el, r); return; }
+  const y = Math.max(8, Math.min(r.top - 8, floor - h));
+  el.style.left = (side === 'right' ? r.right + gap : r.left - gap - w) + 'px'; el.style.top = y + 'px';
+  el.style.setProperty('--tail', Math.max(14, Math.min(h - 26, r.top + Math.min(r.height / 2, 30) - y - 6)) + 'px');
+}
 function chatRow(c) {
   const [cls, text, title] = chatStatus(c);
-  return `<li data-id="${esc(c.id)}"><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${new Date(c.at).toLocaleString([], { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
+  return `<li data-id="${esc(c.id)}"${c.status === 'sent' || c.status === 'sending' ? '' : ' class="mine"'}><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${whenText(c.at)}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
 const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || chat.key === key));
 // Draw the open chat's thread again and show its end; the popover and what is typed in it stay.
@@ -2266,9 +2410,8 @@ function refreshChat() {
   if (!chatOpen()) { chat = null; return; }
   const el = chat.el, ul = el.querySelector('ul.thread'), list = state.comments.filter(c => c.target === chat.key);
   ul.innerHTML = list.map(chatRow).join('') || '<li class="none">No comments here yet.</li>';
+  placeBeside(el, chat.anchor);
   ul.scrollTop = ul.scrollHeight;
-  const r = el.getBoundingClientRect();
-  if (r.bottom > innerHeight - 8 && innerWidth >= 760) el.style.top = Math.max(8, innerHeight - r.height - 8) + 'px';
 }
 function openChat(key, anchor, focus) {
   closePop('info');
@@ -2277,14 +2420,15 @@ function openChat(key, anchor, focus) {
   if (chatOpen(key)) { if (focus) chat.el.querySelector('textarea').focus(); return; }
   const a = anchor || anchorFor(key) || { getBoundingClientRect:() => new DOMRect(innerWidth / 2 - 190, innerHeight / 3, 380, 0) };
   const keep = chatKeep(), mac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
-  const el = pop('thread', a, `<div class="chh"><span class="kind">${key === 'block:' ? 'Chat about the whole file' : 'Comments on ' + esc(targetLabel(key))}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
+  const lab = key === 'block:' ? 'The whole file' : targetLabel(key), sp = key === 'block:' ? -1 : lab.indexOf(' ');
+  const el = pop('thread', a, `<div class="chh" title="Comments on ${esc(key === 'block:' ? 'the whole file' : lab)}"><span class="on">${sp > 0 ? `<i>${esc(lab.slice(0, sp))}</i>${esc(lab.slice(sp + 1))}` : esc(lab)}</span><button class="xbtn" data-t="close" aria-label="Close">${ICON.close}</button></div>
     <ul class="thread" aria-live="polite"></ul>
-    <div class="composer"><textarea id="cmtText" rows="2" placeholder="${key === 'block:' ? 'Say anything about the whole file.' : 'What should change, or what is unclear?'}" aria-label="Comment on ${esc(targetLabel(key))}"></textarea><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><input type="file" multiple hidden></div>
-    <div class="acts"><span class="keys">${mac ? '⌘' : 'Ctrl+'}Enter sends · Shift+Enter: ${esc(keep.label.toLowerCase())}</span><button class="btn" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div>`, 'chat');
+    <div class="composer"><textarea id="cmtText" rows="2" placeholder="${key === 'block:' ? 'Say anything about the whole file.' : 'What should change, or what is unclear?'}" aria-label="Comment on ${esc(key === 'block:' ? 'the whole file' : lab)}"></textarea><input type="file" multiple hidden>
+    <div class="acts"><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><span class="keys">${mac ? '⌘' : 'Ctrl'} ↵ sends</span><button class="btn quiet" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div></div>`, 'chat');
   el.classList.toggle('filechat', key === 'block:');
-  chat = { key, el };
+  chat = { key, el, anchor:a };
   const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
-  refreshChat(); placeNear(el, a.getBoundingClientRect());
+  refreshChat();
   if (focus) setTimeout(() => { if (chatOpen(key)) ta.focus(); }, 30);
   const submit = how => {
     const text = ta.value.trim(); if (!text) { ta.focus(); return; }
