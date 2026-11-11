@@ -97,7 +97,7 @@ SBTEL.modes.server = (() => {
     refN.set(e.file, (refN.get(e.file) || 0) + 1);
     if (!live) return;
     if (trail.length && trail[trail.length - 1].file === e.file) { refRead[e.file] = refN.get(e.file); store.set(RR, refRead); return; }
-    render(); toast(`Agent replied in ${e.file}.`);
+    render(); // the dot on the ref says so
   }
   function drawTrail() {
     const h = refEl.querySelector('.trail'), last = trail.length - 1;

@@ -78,16 +78,15 @@ function sessionComments({ version, closed }) {
   function onReply(d) {
     if (C.seenReplies.has(d.seq)) return;
     C.seenReplies.add(d.seq);
-    const one = String(d.text || '').replace(/\s+/g, ' '), short = one.length > 120 ? one.slice(0, 119) + '…' : one;
     const rv = C.reviews.find(r => r.id === d.to);
-    if (rv) { rv.replies.push({ text: d.text, at: Date.parse(d.at) || Date.now() }); changed(); toast(`Agent replied to your review ${rv.id}: ${short}`); return; }
+    if (rv) { rv.replies.push({ text: d.text, at: Date.parse(d.at) || Date.now() }); changed(); const rb = $('rvBtn'); if (rb && !rb.classList.contains('on')) rb.classList.add('unread'); return; } // a dot on Review, no announcement
     const c = state.comments.find(x => x.sid === d.to);
     if (!c) return;
     (c.replies = c.replies || []).push({ text: d.text, at: Date.parse(d.at) || Date.now() });
     render(); refreshChat(); // explicitly: diff mode draws with its own render
     if (chatShows(c.target)) markRead(chat.key); // it is being read now: shown from its start, marked new this once
     markUnread(); changed();
-    if (!chatShows(c.target) && !replyHeld(c)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
+    // Nothing is announced: the reply puts a dot on its bubble and on the toolbar's button (markUnread).
   }
   // The app hooks (§6.5). Call once, from the mode's boot().
   function hook() {

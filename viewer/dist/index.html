@@ -616,12 +616,11 @@ body.diffmode .help .norm { display:none; }
 .pop.chat .acts .btn.quiet:hover { background:var(--chip); color:var(--ink); }
 @media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
 .tb.cmtbtn { position:relative; }
-.tb.cmtbtn #cmtN i { font-style:normal; font-weight:400; color:var(--muted); margin-left:5px; }
 .tb.cmtmore { min-width:20px; width:20px; padding:0; margin-left:-4px; color:var(--muted); } .tb.cmtmore svg.i { width:13px; height:13px; }
 .walkm { position:fixed; z-index:2100; width:268px; box-sizing:border-box; padding:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; box-shadow:0 12px 36px var(--shadow); font-size:13.5px; }
 .walkm label { display:flex; gap:10px; align-items:flex-start; padding:7px 8px; border-radius:8px; cursor:pointer; } .walkm label:hover { background:var(--surface); }
 .walkm input { margin:3px 0 0; accent-color:var(--accent); flex:none; } .walkm b { display:block; font-weight:600; } .walkm small { display:block; color:var(--muted); font-size:12.5px; line-height:1.35; }
-.walkm fieldset { border:0; border-top:1px solid var(--panel-line); margin:6px 0 0; padding:6px 0 0; } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
+.walkm fieldset { border:0; margin:0; padding:0; } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
 .pop.chat .chh .in { flex:none; font-size:12.5px; color:var(--muted); }
 .pop.chat ul.thread li.where { position:sticky; top:-1px; z-index:1; padding:6px 0 4px; margin:0; background:var(--panel); border:0; }
 .pop.chat ul.thread li.where button { border:0; background:var(--surface); color:var(--ink-2); font:600 12px var(--ff-ui, inherit); padding:3px 9px; border-radius:999px; cursor:pointer; } .pop.chat ul.thread li.where button:disabled { cursor:default; color:var(--muted); }
@@ -723,7 +722,7 @@ body.diffmode .help .norm { display:none; }
   <button class="tb chkpill" id="chkBtn" title="Layout and spec checks"></button>
   <button class="tb cmtbtn" id="chatBtn" title="Chat about the whole file" aria-label="Chat about the whole file"><svg class="i" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/></svg><span class="hide-sm">Chat</span></button>
   <button class="tb cmtbtn" id="cmtBtn" hidden disabled title="No new replies" aria-label="Next new reply"><svg class="i" viewBox="0 0 24 24"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1"/></svg><span id="cmtN"></span></button>
-  <button class="tb icon cmtmore" id="cmtMore" hidden aria-expanded="false" title="Rounds and order" aria-label="How new replies are read: rounds and order"><svg class="i" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></button>
+  <button class="tb icon cmtmore" id="cmtMore" hidden aria-expanded="false" title="The order new replies are read in" aria-label="The order new replies are read in"><svg class="i" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></button>
   <button class="tb sendbtn" id="sendBtn" hidden title="Send saved comments to an agent"><svg class="i" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg><span id="sendN"></span></button>
   <button class="tb icon" id="setBtn" title="Settings" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></button>
 </div>
@@ -4346,15 +4345,15 @@ function openThread(key, anchor) { openChat(key, anchor, !matchMedia('(pointer: 
 // unread reply first, then by the latest word. A mode says which comments are unread (chatUnread).
 let chatUnread = c => false;
 // The toolbar's button walks the new replies: each press opens the next thread with one, until none is left
-// and the button is off. (C still lists every thread.) Two choices, kept in the browser:
-//   order   place: the diagram's reading order, going on from where the reader is, so neighbours come
-//           together and a block comes before what is inside it; new: latest reply first; old: the reply
-//           that has waited longest first.
-//   rounds  the first press fixes the set of threads to read. Replies that arrive meanwhile wait (no toast,
-//           counted as "+n") until that set is read; then the round is done and the next press starts another.
+// and the button is off. (C still lists every thread.) A reply is never announced: it puts a dot on its
+// thread's bubble and on this button, and the reader comes to it when they choose. The order is kept in
+// the browser:
+//   place  the diagram's reading order, going on from where the reader is, so neighbours come together and
+//          a block comes before what is inside it;
+//   new    latest reply first;   old  the reply that has waited longest first.
 // A closed block is one stop: everything unread inside it is read there, together.
-const WALK = Object.assign({ order:'place', rounds:true }, store.get('sbtel-walk', null) || {});
-let round = null, walkAt = null;
+const WALK = Object.assign({ order:'place' }, store.get('sbtel-walk', null) || {});
+let walkAt = null;
 function keyPos(key) {
   const i = key.indexOf(':'), kind = key.slice(0, i), rest = key.slice(i + 1), m = state.model;
   const n = kind === 'block' ? (rest ? m.blocks.get(rest) : null) : kind === 'msg' ? m.messages.get(rest) : kind === 'beh' ? m.behaviors.get(rest) : kind === 'line' ? m.blocks.get(rest.split('|')[0]) : null;
@@ -4368,22 +4367,11 @@ function unreadStops() {
   }
   return [...by.values()];
 }
-function walkNow() {
-  const all = unreadStops(), now = WALK.rounds && round ? all.filter(t => t.sids.some(x => round.has(x))) : all;
-  return { all, now, later: all.length - now.length };
-}
-// A reply that arrives during a round, on a thread the round does not hold, is not announced.
-const replyHeld = c => !!(WALK.rounds && round && !round.has(c.sid));
 function cmtCount() {
-  if (round) {   // what is read leaves the round for good; when nothing is left, the round is done
-    const left = new Set(state.comments.filter(c => chatUnread(c) && round.has(c.sid)).map(c => c.sid));
-    if (left.size) round = left; else { round = null; walkAt = null; const n = unreadStops().length; toast(n ? `Round done. ${n} new ${n === 1 ? 'reply' : 'replies'} came in meanwhile.` : 'Round done. Nothing is waiting for you.'); }
-  }
-  const b = $('cmtBtn'), { all, now, later } = walkNow(), n = now.length;
-  b.hidden = !all.length && !state.comments.some(c => (c.replies || []).length); $('cmtMore').hidden = b.hidden; b.disabled = !all.length;
-  $('cmtN').innerHTML = (n || '') + (later ? `<i>+${later}</i>` : '');
-  b.classList.toggle('unread', n > 0);
-  b.title = !all.length ? 'No new replies. Press C for every comment.' : round ? `Next reply: ${n} left in this round${later ? `, ${later} waiting for the next` : ''}` : WALK.rounds ? `Start a round: ${n} thread${n === 1 ? '' : 's'} with new replies` : `Read the next new reply (${n} thread${n === 1 ? '' : 's'})`;
+  const b = $('cmtBtn'), n = unreadStops().length;
+  b.hidden = !n && !state.comments.some(c => (c.replies || []).length); $('cmtMore').hidden = b.hidden; b.disabled = !n;
+  $('cmtN').textContent = n || ''; b.classList.toggle('unread', n > 0); if (!n) walkAt = null;
+  b.title = n ? `Read the next new reply (${n} thread${n === 1 ? '' : 's'})` : 'No new replies. Press C for every comment.';
   $('chatBtn').classList.toggle('unread', state.comments.some(c => c.target === 'block:' && chatUnread(c)));
 }
 function showThread(key) {
@@ -4392,8 +4380,7 @@ function showThread(key) {
 }
 function nextUnread() {
   closePop('thread');
-  if (WALK.rounds && !round) { const all = new Set(state.comments.filter(chatUnread).map(c => c.sid)); if (all.size) round = all; }
-  const { now } = walkNow(); if (!now.length) { cmtCount(); return; }
+  const now = unreadStops(); if (!now.length) { cmtCount(); return; }
   let pick;
   if (WALK.order === 'new') pick = now.reduce((a, t) => t.last > a.last ? t : a);
   else if (WALK.order === 'old') pick = now.reduce((a, t) => t.last < a.last ? t : a);
@@ -4412,12 +4399,11 @@ function nextUnread() {
     if (m) { shut(); return; }
     m = document.createElement('div'); m.className = 'walkm'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-label', 'How new replies are read');
     const opt = (v, name, hint) => `<label><input type="radio" name="wkOrder" value="${v}"${WALK.order === v ? ' checked' : ''}><span><b>${name}</b><small>${hint}</small></span></label>`;
-    m.innerHTML = `<label><input type="checkbox" id="wkRounds"${WALK.rounds ? ' checked' : ''}><span><b>Read in rounds</b><small>Finish the replies you have before new ones join.</small></span></label>
-      <fieldset><legend>Order</legend>${opt('place', 'By place', 'Neighbours together, from where you are.')}${opt('new', 'Newest first', 'The latest reply first.')}${opt('old', 'Longest waiting', 'The oldest reply first.')}</fieldset>`;
+    m.innerHTML = `<fieldset><legend>Read new replies</legend>${opt('place', 'By place', 'Neighbours together, from where you are.')}${opt('new', 'Newest first', 'The latest reply first.')}${opt('old', 'Longest waiting', 'The oldest reply first.')}</fieldset>`;
     document.body.appendChild(m);
     const r = $('cmtMore').getBoundingClientRect(); m.style.bottom = (innerHeight - r.top + 10) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
     $('cmtMore').setAttribute('aria-expanded', 'true');
-    m.addEventListener('change', () => { WALK.rounds = m.querySelector('#wkRounds').checked; WALK.order = m.querySelector('[name=wkOrder]:checked')?.value || 'place'; if (!WALK.rounds) round = null; walkAt = null; store.set('sbtel-walk', WALK); cmtCount(); });
+    m.addEventListener('change', () => { WALK.order = m.querySelector('[name=wkOrder]:checked')?.value || 'place'; walkAt = null; store.set('sbtel-walk', { order:WALK.order }); });
     addEventListener('pointerdown', away, true); addEventListener('keydown', esc2, true);
   };
 }
@@ -5217,16 +5203,15 @@ function sessionComments({ version, closed }) {
   function onReply(d) {
     if (C.seenReplies.has(d.seq)) return;
     C.seenReplies.add(d.seq);
-    const one = String(d.text || '').replace(/\s+/g, ' '), short = one.length > 120 ? one.slice(0, 119) + '…' : one;
     const rv = C.reviews.find(r => r.id === d.to);
-    if (rv) { rv.replies.push({ text: d.text, at: Date.parse(d.at) || Date.now() }); changed(); toast(`Agent replied to your review ${rv.id}: ${short}`); return; }
+    if (rv) { rv.replies.push({ text: d.text, at: Date.parse(d.at) || Date.now() }); changed(); const rb = $('rvBtn'); if (rb && !rb.classList.contains('on')) rb.classList.add('unread'); return; } // a dot on Review, no announcement
     const c = state.comments.find(x => x.sid === d.to);
     if (!c) return;
     (c.replies = c.replies || []).push({ text: d.text, at: Date.parse(d.at) || Date.now() });
     render(); refreshChat(); // explicitly: diff mode draws with its own render
     if (chatShows(c.target)) markRead(chat.key); // it is being read now: shown from its start, marked new this once
     markUnread(); changed();
-    if (!chatShows(c.target) && !replyHeld(c)) toast(`Agent replied on ${targetLabel(c.target)}: ${short}`); // an open chat shows the reply itself
+    // Nothing is announced: the reply puts a dot on its bubble and on the toolbar's button (markUnread).
   }
   // The app hooks (§6.5). Call once, from the mode's boot().
   function hook() {
@@ -5450,6 +5435,7 @@ function sessionReview(o) {
   const KEY = 'sbtel-draft:' + o.id, HKEY = 'sbtel-hist:' + o.id;
   const pending = () => state.comments.filter(c => c.status === 'pending');
   const CSS = `
+.tb.rv-btn { position:relative; } .tb.rv-btn.unread::after { content:""; position:absolute; top:3px; right:3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
 .tb.rv-btn .rv-n { min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:var(--accent); color:#fff; font-size:11.5px; font-weight:600; line-height:18px; text-align:center; font-variant-numeric:tabular-nums; }
 .cbub.pend { background:var(--surface); color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); }
 .cbub .pb { margin-left:3px; padding:0 5px; border-radius:7px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:600; line-height:14px; }
@@ -5538,7 +5524,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
   function toggle(open) {
     const o2 = open ?? !R.open; R.open = o2;
     if (o2) { closeMessages(); const ds = $('dSheet'); if (ds && !ds.classList.contains('closed')) $('dClose').click(); recount(); renderPanel(); }
-    sheet().classList.toggle('closed', !o2); btn.setAttribute('aria-expanded', String(o2)); btn.classList.toggle('on', o2);
+    sheet().classList.toggle('closed', !o2); btn.setAttribute('aria-expanded', String(o2)); btn.classList.toggle('on', o2); if (o2) btn.classList.remove('unread');
   }
   const goTarget = key => {
     const kind = key.slice(0, key.indexOf(':')), rest = key.slice(key.indexOf(':') + 1);
@@ -5792,7 +5778,7 @@ SBTEL.modes.server = (() => {
     refN.set(e.file, (refN.get(e.file) || 0) + 1);
     if (!live) return;
     if (trail.length && trail[trail.length - 1].file === e.file) { refRead[e.file] = refN.get(e.file); store.set(RR, refRead); return; }
-    render(); toast(`Agent replied in ${e.file}.`);
+    render(); // the dot on the ref says so
   }
   function drawTrail() {
     const h = refEl.querySelector('.trail'), last = trail.length - 1;

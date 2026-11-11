@@ -275,7 +275,7 @@ for (const scheme of ['light', 'dark']) {
   ok(await p.evaluate(() => { const c = state.comments.find(x => x.sid === 'c9'); return !!c && c.status === 'sent' && !!document.querySelector('[data-thread="block:Back"]'); }), 'server: a comment sent from the diff keeps its bubble');
   sse.write('id: 10\nevent: reply\ndata: {"seq":10,"to":"c9","text":"Because Back depends on Front.","at":"2026-11-08T09:30:00Z"}\n\n');
   await p.waitForTimeout(400);
-  ok(await p.evaluate(() => (document.querySelector('.toast')?.textContent || '').startsWith('Agent replied on block Back')), 'server: reply toast names the target', await p.evaluate(() => document.querySelector('.toast')?.textContent));
+  ok(await p.evaluate(() => !/Agent replied/.test(document.querySelector('.toast')?.textContent || '')), 'server: a reply is not announced', await p.evaluate(() => document.querySelector('.toast')?.textContent));
   await p.click('[data-thread="block:Back"]');
   const rep = await p.waitForSelector('.pop .sb-reply', { timeout: 3000 }).then(el => el.textContent()).catch(() => '');
   ok(rep.includes('Because Back depends on Front.'), 'server: the thread shows the agent reply', rep);

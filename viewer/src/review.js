@@ -131,6 +131,7 @@ function sessionReview(o) {
   const KEY = 'sbtel-draft:' + o.id, HKEY = 'sbtel-hist:' + o.id;
   const pending = () => state.comments.filter(c => c.status === 'pending');
   const CSS = `
+.tb.rv-btn { position:relative; } .tb.rv-btn.unread::after { content:""; position:absolute; top:3px; right:3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
 .tb.rv-btn .rv-n { min-width:18px; height:18px; padding:0 5px; box-sizing:border-box; border-radius:9px; background:var(--accent); color:#fff; font-size:11.5px; font-weight:600; line-height:18px; text-align:center; font-variant-numeric:tabular-nums; }
 .cbub.pend { background:var(--surface); color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); }
 .cbub .pb { margin-left:3px; padding:0 5px; border-radius:7px; background:var(--accent); color:#fff; font-size:10.5px; font-weight:600; line-height:14px; }
@@ -219,7 +220,7 @@ body.sb-rsheet .dock { left:calc((100vw - min(460px, 100vw)) / 2); max-width:cal
   function toggle(open) {
     const o2 = open ?? !R.open; R.open = o2;
     if (o2) { closeMessages(); const ds = $('dSheet'); if (ds && !ds.classList.contains('closed')) $('dClose').click(); recount(); renderPanel(); }
-    sheet().classList.toggle('closed', !o2); btn.setAttribute('aria-expanded', String(o2)); btn.classList.toggle('on', o2);
+    sheet().classList.toggle('closed', !o2); btn.setAttribute('aria-expanded', String(o2)); btn.classList.toggle('on', o2); if (o2) btn.classList.remove('unread');
   }
   const goTarget = key => {
     const kind = key.slice(0, key.indexOf(':')), rest = key.slice(key.indexOf(':') + 1);

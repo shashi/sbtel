@@ -15,11 +15,10 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 - **Comment on a file.** The file viewer has a comment box. The comment goes on the thread of the block
   that names the file (or, for a file opened from a comment, on that comment's thread) and carries the
   file as a ref. Select lines in the source to send `file:9-11`; select words on a rendered page to quote them.
-- **Reading replies in rounds.** The first press of the comments button fixes the set of threads to read;
-  replies that arrive meanwhile wait (no toast, counted as "+n") until that set is read, and the last one
-  ends with "Round done". The caret beside the button turns rounds off and picks the order: by place (the
-  default: the diagram's reading order from where you are, so neighbours come together), newest first, or
-  longest waiting. Both choices are remembered.
+- **Replies are quiet.** An agent's reply is not announced: it puts a dot on its thread's bubble and on the
+  toolbar's comments button (a reply to a whole review puts one on Review). Pressing the button walks the
+  threads with new replies, by place by default (the diagram's reading order from where you are, so
+  neighbours come together); the caret beside it offers newest first and longest waiting.
 - **A closed block is one concept.** Its bubble counts every thread inside it, and its chat shows them
   together in the order they were written, each run under the name of its part. Pressing a part's name
   opens the block and shows that thread alone. The walk treats a closed block as one stop.
@@ -85,8 +84,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
 ### Changed
 - The toolbar has no primary button: Review looks like the rest and shows a count when something waits in it.
   The Shapes button is gone (the table still opens from a shape's Table action).
-- The comments button walks new replies: each press opens the thread with the latest one and it turns off
-  when none is left. `C` still lists every comment. Its dot no longer stays on after everything is read.
+- The comments button turns off when no new reply is left. `C` still lists every comment. Its dot no longer
+  stays on after everything is read.
 - Sent and Seen are drawn ticks.
 
 - **Lines move with their blocks.** The lines between adjacent blocks, the band rules and the `+`

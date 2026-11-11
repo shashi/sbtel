@@ -110,7 +110,7 @@ async function until(fn, ms = 8000, step = 100) {
   check('reply exits 0 and prints nothing', rp.code === 0 && rp.out === '', rp.err);
   await until(() => page.evaluate(() => state.comments[0].replies && state.comments[0].replies.length === 1));
   check('page received the reply over SSE', await page.evaluate(() => state.comments[0].replies[0].text === 'Done: split into Router and RouteState.\nSee v2.'));
-  check('reply toast shown', (await page.evaluate(() => document.querySelector('.toast').textContent)).startsWith('Agent replied on block Shell.Router'));
+  check('a reply is not announced: a dot on the bubble and on the toolbar button', await page.evaluate(() => !/Agent replied/.test(document.querySelector('.toast').textContent) && !document.getElementById('cmtBtn').disabled && document.querySelector('[data-thread="block:Shell.Router"]').classList.contains('unread')));
   await page.evaluate(() => { const b = document.querySelector('[data-thread="block:Shell.Router"]'); b.scrollIntoView(); });
   check('a reply to a closed chat puts a dot on the count', await page.evaluate(() => { const b = document.querySelector('[data-thread="block:Shell.Router"]'); return b.classList.contains('unread') && /new reply$/.test(b.getAttribute('aria-label')); }));
   await page.click('[data-thread="block:Shell.Router"]');
@@ -229,7 +229,7 @@ async function until(fn, ms = 8000, step = 100) {
   check('the proposed spec is stored in the session folder; the spec file is unchanged', !!propPath && propPath.startsWith(path.join(HOME, 'sessions', id, 'proposals') + path.sep) && fs.readFileSync(propPath, 'utf8') === before && fs.readFileSync(SPEC, 'utf8') === vSaved);
   check('after sending: the draft is clear, comments are sent, edits stay marked proposed', await page.evaluate(() => document.querySelector('#rvBtn .rv-n').hidden && state.comments.some(c => c.review && c.status === 'sent') && !document.querySelector('.cbub.pend') && /proposed, awaiting agent/.test(document.getElementById('specName').textContent)));
   check('reply to a review comment and to the review', sb(['reply', id, rid.replace('r', 'c') + '.1', 'Yes: chords stay in the keymap.']).code === 0 && sb(['reply', id, rid, 'Thanks, applying.']).code === 0);
-  await until(() => page.evaluate(() => /Agent replied to your review/.test(document.querySelector('.toast').textContent)));
+  await until(() => page.evaluate(() => document.getElementById('rvBtn').classList.contains('unread') || document.getElementById('rvSent').textContent.includes('Thanks, applying.')));
   check('the replies reach the comment thread and the review', await page.evaluate(id => state.comments.find(c => c.sid === id + '.1').replies.length === 1 && document.getElementById('rvSent').textContent.includes('Thanks, applying.'), rid.replace('r', 'c')));
 
   // Editing after a review starts a new draft on top of the proposal; sending it replaces the proposal.
@@ -465,7 +465,7 @@ async function until(fn, ms = 8000, step = 100) {
   check('diff: inbox has the comment on side b', !!dcm && dcm.text === 'Why does the router change?' && dcm.target === 'block:Shell.Router', JSON.stringify(dEvs));
   check('diff: reply exits 0', sb(['reply', did, dcm ? dcm.id : 'c0', 'It got a note.']).code === 0);
   await until(() => dp.evaluate(() => (state.comments[0].replies || []).length === 1));
-  check('diff: reply toast names the target', (await dp.evaluate(() => document.querySelector('.toast')?.textContent || '')).startsWith('Agent replied on block Shell.Router'));
+  check('diff: a reply is not announced', !/Agent replied/.test(await dp.evaluate(() => document.querySelector('.toast')?.textContent || '')));
   await dp.click('[data-thread="block:Shell.Router"]');
   const dRep = await dp.waitForSelector('.pop .sb-reply', { timeout: 3000 }).then(el => el.textContent()).catch(() => '');
   check('diff: the thread shows the agent reply', dRep.includes('It got a note.'), dRep);
