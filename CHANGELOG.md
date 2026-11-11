@@ -22,6 +22,10 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   are still aligned across the columns.
 - A level's name sits right of its line (Settings, Level names, puts it on the left). Only the name opens
   the level's editor; the line shows the name to click and does nothing more.
+- **A closed block takes a drop.** Rest a dragged block on the middle of a closed block and, after
+  0.7 s of holding still, that block opens under the pointer and its levels become drop zones; a card
+  with nothing inside offers its first level. Passing over a block, or pausing briefly, does nothing,
+  and until it opens the drag previews and drops as before. Leave without dropping and it closes again.
 - **Escape closes what opened last, everywhere.** Each thing that opens over the canvas (an editor, a
   callout, a thread, a menu, a dialog, the file and code windows, a sheet, the help panel, the tour, a
   diagram or comparison shown over the page, a drag) joins one list when it opens and leaves it when it

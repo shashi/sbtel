@@ -946,6 +946,16 @@ is the session's `tabs`.
   where their cells are (sideways, or downward under the ears). The viewer's drop targets come from laying
   out each candidate edit, so they follow either flow; its two gap helpers share `gapBetween`. The order
   check reads source order along rows or down columns.
+- Spring-open (v0.4.1). Drop zones come only from blocks that are open, so a closed block had no inside
+  to drop into. While a block is dragged, the pointer resting on the middle of a closed block (the
+  inner 48% of its width, on the board as drawn with the dragged block lifted out, so no preview can
+  move the target away) starts a wait of `SPRING.dwell`; moving `SPRING.still` px starts it over, and a
+  ring grows on the block in the wait's second half. Meanwhile the drag previews as usual. When the wait ends
+  the block joins `state.open`, the board is laid out again and `moveZones` runs again, with the sprung
+  ids counted as open (a card with nothing inside has no frame; its candidate is the `edge:'start'`
+  move that makes its first level). Inside a sprung block only its own zones are offered. Out of it for
+  `SPRING.leave`, it closes and the zones are rebuilt. At the end of the drag every sprung block leaves
+  `state.open` except the one dropped into and those around it. One edit, one undo step.
 - Dismissal (v0.4.1). One list in the kit (`surfaces`, with `opened(id, close, opt)`, `closed(id)` and
   `dismiss()`) holds everything open over the canvas, in the order it opened: callouts and their
   editors, popovers, the large thread, the reading-order menu, dialogs, the file and code windows, the

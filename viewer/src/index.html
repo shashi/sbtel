@@ -100,6 +100,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 @keyframes tiesnap { 0% { opacity:1; } 100% { opacity:0; } }
 @keyframes tiejoin { 0% { stroke-dashoffset:.86; opacity:1; } 99% { stroke-dashoffset:0; opacity:1; } 100% { stroke-dashoffset:0; opacity:0; } }
 .ovl rect.dropz { fill:var(--accent-soft); stroke:var(--accent); stroke-width:2; stroke-dasharray:6 5; }
+#springcue { position:absolute; left:0; top:0; z-index:1400; pointer-events:none; border-radius:calc(var(--r) + 2px); animation:springcue .7s ease-in both; }
+@keyframes springcue { 0%, 35% { box-shadow:0 0 0 0 transparent; } 100% { box-shadow:0 0 0 4px var(--accent); } }
 .blk.dragsrc { z-index:1500 !important; pointer-events:none; opacity:.85; box-shadow:0 14px 40px var(--shadow); transition:none !important; }
 .editf .fld { display:block; margin-bottom:12px; }
 .editf .fld span { display:block; font-size:13px; font-weight:600; margin-bottom:5px; }
@@ -1902,8 +1904,9 @@ function specLayout(src) {
   const m = parse(src);
   return { m, lay: layout(m, { ...state.opts, open: state.open, drawers: state.drawers, expanded: state.expanded, details: new Set(), allDetails: false }, M) };
 }
-function moveZones(id) {
+function moveZones(id, sprung) {
   const frames = new Set(state.lay.blocks.filter(B => B.kind === 'frame' && B.node.form === 'block').map(B => B.id));
+  (sprung || []).forEach(x => frames.add(x)); // a card with nothing inside, sprung open: it has no frame yet
   const seen = new Set(), spots = new Map(), joins = [];
   const isDecl = id.startsWith('β:') || id.startsWith('μ:');
   for (const act of moveCandidates(state.model, id, frames)) {
@@ -2051,6 +2054,78 @@ function endTies(d) {
   (d.seps || []).forEach(s => { s.el._lift = false; s.el.classList.remove('lift'); s.el.style.transform = `translate(${s.x}px,${s.y}px)`; });
   if (!d.ties) return; cancelAnimationFrame(d.tieRaf); d.tieSvg.remove(); d.ties = null;
 }
+// ---------- Spring-open: a closed block takes a drop too ----------
+// Rest the dragged block on the middle of a closed block, still for SPRING.dwell, and that block opens
+// under the pointer: its levels become drop zones like any open block's, and a card with nothing inside
+// offers its first level. Leave it without dropping and it closes again after SPRING.leave. Passing over
+// a block does nothing: the wait starts over whenever the pointer moves SPRING.still px, and the cue
+// only shows once the wait is well under way. Until it opens, the drag previews and drops as it always
+// has; the edges of a block are not part of the target, so aiming beside a block never opens it.
+const SPRING = { dwell:700, still:12, leave:500, edge:.26 };
+const inBox = (B, p, m = 0) => !!B && p.x >= B.x - m && p.x <= B.x + B.w + m && p.y >= B.y - m && p.y <= B.y + B.h + m;
+const boxIn = (lay, id) => lay && lay.blocks.find(b => b.id === id);
+function springCue(B) {
+  let el = $('springcue');
+  if (!B) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'springcue'; $('world').appendChild(el); }
+  el.style.cssText = `transform:translate(${B.x}px,${B.y}px);width:${B.w}px;height:${B.h}px;animation-duration:${SPRING.dwell}ms`;
+  el.style.animationName = 'none'; void el.offsetWidth; el.style.animationName = '';
+}
+// The closed block whose middle the pointer is on. Tested on the board with the dragged block lifted out,
+// which is what is drawn while resting there: a preview that moves blocks aside cannot move the target
+// out from under the pointer.
+function springHit(p) {
+  const s = drag.spring, lay = drag.zones.liftLay || state.lay; let hit = null;
+  for (const B of lay.blocks) {
+    if (B.node.form !== 'block' || B.kind === 'frame' || drag.keep.has(B.id) || s.open.has(B.id) || !state.model.blocks.has(B.id)) continue;
+    const m = B.w * SPRING.edge;
+    if (p.x >= B.x + m && p.x <= B.x + B.w - m && p.y >= B.y && p.y <= B.y + B.h && (!hit || B.w * B.h < hit.w * hit.h)) hit = B;
+  }
+  return hit;
+}
+// The sprung block the pointer is in (the innermost), as drawn now or in the layout the zones came from.
+function springIn(p, m = 0) {
+  let best = null;
+  for (const id of drag.spring.open) {
+    if (!inBox(boxIn(drag.shown, id), p, m) && !inBox(boxIn(drag.zones.liftLay, id), p, m)) continue;
+    const P = state.model.blocks.get(id); if (!best || isWithin(P, best)) best = P;
+  }
+  return best;
+}
+function springTrack(e, p) {
+  const s = drag.spring, hit = springHit(p);
+  if (!hit || !s.over || s.over.id !== hit.id || Math.hypot(e.clientX - s.over.cx, e.clientY - s.over.cy) > SPRING.still) {
+    clearTimeout(s.t); springCue(null); s.over = null;
+    if (hit) { s.over = { id:hit.id, cx:e.clientX, cy:e.clientY }; springCue(hit); s.t = setTimeout(() => springSet(hit.id, true), SPRING.dwell); }
+  }
+  // A sprung block the pointer has left closes after a moment, unless the drop being previewed is in it.
+  const dest = drag.best && drag.best.act.t === 'move' && !drag.best.noop ? drag.best.act.dest.block : null;
+  for (const id of s.open) {
+    const P = state.model.blocks.get(id), stay = (dest && (dest === P || isWithin(dest, P))) || inBox(boxIn(drag.shown, id), p, 24 / state.cam.k) || inBox(boxIn(drag.zones.liftLay, id), p, 24 / state.cam.k);
+    if (stay) { clearTimeout(s.shut.get(id)); s.shut.delete(id); }
+    else if (!s.shut.has(id)) s.shut.set(id, setTimeout(() => springSet(id, false), SPRING.leave));
+  }
+  return hit;
+}
+// Open or close a block for the drag in hand, then lay the board out again and rebuild the drop zones.
+function springSet(id, on) {
+  if (!drag || !drag.spring) return;
+  const s = drag.spring; clearTimeout(s.t); springCue(null); s.over = null; clearTimeout(s.shut.get(id)); s.shut.delete(id);
+  const P = state.model.blocks.get(id); if (!P) return;
+  if (on) { s.open.add(id); state.open.add(id); }
+  else for (const x of [...s.open]) { const X = state.model.blocks.get(x); if (x === id || (X && isWithin(X, P))) { s.open.delete(x); state.open.delete(x); clearTimeout(s.shut.get(x)); s.shut.delete(x); } }
+  const was = state.lay;
+  state.lay = layout(state.model, { ...state.opts, open: state.open, drawers: state.drawers, expanded: state.expanded, details: new Set(), allDetails: false }, M);
+  state.lay.spec = was.spec; state.lay.info = was.info;
+  drag.zones = moveZones(drag.id, s.open); drag.spans = groupSpans(); drag.best = null; drag.shown = undefined;
+  if (drag.last) moveDrag(drag.last);
+}
+// The drag is over: blocks it sprang open close again, except the one (and those around it) dropped into.
+function springEnd(d, into) {
+  const s = d.spring; if (!s) return;
+  clearTimeout(s.t); s.shut.forEach(t => clearTimeout(t)); springCue(null);
+  s.open.forEach(id => { const P = state.model.blocks.get(id); if (!(into && P && (into === P || isWithin(into, P)))) state.open.delete(id); });
+}
 function startDrag(e) {
   const p = press; press = null;
   const B = state.lay.blocks.find(b => b.id === p.id), el = state.elems.get(p.id); if (!B || !el) return;
@@ -2061,6 +2136,7 @@ function startDrag(e) {
   const lifted = p.mode === 'move' ? state.lay.blocks.filter(owned).map(X => ({ el:state.elems.get(X.id), x:X.x, y:X.y })).filter(x => x.el) : [{ el, x:B.x, y:B.y }];
   // Zones and spans are rebuilt from the current state on every drag; nothing is kept from an earlier one.
   drag = { ...p, B, el, lifted, zones: p.mode === 'move' ? moveZones(p.id) : attachZones(p.id), spans: p.mode === 'move' ? groupSpans() : [], best:null, shown:undefined };
+  if (p.mode === 'move') drag.spring = { open:new Set(), shut:new Map(), over:null, t:0 };
   opened('drag', () => { const pid = drag.pid; endDrag(false); press = { dead:true, pid }; });
   { const w = worldPt({ clientX:p.x, clientY:p.y }); drag.grip = { x:w.x - B.x, y:w.y - B.y }; }
   drag.keep = new Set(p.mode === 'move' ? state.lay.blocks.filter(owned).map(X => X.id) : []);
@@ -2075,7 +2151,7 @@ function startDrag(e) {
 function moveDrag(e) {
   const k = state.cam.k, dx = (e.clientX - drag.x) / k, dy = (e.clientY - drag.y) / k;
   drag.lifted.forEach(m => { m.el.style.transform = `translate(${m.x + dx}px,${m.y + dy}px)`; });
-  drag.dx = dx; drag.dy = dy;
+  drag.dx = dx; drag.dy = dy; drag.last = { clientX:e.clientX, clientY:e.clientY };
   (drag.seps || []).forEach(s => { s.el.style.transform = `translate(${s.x + dx}px,${s.y + dy}px)`; });
   let best = null;
   const rect = (z, cls, rx) => `<rect class="${cls}" x="${z.x}" y="${z.y}" width="${z.w}" height="${z.h}" rx="${rx}"/>`;
@@ -2083,18 +2159,22 @@ function moveDrag(e) {
     const p = worldPt(e), lim = 60 / k; let bd = Infinity;
     const off = (z, q = p) => Math.hypot(Math.max(z.x - q.x, 0, q.x - (z.x + z.w)), Math.max(z.y - q.y, 0, q.y - (z.y + z.h)));
     const c = { x:drag.B.x + dx + drag.B.w / 2, y:drag.B.y + dy + Math.min(drag.B.h / 2, 60) };
-    drag.zones.forEach(z => {
+    // Inside a block sprung open, only the places inside it are offered, however near another spot is.
+    springTrack(e, p);
+    const into = springIn(p), pool = into ? drag.zones.filter(z => z.act.dest.block === into || isWithin(z.act.dest.block, into)) : drag.zones;
+    const reach = into ? Infinity : lim;
+    pool.forEach(z => {
       if (z.near) return;
       // Inside a zone's own spot beats being in a gap that leads to it.
       const own = off(z), o = Math.min(own, z.gap ? off(z.gap) : Infinity);
       // Ties (pointer inside several spots, as with a large block) go to the spot where the grabbed point
       // of the block would be nearest the pointer.
       const d = (own ? o * 1000 + 1 : 0) + Math.hypot(p.x - (z.x + Math.min(drag.grip.x, z.w)), p.y - (z.y + Math.min(drag.grip.y, z.h))) / 1000;
-      if (o <= lim && d < bd) { bd = d; best = z; }
+      if (o <= reach && d < bd) { bd = d; best = z; }
     });
     // Between two linked blocks (inside the group's span) it is always the group: reorder, join, or no change
     // when the gap is beside the dragged block itself.
-    const span = drag.spans.find(g => !off(g));
+    const span = drag.spans.find(g => !off(g) && (!into || g.block === into || isWithin(g.block, into)));
     if (span) {
       const self = span.ids.includes(drag.id), d = x => x.act.dest;
       best = self ? drag.zones.find(z => z.noop) || null
@@ -2111,7 +2191,7 @@ function moveDrag(e) {
     const gd = z => Math.hypot(p.x - (z.x + Math.min(drag.grip.x, z.w)), p.y - (z.y + Math.min(drag.grip.y, z.h)));
     const keepPrev = best && dist(best) === 0 && dist(prev) === 0 ? gd(prev) <= gd(best) + H
       : (!best || dist(prev) <= dist(best) + H) && !(best && dist(best) === 0 && dist(prev) > H);
-    if (!span && prev && prev !== best && prev.act && prev.act.t === 'move' && dist(prev) <= lim && keepPrev) best = prev;
+    if (!span && prev && prev !== best && prev.act && prev.act.t === 'move' && dist(prev) <= lim && keepPrev && (!into || pool.includes(prev))) best = prev;
     // Live preview: the whole diagram shows the state this drop would make (or, over no zone, the source
     // with the block lifted out), drawn from the layouts moveZones already computed.
     const show = best ? (best.noop ? state.lay : best.lay) : drag.zones.liftLay || state.lay;
@@ -2136,6 +2216,7 @@ function endDrag(commit) {
   endTies(d);
   vp.classList.remove('dragging'); $('ovl').innerHTML = '';
   const z = commit && d.best, why = z && (z.bad || z.why);
+  springEnd(d, z && !why && !z.noop && z.act.t === 'move' ? z.act.dest.block : null);
   // A refused drop (bad) leaves the lifted elements where they were dropped, and the normal render puts
   // the original layout back: with animation on, everything slides home from where it is now. The source
   // is unchanged, so there is no undo entry, and the camera does not move.
