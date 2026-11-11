@@ -70,6 +70,7 @@ id=$(sbtel open spec.sbtel)               # shows it; stdout is only the session
 sbtel inbox "$id" --wait --timeout 540    # blocks until a review, a comment or a save
 sbtel open spec.sbtel --session "$id"     # pushes your new version to the same tab
 sbtel reply "$id" c7.1 "What changed."    # answer each comment; r7 answers a review as a whole
+sbtel ack "$id" c7.1                      # or just take it in: a 👍 on the comment, nothing to read
 ```
 
 - A **comment** arrives alone when the human sends it from a block's chat. Act on it and reply; they
@@ -78,7 +79,10 @@ sbtel reply "$id" c7.1 "What changed."    # answer each comment; r7 answers a re
   proposed spec (a path and its diff). The proposal is not in your file: apply or merge it, lint, push.
 - A **save** means the human wrote the file from the browser. Re-read it before you edit.
 - Keep `--timeout` under your shell's limit; on a timeout, wait again.
-- Reply to every comment with what changed or why nothing did.
+- Answer every comment, in one of two ways. **Reply** (`sbtel reply`) when there is something for the
+  human to read: what changed, why nothing did, or a question. **Ack** (`sbtel ack "$id" c7 [emoji]`)
+  when all you would say is "got it" or "will do": it shows as a reaction on their comment and does not
+  call them back to read it. Do not reply just to confirm; ack, do the work, then reply with the result.
 - When the human asks to see a file or the evidence for something, name it in the reply as
   `(ref path:from-to)`: it becomes a button that opens the file at those lines. Only when asked.
 - When the human asks you to comment on blocks ("say something on each block about X"), start a thread

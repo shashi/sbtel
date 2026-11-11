@@ -12,6 +12,9 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- **`sbtel ack <session> <comment-id> [emoji]`**: an agent can take a comment in without a reply. The
+  emoji (👍 by default) shows as a reaction on the comment and nothing becomes unread, so "got it, will do"
+  no longer calls you back. The skill tells agents to ack where a reply would only confirm.
 - **A level can be filled by columns.** Settings, "Blocks in a level go: Down, then across": five blocks
   that fit three to a line read a c e over b d. A linked group stays in one column, its line going down;
   drop targets, the keyboard and the layout checks follow. A block too wide to have anything beside it

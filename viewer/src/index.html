@@ -633,6 +633,7 @@ body.diffmode .help .norm { display:none; }
 .walkm input { margin:3px 0 0; accent-color:var(--accent); flex:none; } .walkm b { display:block; font-weight:600; } .walkm small { display:block; color:var(--muted); font-size:12.5px; line-height:1.35; }
 .walkm fieldset { border:0; margin:0; padding:0; } .walkm .tip { margin:6px 8px 4px; padding-top:8px; border-top:1px solid var(--panel-line); font-size:12.5px; line-height:1.4; color:var(--muted); } .walkm legend { float:left; width:100%; padding:2px 8px 4px; font-size:12px; color:var(--muted); }
 .pop.chat ul.thread li.agent > .sb-reply:first-child { margin-top:0; }
+.pop.chat .cm .ack { display:inline-flex; align-items:center; height:20px; padding:0 7px; border-radius:10px; background:var(--surface); border:1px solid var(--panel-line); font-size:13px; line-height:1; }
 .sb-reply .who svg.i { width:14px; height:14px; margin-right:5px; vertical-align:-2.5px; }
 .pop.chat .chh .in { flex:none; font-size:12.5px; color:var(--muted); }
 .pop.chat .chh .xbtn.big { margin-left:auto; } .pop.chat .chh .xbtn.big + .xbtn { margin-left:0; } .pop.chat .chh .xbtn.big svg.i { width:14px; height:14px; }
@@ -2788,7 +2789,7 @@ function placeBeside(el, anchor) {
 function chatRow(c) {
   if (c.agent) return `<li class="agent" data-id="${esc(c.id)}">${chatReplies(c)}</li>`; // a thread the agent started: its words only
   const [cls, text, title] = chatStatus(c);
-  return `<li data-id="${esc(c.id)}"${c.status === 'sent' || c.status === 'sending' ? '' : ' class="mine"'}><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${whenText(c.at)}</span><span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
+  return `<li data-id="${esc(c.id)}"${c.status === 'sent' || c.status === 'sending' ? '' : ' class="mine"'}><div class="ct">${richText(c.text)}</div><div class="cm"><span class="${cls}"${title ? ` title="${esc(title)}"` : ''}>${esc(text)}</span><span>${whenText(c.at)}</span>${c.ack ? `<span class="ack" title="${esc(agentName())} took this in">${esc(c.ack)}</span>` : ''}<span class="spacer"></span>${chatRowBtns(c)}</div>${chatReplies(c)}</li>`;
 }
 const chatOpen = key => !!(chat && pops.thread === chat.el && (key == null || chat.key === key));
 commentOn = (key, text) => { chatAdd(key, text, 'send'); refreshChat(); return targetLabel(key); };

@@ -24,30 +24,30 @@
 Sbtel.Cli.Kit -> Sbtel.Cli.Dispatch  # cmd/sbtel/args.go:78
 Sbtel.Cli.Kit -> Sbtel.Engine  # cmd/sbtel/args.go:85 (+7 more)
 Sbtel.Cli.SpecCommands -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_a.go:19 (+30 more)
-Sbtel.Cli.SessionCommands -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_b.go:35 (+122 more)
+Sbtel.Cli.SessionCommands -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_b.go:35 (+130 more)
 Sbtel.Cli.SessionCommands -> Sbtel.State  # cmd/sbtel/cmd_b.go:35 (+78 more)
-Sbtel.Cli.SessionCommands -> Sbtel.Server.Client  # cmd/sbtel/cmd_b.go:44 (+17 more)
+Sbtel.Cli.SessionCommands -> Sbtel.Server.Client  # cmd/sbtel/cmd_b.go:44 (+18 more)
 Sbtel.Cli.SessionCommands -> Sbtel.Assets  # cmd/sbtel/cmd_b.go:48 (+1 more)
 Sbtel.Cli.SessionCommands -> Sbtel.Engine  # cmd/sbtel/cmd_b.go:109 (+10 more)
 Sbtel.Cli.SessionCommands -> Sbtel.Server.Launch  # cmd/sbtel/cmd_b.go:127
-Sbtel.Cli.SessionCommands -> Sbtel.Server.Core  # cmd/sbtel/cmd_b.go:730 (+4 more)
-Sbtel.Cli.SessionCommands -> Sbtel.Server.Lifecycle  # cmd/sbtel/cmd_b.go:754 (+1 more)
+Sbtel.Cli.SessionCommands -> Sbtel.Server.Core  # cmd/sbtel/cmd_b.go:758 (+4 more)
+Sbtel.Cli.SessionCommands -> Sbtel.Server.Lifecycle  # cmd/sbtel/cmd_b.go:782 (+1 more)
 Sbtel.Cli.ExportCommand -> Sbtel.Assets  # cmd/sbtel/cmd_export.go:46 (+2 more)
 Sbtel.Cli.ExportCommand -> Sbtel.Engine  # cmd/sbtel/cmd_export.go:89 (+15 more)
 Sbtel.Cli.ExportCommand -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_export.go:108 (+27 more)
 Sbtel.Cli.SpecCommands -> Sbtel.Cli.Kit  # cmd/sbtel/cmd_lint.go:6 (+6 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.Kit  # cmd/sbtel/main.go:30 (+15 more)
 Sbtel.Cli.Dispatch -> Sbtel.Cli.SpecCommands  # cmd/sbtel/main.go:45 (+3 more)
-Sbtel.Cli.Dispatch -> Sbtel.Cli.SessionCommands  # cmd/sbtel/main.go:53 (+7 more)
-Sbtel.Cli.Dispatch -> Sbtel.Cli.ExportCommand  # cmd/sbtel/main.go:67
-Sbtel.Cli.Dispatch -> Sbtel.Assets  # cmd/sbtel/main.go:155 (+2 more)
+Sbtel.Cli.Dispatch -> Sbtel.Cli.SessionCommands  # cmd/sbtel/main.go:53 (+8 more)
+Sbtel.Cli.Dispatch -> Sbtel.Cli.ExportCommand  # cmd/sbtel/main.go:69
+Sbtel.Cli.Dispatch -> Sbtel.Assets  # cmd/sbtel/main.go:157 (+2 more)
 Sbtel.Engine -> Sbtel.Assets  # internal/engine/engine.go:26
 Sbtel.Server.Launch -> Sbtel.Server.Detach  # internal/server/browser.go:37
 Sbtel.Server.Client -> Sbtel.State  # internal/server/client.go:32 (+21 more)
 Sbtel.Server.Client -> Sbtel.Server.Detach  # internal/server/client.go:212
 Sbtel.Server.Routes -> Sbtel.Server.Core  # internal/server/http.go:33 (+23 more)
 Sbtel.Server.Routes -> Sbtel.State  # internal/server/http.go:70 (+23 more)
-Sbtel.Server.Routes -> Sbtel.Server.Sessions  # internal/server/http.go:109 (+30 more)
+Sbtel.Server.Routes -> Sbtel.Server.Sessions  # internal/server/http.go:109 (+31 more)
 Sbtel.Server.Routes -> Sbtel.Server.Fanout  # internal/server/http.go:144 (+1 more)
 Sbtel.Server.Routes -> Sbtel.Server.Lifecycle  # internal/server/http.go:286
 Sbtel.Server.Routes -> Sbtel.Server.Core  # internal/server/ref.go:71 (+9 more)
@@ -64,12 +64,12 @@ Sbtel.Server.Lifecycle -> Sbtel.State  # internal/server/server.go:110 (+10 more
 Sbtel.Server.Lifecycle -> Sbtel.Server.Client  # internal/server/server.go:141
 Sbtel.Server.Lifecycle -> Sbtel.Server.Sessions  # internal/server/server.go:204
 Sbtel.Server.Lifecycle -> Sbtel.Server.Fanout  # internal/server/server.go:208
-Sbtel.Server.Sessions -> Sbtel.State  # internal/server/sessions.go:20 (+202 more)
-Sbtel.Server.Sessions -> Sbtel.Server.Fanout  # internal/server/sessions.go:25 (+12 more)
-Sbtel.Server.Sessions -> Sbtel.Server.Core  # internal/server/sessions.go:39 (+92 more)
-Sbtel.Server.Fanout -> Sbtel.State  # internal/server/sse.go:37 (+12 more)
-Sbtel.Server.Fanout -> Sbtel.Server.Core  # internal/server/sse.go:55 (+14 more)
-Sbtel.Server.Fanout -> Sbtel.Server.Sessions  # internal/server/sse.go:55 (+10 more)
+Sbtel.Server.Sessions -> Sbtel.State  # internal/server/sessions.go:21 (+205 more)
+Sbtel.Server.Sessions -> Sbtel.Server.Fanout  # internal/server/sessions.go:26 (+13 more)
+Sbtel.Server.Sessions -> Sbtel.Server.Core  # internal/server/sessions.go:40 (+96 more)
+Sbtel.Server.Fanout -> Sbtel.State  # internal/server/sse.go:37 (+14 more)
+Sbtel.Server.Fanout -> Sbtel.Server.Core  # internal/server/sse.go:59 (+14 more)
+Sbtel.Server.Fanout -> Sbtel.Server.Sessions  # internal/server/sse.go:59 (+10 more)
 # VIOLATION: events() (the SSE endpoint, in sse.go) calls notFound(), a one-line HTTP helper in http.go.
 # The helper belongs below both, or events() belongs with the routes.
-Sbtel.Server.Fanout -> Sbtel.Server.Routes  # internal/server/sse.go:121
+Sbtel.Server.Fanout -> Sbtel.Server.Routes  # internal/server/sse.go:125

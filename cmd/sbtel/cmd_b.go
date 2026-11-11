@@ -527,6 +527,34 @@ func cmdReply(e env, args []string) int {
 	return 0
 }
 
+// sbtel ack <session> <comment-id> [emoji]
+func cmdAck(e env, args []string) int {
+	const cmd = "ack"
+	f, err := parseArgs(args, nil, nil)
+	if err != nil {
+		return usageErr(e, cmd, err)
+	}
+	if len(f.pos) < 2 || len(f.pos) > 3 {
+		return usageErr(e, cmd, errors.New("need a session and a comment id, and at most one emoji"))
+	}
+	id, to, emoji := f.pos[0], f.pos[1], ""
+	if len(f.pos) == 3 {
+		emoji = f.pos[2]
+	}
+	p, ok := paths(e, cmd)
+	if !ok || sessionMeta(e, cmd, p, id) == nil {
+		return 2
+	}
+	c := ensureServer(e, cmd, p)
+	if c == nil {
+		return 2
+	}
+	if err := c.Do("POST", "/control/sessions/"+id+"/ack", map[string]any{"to": to, "emoji": emoji}, nil); err != nil {
+		return controlErr(e, cmd, err)
+	}
+	return 0
+}
+
 // sbtel note <session> <target> <text>|-
 func cmdNote(e env, args []string) int {
 	const cmd = "note"

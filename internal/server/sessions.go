@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/shashi/sbtel/internal/state"
 )
@@ -102,9 +103,9 @@ func (s *Server) append(ss *session, e state.Event) (state.Event, error) {
 	ss.seq = e.Seq
 	ss.meta.Updated = e.At
 	// What was said also goes to the project's own log, beside the spec (state.AppendProjectComment).
-	if (e.Kind == "comment" || e.Kind == "reply" || e.Kind == "review" || e.Kind == "note") && ss.meta.Spec != nil && ss.meta.Spec.Path != nil {
+	if (e.Kind == "comment" || e.Kind == "reply" || e.Kind == "review" || e.Kind == "note" || e.Kind == "ack") && ss.meta.Spec != nil && ss.meta.Spec.Path != nil {
 		le, sid := e, ss.meta.ID
-		if e.Kind == "reply" { // an answer to something restored is logged against its first session and id
+		if e.Kind == "reply" || e.Kind == "ack" { // an answer to something restored is logged against its first session and id
 			evs, _ := state.ReadEvents(s.paths, ss.meta.ID)
 			for _, o := range evs {
 				if at := strings.SplitN(o.Origins[e.To], "/", 2); len(at) == 2 {
@@ -155,7 +156,7 @@ func (s *Server) restore(ss *session) {
 			e.Target, e.TargetLabel, e.Text = o.Target, o.TargetLabel, o.Text
 			ids[o.Session+"/"+o.ID] = e.ID
 			e.Origins = map[string]string{e.ID: o.Session + "/" + o.ID}
-		case "reply":
+		case "reply", "ack":
 			if e.To = ids[o.Session+"/"+o.To]; e.To == "" {
 				continue
 			}
@@ -609,6 +610,39 @@ func (s *Server) reply(id, to, text string) (map[string]any, error) {
 	}
 	_ = s.writeMeta(ss)
 	s.broadcast(ss, replyMsg(e), nil)
+	return map[string]any{"seq": e.Seq}, nil
+}
+
+// ack marks a comment as taken in, with nothing more to say (DESIGN.md §5.2, ack): the page shows the emoji
+// as a reaction on the comment and nothing becomes unread. It is for "got it"; anything the human should
+// read is a reply.
+func (s *Server) ack(id, to, emoji string) (map[string]any, error) {
+	emoji = strings.TrimSpace(emoji)
+	if emoji == "" {
+		emoji = "👍"
+	}
+	if utf8.RuneCountInString(emoji) > 8 || strings.ContainsAny(emoji, "<>&\"'\\") || strings.IndexFunc(emoji, func(r rune) bool { return r < 0x20 || r == ' ' }) >= 0 {
+		return nil, errBadRequest{"an ack takes one emoji"}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ss, err := s.get(id)
+	if err != nil {
+		return nil, err
+	}
+	evs, err := state.ReadEvents(s.paths, id)
+	if err != nil {
+		return nil, err
+	}
+	if !hasComment(evs, to) || strings.HasPrefix(to, "n") || strings.HasPrefix(to, "r") {
+		return nil, fmt.Errorf("%w: no comment %s in session %s", errNotFound, to, id)
+	}
+	e, err := s.append(ss, state.Event{Kind: "ack", By: "agent", To: to, Text: emoji})
+	if err != nil {
+		return nil, err
+	}
+	_ = s.writeMeta(ss)
+	s.broadcast(ss, ackMsg(e), nil)
 	return map[string]any{"seq": e.Seq}, nil
 }
 

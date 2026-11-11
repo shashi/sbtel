@@ -763,6 +763,7 @@ body.diffmode .aff .plus, body.diffmode .lsep .plus, body.diffmode .gutter, body
       es.addEventListener('version', seq);
       es.addEventListener('reply', e => { seq(e); SC.onReply(JSON.parse(e.data || '{}')); });
       es.addEventListener('note', e => { seq(e); SC.onNote(JSON.parse(e.data || '{}')); });
+      es.addEventListener('ack', e => { seq(e); SC.onAck(JSON.parse(e.data || '{}')); });
       es.addEventListener('closed', () => { closed = true; R.forget(); es.close(); versionToast('This session was closed.'); });
       es.onerror = () => { es.close(); if (!closed) setTimeout(connect, 5000); };
     };

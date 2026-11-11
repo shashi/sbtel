@@ -632,6 +632,14 @@ whole (`r<seq>`; the tab shows it under the review in the Review panel's "Sent r
 the Review button), or a note of the agent's own (`n<seq>`). Otherwise this is exit 2. It prints nothing
 on success.
 
+### 3.10b `sbtel ack <session> <comment-id> [emoji]`  (B, v0.4.1)
+
+Marks a comment (`c<seq>` or a review's `c<seq>.<k>`) as taken in, with nothing more to say. It appends
+an `ack` event (`to`, and the emoji as `text`; 👍 by default; anything longer than one emoji is exit 2)
+and prints nothing. The tab shows the emoji as a reaction beside the comment's status, counts the comment
+as seen, and marks nothing unread, so the reader is not called back. It is logged and restored with the
+comments. The skills tell agents to ack where a reply would only confirm, and to reply with results.
+
 ### 3.10a `sbtel note <session> <target> <text>|-`  (B, v0.4.1)
 
 Starts a thread with the agent's words first: the one thing an agent can say without a comment to

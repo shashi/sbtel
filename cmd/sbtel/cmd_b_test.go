@@ -166,6 +166,20 @@ func TestSessionLoop(t *testing.T) {
 		t.Errorf("reply -: %d", c)
 	}
 
+	// ack: a reaction on a comment; one emoji at most; only a comment can be acked.
+	if c, out, errs := runT("", "ack", id, cid); c != 0 || out != "" {
+		t.Errorf("ack: %d %q %q", c, out, errs)
+	}
+	if c, _, _ := runT("", "ack", id, cid, "✅"); c != 0 {
+		t.Errorf("ack with an emoji: %d", c)
+	}
+	if c, _, _ := runT("", "ack", id, cid, "a whole sentence"); c != 2 {
+		t.Errorf("ack with text: %d", c)
+	}
+	if c, _, _ := runT("", "ack", id, "c999"); c != 2 {
+		t.Errorf("ack of an unknown comment: %d", c)
+	}
+
 	// note: the agent starts a thread; it prints the note's id, which reply can add to; a thing the spec
 	// does not declare is refused; a note is not the human's, so the inbox stays empty.
 	c, nid, errs := runT("", "note", id, "A", "Why two writers?")

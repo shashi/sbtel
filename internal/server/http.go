@@ -339,6 +339,12 @@ func (s *Server) control(w http.ResponseWriter, r *http.Request, route string) {
 				return
 			}
 			out, err = s.reply(id, in.To, in.Text)
+		case "ack":
+			var in struct{ To, Emoji string }
+			if !decode(w, r, controlBodyLimit, &in) {
+				return
+			}
+			out, err = s.ack(id, in.To, in.Emoji)
 		case "note":
 			var in struct{ Target, Text string }
 			if !decode(w, r, controlBodyLimit, &in) {

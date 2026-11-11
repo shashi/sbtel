@@ -49,6 +49,7 @@ function sessionComments({ version, closed }) {
         (e.comments || []).forEach(c => sent(c.id, c.target, c.text, e.version, Date.parse(e.at), e.id));
         revs.set(e.id, { id: e.id, message: e.message || '', n: (e.comments || []).length, proposal: !!e.proposal, at: Date.parse(e.at), replies: [] });
       }
+      if (e.kind === 'ack' && byId.has(e.to)) byId.get(e.to).ack = e.text;   // a reaction: the agent took it in, nothing to read
       if (e.kind === 'reply' && !C.seenReplies.has(e.seq) && (byId.has(e.to) || revs.has(e.to))) { C.seenReplies.add(e.seq); (byId.get(e.to) || revs.get(e.to)).replies.push({ text: e.text, at: Date.parse(e.at) }); }
       last = Math.max(last, e.seq || 0);
     });
@@ -76,6 +77,8 @@ function sessionComments({ version, closed }) {
     if (failed) toast(`Could not send ${list.length - sent} comment${list.length - sent === 1 ? '' : 's'}: ${failed}. ${sent ? sent + ' sent.' : 'They are kept in your review.'}`);
     else if (!(list.length === 1 && chatOpen(list[0].target))) toast(`Sent ${sent} comment${sent === 1 ? '' : 's'} to the agent.`); // an open chat already says so
   }
+  // SSE `ack`: {to, emoji}: a reaction on a comment. Nothing becomes unread.
+  function onAck(d) { const c = state.comments.find(x => x.sid === d.to); if (!c) return; c.ack = d.emoji; C.seen.add(c.sid); refreshChat(); changed(); }
   // SSE `note`: {seq, id, target, text, at}: the agent started a thread. It is unread until its thread is opened.
   function onNote(d) {
     if (C.seenReplies.has(d.seq) || state.comments.some(c => c.sid === d.id)) return;
@@ -128,5 +131,5 @@ function sessionComments({ version, closed }) {
   const onChange = f => { C.listeners.push(f); };
   // What the agent has been given (ids of comments), from the log and from the server's `seen` news.
   function setSeen(ids) { let ch = false; (ids || []).forEach(i => { if (!C.seen.has(i)) { C.seen.add(i); ch = true; } }); if (ch) refreshChat(); }
-  return { rebuild, send, onReply, onNote, hook, reviews, addReview, onChange, setSeen, _state: C };
+  return { rebuild, send, onReply, onNote, onAck, hook, reviews, addReview, onChange, setSeen, _state: C };
 }
