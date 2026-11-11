@@ -22,6 +22,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   are still aligned across the columns.
 - A level's name sits right of its line (Settings, Level names, puts it on the left). Only the name opens
   the level's editor; the line shows the name to click and does nothing more.
+- The comment count on a block is a quiet chip, like the file count; it fills with the accent only
+  while a reply in it is new.
 - **A closed block takes a drop.** Rest a dragged block on the middle of a closed block and, after
   0.7 s of holding still, that block opens under the pointer and its levels become drop zones; a card
   with nothing inside offers its first level. Passing over a block, or pausing briefly, does nothing,
