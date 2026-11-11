@@ -2,9 +2,9 @@
 /*CORE-START*/
 const K = { PAD:22, GAPX:56, ROWGAP:30, TAB:20, LEVELGAP:44, NAMEGAP:10, BANDGAP:34, BANDLAB:22, MIN_EXP:320, CARD_MIN:220, CARD_MAX:340, DETAIL_MAX:440, LABEL:52 };
 const FONT = {
-  title:'600 17px "Hanken Grotesk"', sketch:'400 13.5px "Hanken Grotesk"',
-  htitle:'600 20px "Hanken Grotesk"', hsketch:'400 14.5px "Hanken Grotesk"',
-  chip:'500 12px "JetBrains Mono"', pill:'400 12.5px "Hanken Grotesk"', foot:'400 12.5px "Hanken Grotesk"'
+  title:'600 17px "Commissioner"', sketch:'400 13.5px "Commissioner"',
+  htitle:'600 20px "Commissioner"', hsketch:'400 14.5px "Commissioner"',
+  chip:'500 12px "JetBrains Mono"', pill:'400 12.5px "Commissioner"', foot:'400 12.5px "Commissioner"'
 };
 // The twelve forms. A model node of (takes …) or (gives …) has form 'port', and one of (shape …) has form
 // 'message': the names the model has always used for them.

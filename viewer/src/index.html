@@ -6,11 +6,11 @@
 <title>sbtel Playground</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Fonts: Hanken Grotesk and JetBrains Mono (SIL OFL 1.1; THIRD_PARTY_NOTICES), the variable woff2 subsets
+/* Fonts: Commissioner and JetBrains Mono (SIL OFL 1.1; THIRD_PARTY_NOTICES), the variable woff2 subsets
    from the @fontsource-variable 5.3.0 packages in viewer/fonts. The build inlines them as data: URLs, so the
    page makes no request to anything but the sbtel server, and works offline. */
-@font-face { font-family:'Hanken Grotesk'; font-style:normal; font-weight:100 900; font-display:swap; src:url(@@font viewer/fonts/hanken-grotesk-latin-wght-normal.woff2@@) format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
-@font-face { font-family:'Hanken Grotesk'; font-style:normal; font-weight:100 900; font-display:swap; src:url(@@font viewer/fonts/hanken-grotesk-latin-ext-wght-normal.woff2@@) format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+@font-face { font-family:'Commissioner'; font-style:normal; font-weight:100 900; font-display:swap; src:url(@@font viewer/fonts/commissioner-latin-wght-normal.woff2@@) format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:'Commissioner'; font-style:normal; font-weight:100 900; font-display:swap; src:url(@@font viewer/fonts/commissioner-latin-ext-wght-normal.woff2@@) format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 @font-face { font-family:'JetBrains Mono'; font-style:normal; font-weight:100 900; font-display:swap; src:url(@@font viewer/fonts/jetbrains-mono-latin-wght-normal.woff2@@) format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family:'JetBrains Mono'; font-style:normal; font-weight:100 900; font-display:swap; src:url(@@font viewer/fonts/jetbrains-mono-latin-ext-wght-normal.woff2@@) format('woff2'); unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
 @font-face { font-family:'JetBrains Mono'; font-style:normal; font-weight:100 900; font-display:swap; src:url(@@font viewer/fonts/jetbrains-mono-greek-wght-normal.woff2@@) format('woff2'); unicode-range:U+0370-0377,U+037A-037F,U+0384-038A,U+038C,U+038E-03A1,U+03A3-03FF; }
@@ -26,7 +26,7 @@
   --pill-module-bg:#3F9A5C; --pill-module-fg:#FFFFFF; --pill-process-bg:#F6B8DC; --pill-process-fg:#8B2B62;
   --pill-other-bg:#D9E3F5; --pill-other-fg:#2A4C8A;
   --hl-kw:#8B2B62; --hl-str:#2F7A48; --hl-key:#2A4C8A; --hl-com:#8F8B82;
-  --ff-ui:"Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ff-ui:"Commissioner", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --ff-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
@@ -497,6 +497,8 @@ body.diffmode .help .norm { display:none; }
 .scrim { position:fixed; inset:0; background:rgba(15,14,12,.35); z-index:2000; }
 .modal { position:fixed; z-index:2001; left:50%; top:50%; transform:translate(-50%,-50%); width:min(520px, calc(100vw - 24px)); max-height:calc(100vh - 40px); overflow:auto;
   background:var(--panel); border:1px solid var(--panel-line); border-radius:16px; box-shadow:0 24px 70px var(--shadow); }
+.modal .row2f { display:flex; gap:8px; align-items:center; } .modal .row2f .btn { flex:none; }
+.modal input.txt { width:100%; box-sizing:border-box; border:1px solid var(--panel-line); border-radius:8px; background:var(--surface); color:var(--ink); font:inherit; font-size:14px; padding:7px 10px; } .modal input.txt:focus { outline:2px solid var(--accent); outline-offset:-1px; }
 .modal header { display:flex; align-items:center; padding:14px 10px 10px 20px; border-bottom:1px solid var(--panel-line); position:sticky; top:0; background:var(--panel); }
 .modal header h2 { margin:0; font-size:16px; }
 .modal .body { padding:14px 20px 20px; }
@@ -619,7 +621,7 @@ body.diffmode .help .norm { display:none; }
 .pop.chat .acts .btn.quiet:hover { background:var(--chip); color:var(--ink); }
 @media (pointer: coarse) { .composer textarea { font-size:16px; } } /* below 16px iOS zooms the page on focus */
 .tb.cmtbtn { position:relative; }
-.tb.cmtmore { min-width:20px; width:20px; padding:0; margin-left:-4px; color:var(--muted); } .tb.cmtmore svg.i { width:13px; height:13px; }
+.cmtnav { display:inline-flex; align-items:center; } .cmtnav .tb.icon { min-width:26px; width:26px; padding:0; } .cmtnav .tb.cmtmore { padding:0 5px; gap:5px; color:var(--ink-2); }
 .walkm { position:fixed; z-index:2100; width:268px; box-sizing:border-box; padding:8px; background:var(--panel); border:1px solid var(--panel-line); border-radius:14px; box-shadow:0 12px 36px var(--shadow); font-size:13.5px; }
 .walkm label { display:flex; gap:10px; align-items:flex-start; padding:7px 8px; border-radius:8px; cursor:pointer; } .walkm label:hover { background:var(--surface); }
 .walkm input { margin:3px 0 0; accent-color:var(--accent); flex:none; } .walkm b { display:block; font-weight:600; } .walkm small { display:block; color:var(--muted); font-size:12.5px; line-height:1.35; }
@@ -638,7 +640,7 @@ body.diffmode .help .norm { display:none; }
 .pop.chat ul.thread li.where { position:sticky; top:-1px; z-index:1; padding:6px 0 4px; margin:0; background:var(--panel); border:0; }
 .pop.chat ul.thread li.where button { border:0; background:var(--surface); color:var(--ink-2); font:600 12px var(--ff-ui, inherit); padding:3px 9px; border-radius:999px; cursor:pointer; } .pop.chat ul.thread li.where button:disabled { cursor:default; color:var(--muted); }
 .pop.chat ul.thread li.where button:not(:disabled):hover { background:var(--accent-soft); color:var(--accent-ink); }
-.tb.cmtbtn.unread::after { content:""; position:absolute; top:3px; right:3px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
+.tb.cmtbtn.unread::after { content:""; position:absolute; top:3px; right:1px; width:9px; height:9px; border-radius:50%; background:var(--warn); box-shadow:0 0 0 2px var(--panel); }
 .allc { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
 .allc button { width:100%; display:grid; grid-template-columns:1fr auto; gap:2px 10px; text-align:left; border:1px solid var(--panel-line); background:var(--surface); border-radius:10px; padding:10px 12px; font:inherit; color:var(--ink); cursor:pointer; }
 .allc button:hover, .allc button:focus-visible { border-color:var(--accent); outline:none; }
@@ -734,8 +736,7 @@ body.diffmode .help .norm { display:none; }
   <button class="tb" id="srcBtn" aria-expanded="false" aria-controls="srcSheet">@@icon code@@<span class="lbl">Source</span></button>
   <button class="tb chkpill" id="chkBtn" title="Layout and spec checks"></button>
   <button class="tb cmtbtn" id="chatBtn" title="Chat about the whole file" aria-label="Chat about the whole file">@@icon message-square@@<span class="hide-sm">Chat</span></button>
-  <button class="tb cmtbtn" id="cmtBtn" hidden disabled title="No new replies" aria-label="Next new reply">@@icon messages-square@@<span id="cmtN"></span></button>
-  <button class="tb icon cmtmore" id="cmtMore" hidden aria-expanded="false" title="The order new replies are read in" aria-label="The order new replies are read in">@@icon chevron-up@@</button>
+  <span class="cmtnav" id="cmtNav" hidden role="group" aria-label="Threads with replies"><button class="tb icon" id="cmtPrev" disabled title="Back to the thread before" aria-label="Back to the thread before">@@icon chevron-left@@</button><button class="tb cmtmore" id="cmtMore" aria-expanded="false" title="The order new replies are read in" aria-label="New replies: the order they are read in">@@icon messages-square@@<span id="cmtN"></span></button><button class="tb icon cmtbtn" id="cmtBtn" disabled title="No new replies" aria-label="Next new reply">@@icon chevron-right@@</button></span>
   <button class="tb sendbtn" id="sendBtn" hidden title="Send saved comments to an agent">@@icon send@@<span id="sendN"></span></button>
   <button class="tb icon" id="setBtn" title="Settings" aria-label="Settings">@@icon settings@@</button>
 </div>
@@ -772,6 +773,10 @@ body.diffmode .help .norm { display:none; }
     <div class="opts"><label><input type="radio" name="childDots" value="all"><span>Its own and its children's</span></label><label><input type="radio" name="childDots" value="own"><span>Its own only</span></label></div></div>
   <div class="rule"><div class="lbl">Canvas width</div>
     <div class="range"><input type="range" id="cw" min="560" max="2000" step="20"><output id="cwv"></output></div></div>
+  <div class="rule"><div class="lbl">Font</div>
+    <div class="row2f"><input type="text" id="uf" class="txt" list="ufl" placeholder="A font installed on this computer, such as Inter" spellcheck="false" autocomplete="off" aria-label="Font for names and text" aria-describedby="ufh"><button type="button" class="btn" id="ufAll" hidden>List all</button></div>
+    <datalist id="ufl"></datalist>
+    <div class="hint2" id="ufh"></div></div>
   <div class="rule"><div class="lbl">Corners</div>
     <div class="range"><input type="range" id="cr" min="0" max="24" step="1" aria-label="How round the boxes are"><output id="crv"></output></div></div>
   <div class="rule"><div class="lbl">Theme</div>
@@ -892,7 +897,19 @@ const SAMPLE = `; The Shell from the sketch: one block holding 23 blocks, in thr
 const $ = id => document.getElementById(id);
 const ctx2d = document.createElement('canvas').getContext('2d');
 // Measure with the same fallback stacks as the CSS, so layout matches the page even if a web font fails to load.
-const fontStack = f => f.replace('"Hanken Grotesk"', '"Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif').replace('"JetBrains Mono"', '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace');
+// The reader may name a font of their own computer for the page's words (Settings, Font): it goes in front of
+// the built-in one, in the CSS (--ff-ui) and here, so the layout is measured in the font that is drawn.
+const UI_STACK = '"Commissioner", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+const fontName = v => String(v || '').replace(/["'\\;{}<>]/g, '').trim().slice(0, 80);
+let uiFont = '';
+const KNOWN_FONTS = ['Inter', 'Instrument Sans', 'Commissioner', 'Source Sans 3', 'Source Serif 4', 'Literata', 'Newsreader', 'IBM Plex Sans', 'IBM Plex Serif', 'Geist', 'Figtree', 'Atkinson Hyperlegible', 'Public Sans', 'Work Sans', 'DM Sans', 'Manrope', 'Lato', 'Open Sans', 'Roboto', 'Noto Sans', 'Noto Serif', 'Merriweather', 'Lora', 'Crimson Pro', 'EB Garamond',
+  'SF Pro Text', 'New York', 'Helvetica Neue', 'Avenir Next', 'Avenir', 'Optima', 'Gill Sans', 'Futura', 'Charter', 'Iowan Old Style', 'Palatino', 'Georgia', 'Segoe UI', 'Calibri', 'Cambria', 'Verdana', 'Tahoma', 'Trebuchet MS', 'Arial', 'Times New Roman', 'Ubuntu', 'Cantarell', 'DejaVu Sans', 'DejaVu Serif', 'Liberation Sans', 'Liberation Serif'];
+// Whether the browser has a font by that name: its text measures differently from both plain fallbacks.
+function fontThere(name) {
+  const w = f => { ctx2d.font = '40px ' + f; return ctx2d.measureText('Handgloves & 0123 mwi').width; };
+  return w(`"${name}", monospace`) !== w('monospace') || w(`"${name}", serif`) !== w('serif');
+}
+const fontStack = f => f.replace('"Commissioner"', (uiFont ? `"${uiFont}", ` : '') + UI_STACK).replace('"JetBrains Mono"', '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace');
 const M = {
   tw(t, f) { ctx2d.font = fontStack(f); return ctx2d.measureText(t).width; },
   // Lines that text takes at this width. A paragraph break (\n\n, from a (~ … ~) sketch) starts a new
@@ -2779,9 +2796,10 @@ function openChat(key, anchor, focus) {
     <div class="acts"><button class="xbtn attach" data-t="file" title="Attach a file" aria-label="Attach a file">${ICON.clip}</button><span class="keys">${kb('⌘ ↵')} sends</span><button class="btn quiet" data-c="${keep.c}" title="${esc(keep.title)}">${esc(keep.label)}</button><button class="btn primary" data-c="send" title="Send this comment now (${mac ? '⌘' : 'Ctrl+'}Enter)">Send</button></div></div>`, 'chat');
   el.classList.toggle('filechat', key === 'block:');
   chat = { key, el, anchor:a, big:false, scrim:null };
+  walkNote(key); cmtCount();
   // Large: the same chat as a tall window over the page, for reading. Escape (or a click beside it) makes
   // it the callout again; a second Escape closes it.
-  { const me = chat, rm = el.remove.bind(el); el.remove = () => { me.scrim?.remove(); rm(); }; }
+  { const me = chat, rm = el.remove.bind(el); el.remove = () => { me.scrim?.remove(); rm(); setTimeout(cmtCount); }; }
   const ta = el.querySelector('textarea'); ta.value = chatDrafts.get(key) || '';
   refreshChat();
   if (focus) setTimeout(() => { if (chatOpen(key)) ta.focus(); }, 30);
@@ -2856,18 +2874,32 @@ function unreadStops() {
   }
   return [...by.values()];
 }
+// The threads read, in the order they were opened, and where the reader is among them: the left arrow
+// goes back through them, the right arrow forward again and then on to the next thread with a new reply.
+const walked = []; let walkPos = -1, walkGo = false;
+function walkNote(key) {   // every chat that opens joins the trail, unless an arrow opened it
+  if (walkGo || walked[walkPos] === key) return;
+  walked.length = walkPos + 1; walked.push(key); if (walked.length > 60) walked.shift(); walkPos = walked.length - 1;
+}
 function cmtCount() {
-  const b = $('cmtBtn'), n = unreadStops().length;
-  b.hidden = !n && !state.comments.some(c => (c.replies || []).length); $('cmtMore').hidden = b.hidden; b.disabled = !n;
-  $('cmtN').textContent = n || ''; b.classList.toggle('unread', n > 0); if (!n) walkAt = null;
-  b.title = n ? `Read the next new reply (${n} thread${n === 1 ? '' : 's'})` : 'No new replies. Press C for every comment.';
+  const next = $('cmtBtn'), prev = $('cmtPrev'), n = unreadStops().length, ahead = walkPos < walked.length - 1;
+  $('cmtNav').hidden = !n && !state.comments.some(c => (c.replies || []).length);
+  next.disabled = !n && !ahead; prev.disabled = walkPos < 0 || (walkPos === 0 && chatOpen());
+  $('cmtN').textContent = n || ''; next.classList.toggle('unread', n > 0); if (!n) walkAt = null;
+  next.title = ahead ? 'Forward to the thread after' : n ? `Read the next new reply (${n} thread${n === 1 ? '' : 's'})` : 'No new replies. Press C for every comment.';
   $('chatBtn').classList.toggle('unread', state.comments.some(c => c.target === 'block:' && chatUnread(c)));
 }
 function showThread(key) {
   if (key.startsWith('block:') && key.length > 6 && state.model.node(key.slice(6))) { goTo(key.slice(6)); setTimeout(() => openThread(key), 380); }
   else openThread(key);
 }
+function walkTo(i) { walkPos = i; walkGo = true; try { closePop('thread'); showThread(walked[i]); } finally { setTimeout(() => { walkGo = false; cmtCount(); }, 450); } cmtCount(); }
+function prevThread() {
+  if (walkPos === 0 && !chatOpen()) { walkTo(0); return; }   // closed since: the first press shows it again
+  if (walkPos > 0) walkTo(chatOpen() ? walkPos - 1 : walkPos);
+}
 function nextUnread() {
+  if (walkPos < walked.length - 1) { walkTo(walkPos + 1); return; }
   closePop('thread');
   const now = unreadStops(); if (!now.length) { cmtCount(); return; }
   let pick;
@@ -2890,7 +2922,7 @@ function nextUnread() {
     const opt = (v, name, hint) => `<label><input type="radio" name="wkOrder" value="${v}"${WALK.order === v ? ' checked' : ''}><span><b>${name}</b><small>${hint}</small></span></label>`;
     m.innerHTML = `<fieldset><legend>Read new replies</legend>${opt('place', 'By place', 'Neighbours together, from where you are.')}${opt('new', 'Newest first', 'The latest reply first.')}${opt('old', 'Longest waiting', 'The oldest reply first.')}</fieldset>`;
     document.body.appendChild(m);
-    const r = $('cmtMore').getBoundingClientRect(); m.style.bottom = (innerHeight - r.top + 10) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth)) + 'px';
+    const r = $('cmtMore').getBoundingClientRect(); m.style.bottom = (innerHeight - r.top + 10) + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - m.offsetWidth - 8, r.left + r.width / 2 - m.offsetWidth / 2)) + 'px';
     $('cmtMore').setAttribute('aria-expanded', 'true');
     m.addEventListener('change', () => { WALK.order = m.querySelector('[name=wkOrder]:checked')?.value || 'place'; walkAt = null; store.set('sbtel-walk', { order:WALK.order }); });
     addEventListener('pointerdown', away, true); addEventListener('keydown', esc2, true);
@@ -2910,7 +2942,7 @@ function openAllComments() {
   });
   m.querySelector('button[data-key]')?.focus();
 }
-$('cmtBtn').onclick = nextUnread;
+$('cmtBtn').onclick = nextUnread; $('cmtPrev').onclick = prevThread;
 $('chatBtn').onclick = () => chatOpen('block:') ? closePop('thread') : openComposer('block:', $('chatBtn'));
 // On a phone the chat is a sheet at the bottom; --kb lifts it above the on-screen keyboard.
 if (window.visualViewport) {
@@ -3012,6 +3044,19 @@ $('setBtn').onclick = () => {
   cw.addEventListener('input', () => { state.opts.width = +cw.value; cwv.textContent = cw.value; persist(); const a = state.opts.animate; state.opts.animate = false; render(); state.opts.animate = a; });
   const cr = m.querySelector('#cr'), crv = m.querySelector('#crv'), rNow = () => state.opts.radius ?? 12; cr.value = rNow(); crv.textContent = rNow();
   cr.addEventListener('input', () => { state.opts.radius = +cr.value; crv.textContent = cr.value; persist(); applyTheme(); });
+  const uf = m.querySelector('#uf'), ufh = m.querySelector('#ufh');
+  const ufSay = () => { const n = fontName(uf.value); ufh.textContent = !n ? 'Empty uses the built-in font. Code keeps its own.' : fontThere(n) ? `Using ${n}.` : `No font named ${n} on this computer, so the built-in one is used. Install it, then type its name as your system lists it.`; };
+  uf.value = state.opts.font || ''; ufSay();
+  // Suggestions: the well-known fonts this computer has (found by measuring, so no permission is asked).
+  // Where the browser can list every installed font (desktop Chrome and Edge), "List all" asks it to.
+  const ufl = m.querySelector('#ufl'), offer = names => { ufl.innerHTML = names.map(n => `<option value="${esc(n)}">`).join(''); };
+  offer(KNOWN_FONTS.filter(fontThere));
+  const all = m.querySelector('#ufAll'); all.hidden = !('queryLocalFonts' in window);
+  all.onclick = async () => {
+    try { const fs = await window.queryLocalFonts(), names = [...new Set(fs.map(f => f.family))].sort((a, b) => a.localeCompare(b)); if (!names.length) throw new Error('none'); offer(names); ufh.textContent = `${names.length} fonts listed: click the field, or type to narrow.`; uf.focus(); }
+    catch (e) { ufh.textContent = 'The browser did not allow listing fonts here. Type a font\'s name instead.'; }
+  };
+  uf.addEventListener('input', () => { state.opts.font = fontName(uf.value); persist(); applyTheme(); ufSay(); const a = state.opts.animate; state.opts.animate = false; render(); state.opts.animate = a; });
   m.querySelector('#verNo').textContent = SBTEL.version;
   const ti = m.querySelector('#tint'); ti.checked = !!state.opts.tint; ti.onchange = () => { state.opts.tint = ti.checked; persist(); render(); };
   const an = m.querySelector('#anim'); an.checked = state.opts.animate; an.onchange = () => { state.opts.animate = an.checked; persist(); };
@@ -3128,6 +3173,8 @@ const isDark = () => state.opts.theme === 'dark' || (state.opts.theme === 'syste
 function applyTheme() {
   const root = document.documentElement;
   if (state.opts.theme === 'system') delete root.dataset.theme; else root.dataset.theme = state.opts.theme;
+  uiFont = fontName(state.opts.font);
+  if (uiFont) root.style.setProperty('--ff-ui', `"${uiFont}", ${UI_STACK}`); else root.style.removeProperty('--ff-ui');
   if (state.opts.radius == null || state.opts.radius === 12) root.style.removeProperty('--r'); else root.style.setProperty('--r', Math.max(0, Math.min(24, +state.opts.radius || 0)) + 'px');
 }
 darkMQ.addEventListener?.('change', applyTheme);

@@ -12,6 +12,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   `element: "shape"`; an info finding has `kind: "shape"`. Ids keep their `msg:` and `μ:` prefixes.
 
 ### Added
+- Settings has Font: the name of a font installed on your computer, used for names and text (code keeps
+  its own). Nothing is downloaded; if the font is not installed the built-in one is used and the setting says so.
 - **A chat can be read large.** The button beside a chat's close button opens it as a tall window with
   bigger type; Escape (or a click beside it) makes it the small callout again, and a second Escape closes it.
 - Settings has Corners: how round the boxes are, from square to very round.
@@ -26,9 +28,10 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   that names the file (or, for a file opened from a comment, on that comment's thread) and carries the
   file as a ref. Select lines in the source to send `file:9-11`; select words on a rendered page to quote them.
 - **Replies are quiet.** An agent's reply is not announced: it puts a dot on its thread's bubble and on the
-  toolbar's comments button (a reply to a whole review puts one on Review). Pressing the button walks the
+  toolbar's forward arrow (a reply to a whole review puts one on Review). The forward arrow walks the
   threads with new replies, by place by default (the diagram's reading order from where you are, so
-  neighbours come together); the caret beside it offers newest first and longest waiting.
+  neighbours come together); the back arrow returns through the threads you have read, and forward goes
+  on from there. The count between them opens the order: by place, newest first, longest waiting.
 - **A closed block is one concept.** Its bubble counts every thread inside it, and its chat shows them
   together in the order they were written, each run under the name of its part. Pressing a part's name
   opens the block and shows that thread alone. The walk treats a closed block as one stop.
@@ -92,6 +95,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   was; the Sample button then loads it too. The project's playground uses it.
 
 ### Changed
+- The built-in font for names and text is Commissioner (SIL OFL 1.1), in place of Hanken Grotesk. Card widths
+  shift slightly.
 - Card outlines are fainter and open blocks a little firmer than cards; shapes keep the full line. The ears
   of a tinted card now take its outline's colour.
 - The duplicate block name warning says why names must differ and what to do.

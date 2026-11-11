@@ -108,7 +108,7 @@ Data flow for the agent loop:
 | `viewer/src/diff.js` | diff-mode module | C |
 | `viewer/src/play.js` | the standalone page: a spec from the URL or baked into an exported file, read-only, embed mode, the home link (§6.9) | release owner |
 | `viewer/build.mjs` | assembles `viewer/dist/index.html`; inlines `viewer/fonts/*.woff2` as data: URLs | frozen |
-| `viewer/fonts/` | the page's fonts (Hanken Grotesk, JetBrains Mono; OFL, from @fontsource-variable 5.3.0) and their licenses | release owner |
+| `viewer/fonts/` | the page's fonts (Commissioner, JetBrains Mono; OFL, from @fontsource-variable 5.3.0; Hanken Grotesk until v0.4.1) and their licenses | release owner |
 | `viewer/dist/index.html` | built page, committed (go:embed needs it) | generated |
 | `viewer/test/` | acceptance suites and `run.sh`; accept6 (v0.2) covers callouts, editors, level labels and carried types; accept7 (v0.2.1) the standalone undo history across a browser restart; accept8 (v0.2.2) behavior and message pills, the implementers outline and a behavior's Edit dialog; accept9 (v0.2.3) `#src`, `#example`, `?embed` and the home link; accept10 (v0.2.3) three embedded viewers in one docs page; accept11 (v0.2.4) the tight fit, `sbtel:size` and `&focus`; accept12 (v0.2.5) files made by `sbtel export`, from disk | frozen (add suites, don't edit; §11 entry 51) |
 | `conformance/` | specs, cases, expected records, node runner | shared, see §2.9 |

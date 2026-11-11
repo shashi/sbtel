@@ -78,7 +78,7 @@ async function until(fn, ms = 8000, step = 100) {
   await page.waitForFunction(() => document.getElementById('specName').textContent.includes('Shell e2e'), null, { timeout: 10000 });
   check('label shown in the title area', (await page.textContent('#specName')).startsWith('Shell e2e · v1'));
   check('page is in server mode with the spec loaded', await page.evaluate(src => SBTEL.mode === 'server' && state.src === src, v1));
-  check('the embedded fonts are loaded', await page.evaluate(() => [...document.fonts].some(f => f.family.replace(/["']/g, '') === 'Hanken Grotesk' && f.status === 'loaded') && [...document.fonts].some(f => f.family.replace(/["']/g, '') === 'JetBrains Mono' && f.status === 'loaded')));
+  check('the embedded fonts are loaded', await page.evaluate(() => [...document.fonts].some(f => f.family.replace(/["']/g, '') === 'Commissioner' && f.status === 'loaded') && [...document.fonts].some(f => f.family.replace(/["']/g, '') === 'JetBrains Mono' && f.status === 'loaded')));
   check('Save control present and disabled', await page.evaluate(() => { const b = document.getElementById('sbSave'); return !!b && b.disabled; }));
   await until(() => page.evaluate(() => !!SBTEL.modes.server._state.es && SBTEL.modes.server._state.es.readyState === 1));
 
@@ -128,7 +128,8 @@ async function until(fn, ms = 8000, step = 100) {
   const r2 = JSON.parse(o2.out || '{}');
   check('open --session exits 0 with version 2, created false', o2.code === 0 && r2.version === 2 && r2.created === false, o2.out + o2.err);
   const vt = await page.waitForSelector('.sb-vt', { timeout: 5000 }).catch(() => null);
-  check('new-version toast appears', !!vt && (await vt.textContent()).includes('Version 2 from your agent'));
+  // The server may notice the edited file on disk before `open --session` arrives; either way it is version 2.
+  check('new-version toast appears', !!vt && /Version 2(?: from your agent|: the file changed on disk)/.test(await vt.textContent()));
   check('page did not reload by itself', await page.evaluate(src => state.src === src, v1));
   // See changes: the diff of what the tab has and the new version, over the page; Back changes nothing.
   await page.click('.sb-vt [data-v="diff"]');
