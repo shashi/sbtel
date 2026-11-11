@@ -191,6 +191,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.
 :root { --ty-l:.5; --ty-c:.15; --ty-wash:11%; }
 /* With "Tint cards by type" on, a typed card takes a wash of its type's hue and an edge in it. */
 .world.tint .blk.card.typed { background:color-mix(in oklch, var(--leaf), oklch(var(--ty-l) var(--ty-c) var(--h)) var(--ty-wash)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 55%); }
+/* An open block of a type takes the same hue, fainter: it is a container, and its own blocks keep theirs. */
+.world.tint .blk.frame.typed { background:color-mix(in oklch, var(--surface), oklch(var(--ty-l) var(--ty-c) var(--h)) calc(var(--ty-wash) * .4)); border-color:color-mix(in oklch, var(--frame-line), oklch(var(--ty-l) var(--ty-c) var(--h)) 40%); }
 .world.typing .blk.card:not(.ty-on) { opacity:.3; }
 .blk .ttl > .pill { cursor:pointer; border-radius:5px; }
 .dotpick { flex:1; min-width:0; }
@@ -810,6 +812,7 @@ const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0))
 // A shape's dot and a behavior's badge take one of six colours by name, unless the reader chose a hue for
 // that one in its Edit dialog. Choices are kept in this browser for the spec (dotKey, set by the page's mode).
 let dotKey = () => 'sbtel-dots';
+let redraw = () => {}; // the canvas sets it: draw again, for a choice that changes how things look and nothing else
 const dotRead = () => { try { return JSON.parse(localStorage.getItem(dotKey()) || '{}') || {}; } catch (e) { return {}; } };
 const dotHue = id => { const h = dotRead()[id]; return h == null ? null : h; };
 function setDotHue(id, h) { const m = dotRead(); if (h == null) delete m[id]; else m[id] = Math.round(h); try { localStorage.setItem(dotKey(), JSON.stringify(m)); } catch (e) {} }
@@ -978,6 +981,7 @@ function render(anchorId, pv) {
   applySelection(); applyTalk(); applyCarry(); applyBeh(); refreshCallout();
   world.classList.toggle('tint', !!state.opts.tint); if (state.typePin) showType();
 }
+redraw = () => render();
 // Draw a layout: one element per block (reused by id so moves animate), lines, + buttons and bubbles.
 function paint(lay, keep) {
   const world = $('world'), pv = !!keep;
@@ -1563,10 +1567,11 @@ function applySelection() {
       const B = lay.blocks.find(b => b.id === id);
       const tabs = dotsOf(B.node, state.opts.childDots);
       const t = el.querySelector(':scope > .tab.top'), b = el.querySelector(':scope > .tab.bot');
-      const top = tabs.in.length ? -((t ? t.offsetHeight : K.TAB) + 10) : 0, bot = tabs.out.length ? (b ? b.offsetHeight : K.TAB) + 10 : 0;
-      [['0%', '50%', 0], ['100%', '50%', 0], ['50%', '0%', top], ['50%', '100%', bot]].forEach(([x, y, dy]) => {
+      // Each handle stands a little outside the block's edge (beyond an ear, where there is one), all four alike.
+      const OUT = 13, top = -(tabs.in.length ? (t ? t.offsetHeight : K.TAB) + 10 : OUT), bot = tabs.out.length ? (b ? b.offsetHeight : K.TAB) + 10 : OUT;
+      [['0%', '50%', -OUT, 0], ['100%', '50%', OUT, 0], ['50%', '0%', 0, top], ['50%', '100%', 0, bot]].forEach(([x, y, dx, dy]) => {
         const hd = document.createElement('span'); hd.className = 'hdl'; hd.title = 'Drag to another block in this level to link them';
-        hd.style.left = x; hd.style.top = `calc(${y} + ${dy}px)`; el.appendChild(hd);
+        hd.style.left = `calc(${x} + ${dx}px)`; hd.style.top = `calc(${y} + ${dy}px)`; el.appendChild(hd);
       });
     }
   });
@@ -1575,7 +1580,7 @@ function applySelection() {
   // steps aside while the block is selected.
   const S = state.sel && state.multi.size === 1 && lay.loc.has(state.sel) ? lay.blocks.find(b => b.id === state.sel) : null;
   document.querySelectorAll('.aff.keep:not(.gutter)').forEach(el => {
-    el.classList.toggle('covered', !!S && [[S.x, S.y + S.h / 2], [S.x + S.w, S.y + S.h / 2]].some(h => Math.hypot(el._x - h[0], el._y - h[1]) < 30));
+    el.classList.toggle('covered', !!S && [[S.x - 13, S.y + S.h / 2], [S.x + S.w + 13, S.y + S.h / 2]].some(h => Math.hypot(el._x - h[0], el._y - h[1]) < 30));
   });
   renderStrip();
 }
@@ -2071,7 +2076,7 @@ function openEdit(id) {
     // The dot's colour is a choice about this page, not the spec: it applies as it is made, apart from Save.
     const did = (n.form === 'behavior' ? 'β:' : 'μ:') + n.name, hue = f.elements.hue, sws = [...md.querySelectorAll('.dotpick .sw button')];
     const show = () => { const h = dotHue(did); if (h != null) hue.value = h; hue.classList.toggle('auto', h == null); sws.forEach(b => b.setAttribute('aria-pressed', String(h != null && Math.abs(+b.dataset.h - h) < 1))); };
-    const put = h => { setDotHue(did, h); show(); render(); };
+    const put = h => { setDotHue(did, h); show(); redraw(); };
     sws.forEach(b => b.onclick = () => put(+b.dataset.h));
     hue.addEventListener('input', () => put(+hue.value));
     md.querySelector('[data-m="autocolor"]').onclick = () => put(null);
