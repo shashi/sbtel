@@ -294,17 +294,19 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     if (side) { chat.style.left = (r.right - f.left + 16) + 'px'; chat.style.top = (r.top - f.top - 14) + 'px'; chat.style.setProperty('--tail', (14 + r.height / 2 - 6) + 'px'); }
     else { const left = clamp(r.left - f.left + r.width / 2 - 60, 8, f.width - w - 8); chat.style.left = left + 'px'; chat.style.top = (r.bottom - f.top + 14) + 'px'; chat.style.setProperty('--tail', (r.left - f.left + r.width / 2 - left - 6) + 'px'); }
   }
+  // The comment's receipt, as in the viewer: one tick when it is sent, two when the agent has it.
+  const seen = v => { el('st').classList.toggle('seen', v); el('st').lastElementChild.textContent = v ? 'Seen by the agent' : 'Sent'; };
   function reset() {
     timers.forEach(clearTimeout); timers = [];
     ['cb', 'hist', 'chat', 'sent', 'bar', 'think'].forEach(k => on(k, false)); el('reply').hidden = true;
-    el('typed').textContent = ''; chat.classList.remove('done'); target.classList.remove('sel');
+    el('typed').textContent = ''; el('said').textContent = ''; seen(false); chat.classList.remove('done'); target.classList.remove('sel');
     el('new').hidden = true; el('new').classList.remove('kept'); el('hist').classList.remove('kept');
     el('last').textContent = '    (block Store (~ Keeps notes on disk. ~))))'; el('accept').classList.remove('press'); rename();
     cur.style.opacity = reduce ? 0 : 1; point(null); placeChat(); cap(0);
   }
   // The proposal as it stands before Accept: also what is shown when motion is off.
   function proposed() {
-    target.classList.add('sel'); on('chat'); chat.classList.add('done'); el('typed').textContent = TEXT; on('sent'); on('cb'); el('reply').hidden = false;
+    target.classList.add('sel'); on('chat'); chat.classList.add('done'); el('said').textContent = TEXT; seen(true); on('sent'); on('cb'); el('reply').hidden = false;
     el('last').textContent = '    (block Store (~ Keeps notes on disk. ~))'; el('new').hidden = false; on('hist'); on('bar'); rename('diff');
   }
   function play() {
@@ -314,8 +316,8 @@ $$('.install .copy').forEach(btn => btn.addEventListener('click', async () => {
     at(1600, () => { placeChat(); on('chat'); });                              // its chat opens, as a callout on it
     [...TEXT].forEach((_, i) => at(2100 + i * 42, () => { el('typed').textContent = TEXT.slice(0, i + 1); }));
     const sent = 2100 + TEXT.length * 42 + 450;
-    at(sent, () => { chat.classList.add('done'); on('sent'); on('cb'); });
-    at(sent + 700, () => { cap(2); on('think'); });                            // the agent thinks
+    at(sent, () => { chat.classList.add('done'); el('typed').textContent = ''; el('said').textContent = TEXT; on('sent'); on('cb'); });   // sent: it moves up into the thread, with one tick
+    at(sent + 700, () => { cap(2); on('think'); seen(true); });                            // the agent thinks
     at(sent + 3000, () => { cap(3); on('think', false); el('last').textContent = '    (block Store (~ Keeps notes on disk. ~))'; el('new').hidden = false; el('lvl').textContent = `  (level :name "${NEW}"`; el('lvl').classList.add('new'); });
     at(sent + 3400, () => { el('reply').hidden = false; on('hist'); on('bar'); rename('diff'); });   // the reply and the proposal arrive together: a new block, and a notification
     at(sent + 6400, () => { on('chat', false); target.classList.remove('sel'); });
