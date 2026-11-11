@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Steering with sbtel · sbtel</title>
-<meta name="description" content="Steering with sbtel: how to direct several coding agents from one diagram without losing your attention to them, and why sbtel is built the way it is.">
+<meta name="description" content="Steering with sbtel: how to direct the work of coding agents from one diagram, with everything in one place and a separate lane for each thing you are thinking about.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="../../assets/fonts/hanken-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -30,24 +30,21 @@
 <div class="docs">
   <aside class="toc" aria-label="On this page">
     <details open id="tocd"><summary>On this page <span class="ver">sbtel 0.4.1</span></summary>
-    <nav><ol><li class="t2"><a href="#situation">The situation</a></li><li class="t2"><a href="#map">One map</a></li><li class="t2"><a href="#how">How to steer</a></li><li class="t3"><a href="#say">Say it where it belongs</a></li><li class="t3"><a href="#wait">Let replies wait</a></li><li class="t3"><a href="#walk">Walk the replies</a></li><li class="t3"><a href="#ack">Read a nod as a nod</a></li><li class="t3"><a href="#zoom-out">Zoom out</a></li><li class="t3"><a href="#order">Let the layout set the order</a></li><li class="t2"><a href="#why">Why it is built this way</a></li><li class="t2"><a href="#try">Try it</a></li><li class="t2"><a href="#sources">Sources</a></li></ol></nav></details>
+    <nav><ol><li class="t2"><a href="#focus">How sbtel helps focus</a></li><li class="t2"><a href="#how">How to steer</a></li><li class="t3"><a href="#say">Say it where it belongs</a></li><li class="t3"><a href="#wait">Let replies wait</a></li><li class="t3"><a href="#walk">Walk the replies</a></li><li class="t3"><a href="#ack">Read a nod as a nod</a></li><li class="t3"><a href="#zoom-out">Zoom out</a></li><li class="t3"><a href="#order">Let the layout set the order</a></li><li class="t2"><a href="#why">Why it is built this way</a></li><li class="t2"><a href="#try">Try it</a></li><li class="t2"><a href="#sources">Sources</a></li></ol></nav></details>
   </aside>
   <article id="doc" class="doc">
 <h1>Steering with sbtel</h1>
-<p class="intro">Your agents can write faster than you can read. What they cannot do is decide what should be built. That part is yours, and it runs on the one thing that does not scale: your attention. This guide shows how to steer several agents from one diagram, and why sbtel is built to spend your attention with care.</p>
+<p class="intro">Your agent can write faster than you can read. What it cannot do is decide what should be built. That part is yours, and it runs on the one thing that does not scale: your attention. This guide shows how to steer the work from one diagram, however many agents are doing it, and why sbtel is built to spend your attention with care.</p>
 
 <figure class="steer lead" data-scene="cycle">
   <div class="st-stage" role="img" aria-label="Animation: a comment is written on the Sync block. Later a dot appears on two blocks. One key opens each reply in turn, and the reply button goes dim when none are left."></div>
   <figcaption>The whole loop. You say something on a block, go back to your work, and read the answers when you choose to.</figcaption>
 </figure>
 
-<h2 id="situation"><a class="anchor" href="#situation" aria-hidden="true" tabindex="-1">#</a>The situation</h2>
-<p>In 1962 Douglas Engelbart set out to build tools for <a href="https://www.lri.fr/~mbl/FundHCI/papers/Englebart-Augmenting62.pdf">&ldquo;increasing the capability of a man to approach a complex problem situation&rdquo;</a>. He meant the person, not the machine. Sixty years later the machines write the code, and the complex situation is a new one: several agents working at once, each ready with a question, and you in the middle of them.</p>
-<p>Lisanne Bainbridge described where this goes wrong in 1983, in factories and control rooms. Automate the work, and the person who remains is left to watch it. <a href="https://doi.org/10.1016/0005-1098(83)90046-8">Watching is the job people are worst at</a>: attention cannot be held on something that mostly runs by itself, and the skills needed to step in fade from lack of use.</p>
-<p>Steering is the alternative to watching. You do not follow everything your agents do. You hold the direction, and you say so at the few places where it matters.</p>
-
-<h2 id="map"><a class="anchor" href="#map" aria-hidden="true" tabindex="-1">#</a>One map</h2>
-<p>sbtel gives you and your agents one diagram of the system: its parts, the levels they sit on, and what passes between them. Everything said about a part is said on that part, and stays there.</p>
+<h2 id="focus"><a class="anchor" href="#focus" aria-hidden="true" tabindex="-1">#</a>How sbtel helps focus</h2>
+<p>With coding agents, doing the work is rarely the hard part. Keeping track is: what you asked for, what came back, what is still open, and which part of the system each of those belongs to. In a chat all of it is one stream, and the structure lives in your head.</p>
+<p>sbtel puts the structure on a diagram that you and your agent share: the parts of the system, the levels they sit on, and what passes between them. Everything said about a part is said on that part, and stays there.</p>
+<p>This is not a console for running many agents. sbtel separates two things that usually come tied together: how many agents are working, and how many things you are thinking about. You talk to one agent, through the map. It may do all the work itself or hand parts of it to others; that is its business, and you never need to know. What you get either way is the whole context in one place, and a lane for each thing: a thread on the block it concerns. A question about Sync does not get mixed into the conversation about Store.</p>
 <p>The diagram is doing real work. Jill Larkin and Herbert Simon showed <a href="https://doi.org/10.1111/j.1551-6708.1987.tb00863.x">why a diagram can beat the same facts written as sentences</a>: it puts together in space what belongs together, so you find things by looking, not by holding them in your head. A chat scrolls away. A map stays where you left it.</p>
 
 <h2 id="how"><a class="anchor" href="#how" aria-hidden="true" tabindex="-1">#</a>How to steer</h2>
@@ -61,10 +58,10 @@
 </figure>
 
 <h3 id="wait"><a class="anchor" href="#wait" aria-hidden="true" tabindex="-1">#</a>Let replies wait</h3>
-<p>Nothing in sbtel announces itself. When an agent answers, a dot appears on the block and on the reply button, and that is all: no sound, no banner, nothing sliding in. You look when you reach a stopping point of your own.</p>
+<p>Nothing in sbtel announces itself. When your agent answers, a dot appears on the block and on the reply button, and that is all: no sound, no banner, nothing sliding in. You look when you reach a stopping point of your own.</p>
 <figure class="steer" data-scene="wait">
   <div class="st-stage" role="img" aria-label="Animation: while the Editor block stays selected, a small dot appears on the Preview block and then on the Index block. Nothing else on the page moves."></div>
-  <figcaption>Two agents have answered. The only things that changed are two dots and a count.</figcaption>
+  <figcaption>Two answers have come in. The only things that changed are two dots and a count.</figcaption>
 </figure>
 
 <h3 id="walk"><a class="anchor" href="#walk" aria-hidden="true" tabindex="-1">#</a>Walk the replies</h3>
@@ -75,7 +72,7 @@
 </figure>
 
 <h3 id="ack"><a class="anchor" href="#ack" aria-hidden="true" tabindex="-1">#</a>Read a nod as a nod</h3>
-<p>An agent with nothing to ask answers with a nod: a 👍 on your comment. It shows in the thread and lights no dot, so &ldquo;got it&rdquo; never costs you a visit. A dot always means there are words to read.</p>
+<p>When your agent has nothing to ask, it answers with a nod: a 👍 on your comment. It shows in the thread and lights no dot, so &ldquo;got it&rdquo; never costs you a visit. A dot always means there are words to read.</p>
 <figure class="steer" data-scene="ack">
   <div class="st-stage" role="img" aria-label="Animation: a comment on Store receives a thumbs-up and no dot appears. A question on Index receives a written reply, and a dot appears on Index and on the reply button."></div>
   <figcaption>Store got a nod and stays quiet. Index got an answer and shows a dot.</figcaption>
@@ -96,7 +93,7 @@
 </figure>
 
 <h2 id="why"><a class="anchor" href="#why" aria-hidden="true" tabindex="-1">#</a>Why it is built this way</h2>
-<p class="argue">Every habit above protects the same thing. Gloria Mark and her colleagues interrupted people in the middle of their work and found that they <a href="https://doi.org/10.1145/1357054.1357072">finished just as fast, and paid for it in stress, frustration and effort</a>. So sbtel never interrupts: a reply is a dot, and a dot can wait. Sophie Leroy found that when you leave one task for another, <a href="https://doi.org/10.1016/j.obhdp.2009.04.002">part of your attention stays behind</a>, and the new task gets what is left. So the walk finishes one neighbourhood before it moves you, and a file, a picture or a calendar invite that an agent points to opens on the map, not in another window. E. J. Masicampo and Roy Baumeister found that an unfinished goal <a href="https://doi.org/10.1037/a0024192">keeps intruding on your thoughts until it has a plan</a>. So every open question has a place, on its block, and the queue has an end you can reach. Mark Weiser and John Seely Brown asked for technology that <a href="https://calmtech.com/papers/coming-age-calm-technology">&ldquo;will move easily from the periphery of our attention, to the center, and back&rdquo;</a>. That is what a dot is. And what sbtel leaves out is everything that would steer for you: your pace, your priorities and your breaks stay your own.</p>
+<p class="argue">Every habit above protects the same thing. Gloria Mark and her colleagues interrupted people in the middle of their work and found that they <a href="https://doi.org/10.1145/1357054.1357072">finished just as fast, and paid for it in stress, frustration and effort</a>. So sbtel never interrupts: a reply is a dot, and a dot can wait. Sophie Leroy found that when you leave one task for another, <a href="https://doi.org/10.1016/j.obhdp.2009.04.002">part of your attention stays behind</a>, and the new task gets what is left. So the walk finishes one neighbourhood before it moves you, and a file, a picture or a calendar invite that your agent points to opens on the map, not in another window. E. J. Masicampo and Roy Baumeister found that an unfinished goal <a href="https://doi.org/10.1037/a0024192">keeps intruding on your thoughts until it has a plan</a>. So every open question has a place, in the lane of its own block, and the queue has an end you can reach. Mark Weiser and John Seely Brown asked for technology that <a href="https://calmtech.com/papers/coming-age-calm-technology">&ldquo;will move easily from the periphery of our attention, to the center, and back&rdquo;</a>. That is what a dot is. And what sbtel leaves out is everything that would steer for you: your pace, your priorities and your breaks stay your own.</p>
 
 <h2 id="try"><a class="anchor" href="#try" aria-hidden="true" tabindex="-1">#</a>Try it</h2>
 <p>Say this to your coding agent:</p>
@@ -105,8 +102,6 @@
 
 <h2 id="sources"><a class="anchor" href="#sources" aria-hidden="true" tabindex="-1">#</a>Sources</h2>
 <ul class="sources">
-  <li>Douglas C. Engelbart, <a href="https://www.lri.fr/~mbl/FundHCI/papers/Englebart-Augmenting62.pdf"><em>Augmenting Human Intellect: A Conceptual Framework</em></a>. Stanford Research Institute, 1962.</li>
-  <li>Lisanne Bainbridge, <a href="https://doi.org/10.1016/0005-1098(83)90046-8">&ldquo;Ironies of Automation&rdquo;</a>. <em>Automatica</em> 19(6), 1983.</li>
   <li>Jill H. Larkin and Herbert A. Simon, <a href="https://doi.org/10.1111/j.1551-6708.1987.tb00863.x">&ldquo;Why a Diagram Is (Sometimes) Worth Ten Thousand Words&rdquo;</a>. <em>Cognitive Science</em> 11, 1987.</li>
   <li>Gloria Mark, Daniela Gudith and Ulrich Klocke, <a href="https://doi.org/10.1145/1357054.1357072">&ldquo;The Cost of Interrupted Work: More Speed and Stress&rdquo;</a>. CHI 2008.</li>
   <li>Sophie Leroy, <a href="https://doi.org/10.1016/j.obhdp.2009.04.002">&ldquo;Why Is It So Hard to Do My Work? The Challenge of Attention Residue When Switching Between Work Tasks&rdquo;</a>. <em>Organizational Behavior and Human Decision Processes</em> 109(2), 2009.</li>
