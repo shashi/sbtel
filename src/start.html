@@ -1,0 +1,48 @@
+<!-- title: Getting started -->
+<!-- description: Getting started with sbtel: install it, set up your coding agent, and do your first review of a design on the canvas. -->
+<h1>Getting started</h1>
+<p class="intro"><code>sbtel</code> is one static binary and a set of skills for your coding agent. The quickest start is to let the agent do the setup. Say this to it:</p>
+<div class="install-line"><pre class="code wrapline">Hey Claude, could you install sbtel (shashi.biz/sbtel/llm.txt) for me and show me the plan in it?</pre></div>
+<p>The rest of this page is what that does, for when you would sooner do it by hand or want to know what is going on.</p>
+
+<h2 id="workflow">The workflow</h2>
+<p>You design with your agent the way you would review a pull request with a colleague. The agent writes the spec; you read it as a picture, comment and edit; the agent revises.</p>
+<ol class="loop">
+  <li><strong>The agent opens a spec.</strong> It writes <code>notes.sbtel</code>, lints it, and runs <code>sbtel open notes.sbtel</code>. A browser tab shows the canvas.</li>
+  <li><strong>You read it on the canvas, comment and review.</strong> Comments and edits gather in a draft review, and you send them together.</li>
+  <li><strong>The agent reads <code>sbtel inbox</code> and pushes a revision.</strong> It applies your edits and answers your comments, then runs <code>sbtel open notes.sbtel --session &lt;id&gt;</code>. The same tab offers to reload.</li>
+  <li><strong><code>sbtel check</code> keeps the code honest.</strong> Once there is code, the agent lists who names whom in it and checks those edges against the levels.</li>
+</ol>
+<p>This is what the agent sees after you send a review:</p>
+<sbtel-code file="src/out/inbox.txt" label="sbtel inbox $id --wait"></sbtel-code>
+
+<h2 id="install">Install the CLI</h2>
+<p>On macOS, Linux, and Git Bash or MSYS on Windows:</p>
+<div class="install-line"><pre class="code wrapline">curl -fsSL https://raw.githubusercontent.com/shashi/sbtel/main/install.sh | sh</pre></div>
+<p>In Windows PowerShell:</p>
+<div class="install-line"><pre class="code wrapline">irm https://raw.githubusercontent.com/shashi/sbtel/main/install.ps1 | iex</pre></div>
+<p>Each installer downloads the release binary for your platform, verifies its SHA-256 checksum and puts it in <code>~/.local/bin</code>, or <code>%LOCALAPPDATA%\Programs\sbtel</code> on Windows. Set <code>SBTEL_INSTALL_DIR</code> to choose another directory, or <code>SBTEL_VERSION</code> to pick a release. The binary has no runtime dependencies. Check that it works:</p>
+<sbtel-code file="src/out/version.txt" label="output"></sbtel-code>
+<p><code>sbtel</code> keeps its sessions in <code>~/.sbtel</code> (<code>%USERPROFILE%\.sbtel</code> on Windows), or in <code>$SBTEL_HOME</code> when that is set. <code>sbtel open</code> opens a browser tab; on a machine without one, pass <code>--no-browser</code> or set <code>SBTEL_NO_BROWSER=1</code> and it prints the address instead.</p>
+
+<h2 id="agent">Set up your coding agent</h2>
+<p>In Claude Code, the sbtel repository is a plugin marketplace. Add it and install the plugin:</p>
+<div class="install-line"><pre class="code">/plugin marketplace add shashi/sbtel
+/plugin install sbtel@sbtel</pre></div>
+<p>The plugin has three skills. They drive the <code>sbtel</code> binary, so install that too.</p>
+<dl class="keys">
+  <dt>sbtel-design</dt><dd>Designing or restructuring a system as a spec, with you in the loop: levels of language, one strand per block, and a red-team pass over the result. It also critiques an existing spec.</dd>
+  <dt>sbtel-recover</dt><dd>Recovering a spec from an existing codebase: finding its levels, annotating the code with <code>@sbtel</code> comments, extracting the edges and running <code>sbtel check</code>. Its helper scripts resolve references in JavaScript, TypeScript and Go.</dd>
+  <dt>sbtel-language</dt><dd>Reading, writing and fixing specs, the <code>lint</code>, <code>query</code> and <code>check</code> commands, and the review loop with you.</dd>
+</dl>
+<p>Other agents need two things: the CLI on their path, and the text of the language skill, <a href="https://github.com/shashi/sbtel/blob/main/plugin/skills/sbtel-language/SKILL.md">plugin/skills/sbtel-language/SKILL.md</a>, in their instructions or context. That file teaches the syntax and the loop; its <a href="https://github.com/shashi/sbtel/blob/main/plugin/skills/sbtel-language/reference.md">reference.md</a> has every rule. Tell the agent to run <code>sbtel lint</code> after every edit, and to wait for your review with <code>sbtel inbox --wait</code> instead of asking you in chat.</p>
+
+<h2 id="first">Your first review</h2>
+<p>Ask your agent to show you something in sbtel: a plan it is about to carry out, or the structure of code you already have. A browser tab opens with the diagram.</p>
+<ol class="loop">
+  <li><strong>Read it.</strong> Click a block to open it and see what is inside. Each card says in a sentence what it is for.</li>
+  <li><strong>Say something.</strong> Select a block, press <kbd>C</kbd>, write what you think and send it. Your agent reads the comment with the block it is about.</li>
+  <li><strong>Or change it yourself.</strong> Drag a block to another level, rename it, or add one. Your changes and comments can go together as one review, from the Review button.</li>
+  <li><strong>Read the answer.</strong> When the agent replies, a dot appears on the block. When it has revised the design, the tab offers the new version, with the changes marked.</li>
+</ol>
+<p>That is the whole loop. Two pages take it from here: <a href="../steering/">Steering with sbtel</a> is about the habits that keep the work from eating your attention, and <a href="../using/">The sbtel canvas</a> describes everything on the canvas, exporting, and every command.</p>

@@ -1,39 +1,7 @@
-<!-- title: Using sbtel -->
-<!-- description: Using sbtel: install the CLI, set up your coding agent, read and review a design on the sbtel canvas, and export a diagram as one HTML file. -->
-<h1>Using sbtel</h1>
-<p class="intro"><code>sbtel</code> is one static binary. It checks specs, serves the canvas where you and your coding agent look at the same design, and exports a diagram as a file you can send to anyone. This page covers the workflow, setup, the canvas and exporting.</p>
-
-<h2 id="workflow">The workflow</h2>
-<p>You design with your agent the way you would review a pull request with a colleague. The agent writes the spec; you read it as a picture, comment and edit; the agent revises. For the habits that keep the work from eating your attention, read <a href="../steering/">Steering with sbtel</a>.</p>
-<ol class="loop">
-  <li><strong>The agent opens a spec.</strong> It writes <code>notes.sbtel</code>, lints it, and runs <code>sbtel open notes.sbtel</code>. A browser tab shows the canvas.</li>
-  <li><strong>You read it on the canvas, comment and review.</strong> Comments and edits gather in a draft review, and you send them together.</li>
-  <li><strong>The agent reads <code>sbtel inbox</code> and pushes a revision.</strong> It applies your edits and answers your comments, then runs <code>sbtel open notes.sbtel --session &lt;id&gt;</code>. The same tab offers to reload.</li>
-  <li><strong><code>sbtel check</code> keeps the code honest.</strong> Once there is code, the agent lists who names whom in it and checks those edges against the levels.</li>
-</ol>
-<p>This is what the agent sees after you send a review:</p>
-<sbtel-code file="src/out/inbox.txt" label="sbtel inbox $id --wait"></sbtel-code>
-
-<h2 id="install">Install the CLI</h2>
-<p>On macOS, Linux, and Git Bash or MSYS on Windows:</p>
-<div class="install-line"><pre class="code wrapline">curl -fsSL https://raw.githubusercontent.com/shashi/sbtel/main/install.sh | sh</pre></div>
-<p>In Windows PowerShell:</p>
-<div class="install-line"><pre class="code wrapline">irm https://raw.githubusercontent.com/shashi/sbtel/main/install.ps1 | iex</pre></div>
-<p>Each installer downloads the release binary for your platform, verifies its SHA-256 checksum and puts it in <code>~/.local/bin</code>, or <code>%LOCALAPPDATA%\Programs\sbtel</code> on Windows. Set <code>SBTEL_INSTALL_DIR</code> to choose another directory, or <code>SBTEL_VERSION</code> to pick a release. The binary has no runtime dependencies. Check that it works:</p>
-<sbtel-code file="src/out/version.txt" label="output"></sbtel-code>
-<p><code>sbtel</code> keeps its sessions in <code>~/.sbtel</code> (<code>%USERPROFILE%\.sbtel</code> on Windows), or in <code>$SBTEL_HOME</code> when that is set. <code>sbtel open</code> opens a browser tab; on a machine without one, pass <code>--no-browser</code> or set <code>SBTEL_NO_BROWSER=1</code> and it prints the address instead.</p>
-
-<h2 id="agent">Set up your coding agent</h2>
-<p>In Claude Code, the sbtel repository is a plugin marketplace. Add it and install the plugin:</p>
-<div class="install-line"><pre class="code">/plugin marketplace add shashi/sbtel
-/plugin install sbtel@sbtel</pre></div>
-<p>The plugin has three skills. They drive the <code>sbtel</code> binary, so install that too.</p>
-<dl class="keys">
-  <dt>sbtel-design</dt><dd>Designing or restructuring a system as a spec, with you in the loop: levels of language, one strand per block, and a red-team pass over the result. It also critiques an existing spec.</dd>
-  <dt>sbtel-recover</dt><dd>Recovering a spec from an existing codebase: finding its levels, annotating the code with <code>@sbtel</code> comments, extracting the edges and running <code>sbtel check</code>. Its helper scripts resolve references in JavaScript, TypeScript and Go.</dd>
-  <dt>sbtel-language</dt><dd>Reading, writing and fixing specs, the <code>lint</code>, <code>query</code> and <code>check</code> commands, and the review loop with you.</dd>
-</dl>
-<p>Other agents need two things: the CLI on their path, and the text of the language skill, <a href="https://github.com/shashi/sbtel/blob/main/plugin/skills/sbtel-language/SKILL.md">plugin/skills/sbtel-language/SKILL.md</a>, in their instructions or context. That file teaches the syntax and the loop; its <a href="https://github.com/shashi/sbtel/blob/main/plugin/skills/sbtel-language/reference.md">reference.md</a> has every rule. Tell the agent to run <code>sbtel lint</code> after every edit, and to wait for your review with <code>sbtel inbox --wait</code> instead of asking you in chat.</p>
+<!-- title: The sbtel canvas -->
+<!-- description: The sbtel canvas: reading a design as a picture, editing, comments, the review, saving, the diff view, exporting a diagram as one HTML file, and every command. -->
+<h1>The sbtel canvas</h1>
+<p class="intro"><code>sbtel</code> is one static binary. It checks specs, serves the canvas where you and your coding agent look at the same design, and exports a diagram as a file you can send to anyone. This page covers the canvas, exporting and every command. To install sbtel and set up your agent, see <a href="../start/">Getting started</a>.</p>
 
 <h2 id="canvas">The sbtel canvas</h2>
 <p>The canvas is the picture of a spec. <code>sbtel open</code> shows it in a session with your agent, the <a href="../../play/">playground</a> edits a spec in your browser, and every diagram on this site is the same viewer.</p>

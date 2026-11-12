@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Using sbtel · sbtel</title>
-<meta name="description" content="Using sbtel: install the CLI, set up your coding agent, read and review a design on the sbtel canvas, and export a diagram as one HTML file.">
+<title>The sbtel canvas · sbtel</title>
+<meta name="description" content="The sbtel canvas: reading a design as a picture, editing, comments, the review, saving, the diff view, exporting a diagram as one HTML file, and every command.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="../../assets/fonts/hanken-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
@@ -20,7 +20,7 @@
   <nav aria-label="Site">
     <a href="../../docs/">Docs</a>
     <a href="../../docs/language/">Language</a>
-    <a href="../../docs/using/" aria-current="page">Using</a>
+    <a href="../../docs/start/">Start</a>
     <a href="../../docs/steering/">Steering</a>
     <a href="../../play/">Playground</a>
     <a href="https://github.com/shashi/sbtel">GitHub</a>
@@ -29,53 +29,11 @@
 <div class="docs">
   <aside class="toc" aria-label="On this page">
     <details open id="tocd"><summary>On this page <span class="ver">sbtel 0.4.1</span></summary>
-    <nav><ol><li class="t2"><a href="#workflow">The workflow</a></li><li class="t2"><a href="#install">Install the CLI</a></li><li class="t2"><a href="#agent">Set up your coding agent</a></li><li class="t2"><a href="#canvas">The sbtel canvas</a></li><li class="t3"><a href="#reading">Reading the picture</a></li><li class="t3"><a href="#editing">Editing</a></li><li class="t3"><a href="#comments">Comments</a></li><li class="t3"><a href="#review">The review</a></li><li class="t3"><a href="#save">Saving, and conflicts</a></li><li class="t3"><a href="#diff">The diff view</a></li><li class="t2"><a href="#export">Exporting</a></li><li class="t2"><a href="#commands">All commands</a></li></ol></nav></details>
+    <nav><ol><li class="t2"><a href="#canvas">The sbtel canvas</a></li><li class="t3"><a href="#reading">Reading the picture</a></li><li class="t3"><a href="#editing">Editing</a></li><li class="t3"><a href="#comments">Comments</a></li><li class="t3"><a href="#review">The review</a></li><li class="t3"><a href="#save">Saving, and conflicts</a></li><li class="t3"><a href="#diff">The diff view</a></li><li class="t2"><a href="#export">Exporting</a></li><li class="t2"><a href="#commands">All commands</a></li></ol></nav></details>
   </aside>
   <article id="doc" class="doc">
-<h1>Using sbtel</h1>
-<p class="intro"><code>sbtel</code> is one static binary. It checks specs, serves the canvas where you and your coding agent look at the same design, and exports a diagram as a file you can send to anyone. This page covers the workflow, setup, the canvas and exporting.</p>
-
-<h2 id="workflow"><a class="anchor" href="#workflow" aria-hidden="true" tabindex="-1">#</a>The workflow</h2>
-<p>You design with your agent the way you would review a pull request with a colleague. The agent writes the spec; you read it as a picture, comment and edit; the agent revises. For the habits that keep the work from eating your attention, read <a href="../steering/">Steering with sbtel</a>.</p>
-<ol class="loop">
-  <li><strong>The agent opens a spec.</strong> It writes <code>notes.sbtel</code>, lints it, and runs <code>sbtel open notes.sbtel</code>. A browser tab shows the canvas.</li>
-  <li><strong>You read it on the canvas, comment and review.</strong> Comments and edits gather in a draft review, and you send them together.</li>
-  <li><strong>The agent reads <code>sbtel inbox</code> and pushes a revision.</strong> It applies your edits and answers your comments, then runs <code>sbtel open notes.sbtel --session &lt;id&gt;</code>. The same tab offers to reload.</li>
-  <li><strong><code>sbtel check</code> keeps the code honest.</strong> Once there is code, the agent lists who names whom in it and checks those edges against the levels.</li>
-</ol>
-<p>This is what the agent sees after you send a review:</p>
-<div class="spec"><div class="cbl">sbtel inbox $id --wait</div><pre class="code" data-lang="text">r2 review of version 1 by user, 2026-11-09T05:54:11Z: a message, 1 comment, proposed edits
-  &gt; Looks right. Markdown belongs in Preview; one question on Store.
-  edits against version 1 (sbtel diff):
-    - block Markdown (was in Notes)
-    1 change (0 added, 1 removed, 0 moved, 0 renamed, 0 changed), 0 affected ports
-  proposed spec: ~/.sbtel/sessions/$id/proposals/2.sbtel
-  c2.1 comment on block Store
-    &gt; Keep a backup of the last version, so a bad save can be undone.
-    source:
-      (block Store :type &quot;module&quot; (port :in Edit) (port :out NoteSaved) (~ Keeps notes on disk. ~))</pre></div>
-
-<h2 id="install"><a class="anchor" href="#install" aria-hidden="true" tabindex="-1">#</a>Install the CLI</h2>
-<p>On macOS, Linux, and Git Bash or MSYS on Windows:</p>
-<div class="install-line"><pre class="code wrapline">curl -fsSL https://raw.githubusercontent.com/shashi/sbtel/main/install.sh | sh</pre></div>
-<p>In Windows PowerShell:</p>
-<div class="install-line"><pre class="code wrapline">irm https://raw.githubusercontent.com/shashi/sbtel/main/install.ps1 | iex</pre></div>
-<p>Each installer downloads the release binary for your platform, verifies its SHA-256 checksum and puts it in <code>~/.local/bin</code>, or <code>%LOCALAPPDATA%\Programs\sbtel</code> on Windows. Set <code>SBTEL_INSTALL_DIR</code> to choose another directory, or <code>SBTEL_VERSION</code> to pick a release. The binary has no runtime dependencies. Check that it works:</p>
-<div class="spec"><div class="cbl">output</div><pre class="code" data-lang="text"><span class="hl-prompt">$ </span>sbtel version
-sbtel 0.3.0</pre></div>
-<p><code>sbtel</code> keeps its sessions in <code>~/.sbtel</code> (<code>%USERPROFILE%\.sbtel</code> on Windows), or in <code>$SBTEL_HOME</code> when that is set. <code>sbtel open</code> opens a browser tab; on a machine without one, pass <code>--no-browser</code> or set <code>SBTEL_NO_BROWSER=1</code> and it prints the address instead.</p>
-
-<h2 id="agent"><a class="anchor" href="#agent" aria-hidden="true" tabindex="-1">#</a>Set up your coding agent</h2>
-<p>In Claude Code, the sbtel repository is a plugin marketplace. Add it and install the plugin:</p>
-<div class="install-line"><pre class="code">/plugin marketplace add shashi/sbtel
-/plugin install sbtel@sbtel</pre></div>
-<p>The plugin has three skills. They drive the <code>sbtel</code> binary, so install that too.</p>
-<dl class="keys">
-  <dt>sbtel-design</dt><dd>Designing or restructuring a system as a spec, with you in the loop: levels of language, one strand per block, and a red-team pass over the result. It also critiques an existing spec.</dd>
-  <dt>sbtel-recover</dt><dd>Recovering a spec from an existing codebase: finding its levels, annotating the code with <code>@sbtel</code> comments, extracting the edges and running <code>sbtel check</code>. Its helper scripts resolve references in JavaScript, TypeScript and Go.</dd>
-  <dt>sbtel-language</dt><dd>Reading, writing and fixing specs, the <code>lint</code>, <code>query</code> and <code>check</code> commands, and the review loop with you.</dd>
-</dl>
-<p>Other agents need two things: the CLI on their path, and the text of the language skill, <a href="https://github.com/shashi/sbtel/blob/main/plugin/skills/sbtel-language/SKILL.md">plugin/skills/sbtel-language/SKILL.md</a>, in their instructions or context. That file teaches the syntax and the loop; its <a href="https://github.com/shashi/sbtel/blob/main/plugin/skills/sbtel-language/reference.md">reference.md</a> has every rule. Tell the agent to run <code>sbtel lint</code> after every edit, and to wait for your review with <code>sbtel inbox --wait</code> instead of asking you in chat.</p>
+<h1>The sbtel canvas</h1>
+<p class="intro"><code>sbtel</code> is one static binary. It checks specs, serves the canvas where you and your coding agent look at the same design, and exports a diagram as a file you can send to anyone. This page covers the canvas, exporting and every command. To install sbtel and set up your agent, see <a href="../start/">Getting started</a>.</p>
 
 <h2 id="canvas"><a class="anchor" href="#canvas" aria-hidden="true" tabindex="-1">#</a>The sbtel canvas</h2>
 <p>The canvas is the picture of a spec. <code>sbtel open</code> shows it in a session with your agent, the <a href="../../play/">playground</a> edits a spec in your browser, and every diagram on this site is the same viewer.</p>
@@ -169,7 +127,8 @@ sbtel export: wrote notes-readonly.html (606331 bytes, 593 KiB)</pre></div>
     <nav class="links" aria-label="Footer">
       <a href="../../docs/">Core concepts</a>
       <a href="../../docs/language/">Language</a>
-      <a href="../../docs/using/">Using sbtel</a>
+      <a href="../../docs/start/">Getting started</a>
+      <a href="../../docs/using/">The canvas</a>
       <a href="../../docs/steering/">Steering</a>
       <a href="../../play/">Playground</a>
       <a href="../../docs/reference/">Reference</a>

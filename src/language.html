@@ -23,7 +23,7 @@
 <p>A <code>;</code> starts a comment that runs to the end of the line. Names are any run of characters without spaces, parentheses, quotes or <code>;</code>, so <code>store.ts</code> and <code>Clock.Counter</code> are fine.</p>
 
 <h3 id="block">Blocks, <code>:type</code> and sketches</h3>
-<p>A block has a name, an optional <code>:type</code> right after it, and a sketch: one sentence about what it is for. Both sketch forms mean the same thing; <code>(~ &hellip; ~)</code> is easier to type because nothing inside it needs escaping.</p>
+<p>A block has a name, an optional <code>:type</code> right after it, and a sketch: one sentence about what it is for. The name is one word when the block stands for code (<code>AtomicWrite</code>, <code>store.ts</code>) and may be a short phrase in quotes when it stands for anything else: <code>(block "Test that times out on CI" &hellip;)</code>. Either way it identifies the block, so no two blocks share one. Both sketch forms mean the same thing; <code>(~ &hellip; ~)</code> is easier to type because nothing inside it needs escaping.</p>
 <sbtel-demo example="lang-block">Select a block and choose Edit to change its type or sketch. The text beside it is what you would write.</sbtel-demo>
 
 <h3 id="level">Levels</h3>

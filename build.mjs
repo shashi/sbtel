@@ -178,7 +178,7 @@ function markdown(md) {
 // ---------- the page frame ----------
 const MARK = `<svg viewBox="0 0 26 26" aria-hidden="true"><path d="M2 12a4 4 0 0 1 4-4h3V5.5A3.5 3.5 0 0 1 12.5 2h1A3.5 3.5 0 0 1 17 5.5V8h3a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4z" fill="var(--leaf)" stroke="var(--frame-line)" stroke-width="1.5"/><circle cx="11.2" cy="5.6" r="1.35" fill="var(--m3)"/><circle cx="14.8" cy="5.6" r="1.35" fill="var(--m6)"/><path d="M6.5 16h13" stroke="var(--frame-line)" stroke-width="1.2" opacity=".7"/></svg>`;
 // The reference is generated and complete, but it is not one of the three documents: it is linked from the footer.
-const NAV = [['Docs', 'docs/'], ['Language', 'docs/language/'], ['Using', 'docs/using/'], ['Steering', 'docs/steering/'], ['Playground', 'play/']];
+const NAV = [['Docs', 'docs/'], ['Language', 'docs/language/'], ['Start', 'docs/start/'], ['Steering', 'docs/steering/'], ['Playground', 'play/']];
 function page({ path, title, desc, toc, body, source, kind }) {
   const up = '../'.repeat(path.split('/').length - 1);
   const here = path.replace(/index\.html$/, '');
@@ -223,7 +223,8 @@ ${body}
     <nav class="links" aria-label="Footer">
       <a href="${up}docs/">Core concepts</a>
       <a href="${up}docs/language/">Language</a>
-      <a href="${up}docs/using/">Using sbtel</a>
+      <a href="${up}docs/start/">Getting started</a>
+      <a href="${up}docs/using/">The canvas</a>
       <a href="${up}docs/steering/">Steering</a>
       <a href="${up}play/">Playground</a>
       <a href="${up}docs/reference/">Reference</a>
@@ -341,5 +342,6 @@ function manual(srcFile, path, kind) {
 }
 manual('concepts.html', 'docs/index.html', 'guide concepts');
 manual('language.html', 'docs/language/index.html', 'guide language');
+manual('start.html', 'docs/start/index.html', 'guide using');
 manual('using.html', 'docs/using/index.html', 'guide using');
 manual('steering.html', 'docs/steering/index.html', 'guide steer');
