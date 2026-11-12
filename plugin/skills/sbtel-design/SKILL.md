@@ -62,7 +62,7 @@ the card for that reader.
 
 - The name says what the thing is in words the human would use for it. Not a label you coined while
   working, and not an id: `slow-ci-test` means something to you today and nothing tomorrow;
-  `test-that-times-out-on-ci` says it.
+  `"Test that times out on CI"` says it.
 - The sketch's first sentence says what the thing is and why it is on the board, complete without
   the conversation: "A test that fails on slow CI machines. It blocked our PR three times and is not
   caused by our change." Ticket and PR numbers come last, if at all; they are for looking up, not for
@@ -85,8 +85,11 @@ the card for that reader.
   - people and schedules: roles or teams, weeks or milestones
   - a product: features
 - Keep a card short: a name and a sentence or two.
-- Name blocks in lowercase words joined by hyphens (`atomic-write`). When a block stands for something
-  in code, use the code's own name (`AtomicWrite`, `store.ts`).
+- When a block stands for something in code, use the code's own name (`AtomicWrite`, `store.ts`).
+  When it stands for anything else (a claim, a question, a task, a piece of evidence), name it with a
+  short phrase in plain words, written as a string: `(block "Test that times out on CI" …)`. A phrase
+  is a noun phrase of six words or fewer; the sentence goes in the sketch. Where a phrase would be
+  awkward and one word will do, lowercase words joined by hyphens (`atomic-write`) are fine.
 - A name is a block's identity and must be unique in the spec. Where a name would repeat, put what it
   belongs to in front with a slash: a card that details another is `<thing>/<detail>`
   (`slow-login/evidence` beside `slow-login`), and two that clash take their parents (`store/index`,

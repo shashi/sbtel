@@ -141,7 +141,10 @@ function parse(src) {
     const at = { toString: () => ' (line ' + lineCol(src, sx.s) + ')' };
     switch (h) {
       case 'block': {
-        node.name = symOf(items[0]) || '?'; node.parent = owner || null;
+        // A block's name is a symbol, or a string when it is a phrase: (block "Test that times out on CI" …).
+        // Either way it is the block's identity. A phrase's runs of whitespace are one space each.
+        const nm = items[0]; node.name = (nm && nm.t === 'str' ? nm.v.replace(/\s+/g, ' ').trim() : symOf(nm)) || '?'; node.parent = owner || null;
+        if (nm && nm.t === 'str' && node.name.split(' ').length > 6) ctx.warnings.push('Block name "' + node.name + '" is ' + node.name.split(' ').length + ' words: a name is a short phrase (six words or fewer); say the rest in the sketch' + at);
         const i = declHead(node, items);
         let id = node.name, n = 2; if (ctx.blocks.has(id)) { ctx.warnings.push('Duplicate block name ' + node.name + ': a name identifies a block wherever it moves, so each needs its own (a more specific name, or parent/' + node.name + ')' + at); while (ctx.blocks.has(node.name + '#' + n)) n++; id = node.name + '#' + n; }
         node.id = id; ctx.blocks.set(id, node);
@@ -655,6 +658,10 @@ function layout(model, opts, M) {
     const inner = w - 36;
     const top = topRow(n, inner, d);
     // A clipped sketch shows all its lines while its id is in opts.expanded.
+    // A phrase for a name wraps when it does not fit on one line, to three lines at most; a one-word
+    // name never wraps (it is cut with an ellipsis, as before).
+    const phrase = !isB && !isM && /\s/.test(n.name) && tW > inner;
+    const tl = phrase ? Math.min(3, Math.max(1, M.wrap((shownName(n) || n.name) + (n.type ? ' ' + n.type + ' ·' : ''), FONT.title, inner))) : 1;
     const full = n.sketch ? M.wrap(n.sketch, FONT.sketch, inner - 4) : 0, clip = d ? 4 : 2;
     // A paragraph break is drawn half a line tall. A sketch too long for the card is clipped to whole lines, without breaks.
     const gapsAll = n.sketch ? paraGaps(n.sketch) : 0, tight = full - gapsAll;
@@ -664,8 +671,8 @@ function layout(model, opts, M) {
     // A footer that still does not fit wraps to a second line, and the card grows to show it.
     const footLines = footText ? (isM ? M.wrap(footText, FONT.chip, inner - 4) : M.wrap(footText, FONT.foot, inner - 24 - 4)) : 0;
     const foot = footText ? 26 + Math.max(0, footLines - 1) * 17 : 0;
-    const h = 14 + top.h + 24 + (d ? inH + 6 : 0) + (lines ? lines * 18 + gaps * 9 + 4 : 0) + (d ? outH + 6 : 0) + (foot ? foot + 4 : 0) + 12;
-    return { w, h:Math.max(h, 84), lines, gaps, more: tight > clip, top, inH, outH, foot, d };
+    const h = 14 + top.h + 24 + (tl - 1) * 22 + (d ? inH + 6 : 0) + (lines ? lines * 18 + gaps * 9 + 4 : 0) + (d ? outH + 6 : 0) + (foot ? foot + 4 : 0) + 12;
+    return { w, h:Math.max(h, 84), lines, gaps, more: tight > clip, top, inH, outH, foot, d, tl };
   }
   function headerMetrics(b, inner) {
     const top = topRow(b, inner, true), P = portsFor(b);
@@ -1069,7 +1076,7 @@ function applyEdit(src, model, act) {
     // One splice set: name token, :type, sketch, and (for behaviors and message types) every reference.
     const n = act.node, reps = [], its = itemsOf(src, n), nameTok = headSym(its[1]);
     const name = act.name != null ? act.name : n.name;
-    if (name !== n.name && nameTok) reps.push({ s:nameTok.s, e:nameTok.e, t:name });
+    if (name !== n.name && nameTok) reps.push({ s:nameTok.s, e:nameTok.e, t: n.form === 'block' ? nameForm(name.replace(/\s+/g, ' ').trim()) : name });
     if (act.type != null && act.type !== (n.type || '')) {
       let k = -1, i = 2; for (; i < its.length && its[i].t === 'sym' && its[i].v.startsWith(':'); i += 2) if (its[i].v === ':type') k = i;
       const lastKw = its[Math.min(i, its.length) - 1];
@@ -1156,6 +1163,8 @@ function locIn(b) {
 // Whether node n is block anc or lies inside it (blocks via parent, declarations via owner).
 function isWithin(n, anc) { for (let x = n.form === 'block' ? n : n.owner; x; x = x.parent) if (x === anc) return true; return false; }
 const quoteStr = s => '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+// A block's name as source text: bare when it can be a symbol, a string when it is a phrase.
+const nameForm = name => (/^[^\s()";:][^\s()";]*$/.test(name) ? name : quoteStr(name));
 // Top-level items of a node's list, with absolute offsets (lists keep their own items, offset too).
 function itemsOf(src, n) {
   const shift = x => x.list ? { ...x, list:x.list.map(shift), s:x.s + n.s, e:x.e + n.s } : { ...x, s:x.s + n.s, e:x.e + n.s };
@@ -1352,7 +1361,9 @@ function portsProblem(model, node, ports, impl) {
 }
 // A name already used by another block, behavior or message type ('' when free).
 function nameClash(model, node, name) {
-  if (!NAME_RE.test(name)) return 'A name cannot be empty or contain spaces, parentheses, quotes or semicolons.';
+  // A block's name may be a phrase (it is then written as a string); a behavior's or a shape's is one word.
+  if (node && node.form === 'block') { if (!name.trim() || /[\n\r]/.test(name) || name.length > 80) return 'A block needs a name: a word or a short phrase on one line.'; }
+  else if (!NAME_RE.test(name)) return 'A name cannot be empty or contain spaces, parentheses, quotes or semicolons.';
   if (name === node.name) return '';
   if ([...model.blocks.values()].some(b => b !== node && b.name === name)) return `${name} is already the name of a block.`;
   if (model.behaviors.has(name) && model.behaviors.get(name) !== node) return `${name} is already the name of a behavior.`;

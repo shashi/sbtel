@@ -17,6 +17,7 @@ Run `sbtel version` first. If it is missing: `curl -fsSL https://raw.githubuserc
 ```sbtel
 ; comment
 (block Name :type "Module"                 ; :type: what the block means (optional)
+                                           ; the name may be a phrase: (block "Test that times out" …)
   (~ One sentence: what it is for. ~)      ; a sketch; (sketch "…") is the same thing
   (shape Note (~ … ~))                     ; what a port takes or gives
   (shape Saved (refines Note))             ; is-a: fits wherever a Note fits

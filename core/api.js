@@ -255,7 +255,8 @@ var __api = (function () {
       if (verb) { it = [{ t: 'sym', v: verb === 'takes' ? ':in' : ':out', s: x.s, e: x.s }].concat(it); h = 'port'; }
       if (h === 'shape') h = 'message';
       if (h === 'block') {
-        if (!isName(nm)) { warn('block needs a name', x.s); return kids('block', 'a block', it.filter(function (y) { return y.list; })); }
+        // A block's name is a symbol, or a string when it is a phrase.
+        if (!isName(nm) && !(nm && nm.t === 'str' && nm.v.trim())) { warn('block needs a name', x.s); return kids('block', 'a block', it.filter(function (y) { return y.list; })); }
         return kids('block', 'block ' + nm.v, it.slice(keywords('block', nm.v, it)));
       }
       if (h === 'level') {

@@ -688,6 +688,18 @@ func noteTarget(t string, src []byte) (key, label string, ok bool) {
 	case strings.HasPrefix(t, "block:"):
 		name = t[len("block:"):]
 	}
+	// A block's name may be a phrase, written in the spec as a string: (block "Test that times out" …).
+	if form == "block" && strings.Contains(name, " ") && !strings.ContainsAny(name, "\t\n()\";") {
+		name = strings.Join(strings.Fields(name), " ")
+		words := strings.Fields(name)
+		for i := range words {
+			words[i] = regexp.QuoteMeta(words[i])
+		}
+		if src != nil && !regexp.MustCompile(`\(block\s+"\s*`+strings.Join(words, `\s+`)+`\s*"`).Match(src) {
+			return "", "", false
+		}
+		return "block:" + name, "block " + name, true
+	}
 	if name == "" || strings.ContainsAny(name, " \t\n()\";") {
 		return "", "", false
 	}

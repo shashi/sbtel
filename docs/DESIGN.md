@@ -949,6 +949,15 @@ is the session's `tabs`.
   where their cells are (sideways, or downward under the ears). The viewer's drop targets come from laying
   out each candidate edit, so they follow either flow; its two gap helpers share `gapBetween`. The order
   check reads source order along rows or down columns.
+- Phrase names (v0.4.1). A block's name is a symbol or a string; the parser takes either from the
+  name's place (`"a  b"` is `a b`; `""` is no name) and everything downstream sees one `name`, which
+  is also the id. Source is written with `nameForm` (bare when the name can be a symbol, else a quoted
+  string). `nameClash` lets a block's name be any one-line text up to 80 characters and keeps shapes
+  and behaviors to one word, since `takes`/`gives`/`implements` name them as symbols. Lint warns when
+  a phrase passes six words. `cardMetrics` wraps a name that has a space and does not fit (`tl`, one
+  to three lines, 22 px each after the first); a one-word name is cut with an ellipsis as before, so
+  no existing layout changes. An open block's title stays on one line. `noteTarget` matches a phrase
+  against the string in the spec.
 - The corner (v0.4.1). A block's top-right corner holds its open/close toggle (`.ctog`, only when it
   has an inside) and then its comment count (`.cbub`), in one `.ccorner`. A closed block is one thread
   (its own comments and those on everything inside it), so the toggle beside the count is how you read

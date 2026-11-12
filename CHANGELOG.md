@@ -24,6 +24,12 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   the level's editor; the line shows the name to click and does nothing more.
 - The comment count on a block is a quiet chip, like the file count; it fills with the accent only
   while a reply in it is new.
+- **A block's name may be a phrase.** `(block "Test that times out on CI" …)`: a string in the name's
+  place is the block's name and identity, like a symbol. Runs of whitespace are one space; an empty
+  string is not a name; lint warns past six words. A card wraps a phrase that does not fit, to three
+  lines. Typing a phrase in the editor writes a string; `sbtel note` and comment targets take the
+  phrase; a phrase in backticks in a reply links to the block. Shapes and behaviors keep one-word
+  names. The skill now says: code keeps its own name, everything else gets a short phrase.
 - **Finding your place in a conversation.** A block's name in a comment or reply is a link to the
   block (bare when it could not be a plain word, any name in backticks). The skill now says: answer
   where you were asked, and name the other block there.

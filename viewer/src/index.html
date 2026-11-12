@@ -236,6 +236,9 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 .ttl { font-size:17px; font-weight:600; height:24px; line-height:24px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:7px; }
 .ttl > span:not(.pill) { overflow:hidden; text-overflow:ellipsis; }
 .ttl { align-items:baseline; }
+/* A phrase for a name that does not fit on one line wraps (core's cardMetrics says to how many lines). */
+.ttl.wraps { display:-webkit-box; -webkit-box-orient:vertical; white-space:normal; line-height:22px; text-overflow:clip; }
+.ttl.wraps > span:not(.pill) { overflow:visible; margin-right:7px; }
 .ttl .md, .ttl .badge { align-self:center; }
 .sk { font-size:13.5px; line-height:18px; color:var(--muted); overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; margin-top:4px; white-space:pre-line; }
 .foot { display:flex; align-items:center; gap:6px; height:26px; margin-top:4px; font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; }
@@ -1492,7 +1495,7 @@ function cardHTML(B) {
   const foot = isM ? `<div class="foot"><span class="rel2">${esc('refines ' + n.refines)}</span></div>`
     : hasInside(n) ? `<div class="foot"><span class="cnt" data-tog="${esc(n.id)}">${countText(n)}</span></div>` : '';
   const foot2 = m.foot > 26 ? foot.replace('<div class="foot">', `<div class="foot wrap" style="height:${m.foot}px">`) : foot;
-  return (isM ? carryEarHTML(n) : m.d ? '' : tabsHTML(n)) + `<div class="bd">${topHTML(n, m.top, m.d)}<div class="ttl" title="${esc(n.name)}">${title}${typeHTML(n)}</div>` +
+  return (isM ? carryEarHTML(n) : m.d ? '' : tabsHTML(n)) + `<div class="bd">${topHTML(n, m.top, m.d)}<div class="ttl${m.tl > 1 ? ' wraps' : ''}"${m.tl > 1 ? ` style="-webkit-line-clamp:${m.tl};height:${m.tl * 22 + 2}px"` : ''} title="${esc(n.name)}">${title}${typeHTML(n)}</div>` +
     (m.d ? prowHTML('Input', P.in, m.inH) : '') +
     (m.lines ? `<div class="sk${m.more ? ' more' : ''}"${m.more ? ` data-expand="${esc(n.id)}" role="button" tabindex="0" aria-expanded="${state.expanded.has(n.id)}" title="${state.expanded.has(n.id) ? 'Show less' : 'Show the whole sketch'}"` : ''} style="-webkit-line-clamp:${m.lines};height:${m.lines * 18 + m.gaps * 9}px">${skHTML(n.sketch, m.gaps)}</div>` : '') +
     (m.d ? prowHTML('Output', P.out, m.outH) : '') +
@@ -3394,7 +3397,7 @@ function blockLinks(html) {
   const B = state.model && state.model.blocks; if (!B || !B.size) return html;
   const a = name => `<a href="#" class="blink" data-block="${name}">${name}</a>`;
   return html.split(/(<a\b[^>]*>[\s\S]*?<\/a>|<[^>]+>)/g).map((t, i) => i % 2 ? t : t
-    .replace(/`([^`\s]+)`/g, (all, n) => (B.has(n.replace(/&amp;/g, '&')) ? a(n) : all))
+    .replace(/`([^`]+)`/g, (all, n) => (B.has(n.replace(/&amp;/g, '&')) ? a(n) : all))
     .replace(/(^|[\s(\[“"'])((?:[A-Za-z0-9_]+[-\/#.])+[A-Za-z0-9_]+|[A-Z]?[a-z0-9]+(?:[A-Z][a-z0-9]+)+)(?![A-Za-z0-9_\-\/#]|<\/a>)/g, (all, pre, n) => (B.has(n) ? pre + a(n) : all))).join('');
 }
 function richText(s) { return blockLinks(richRefs(s)); }

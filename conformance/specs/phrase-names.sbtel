@@ -1,0 +1,12 @@
+; A block's name may be a phrase, written as a string. It is the block's identity like any other name.
+(block "Why CI failed on our PR" :type "Question"
+  (~ What blocked the merge, and whether our change caused it. ~)
+  (level :name "Evidence"
+    (block "Test that times out on CI" :type "Evidence"
+      (~ Takes most of its time limit on a fast machine. ~))
+    (block "Merge   queue" (~ Runs of whitespace are one space. ~)
+      (level (block retry-job) (block "Retry job, by hand")))
+    (block "This name is far too long to be a name at all" (~ Lint says so. ~)))
+  (level :name "Mistakes"
+    (block "" (~ An empty string is not a name. ~))
+    (block "Test that times out on CI" (~ A phrase can clash like any name. ~))))
