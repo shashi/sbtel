@@ -83,6 +83,10 @@ sbtel ack "$id" c7.1                      # or just take it in: a 👍 on the co
   human to read: what changed, why nothing did, or a question. **Ack** (`sbtel ack "$id" c7 [emoji]`)
   when all you would say is "got it" or "will do": it shows as a reaction on their comment and does not
   call them back to read it. Do not reply just to confirm; ack, do the work, then reply with the result.
+- Answer where you were asked. A reply goes on the comment that asked, even when the answer led you to
+  another block or to a new one: say it there and name the block in backticks (`` `slow-ci-test` ``),
+  which becomes a link to it. Never move the conversation to the other block; the human would arrive
+  there without their question.
 - When the human asks to see a file or the evidence for something, name it in the reply as
   `(ref path:from-to)`: it becomes a button that opens the file at those lines. Only when asked.
 - When the human asks you to comment on blocks ("say something on each block about X"), start a thread

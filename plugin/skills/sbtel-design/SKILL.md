@@ -55,6 +55,22 @@ Worked reasoning for each: [principles.md](principles.md).
 - No shape with exactly one fixed giver and one fixed taker that could be a plain call.
 - The spec has fewer blocks than the last version, or you can say what each new one is for.
 
+## A card is read cold
+
+The human comes back to a card hours later, having forgotten the conversation that made it. Write
+the card for that reader.
+
+- The name says what the thing is in words the human would use for it. Not a label you coined while
+  working, and not an id: `slow-ci-test` means something to you today and nothing tomorrow;
+  `test-that-times-out-on-ci` says it.
+- The sketch's first sentence says what the thing is and why it is on the board, complete without
+  the conversation: "A test that fails on slow CI machines. It blocked our PR three times and is not
+  caused by our change." Ticket and PR numbers come last, if at all; they are for looking up, not for
+  understanding.
+- The viewer shows about two lines of a sketch before it cuts off. Put what matters in those.
+- Before you send a reply that points at a card, read the card's name and first sentence as if you had
+  never seen it. If they do not tell you what it is, fix the card first.
+
 ## One card, one thing
 
 - A block stands for one thing of one kind. If a card holds a claim and its evidence, make two cards.

@@ -278,7 +278,15 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 .cbub { position:absolute; top:-11px; right:-11px; z-index:6; min-width:22px; height:22px; padding:0 6px; box-sizing:border-box; border-radius:11px; border:0;
   background:var(--surface); color:var(--muted); box-shadow:inset 0 0 0 1px var(--frame-line); font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:3px; cursor:pointer; }
 /* A thread with nothing new is a quiet chip, like the file count; only a new reply fills it with the accent. */
-.cbub:hover { box-shadow:inset 0 0 0 1px var(--accent); color:var(--accent-ink); }
+.cbub:hover, .cgather:hover { box-shadow:inset 0 0 0 1px var(--accent); color:var(--accent-ink); }
+/* On an open block with comments inside it: close it and read them together. It sits left of the block's own count. */
+.ccorner { position:absolute; top:-11px; right:-11px; z-index:6; display:inline-flex; gap:4px; }
+.ccorner .cbub { position:relative; top:auto; right:auto; }
+.cgather { min-width:22px; height:22px; padding:0 6px; box-sizing:border-box; border-radius:11px; border:0; background:var(--surface); color:var(--muted); box-shadow:inset 0 0 0 1px var(--frame-line);
+  font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:3px; cursor:pointer; }
+.cgather svg.i { width:11px; height:11px; stroke-width:2.5; }
+a.blink { color:var(--accent-ink); text-decoration:underline; text-decoration-style:dotted; text-underline-offset:3px; }
+
 .cbub.unread { background:var(--accent); color:var(--on-accent, #fff); box-shadow:none; font-weight:700; }
 .cbub svg.i { width:12px; height:12px; }
 /* A block's files (its (ref …) forms): a count at the card's lower right corner; it opens the file modal. */
@@ -2976,7 +2984,8 @@ function fillBlock(el, B, counts) {
   if (B.node.type) el.style.setProperty('--h', typeHue(B.node.type)); else el.style.removeProperty('--h');
   el.classList.toggle('typed', !!B.node.type);
   el.innerHTML = (B.kind === 'card' ? cardHTML(B) : frameHTML(B)) +
-    ((cn => cn ? `<button class="cbub" data-thread="${esc(key)}" aria-label="${cn} comment${cn === 1 ? '' : 's'}">${ICON.comment}${cn}</button>` : '')(scopeCount(key, counts))) +
+    (((cn, inside) => (inside ? `<span class="ccorner"><button class="cgather" data-gather="${esc(B.id)}" title="Close ${esc(B.node.name)} and read the ${inside} comment${inside === 1 ? '' : 's'} inside it together" aria-label="Close ${esc(B.node.name)} and read the ${inside} comment${inside === 1 ? '' : 's'} inside it together">${ICON.shrink}${inside}</button>` : '') +
+      (cn ? `<button class="cbub" data-thread="${esc(key)}" aria-label="${cn} comment${cn === 1 ? '' : 's'}">${ICON.comment}${cn}</button>` : '') + (inside ? '</span>' : ''))(scopeCount(key, counts), B.kind === 'frame' ? insideCount(B.node, counts) : 0)) +
     (B.node && B.node.refs && B.node.refs.length ? `<button class="refb${B.node.refs.some(r => isSpec(r.path) && refUnread(r.file)) ? ' unread' : ''}" data-refs="${esc(B.id)}" aria-label="${B.node.refs.length} file${B.node.refs.length === 1 ? '' : 's'}" title="${esc(B.node.refs.map(r => r.path).join('\n'))}">${B.node.refs.length === 1 && isSpec(B.node.refs[0].path) ? ICON.go : ICON.file + B.node.refs.length}</button>` : '');
 }
 // Opening a drawer never resizes the card: the row it sits in makes room instead.
@@ -3181,6 +3190,8 @@ function redo() { if (!hist.redo.length) return; hist.undo.push(state.src); setS
 // @sbtel end App.Document
 // @sbtel begin App.Canvas
 function toggle(id) { if (state.open.has(id)) state.open.delete(id); else state.open.add(id); render(id); }
+// Close a block and open its thread, where everything said on the parts inside it now reads together.
+function gather(id) { if (state.open.has(id)) toggle(id); select(id, null); const el = state.elems.get(id); openThread(targetKey(id), (el && el.querySelector('.cbub')) || el); }
 // Expand or collapse a clipped card sketch; the layout makes room (state.expanded is passed to layout).
 function toggleSketch(id) { if (state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id); render(id); }
 function toggleDetails(id) { if (state.details.has(id)) state.details.delete(id); else state.details.add(id); render(id); }
@@ -3216,6 +3227,8 @@ function centerOn(id) {
   animCam(); applyCam();
   const el = state.elems.get(id); if (el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
 }
+// A block's name in a comment or reply (blockLinks): go to the block, and leave what is open as it is.
+document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a.blink'); if (!a) return; e.preventDefault(); const id = a.dataset.block.replace(/&amp;/g, '&'); if (state.model.blocks.has(id)) goTo(id); });
 function goTo(id) {
   const n = state.model.node(id); if (!n) return;
   closePop(); closeSheetsOnPhone();
@@ -3313,6 +3326,7 @@ vp.addEventListener('click', e => {
   if (tc && performance.now() - tc.t < 1000 && Math.hypot(e.clientX - tc.x, e.clientY - tc.y) <= 4) return;
   const T = tapAt && e.pointerType && e.pointerType !== 'mouse' && performance.now() - tapAt.at < 1500 && tapAt.t.closest('.blk') ? tapAt.t : e.target; tapAt = null;
   const th = T.closest('[data-thread]'); if (th) { openThread(th.dataset.thread, th); return; }
+  const ga = T.closest('[data-gather]'); if (ga) { gather(ga.dataset.gather); return; }
   const rf = T.closest('[data-refs]'); if (rf) { const n = state.model.node(rf.dataset.refs); if (n && n.refs.length === 1 && isSpec(n.refs[0].path) && specURL) openSpec(n.refs[0]); else openRefs(rf.dataset.refs); return; }
   const t = T.closest('[data-tog]'); if (t) { toggle(t.dataset.tog); return; }
   const ex = T.closest('[data-expand]'); if (ex) { toggleSketch(ex.dataset.expand); return; }
@@ -4471,6 +4485,8 @@ function scopeCount(key, counts) {
   if (closedBlock(b)) for (const k in counts) if (k !== key && targetChain(k).includes(b)) n += counts[k];
   return n;
 }
+// Comments on the parts inside an open block: what closing it would gather into its one thread.
+function insideCount(b, counts) { let n = 0; for (const k in counts) if (targetChain(k).includes(b)) n += counts[k]; return n; }
 function commentCounts() { const c = {}; state.comments.forEach(x => { if (x.status !== 'sent') c[x.target] = (c[x.target] || 0) + 1; }); return c; }
 function targetLabel(key) {
   const [kind, rest] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
@@ -4551,8 +4567,13 @@ function refreshChat() {
   placeBeside(el, chat.anchor);
   chat.sig = sig;
   if (same) { ul.scrollTop = was; return; }
-  const fresh = ul.querySelector('.sb-reply.unread');
-  ul.scrollTop = fresh ? Math.max(0, fresh.getBoundingClientRect().top - ul.getBoundingClientRect().top + ul.scrollTop - 10) : ul.scrollHeight;
+  // Open at the comment the first new reply answers, so what was asked is read before what came back:
+  // the reply alone says nothing about its question. Only when earlier replies would push the new one
+  // out of sight does it open at the new reply.
+  const fresh = ul.querySelector('.sb-reply.unread'), top = e => e.getBoundingClientRect().top - ul.getBoundingClientRect().top + ul.scrollTop;
+  if (!fresh) { ul.scrollTop = ul.scrollHeight; return; }
+  const row = fresh.closest('li'), bar = multi ? 30 : 0, from = row && top(fresh) - top(row) < ul.clientHeight - bar - 48 ? row : fresh;
+  ul.scrollTop = Math.max(0, top(from) - bar - (from === row ? 2 : 10));
 }
 function openChat(key, anchor, focus) {
   closePop('info');
@@ -5012,7 +5033,17 @@ function highlight(t) {
 let loadRef = async r => null;
 // A comment's or a reply's text, with the files it names as buttons: (ref path), as in a spec, or a Markdown
 // link [label](path). A link with a scheme is a link; anything else opens the file modal.
-function richText(s) {
+// A block's name in a comment or reply is a link to the block: always when written in backticks, and bare
+// when it could not be a plain word (it has a - / # . or a capital inside). Text already inside a link is left.
+function blockLinks(html) {
+  const B = state.model && state.model.blocks; if (!B || !B.size) return html;
+  const a = name => `<a href="#" class="blink" data-block="${name}">${name}</a>`;
+  return html.split(/(<a\b[^>]*>[\s\S]*?<\/a>|<[^>]+>)/g).map((t, i) => i % 2 ? t : t
+    .replace(/`([^`\s]+)`/g, (all, n) => (B.has(n.replace(/&amp;/g, '&')) ? a(n) : all))
+    .replace(/(^|[\s(\[“"'])((?:[A-Za-z0-9_]+[-\/#.])+[A-Za-z0-9_]+|[A-Z]?[a-z0-9]+(?:[A-Z][a-z0-9]+)+)(?![A-Za-z0-9_\-\/#]|<\/a>)/g, (all, pre, n) => (B.has(n) ? pre + a(n) : all))).join('');
+}
+function richText(s) { return blockLinks(richRefs(s)); }
+function richRefs(s) {
   return esc(s).replace(/\(ref\s+(?:&quot;((?:[^&]|&(?!quot;))*)&quot;|([^\s()&;]+))\)|\[([^\]\n]+)\]\(([^()\s]+)\)|\bhttps?:\/\/[^\s<>]+/g, (all, q, bare, label, href) => {
     if (q == null && bare == null && href == null) {   // a bare address: a link, less the punctuation that ends the sentence
       const tail = /(?:&quot;|&#39;|&gt;|[.,;:!?)\]'])+$/.exec(all)?.[0] || '', u = all.slice(0, all.length - tail.length);

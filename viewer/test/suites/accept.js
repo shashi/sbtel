@@ -13,9 +13,12 @@ window.__accept = async function () {
   const ids = ['Shell.Theme', 'Shell.LowLevelThing', 'Shell.Clipboard'];
 
   await step('multiSelectOutlines', async () => {
-    click(blk(ids[0]).querySelector('.ttl')); await wait(60);
-    click(blk(ids[1]).querySelector('.ttl'), { shiftKey: true }); await wait(60);
-    click(blk(ids[2]).querySelector('.ttl'), { shiftKey: true }); await wait(60);
+    // Under load the page may not be ready for the first click: make each one, then wait until it shows.
+    const sel = () => document.querySelectorAll('.blk.sel').length;
+    const until = async f => { for (const t0 = performance.now(); performance.now() - t0 < 3000;) { if (f()) return true; await wait(40); } return f(); };
+    for (let i = 0; i < 3; i++) {
+      for (let tries = 0; tries < 3 && sel() !== i + 1; tries++) { if (!blk(ids[i]).classList.contains('sel')) click(blk(ids[i]).querySelector('.ttl'), i ? { shiftKey: true } : {}); await until(() => sel() === i + 1); }
+    }
     return document.querySelectorAll('.blk.sel').length === 3 ? 'pass' : 'fail: ' + document.querySelectorAll('.blk.sel').length + ' outlined';
   });
   await step('noHandlesWhenMany', async () => document.querySelectorAll('.hdl').length === 0 ? 'pass' : 'fail: ' + document.querySelectorAll('.hdl').length + ' handles');

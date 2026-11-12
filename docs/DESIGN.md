@@ -651,6 +651,9 @@ delivers it. The human's answer is an ordinary comment on the same target; the a
 thread with `sbtel reply <session> n<seq> …`. Notes are kept in the project's comment log and restored
 with the rest. The skills tell agents to use it only when the human asks.
 
+In any comment or reply, a block's name is a link to the block: any name in backticks, and
+a bare one that could not be a plain word (it has `-`, `/`, `#`, `.` or an inner capital).
+
 ### 3.11 `sbtel sessions [--json]`  (B)
 
 Reads the state directory from disk. It prints one line per session, newest `updated` first:
@@ -946,6 +949,9 @@ is the session's `tabs`.
   where their cells are (sideways, or downward under the ears). The viewer's drop targets come from laying
   out each candidate edit, so they follow either flow; its two gap helpers share `gapBetween`. The order
   check reads source order along rows or down columns.
+- Gathering (v0.4.1). A closed block is one thread (its own comments and those on everything inside
+  it). An open block with comments inside shows that count on a second chip left of its own
+  (`.cgather`, `insideCount`); a click closes the block and opens that one thread (`gather`).
 - Spring-open (v0.4.1). Drop zones come only from blocks that are open, so a closed block had no inside
   to drop into. While a block is dragged, the pointer resting on the middle of a closed block (the
   inner 48% of its width, on the board as drawn with the dragged block lifted out, so no preview can

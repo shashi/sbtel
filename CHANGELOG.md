@@ -24,6 +24,13 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   the level's editor; the line shows the name to click and does nothing more.
 - The comment count on a block is a quiet chip, like the file count; it fills with the accent only
   while a reply in it is new.
+- **Finding your place in a conversation.** A block's name in a comment or reply is a link to the
+  block (bare when it could not be a plain word, any name in backticks). The skill now says: answer
+  where you were asked, and name the other block there.
+- A thread with a new reply opens at your comment that the reply answers, so what you asked is read
+  before what came back. (It opened at the reply, with your question scrolled out of sight.)
+- An open block with comments on the parts inside it shows a second chip beside its own count: click
+  it to close the block and read those comments together in its one thread.
 - **A closed block takes a drop.** Rest a dragged block on the middle of a closed block and, after
   0.7 s of holding still, that block opens under the pointer and its levels become drop zones; a card
   with nothing inside offers its first level. Passing over a block, or pausing briefly, does nothing,
