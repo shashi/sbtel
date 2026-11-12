@@ -3,7 +3,7 @@
 All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` release tags
 (RELEASING.md).
 
-## 0.4.1 (2026-11-10)
+## 0.4.1 (2026-11-12)
 
 ### Breaking
 
@@ -24,6 +24,8 @@ All notable changes to sbtel. Versions follow the `VERSION` file and the `v*` re
   the level's editor; the line shows the name to click and does nothing more.
 - The comment count on a block is a quiet chip, like the file count; it fills with the accent only
   while a reply in it is new.
+- A file with no blocks says so on the canvas and offers "Add a block"; the canvas menu's item for an
+  empty file is "Add a block" too (it said "Add a level", which is what it also makes).
 - **A block's name may be a phrase.** `(block "Test that times out on CI" …)`: a string in the name's
   place is the block's name and identity, like a symbol. Runs of whitespace are one space; an empty
   string is not a name; lint warns past six words. A card wraps a phrase that does not fit, to three

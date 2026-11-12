@@ -55,5 +55,14 @@ window.__accept = async function () {
   is('threadIsScrolled', ul.scrollTop > 40);
   is('opensAtTheQuestion', off >= -1 && off < 24 ? true : 'question at ' + Math.round(off));
   closePop('thread'); state.comments.length = 0; chatReplies = was; render();
+  // A file with no blocks says so and offers the first one; the canvas menu calls it a block too.
+  setSource('; nothing yet\n'); await wait(120);
+  const em = document.getElementById('emptyc');
+  is('emptyFileSaysSo', !!em && /no blocks yet/.test(em.textContent));
+  is('menuOffersABlock', menuItems(null, 0).items[0].label, 'Add a block');
+  em.querySelector('button').click(); await until(() => state.model.blocks.size === 1);
+  is('buttonAddsTheFirstBlock', state.model.blocks.size === 1 && !document.getElementById('emptyc'));
+  undo(); await wait(120);
+  is('undoBringsTheEmptyStateBack', !!document.getElementById('emptyc'));
   return r;
 };

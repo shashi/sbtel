@@ -100,6 +100,8 @@ svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;
 @keyframes tiesnap { 0% { opacity:1; } 100% { opacity:0; } }
 @keyframes tiejoin { 0% { stroke-dashoffset:.86; opacity:1; } 99% { stroke-dashoffset:0; opacity:1; } 100% { stroke-dashoffset:0; opacity:0; } }
 .ovl rect.dropz { fill:var(--accent-soft); stroke:var(--accent); stroke-width:2; stroke-dasharray:6 5; }
+#emptyc { position:fixed; left:50%; top:46%; transform:translate(-50%, -50%); z-index:5; display:flex; flex-direction:column; align-items:center; gap:14px; color:var(--muted); font-size:16px; text-align:center; }
+#emptyc p { margin:0; }
 #springcue { position:absolute; left:0; top:0; z-index:1400; pointer-events:none; border-radius:calc(var(--r) + 2px); animation:springcue .7s ease-in both; }
 @keyframes springcue { 0%, 35% { box-shadow:0 0 0 0 transparent; } 100% { box-shadow:0 0 0 4px var(--accent); } }
 .blk.dragsrc { z-index:1500 !important; pointer-events:none; opacity:.85; box-shadow:0 14px 40px var(--shadow); transition:none !important; }
@@ -1121,6 +1123,14 @@ function saveComments() { store.set('sbtel-comments' + prefs.key, state.comments
 // @sbtel begin App.Document
 // True where nothing may change (diff mode, a closed session): those modes reassign it (§6.5).
 function readOnly() { return false; }
+// A file with no blocks draws nothing, so say so and offer the first block (not while a preview is drawn).
+function emptyCanvas() {
+  const none = !state.model.blocks.size && !state.model.behaviorOrder.length && !state.model.messages.size; let el = $('emptyc');
+  if (!none) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'emptyc'; document.body.appendChild(el);
+    el.addEventListener('click', e => { if (e.target.closest('button') && !readOnly()) edit({ t:'level', block:state.model.root, at:0 }); }); }
+  el.innerHTML = `<p>This file has no blocks yet.</p>${readOnly() ? '' : '<button type="button" class="btn primary">Add a block</button>'}`;
+}
 const version = () => (hash(state.src) >>> 0).toString(16).padStart(8, '0').slice(0, 7);
 
 function setSource(src, { flash, fromEditor, fromEdit } = {}) {
@@ -1167,6 +1177,7 @@ function render(anchorId, pv) {
   applyCam();
   paint(lay);
   renderChecks();
+  emptyCanvas();
   if (world.classList.contains('anim')) setTimeout(() => { world.classList.remove('anim'); placeStrip(); placeCallout(); }, 340);
   document.body.classList.toggle('ro', readOnly());
   applySelection(); applyTalk(); applyCarry(); applyBeh(); refreshCallout();
@@ -2271,7 +2282,8 @@ function containerItems(P, wy, visible) {
   const li = near ? P.levels.findIndex(L => L.key === near.key) : -1;
   if (li >= 0) items.push({ label:'Add a block to this level', act:{ t:'append', L:P.levels[li] }, ...open },
     { label:'Insert a level above', act:{ t:'level', block:P, at:li }, ...open }, { label:'Insert a level below', act:{ t:'level', block:P, at:li + 1 }, ...open });
-  else items.push({ label: P.levels.length ? 'Add a block inside' : 'Add a level', act:{ t:'level', block:P, at:P.levels.length }, ...open });
+  // With no level yet this makes the first one, with a block in it: what the reader wants is the block.
+  else items.push({ label: P === state.model.root && !P.levels.length ? 'Add a block' : 'Add a block inside', act:{ t:'level', block:P, at:P.levels.length }, ...open });
   items.push({ label:'Add a behavior', act:{ t:'decl', block:P, form:'behavior' }, ...open }, { label:'Add a shape', act:{ t:'decl', block:P, form:'message' }, ...open });
   return items;
 }
