@@ -949,9 +949,10 @@ is the session's `tabs`.
   where their cells are (sideways, or downward under the ears). The viewer's drop targets come from laying
   out each candidate edit, so they follow either flow; its two gap helpers share `gapBetween`. The order
   check reads source order along rows or down columns.
-- Gathering (v0.4.1). A closed block is one thread (its own comments and those on everything inside
-  it). An open block with comments inside shows that count on a second chip left of its own
-  (`.cgather`, `insideCount`); a click closes the block and opens that one thread (`gather`).
+- The corner (v0.4.1). A block's top-right corner holds its open/close toggle (`.ctog`, only when it
+  has an inside) and then its comment count (`.cbub`), in one `.ccorner`. A closed block is one thread
+  (its own comments and those on everything inside it), so the toggle beside the count is how you read
+  them together. The count of blocks under the title still toggles; the arrow beside it is gone.
 - Spring-open (v0.4.1). Drop zones come only from blocks that are open, so a closed block had no inside
   to drop into. While a block is dragged, the pointer resting on the middle of a closed block (the
   inner 48% of its width, on the board as drawn with the dragged block lifted out, so no preview can

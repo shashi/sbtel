@@ -1,5 +1,5 @@
-// accept17: finding your place in a conversation. A block's name in a reply is a link to the block; an open
-// block with comments inside it has a button that closes it and reads them together; a thread with a new
+// accept17: finding your place in a conversation. A block's name in a reply is a link to the block; a block
+// that has an inside is opened and closed from its corner, beside its comment count; a thread with a new
 // reply opens at the comment the reply answers.
 window.__accept = async function () {
   const r = {}, wait = ms => new Promise(f => setTimeout(f, ms));
@@ -25,20 +25,24 @@ window.__accept = async function () {
   is('clickGoesToTheBlock', state.sel === 'shell' && state.open.has('app'));
   document.getElementById('t17').remove();
 
-  // The gather button on an open block.
+  // The open/close toggle sits in the block's corner, beside its comment count.
   state.open = new Set(['app', 'sync']);
-  state.comments.push({ id:'d1', target:'block:queue', text:'Cap the queue.', status:'draft', at:Date.now() }, { id:'d2', target:'block:retry', text:'Back off.', status:'draft', at:Date.now() });
+  state.comments.push({ id:'d1', target:'block:sync', text:'Cap the queue.', status:'draft', at:Date.now() });
   render(); await wait(120);
-  const g = state.elems.get('sync').querySelector('.cgather');
-  is('openBlockOffersToGather', !!g && g.textContent.trim(), '2');
-  is('onlyWhereCommentsAreInside', document.querySelectorAll('.cgather').length, 2); // sync, and app around it
-  is('closedBlockHasNone', !state.elems.get('queue').querySelector('.cgather'));
-  g.click(); await until(() => pops.thread);
-  is('closesTheBlock', state.open.has('sync'), false);
-  const text = pops.thread ? pops.thread.textContent : '';
-  is('threadReadsBothTogether', /Cap the queue\./.test(text) && /Back off\./.test(text));
-  is('countOnTheClosedBlock', (state.elems.get('sync').querySelector('.cbub') || {}).textContent, '2');
-  closePop('thread'); state.comments.length = 0;
+  const corner = id => state.elems.get(id).querySelector(':scope > .ccorner');
+  const tg = id => state.elems.get(id).querySelector(':scope > .ccorner > .ctog');
+  is('openBlockHasCloseToggle', tg('sync') && tg('sync').getAttribute('aria-expanded'), 'true');
+  is('toggleLeftOfTheCount', !!corner('sync') && corner('sync').firstElementChild === tg('sync') && corner('sync').lastElementChild.classList.contains('cbub'));
+  is('cornerIsTopRight', (() => { const c = corner('sync').getBoundingClientRect(), k = state.elems.get('sync').getBoundingClientRect(); return Math.abs(c.right - k.right) < 16 * state.cam.k + 2 && Math.abs(c.top - k.top) < 16 * state.cam.k + 2; })());
+  is('noArrowUnderTheTitle', document.querySelectorAll('.blk .foot button').length, 0);
+  is('blockWithNothingInsideHasNone', !tg('queue') && !tg('shell'));
+  tg('sync').click(); await wait(150);
+  is('toggleCloses', state.open.has('sync'), false);
+  is('closedBlockHasOpenToggle', tg('sync') && tg('sync').getAttribute('aria-expanded'), 'false');
+  is('countStaysBesideIt', !!corner('sync').querySelector('.cbub'));
+  tg('sync').click(); await wait(150);
+  is('toggleOpens', state.open.has('sync'));
+  state.comments.length = 0;
 
   // A thread with a new reply opens at the comment the reply answers.
   state.open = new Set(['app']);
