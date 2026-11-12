@@ -64,7 +64,7 @@
 <div class="install-line"><pre class="code wrapline">irm https://raw.githubusercontent.com/shashi/sbtel/main/install.ps1 | iex</pre></div>
 <p>Each installer downloads the release binary for your platform, verifies its SHA-256 checksum and puts it in <code>~/.local/bin</code>, or <code>%LOCALAPPDATA%\Programs\sbtel</code> on Windows. Set <code>SBTEL_INSTALL_DIR</code> to choose another directory, or <code>SBTEL_VERSION</code> to pick a release. The binary has no runtime dependencies. Check that it works:</p>
 <div class="spec"><div class="cbl">output</div><pre class="code" data-lang="text"><span class="hl-prompt">$ </span>sbtel version
-sbtel 0.3.0</pre></div>
+sbtel 0.4.1</pre></div>
 <p><code>sbtel</code> keeps its sessions in <code>~/.sbtel</code> (<code>%USERPROFILE%\.sbtel</code> on Windows), or in <code>$SBTEL_HOME</code> when that is set. <code>sbtel open</code> opens a browser tab; on a machine without one, pass <code>--no-browser</code> or set <code>SBTEL_NO_BROWSER=1</code> and it prints the address instead.</p>
 
 <h2 id="agent"><a class="anchor" href="#agent" aria-hidden="true" tabindex="-1">#</a>Set up your coding agent</h2>
